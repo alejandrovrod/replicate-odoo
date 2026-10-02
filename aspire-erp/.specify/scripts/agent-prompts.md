@@ -73,3 +73,31 @@ Para alinearnos con los requerimientos estrictos de los módulos de negocio (ej.
 
 Procedé ejecutando el análisis de la Fase 1 y luego implementando las bases arquitectónicas descritas en la Fase 2, asegurando código limpio y documentado.
 ```
+
+---
+
+## 3. Ejecución Full-Stack por Módulo (Spec Kit)
+**Agentes requeridos:** `@dotnet-core-expert`, `@database-optimizer` y `@expert-react-frontend-engineer`
+
+```markdown
+Actúa conjuntamente como `@dotnet-core-expert`, `@database-optimizer` y `@expert-react-frontend-engineer`. Vamos a iniciar la implementación y alineación Full-Stack del código existente bajo la nueva metodología del Spec Kit, comenzando por el núcleo del sistema: **01-accounting**.
+
+### Instrucciones de Ejecución:
+1. **Lectura de Especificaciones:**
+   Antes de tocar código, lean estrictamente en este orden los artefactos certificados del módulo:
+   - `aspire-erp/.specify/modules/01-accounting/spec.md` (Entendimiento de negocio, UX y reglas).
+   - `aspire-erp/.specify/modules/01-accounting/plan.md` (Decisiones de arquitectura Backend y Frontend).
+   - `aspire-erp/.specify/modules/01-accounting/tasks.md` (Lista de tareas accionables).
+
+2. **Auditoría de Código Existente vs Nuevo Spec:**
+   - **Backend/DB:** Analicen el código en `src/Backend/` relacionado con `Account` y `GLEntry`. Verifiquen consistencia transaccional, `RowVersion`, y aserciones de doble partida.
+   - **Frontend:** Analicen el código en `src/Frontend/erp-client/` asegurando el uso de `useErpAction`, Server/Client components (React 19.2), validaciones de UI, y tipado estricto contra los DTOs.
+
+3. **Ejecución Ordenada:**
+   Comiencen a implementar/refactorizar siguiendo estrictamente el orden de `tasks.md` del módulo `01-accounting`.
+   - El trabajo debe coordinarse: el backend expone el endpoint y el contrato; el frontend lo consume implementando Suspense y manejo de errores nativo.
+   - Por cada tarea completada, marquen su casilla en el archivo `tasks.md` actualizando su estado.
+   - Deténganse al finalizar un bloque lógico mayor. Generen un reporte breve de las integraciones logradas y esperen mi confirmación para avanzar al siguiente bloque.
+
+Procedan leyendo los 3 archivos del Spec Kit del módulo 01 y denme su reporte de estado inicial junto con la primera tarea a ejecutar.
+```

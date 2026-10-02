@@ -32,19 +32,19 @@ This document provides granular, atomic, testable tasks for human engineers and 
 
 ## Phase 1: Multi-Tenancy Core & Ambient Logging
 
-- [ ] **Task 1.1: Implement Tenant Abstractions & Middleware**
+- [x] **Task 1.1: Implement Tenant Abstractions & Middleware**
   - **Action:** In `Erp.Application`, define `ITenantEntity` and `ITenantProvider`. In `Erp.Api`, create `TenantResolutionMiddleware` extracting tenant from `X-Tenant-ID` header or JWT claim.
   - **Acceptance:** Scoped service returns valid `TenantId` when header is passed; returns 401/400 if tenant is missing on protected routes.
 
-- [ ] **Task 1.2: Implement Multi-Tenant Logging Scope Middleware**
+- [x] **Task 1.2: Implement Multi-Tenant Logging Scope Middleware**
   - **Action:** Create `TenantLoggingScopeMiddleware` opening `_logger.BeginScope` with `TenantId`, `CorrelationId`, and `UserId`.
   - **Acceptance:** Every log emitted during a request automatically includes `TenantId` in structured JSON/OpenTelemetry format.
 
-- [ ] **Task 1.3: Implement `AppDbContext` with Dynamic Global Query Filters**
+- [x] **Task 1.3: Implement `AppDbContext` with Dynamic Global Query Filters**
   - **Action:** In `Erp.Infrastructure`, configure EF Core `AppDbContext` to dynamically apply `HasQueryFilter` on all `ITenantEntity` models via Expression Trees. Add `SaveChangesAsync` interceptor enforcing immutable `TenantId`.
   - **Acceptance:** Queries automatically append `WHERE TenantId = @id`; attempts to update `TenantId` throw `InvalidOperationException`.
 
-- [ ] **Task 1.4: Initial Database Migration**
+- [x] **Task 1.4: Initial Database Migration**
   - **Action:** Create EF Core migration for `Tenants` and `Companies` tables.
   - **Acceptance:** Migration executes successfully on SQL Server 2025 container.
 

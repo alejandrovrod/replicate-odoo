@@ -1,7 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- Domain is referenced directly (not just transitively via Application): Infrastructure maps
+         Domain entities itself (DbSet<Tenant>, DbSet<Company>). Edge stays inward: Domain <- Application <- Infrastructure. -->
+    <ProjectReference Include="..\Erp.Domain\Erp.Domain.csproj" />
     <ProjectReference Include="..\Erp.Application\Erp.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Persistence provider for SQL Server 2025 (Task 1.4). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+    <!-- Design-time services for dotnet ef; kept out of consumers' dependency graphs. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <!-- [LoggerMessage] source generator for Erp.Infrastructure/Logging (Constitution Article V.2).
+         Also a transitive dependency of EF Core; referenced explicitly because analyzer assets do
+         not flow transitively. -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
   </ItemGroup>
 
   <PropertyGroup>

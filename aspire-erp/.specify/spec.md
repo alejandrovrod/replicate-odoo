@@ -2,160 +2,180 @@
 
 **Status:** APPROVED  
 **Format:** Spec Kit Functional Specification (ERPNext Modular Parity & Gherkin Scenarios)  
-**Version:** 2.0.0  
+**Version:** 2.1.0  
 **Business Rules Engine:** [domain_business_rules_ddd.md](./domain_business_rules_ddd.md)  
+**Reference Diagram:** GitDiagram ERPNext Architecture (`group_bank_ui`, `group_bank_domain`, `group_accounting`, `group_operations`)  
 
 ---
 
 ## 1. Executive Summary & Modular Architecture
 
-To achieve true parity with **ERPNext**, this system is organized into **4 Core Operational Modules** interconnected through an immutable double-entry General Ledger and an automated perpetual inventory valuation engine (Kardex).
+To achieve direct architectural parity with **ERPNext**, this system is organized into **5 Core Operational Modules** interconnected through an immutable double-entry General Ledger, an automated banking reconciliation tool, and a perpetual inventory engine.
 
 ```mermaid
 graph TD
-    subgraph Selling Module
-        Customer["Customer"] --> Quotation["Quotation (Cotización)"]
-        Quotation --> SalesOrder["Sales Order (Pedido de Venta)"]
-        SalesOrder --> DeliveryNote["Delivery Note (Remisión/Despacho)"]
-        SalesOrder --> SalesInvoice["Sales Invoice (Factura de Venta)"]
+    subgraph Banking Subsystem (React SPA)
+        BankApp["Banking App (App.tsx)"] --> RecPage["Reconciliation Page (BankReconciliation.tsx)"]
+        BankApp --> ImportPage["Statement Import (BankStatementImporter.tsx)"]
+        ImportPage --> BankStatementImport["Bank Statement Import"]
+        BankStatementImport --> BankTx["Bank Transactions (Staging)"]
+        BankTx --> BankRules["Transaction Rules Engine"]
+        BankRules --> RecTool["Bank Reconciliation Tool"]
+        RecTool --> DialogManager["Voucher Dialog (Quick Create)"]
     end
 
-    subgraph Buying Module
-        Supplier["Supplier"] --> PurchaseOrder["Purchase Order (Orden de Compra)"]
-        PurchaseOrder --> PurchaseReceipt["Purchase Receipt (Recepción Almacén)"]
-        PurchaseOrder --> PurchaseInvoice["Purchase Invoice (Factura de Proveedor)"]
+    subgraph Accounting Core
+        RecTool --> AccountsController["Accounts Controller"]
+        AccountsController --> GLEntry["General Ledger (gl_entry.py)"]
+        FinancialReports["Financial Reports"] --> GLEntry
+        BankAccountRecords["Bank Account Records"] --> BankTx
     end
 
-    subgraph Stock Module
-        Item["Item / SKU"] --> Warehouse["Warehouse (Almacén)"]
-        DeliveryNote --> StockLedger["Stock Ledger Entry (Kardex FIFO)"]
-        PurchaseReceipt --> StockLedger
-        StockEntry["Stock Entry (Ajustes/Transferencias)"] --> StockLedger
-    end
-
-    subgraph Accounts Module (Core)
-        SalesInvoice --> GLEntry["General Ledger (GL Entry)"]
-        PurchaseInvoice --> GLEntry
-        DeliveryNote -.->|"COGS Posting"| GLEntry
-        PurchaseReceipt -.->|"Stock Received But Not Billed"| GLEntry
-        PaymentEntry["Payment Entry (Cobro/Pago)"] --> GLEntry
-        PaymentEntry --> PaymentAllocation["Reconciliation"]
-        PaymentAllocation --> SalesInvoice
-        PaymentAllocation --> PurchaseInvoice
+    subgraph Business Operations
+        POS["Point of Sale (pos_controller.js)"] --> AccountsController
+        Buying["Purchasing (buying_controller.py)"] --> AccountsController
+        Selling["Sales Invoicing"] --> AccountsController
+        Manufacturing["Manufacturing Scheduling (engine.py)"]
     end
 ```
 
 ---
 
-## 2. Module 1: Accounts (Contabilidad & Finanzas)
+## 2. Module 1: Banking Operations & Dual-Sided Reconciliation
 
-*ERPNext Parity: `erpnext/accounts/doctype`*
+*ERPNext Parity: `banking/src/App.tsx`, `erpnext/accounts/doctype/bank_transaction`, `bank_reconciliation_tool`*
 
-### 2.1 DocTypes & Entities
-- **`Account`**: Hierarchical Chart of Accounts (Asset, Liability, Equity, Income, Expense, `parent_account`, `is_group`, `currency`).
-- **`FiscalYear` & `PeriodClosingVoucher`**: Accounting periods with hard lock dates and annual retained earnings closing.
-- **`JournalEntry`**: Manual multi-line adjustment vouchers enforcing $\sum \text{Debit} = \sum \text{Credit}$.
+### 2.1 User Journeys & Scenarios
+
+#### Scenario BN-01: Bank Statement Import & Staging
+- **Given** an authorized user on the Banking Interface (`BankStatementImporter.tsx`)
+- **When** the user uploads a bank statement file (CSV / OFX) containing 50 transactions
+- **Then** the file is parsed and stored in `BankStatementImport` with an `ImportLog`
+- **And** 50 isolated records are inserted into `BankTransaction` in `Unreconciled` status
+- **And** **zero** accounting entries are posted to `GLEntry` (Staging isolation rule).
+
+#### Scenario BN-02: Automated Rule Matching (`BankTransactionRule`)
+- **Given** an unreconciled Bank Transaction with description `"STRIPE PAYOUT REF #98234"` of $5,400.00
+- **And** an active `BankTransactionRule` matching keyword `"STRIPE PAYOUT"` linked to Customer `Stripe Inc.`
+- **When** the reconciliation engine evaluates the rule
+- **Then** the transaction status becomes `Matched`
+- **And** the customer and default fee accounts are auto-populated in the UI.
+
+#### Scenario BN-03: Dual-Sided Reconciliation & Ledger Confirmation
+- **Given** an unreconciled Bank Transaction of $1,000.00 (Deposit)
+- **And** an existing open Payment Entry `PAY-2026-0001` of $1,000.00
+- **When** the user confirms the match in `BankReconciliation.tsx`
+- **Then** `BankTransaction.Status` transitions to `Reconciled`
+- **And** the Bank Account's reconciled clearance date is updated
+- **And** the difference on the Bank Reconciliation Statement decreases to $0.00.
+
+#### Scenario BN-04: On-the-fly Voucher Creation (`DialogManager`)
+- **Given** an unreconciled bank fee line of $15.00 for which no internal voucher exists
+- **When** the accountant opens the Voucher Dialog directly from the reconciliation row
+- **Then** a `JournalEntry` is created: Debit `5150 - Bank Charges` ($15.00), Credit `1110 - Bank Account` ($15.00)
+- **And** the bank transaction is immediately reconciled against the newly generated voucher in one atomic action.
+
+---
+
+## 3. Module 2: Accounting Core (Contabilidad & Finanzas)
+
+*ERPNext Parity: `erpnext/accounts/doctype` & `accounts_controller.py`*
+
 - **`GLEntry`**: The atomic, immutable transaction ledger.
-- **`PaymentEntry`**: Bank and cash receipts/disbursements.
-- **`PaymentAllocation`**: Debt extinction against open sales/purchase invoices.
-- **`CostCenter` & `AccountingDimension`**: Analytical accounting distribution.
+- **`Account`**: Hierarchical Chart of Accounts (Asset, Liability, Equity, Income, Expense).
+- **`FiscalYear` & `PeriodClosingVoucher`**: Hard period locks and fiscal closing.
+- **`FinancialReports`**: Balance Sheet, Profit & Loss, Trial Balance, Bank Reconciliation Statement.
 
-### 2.2 Scenarios & Functional Rules
-- **Rule AC-01 (Partida Doble Inviolable):** Every posted transaction must balance debits and credits down to 4 decimal places.
-- **Rule AC-02 (Cierre de Periodo Fiscal):** No transaction can be posted, modified, or cancelled if `PostingDate <= Company.PeriodLockDate`.
-- **Rule AC-03 (Diferencial Cambiario Automático):** Differences in exchange rates between invoice posting and payment date generate automatic gain/loss entries (`Realized FX Gain/Loss`).
-- **Scenario AC-S1 (Gherkin):**
-  - **Given** an open invoice for $1,000 USD booked at exchange rate 1.05 ($1,050 Base)
-  - **When** the invoice is paid when the exchange rate is 1.10 ($1,100 Base)
-  - **Then** the payment extinguishes the $1,000 USD receivable
-  - **And** generates a Credit of $50 Base Currency to `4210 - Realized Foreign Exchange Gain`.
+#### Scenario AC-01: Double-Entry Balance Invariant Enforcement
+- **Given** an incoming Journal Entry or Transaction Voucher with debits totaling $1,250.00
+- **And** credits totaling $1,245.00 (discrepancy of $5.00)
+- **When** the posting pipeline validates the transaction
+- **Then** the operation is rejected with `DomainValidationException("DoubleEntryImbalance")`
+- **And** zero records are written to `GLEntry`.
 
----
+#### Scenario AC-02: Hard Fiscal Period Lock
+- **Given** a tenant fiscal period closed up to `2025-12-31`
+- **When** an accountant attempts to post an invoice or adjustment with `PostingDate = 2025-11-15`
+- **Then** the command fails with `FiscalPeriodLockedException`
+- **And** the ledger state remains completely unaltered.
 
-## 3. Module 2: Stock & Inventory (Inventario & Almacenes)
-
-*ERPNext Parity: `erpnext/stock/doctype`*
-
-### 3.1 DocTypes & Entities
-- **`Item` (Artículo/Producto):** SKU, Item Name, Item Group, UOM, Valuation Method (FIFO / Moving Average), Default Income Account, Default Expense Account.
-- **`Warehouse` (Almacén/Depósito):** Hierarchical locations (e.g. `Main Warehouse`, `Transit`, `Scrap`), Parent Warehouse, Account link for automated inventory valuation.
-- **`UOM` (Unidad de Medida):** Unit conversions (e.g. 1 Box = 12 Units).
-- **`StockEntry` (Movimiento de Stock):**
-  - Types: *Material Receipt*, *Material Issue*, *Material Transfer between Warehouses*.
-- **`StockLedgerEntry` (Kardex Perpetuo):**
-  - Immutable historical record of quantity and valuation change per Item and Warehouse.
-
-### 3.2 Scenarios & Functional Rules
-- **Rule ST-01 (Perpetual Inventory Valuation):**
-  Moving items in or out of a warehouse immediately creates balanced General Ledger entries linking the Inventory Asset Account with Cost of Goods Sold (COGS) or Stock Adjustment accounts.
-- **Rule ST-02 (Negative Stock Restriction):**
-  If `Company.AllowNegativeStock == false`, an item issue cannot reduce stock quantity below zero in any warehouse.
-- **Scenario ST-S1 (Gherkin):**
-  - **Given** Warehouse `Main` holds 10 units of Item `LAPTOP-01` valued at $800.00 each
-  - **When** a Stock Entry (Material Issue) for 2 units is posted for department expense
-  - **Then** `StockLedgerEntry` records $-2$ units at $800.00 ($1,600.00 total valuation decrease)
-  - **And** `GLEntry` records:
-    - Debit: `5100 - Department Expense` = $1,600.00
-    - Credit: `1300 - Stock In Hand (Main Warehouse)` = $1,600.00.
+#### Scenario AC-03: Multi-Currency Realized FX Gain/Loss
+- **Given** an open Sales Invoice of €1,000.00 booked at exchange rate 1.05 (USD $1,050.00 A/R)
+- **When** a payment of €1,000.00 is received when the exchange rate is 1.10 (USD $1,100.00 Bank Inflow)
+- **Then** the payment debits Bank for $1,100.00, credits Accounts Receivable for $1,050.00
+- **And** credits `Realized Exchange Gain` account for $50.00.
 
 ---
 
-## 4. Module 3: Selling (Ciclo Comercial de Ventas)
+## 4. Module 3: Stock & Inventory (Inventario & Kardex FIFO)
 
-*ERPNext Parity: `erpnext/selling/doctype`*
+*ERPNext Parity: `erpnext/stock/doctype` & perpetual inventory engine*
 
-### 4.1 DocTypes & Entities
-- **`Customer`**: Commercial name, Tax ID, Customer Group, Credit Limit, Payment Terms, Default Currency.
-- **`Quotation` (Cotización):** Pre-sales quotation with validity date, items, discounts, and print preview.
-- **`SalesOrder` (Pedido de Venta):** Confirmed customer order reserving stock allocation. Statuses: `Draft` -> `To Deliver & Bill` -> `To Bill` -> `Completed`.
-- **`DeliveryNote` (Remisión / Guía de Despacho):** Physical fulfillment of goods that triggers stock deduction and COGS accounting entries.
-- **`SalesInvoice` (Factura de Venta):** Fiscal invoice triggering Accounts Receivable and Revenue posting.
+- **`Item` (SKU)**, **`Warehouse` (Hierarchical)**, **`UOM`**.
+- **`StockEntry`**: Material Receipt, Issue, and Warehouse Transfer.
+- **`StockLedgerEntry`**: Perpetual inventory valuation (Kardex FIFO) generating automated COGS and stock asset ledger movements.
 
-### 4.2 Workflows & Scenarios
-```
-[ Quotation ] ──> [ Sales Order ] ──┬──> [ Delivery Note ] (Stock deduction & COGS)
-                                    └──> [ Sales Invoice ] (Accounts Receivable & Revenue)
-```
-- **Rule SE-01 (Three-Way Sales Matching):**
-  The system tracks `DeliveredQuantity` vs `BilledQuantity` on each `SalesOrderItem`. A Sales Order is only `Completed` when all items are 100% delivered and 100% billed.
-- **Rule SE-02 (Customer Credit Limit Check):**
-  If `Customer.EnforceCreditLimit == true`, confirming a Sales Order or posting an invoice is blocked if total outstanding balance exceeds the customer's credit limit.
+#### Scenario ST-01: Perpetual Inventory Receipt & Valuation
+- **Given** a purchase receipt of 100 units of `Widget-A` at $10.00/unit
+- **When** the stock receipt is submitted into warehouse `Stores - North`
+- **Then** a `StockLedgerEntry` is created for +100 units valued at $1,000.00
+- **And** a balanced `GLEntry` is booked: Debit `1310 - Stock In Hand` ($1,000.00), Credit `2120 - Stock Received But Not Billed` ($1,000.00).
 
----
-
-## 5. Module 4: Buying (Ciclo de Compras & Aprovisionamiento)
-
-*ERPNext Parity: `erpnext/buying/doctype`*
-
-### 5.1 DocTypes & Entities
-- **`Supplier` (Proveedor):** Name, Tax ID, Supplier Group, Default Payable Account, Payment Terms.
-- **`PurchaseOrder` (Orden de Compra):** Binding agreement to purchase goods/services at agreed prices.
-- **`PurchaseReceipt` (Recepción de Mercancía):** Physical intake of goods at warehouse. Increases stock and credits `Stock Received But Not Billed` interim account.
-- **`PurchaseInvoice` (Factura de Proveedor):** Vendor bill. Debits `Stock Received But Not Billed` and output VAT, and credits Accounts Payable.
-
-### 5.2 Workflows & Scenarios
-```
-[ Purchase Order ] ──┬──> [ Purchase Receipt ] (Stock increment & Interim Accrual)
-                     └──> [ Purchase Invoice ] (Extinguishes Interim Accrual & Books Accounts Payable)
-```
-- **Rule BU-01 (Accrual Accounting on Goods Receipt):**
-  When items arrive before the vendor invoice:
-  - **Debit:** `Stock In Hand (Asset)` = $\text{Qty} \times \text{ValuationRate}$
-  - **Credit:** `Stock Received But Not Billed (Interim Liability)` = $\text{Qty} \times \text{ValuationRate}$.
-  When the vendor invoice arrives:
-  - **Debit:** `Stock Received But Not Billed` (clearing the interim liability)
-  - **Debit:** `Input VAT / Tax Recoverable`
-  - **Credit:** `Accounts Payable (Supplier Liability)`.
+#### Scenario ST-02: FIFO Costing Layer Consumption on Delivery Note
+- **Given** inventory layers for `Widget-A`: 50 units @ $10.00, followed by 50 units @ $12.00
+- **When** a `DeliveryNote` fulfills a sales order for 60 units
+- **Then** the FIFO engine consumes 50 units @ $10.00 ($500.00) + 10 units @ $12.00 ($120.00) = $620.00 total COGS
+- **And** the GL posting debits `Cost of Goods Sold` ($620.00) and credits `Stock In Hand` ($620.00).
 
 ---
 
-## 6. Financial Reporting & Executive Analytics Parity
+## 5. Module 4: Selling & Point of Sale (POS)
 
-The system provides 6 core financial reports mirroring ERPNext's standard statements:
+*ERPNext Parity: `erpnext/selling/doctype` & `pos_controller.js`*
 
-1. **Balance Sheet (Balance General):** Assets, Liabilities, and Equity evaluated as of a specific date.
-2. **Profit and Loss (Estado de Resultados):** Revenues, COGS, Operating Expenses, and Net Profit for a period.
-3. **Trial Balance (Balance de Comprobación):** Verifies ledger integrity ($\sum \text{Debits} == \sum \text{Credits}$).
-4. **General Ledger (Libro Mayor):** Chronological audit trail per account.
-5. **Accounts Receivable Aging (Antigüedad de Saldos Clientes):** Buckets (0-30, 31-60, 61-90, 90+ days).
-6. **Stock Ledger / Inventory Valuation (Kardex):** Inflow, outflow, and closing balance per item and warehouse.
+- **Selling Cycle:** `Customer` $\to$ `Quotation` $\to$ `SalesOrder` $\to$ `DeliveryNote` $\to$ `SalesInvoice`.
+- **Point of Sale (POS):** Offline-first / high-speed cashier checkout interface.
+
+#### Scenario SL-01: Customer Credit Limit Breach Protection
+- **Given** a Customer with Credit Limit $5,000.00 and current outstanding debt of $4,800.00
+- **When** a sales operator attempts to submit a new `SalesInvoice` for $450.00 on credit terms
+- **Then** the total exposure ($5,250.00) exceeds the allowed limit
+- **And** the posting is blocked with `CreditLimitExceededException` unless approved by a Credit Manager override.
+
+#### Scenario POS-01: High-Speed POS Checkout & Atomic Settlement
+- **Given** an active retail POS Cashier Session
+- **When** the cashier scans 3 items totaling $45.00 and accepts cash payment of $50.00
+- **Then** a `SalesInvoice` is created with `IsPOS = true`
+- **And** an atomic `GLEntry` debits `Cash In Drawer` ($45.00), credits `Sales Revenue` ($40.00), credits `Tax Payable` ($5.00)
+- **And** stock is immediately relieved from the retail store warehouse
+- **And** the POS UI displays change due of $5.00 with receipt printing triggered.
+
+---
+
+## 6. Module 5: Buying & Procurement
+
+*ERPNext Parity: `erpnext/buying/doctype` & `buying_controller.py`*
+
+- **Buying Cycle:** `Supplier` $\to$ `PurchaseOrder` $\to$ `PurchaseReceipt` $\to$ `PurchaseInvoice`.
+- **Accrual Interim Liability:** Goods arrival creates interim liability `Stock Received But Not Billed`.
+
+#### Scenario BY-01: Three-Way Matching & Bill Approval
+- **Given** a `PurchaseReceipt` for 10 units @ $100.00 posted against `Stock Received But Not Billed` ($1,000.00)
+- **When** the supplier's `PurchaseInvoice` arrives for 10 units @ $100.00 + $100.00 VAT
+- **Then** posting the invoice debits `Stock Received But Not Billed` ($1,000.00), debits `Input Tax Recoverable` ($100.00)
+- **And** credits `Accounts Payable` ($1,100.00), clearing the interim liability completely.
+
+---
+
+## 7. Module 6: Manufacturing & Scheduling
+
+*ERPNext Parity: `erpnext/manufacturing/doctype` & `engine.py`*
+
+- **`BOM` (Bill of Materials):** Hierarchical engineering recipe defining raw material requirements, scrap allowances, and operations cost.
+- **`WorkOrder`:** Production order scheduling execution dates, tracking WIP (Work In Progress), and consuming stock.
+
+#### Scenario MF-01: Production Run & WIP Stock Transfer
+- **Given** a submitted `WorkOrder` for 10 units of `Finished Assembly` with an active BOM
+- **When** raw materials are issued to production
+- **Then** stock entries transfer inventory from `Raw Material Store` to `Work In Progress Warehouse`
+- **And** upon completion of the manufacturing run, stock is transferred to `Finished Goods Store` with actualized manufacturing cost (materials + direct labor + overhead absorption).

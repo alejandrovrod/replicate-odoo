@@ -3,13 +3,12 @@
 **Project:** Multi-Tenant Cloud ERP Core  
 **Methodology:** Strategic & Tactical Domain-Driven Design (DDD)  
 **Status:** APPROVED & MANDATORY  
-**Target Domain:** Enterprise Accounting, Sales Invoicing & Treasury Reconciliation  
+**Target Domain:** Enterprise Accounting, Banking Operations, Sales Invoicing & Treasury Reconciliation  
+**Architectural Parity:** ERPNext Core & Banking App Architecture (`gitdiagram.com/frappe/erpnext`)  
 
 ---
 
 ## 1. Strategic Design: Ubiquitous Language (Lenguaje Ubicuo)
-
-The following terms define the shared, unambiguous language between financial domain experts, auditors, and software engineers:
 
 | Term (Ubiquitous Language) | Spanish Equivalent | Business Definition & Boundary |
 | :--- | :--- | :--- |
@@ -21,15 +20,19 @@ The following terms define the shared, unambiguous language between financial do
 | **General Ledger (GL)** | Libro Mayor | The immutable central repository of all financial transactions recorded as debits and credits. |
 | **GL Entry** | Asiento / Línea de Mayor | An atomic, immutable record in the General Ledger representing a single debit or credit movement. |
 | **Double-Entry Balance** | Partida Doble | The fundamental accounting law stating that total debits must equal total credits for any voucher ($\sum D = \sum C$). |
+| **Bank Account** | Cuenta Bancaria | A record linking a real-world commercial bank account with a specific GL Account. |
+| **Bank Statement Import** | Importación de Extracto | A batch document representing an uploaded financial statement file (OFX, QIF, CSV, MT940). |
+| **Bank Transaction** | Transacción Bancaria | A staging entity representing an unconfirmed debit or credit line recorded by the bank. |
+| **Bank Transaction Rule** | Regla de Transacción Bancaria | A configurable heuristic rule (matching description, regex, or amount) that auto-assigns vouchers or accounts to bank transactions. |
+| **Bank Reconciliation Tool** | Conciliador Bancario | A dual-sided engine matching external Bank Transactions against internal GL Entries or Payment Entries. |
+| **Voucher Dialog** | Diálogo de Creación Rápida | A UI modal allowing immediate on-the-fly creation of missing payment vouchers directly from unmatched bank lines. |
 | **Sales Invoice** | Factura de Venta | A commercial claim for payment issued to a Customer for goods or services delivered. |
 | **Payment Entry** | Recibo de Pago / Cobro | A treasury transaction recording the inflow of money into a liquid asset account (Bank/Cash). |
 | **Payment Allocation** | Asignación de Pago | The association between a Payment Entry and a Sales Invoice, reducing the invoice's outstanding balance. |
 | **Outstanding Amount** | Saldo Pendiente | The remaining unpaid monetary value of a posted invoice ($\text{GrandTotal} - \sum \text{Allocations}$). |
 | **Advance Payment** | Anticipo de Cliente | The unallocated surplus of a payment where $\text{PaidAmount} > \sum \text{AllocatedAmount}$. |
 | **Fiscal Period Lock** | Cierre de Periodo Fiscal | An administrative boundary preventing any new or altered entries within a closed date range. |
-| **Reversal Entry** | Contrasiento / Anulación | A compensatory transaction created to nullify an existing voucher by posting opposite debits and credits. |
-| **Realized FX Gain/Loss** | Ganancia/Pérdida Cambiaria | Financial variance resulting from differences in exchange rates between invoice posting date and payment date. |
-| **Withholding Tax** | Retención de Impuesto | Direct tax deduction withheld by the customer and paid to tax authorities on behalf of the issuer. |
+| **Point of Sale (POS)** | Punto de Venta | High-speed retail checkout cashier session submitting instant invoices with immediate cash/card payments. |
 
 ---
 
@@ -38,23 +41,27 @@ The following terms define the shared, unambiguous language between financial do
 ```mermaid
 graph TD
     subgraph Core Domain
-        GLContext["General Ledger & Accounting Context<br/>- Chart of Accounts<br/>- Double-Entry Ledger Engine<br/>- Fiscal Period Lock<br/>- Multi-Currency FX Engine"]
+        GLContext["General Ledger & Accounting Context<br/>- Chart of Accounts<br/>- Double-Entry Ledger Engine<br/>- Fiscal Period Lock"]
+        BankOpsContext["Banking Operations Context<br/>- Bank Statement Import<br/>- Bank Transaction Staging<br/>- Transaction Rules Engine<br/>- Bank Reconciliation Tool"]
     end
 
     subgraph Supporting Domains
-        InvoiceContext["Sales Invoicing Context<br/>- Customer Invoices<br/>- Tax Calculations & Retentions<br/>- Credit Control Enforcement"]
+        InvoiceContext["Sales Invoicing & POS Context<br/>- Customer Invoices<br/>- Retail POS Sessions<br/>- Tax Calculations & Retentions"]
+        BuyingContext["Purchasing & Procurement Context<br/>- Supplier Bills<br/>- Goods Receipts & Accruals"]
         PaymentContext["Treasury & Payments Context<br/>- Bank/Cash Receipts<br/>- Debt Reconciliation<br/>- Customer Advances"]
-        MasterDataContext["Tenant & Master Data Context<br/>- Tenant Hierarchy<br/>- Legal Companies<br/>- Party (Customer/Supplier)"]
+        MasterDataContext["Tenant & Master Data Context<br/>- Tenant Hierarchy<br/>- Legal Companies<br/>- Bank Account Profiles"]
     end
 
     subgraph Generic Subdomains
-        ReportingContext["Financial Analytics Context<br/>- Balance Sheet<br/>- Trial Balance<br/>- Aging Reports (30/60/90)"]
+        ReportingContext["Financial Analytics Context<br/>- Balance Sheet<br/>- Trial Balance<br/>- Bank Reconciliation Statement"]
     end
 
-    MasterDataContext -->|"Shared Kernel (Tenant/Company Id)"| GLContext
-    MasterDataContext -->|"Customer Profiles"| InvoiceContext
-    MasterDataContext -->|"Bank Accounts"| PaymentContext
+    MasterDataContext -->|"Shared Kernel"| GLContext
+    MasterDataContext -->|"Bank Profiles"| BankOpsContext
+    BankOpsContext -->|"Reconciles Staging Lines with"| GLContext
+    BankOpsContext -->|"Auto-Generates Vouchers"| PaymentContext
     InvoiceContext -->|"Posts Financial Vouchers (Downstream)"| GLContext
+    BuyingContext -->|"Posts Accruals & Bills"| GLContext
     PaymentContext -->|"Posts Receipts & Reversals"| GLContext
     PaymentContext -->|"Extinguishes Debt (Allocates To)"| InvoiceContext
     GLContext -->|"Read-Only Projections"| ReportingContext
@@ -64,218 +71,117 @@ graph TD
 
 ## 3. Tactical Design: Aggregates, Entities & Value Objects
 
-### 3.1 Aggregate 1: `SalesInvoice` (Billing Bounded Context)
+### 3.1 Aggregate: `BankTransaction` & `BankStatementImport` (Banking Operations)
 
-- **Aggregate Root:** `SalesInvoice`
-- **Internal Entities:** `SalesInvoiceItem`
-- **Value Objects:**
-  - `Money` (`Amount: decimal`, `Currency: string`)
-  - `TaxRate` (`Percentage: decimal`, `TaxType: string`)
-  - `InvoiceStatus` (`Draft`, `Posted`, `PartiallyPaid`, `Paid`, `Cancelled`)
-  - `VoucherNumber` (e.g. `SINV-2026-00001`)
+- **Aggregate Root 1:** `BankStatementImport`
+  - Properties: `TenantId`, `CompanyId`, `BankAccountId`, `FileName`, `ImportDate`, `TotalTransactionsCount`, `ImportStatus` (`Pending`, `Processed`, `Failed`).
+- **Aggregate Root 2:** `BankTransaction` (Staging Entity)
+  - Properties:
+    - `TenantId`, `CompanyId`, `BankAccountId`
+    - `TransactionDate: DateOnly`
+    - `Deposit: decimal` (Inflow / Money In)
+    - `Withdrawal: decimal` (Outflow / Money Out)
+    - `Description: string` (Raw bank statement line narrative)
+    - `ReferenceNumber: string` (Check number / wire transfer reference)
+    - `BankPartyName: string` (Extracted payer/payee string)
+    - `Status: BankTransactionStatus` (`Unreconciled`, `Matched`, `Reconciled`, `Excluded`)
+    - `AllocatedAmount: decimal`
+    - `MatchedVoucherType: string?` (`Payment Entry`, `Sales Invoice`, `Journal Entry`)
+    - `MatchedVoucherId: Guid?`
 
-#### Invariants & Business Rules of `SalesInvoice`:
-1. **State Machine Invariant:**
-   - Edits (adding/removing items, changing quantities/prices) are permitted **only** when `Status == Draft`.
-   - Once `Status == Posted`, the invoice becomes strictly read-only.
-2. **Item Line Calculation Invariant:**
-   $$\text{LineTotal} = \text{Round}(\text{Quantity} \times \text{UnitPrice}, 4)$$
-   $$\text{TaxAmount} = \text{Round}(\text{LineTotal} \times (\text{TaxRatePercentage} / 100), 4)$$
-3. **Grand Total Invariant:**
-   $$\text{SubTotal} = \sum \text{LineTotal}$$
-   $$\text{TaxTotal} = \sum \text{TaxAmount}$$
-   $$\text{GrandTotal} = \text{SubTotal} + \text{TaxTotal}$$
-4. **Posting Pre-conditions:**
-   - Must contain at least one line item ($\text{Items.Count} \ge 1$).
-   - `PostingDate` must fall within an open fiscal period.
-   - Customer must have a configured `DefaultReceivableAccountId`.
+#### Invariants & Business Rules of `BankTransaction`:
+1. **Staging Isolation Invariant:** Importing a bank statement line creates a `BankTransaction` in **staging**, not a General Ledger entry. No accounting entries exist until formal reconciliation or voucher generation takes place.
+2. **Mutual Inflow/Outflow Exclusivity:** Either `Deposit > 0` and `Withdrawal == 0`, or `Withdrawal > 0` and `Deposit == 0`. Both cannot be positive.
+3. **Exact Amount Matching Invariant:** A `BankTransaction` can be marked `Reconciled` only when the matched voucher amount exactly equals the bank transaction net amount ($\text{Deposit} - \text{Withdrawal}$).
+4. **Multi-Voucher Split Matching:** A single bank transaction may reconcile against multiple invoices/payments provided $\sum \text{VoucherAmounts} == \text{BankTransaction.Amount}$.
 
 ---
 
-### 3.2 Aggregate 2: `Account` (General Ledger Bounded Context)
+### 3.2 Aggregate: `BankTransactionRule` (Automated Matching Engine)
 
-- **Aggregate Root:** `Account`
-- **Value Objects:**
-  - `AccountCode` (e.g. `1110.01`)
-  - `RootType` (`Asset`, `Liability`, `Equity`, `Income`, `Expense`)
+- **Aggregate Root:** `BankTransactionRule`
+- **Properties:**
+  - `RuleName: string`
+  - `BankAccountId: Guid?` (Null = applies across all accounts)
+  - `ConditionType: MatchCondition` (`Contains`, `StartsWith`, `RegexMatch`, `AmountEquals`)
+  - `Pattern: string`
+  - `TargetPartyType: string` (`Customer` or `Supplier`)
+  - `TargetPartyId: Guid?`
+  - `AutoCreateVoucher: bool`
+  - `TargetExpenseAccountId: Guid?` (e.g. for bank fees or interest)
 
-#### Invariants & Business Rules of `Account`:
-1. **Leaf-Posting Invariant:** Direct ledger postings (`GLEntry`) are permitted **only** if `IsGroup == false`. Attempting to post to an account where `IsGroup == true` throws `GroupAccountPostingException`.
-2. **Root Type Inheritance Invariant:** A child account must inherit the `RootType` of its parent account.
-3. **Delete Invariant:** An account cannot be deleted if it has at least one child account OR at least one historical `GLEntry`.
-
----
-
-### 3.3 Aggregate 3: `PaymentEntry` (Treasury Bounded Context)
-
-- **Aggregate Root:** `PaymentEntry`
-- **Internal Entities:** `PaymentAllocation`
-- **Value Objects:**
-  - `PaymentType` (`Receive`, `Pay`, `InternalTransfer`)
-  - `PaymentStatus` (`Draft`, `Submitted`, `Cancelled`)
-
-#### Invariants & Business Rules of `PaymentEntry`:
-1. **Positive Cash Invariant:** `PaidAmount` must be strictly greater than zero ($> 0.0000$).
-2. **Anti-Overpayment Invariant:**
-   $$\forall \text{ allocation}_i: \text{allocation}_i.\text{AllocatedAmount} \le \text{Invoice}_i.\text{OutstandingAmount}$$
-   An allocation cannot exceed the current debt of the target invoice.
-3. **Advance Payment Calculation:**
-   $$\text{AllocatedAmount} = \sum \text{allocation}_i.\text{AllocatedAmount}$$
-   $$\text{UnallocatedAmount} = \text{PaidAmount} - \text{AllocatedAmount}$$
-   If $\text{UnallocatedAmount} > 0$, it is stored as an advance credit associated with the customer.
-4. **Invoice State Transition Rules:**
-   - If $\text{Invoice}.\text{OutstandingAmount} == 0 \implies \text{Status} = \text{Paid}$.
-   - If $0 < \text{Invoice}.\text{OutstandingAmount} < \text{GrandTotal} \implies \text{Status} = \text{PartiallyPaid}$.
+#### Rule Evaluation Logic:
+When a bank statement is imported:
+1. The engine iterates over each `BankTransaction` in `Unreconciled` status.
+2. It evaluates active `BankTransactionRule` records ordered by priority.
+3. If a pattern matches (e.g., description contains `STRIPE PAYOUT`):
+   - Automatically identifies the Customer/Supplier.
+   - If `AutoCreateVoucher == true` and an unambiguous open invoice exists, it creates a `PaymentEntry` and sets `Status = Matched`.
 
 ---
 
-### 3.4 Aggregate 4: `GLEntry` (Immutable Core Ledger)
+### 3.3 Aggregate: `SalesInvoice` & Point of Sale (`POSInvoice`)
 
-- **Entity / Record:** `GLEntry`
-- **Invariants:**
-  1. **Strict Double-Entry Zero-Sum:**
-     $$\sum \text{Debit} - \sum \text{Credit} = 0.0000$$
-     Any transaction failing this check is immediately rejected.
-  2. **Non-Negative Monies:** $\text{Debit} \ge 0$ and $\text{Credit} \ge 0$.
-  3. **Mutual Exclusivity:** A single `GLEntry` row must have either $\text{Debit} > 0$ or $\text{Credit} > 0$, but never both simultaneously.
-  4. **Append-Only Immutability:** No `UPDATE` or `DELETE` allowed.
-
----
-
-## 4. Tactical Design: Domain Events
-
-```csharp
-namespace Erp.Domain.Events;
-
-public record SalesInvoiceCreatedDomainEvent(Guid InvoiceId, Guid CustomerId, decimal GrandTotal);
-public record SalesInvoicePostedDomainEvent(Guid InvoiceId, string DocumentNumber, Guid CustomerId, decimal GrandTotal);
-public record SalesInvoiceCancelledDomainEvent(Guid InvoiceId, string Reason);
-
-public record PaymentReceivedDomainEvent(Guid PaymentId, Guid CustomerId, decimal PaidAmount);
-public record PaymentAllocatedToInvoiceDomainEvent(Guid PaymentId, Guid InvoiceId, decimal AllocatedAmount, decimal RemainingInvoiceBalance);
-public record InvoiceFullyPaidDomainEvent(Guid InvoiceId, string DocumentNumber);
-public record InvoicePartiallyPaidDomainEvent(Guid InvoiceId, string DocumentNumber, decimal RemainingBalance);
-
-public record GeneralLedgerVoucherPostedDomainEvent(string VoucherType, string VoucherNo, decimal TotalBalance);
-```
+- **Standard Sales Invoice:** As detailed in Section 3.1, enforces double-entry rules upon post.
+- **POS Invoicing Variant (`POSInvoice`):**
+  - High-speed cashier checkout.
+  - Combines invoice creation and payment into a single atomic transaction:
+    - **Debit:** Cash / Card Clearing Account (Immediate Payment).
+    - **Credit:** Sales Revenue Account.
+    - **Credit:** Taxes Payable.
+  - Status immediately transitions to `Paid` with zero remaining balance.
 
 ---
 
-## 5. Domain Services
+### 3.4 Aggregate: `Account` & `GLEntry` (Core Accounting)
 
-### 5.1 `InvoicePostingDomainService`
-- **Responsibility:** Orchestrates invoice transition to `Posted`, queries customer receivable account, verifies double-entry balance, and inserts atomic ledger entries.
-
-### 5.2 `PaymentReconciliationDomainService`
-- **Responsibility:** Validates payment allocations against open invoices, updates outstanding balances, assigns advance credits, and generates balanced bank-to-receivable ledger entries.
-
----
-
-## 6. Multi-Currency & Foreign Exchange Gain/Loss Policy
-
-In global commerce, invoices and payments may be denominated in foreign currencies ($C_{\text{doc}}$) differing from the Company Operating Currency ($C_{\text{base}}$).
-
-### 6.1 Policy Rules
-1. **Base Currency Representation:** Every `GLEntry` stores the amount in both Document Currency (`Debit`, `Credit`) and Operating Currency (`DebitBase`, `CreditBase`) using the exchange rate effective on `PostingDate`.
-2. **Realized Foreign Exchange Variance (Diferencial Cambiario):**
-   When a payment settles an invoice at an exchange rate different from the invoice's posting rate:
-   - Calculate Base Currency Invoice Value: $V_{\text{inv}} = \text{AllocatedAmount} \times R_{\text{invoice}}$
-   - Calculate Base Currency Payment Value: $V_{\text{pay}} = \text{AllocatedAmount} \times R_{\text{payment}}$
-   - Calculate Variance: $\Delta_{\text{FX}} = V_{\text{pay}} - V_{\text{inv}}$
-   - **If $\Delta_{\text{FX}} > 0$ (Exchange Gain):**
-     - Credit: `4210 - Realized Foreign Exchange Gain` (Income Account).
-   - **If $\Delta_{\text{FX}} < 0$ (Exchange Loss):**
-     - Debit: `5210 - Realized Foreign Exchange Loss` (Expense Account).
-3. **Ledger Invariant:** Even with currency conversions, operating currency debits and credits must balance exactly: $\sum \text{DebitBase} = \sum \text{CreditBase}$.
+- **`Account`**: Leaf posting accounts vs group folder accounts (`IsGroup`).
+- **`GLEntry`**:
+  - Invariant 1: $\sum \text{Debit} - \sum \text{Credit} = 0.0000$.
+  - Invariant 2: Append-Only immutability.
+  - Invariant 3: `Account.IsGroup == false`.
 
 ---
 
-## 7. Tax Engine & Withholding Policy (Retenciones de Impuestos)
+## 4. State Transition Matrices & Business Invariants
 
-Enterprise accounting requires supporting standard output taxes (VAT / IVA) and customer tax withholdings (Retenciones).
+### 4.1 `BankTransaction` State Transition Matrix
+| Current State | Allowed Event / Trigger | Next State | Side Effects & Domain Invariants |
+| :--- | :--- | :--- | :--- |
+| `Unreconciled` | Import / Heuristic Match | `Matched` | `BankTransactionRule` assigns candidate voucher/party. Staging only; no GL entries. |
+| `Unreconciled` | User Exclude / Ignore | `Excluded` | Line marked as non-operational (e.g. erroneous bank charge reversed next day). |
+| `Matched` | User / Auto Reconciliation | `Reconciled` | Matched against `PaymentEntry` or `GLEntry`. Clearance date stamped on Bank Account. |
+| `Unreconciled` | Voucher Dialog Quick Create | `Reconciled` | Atomic creation of `GLEntry` (Expense/Journal) + instant reconciliation. |
+| `Matched` | Rule Unmatch / Discard | `Unreconciled` | Candidate voucher cleared. Staging remains unreconciled. |
+| `Reconciled` | Reverse Reconciliation | `Unreconciled` | Permitted only by Finance Manager. Unlinks voucher, removes clearance date, recalculates statement difference. |
+| `Excluded` | Restore Transaction | `Unreconciled` | Restores line for active reconciliation. |
 
-### 7.1 Tax Types & Computational Rules
-1. **Sales VAT / IVA (Output Tax):**
-   - Booked to a Liability Account (`2110 - Taxes Payable / IVA por Pagar`).
-   - Added to the customer's total payable debt: $\text{GrandTotal} = \text{SubTotal} + \text{TaxTotal}$.
-2. **Withholding Tax (Retención de Impuestos):**
-   - In jurisdictions requiring B2B tax withholding, the customer deducts tax at source and pays it directly to the tax authority.
-   - Deducted from Accounts Receivable and booked to an Asset Prepayment Account (`1130 - Tax Withheld at Source / Anticipo de Impuestos`):
-     - **Debit:** Accounts Receivable = $\text{GrandTotal} - \text{WithholdingAmount}$.
-     - **Debit:** Tax Withheld at Source = $\text{WithholdingAmount}$.
-     - **Credit:** Sales Revenue = $\text{SubTotal}$.
-     - **Credit:** VAT Payable = $\text{TaxTotal}$.
+### 4.2 `SalesInvoice` State Transition Matrix
+| Current State | Allowed Event / Trigger | Next State | Side Effects & Domain Invariants |
+| :--- | :--- | :--- | :--- |
+| `Draft` | Post / Submit Invoice | `Unpaid` | Generates balanced `GLEntry` (Debit A/R, Credit Revenue, Credit Taxes). Updates Customer outstanding debt. |
+| `Draft` | Delete / Discard | `Deleted` | Permitted only in Draft. Physical soft delete without ledger footprint. |
+| `Unpaid` | Partial Payment Allocation | `PartiallyPaid` | Deducts allocated amount from `OutstandingAmount`. |
+| `Unpaid` / `PartiallyPaid` | Full Payment Allocation | `Paid` | `OutstandingAmount` reaches exactly $0.0000. |
+| `Unpaid` / `PartiallyPaid` | Cancel / Credit Note | `Cancelled` | Posts reversing `GLEntry` with counter-values. Disallows direct deletion once posted. |
 
----
-
-## 8. Fiscal Calendar & Period Lock Engine (Cierre de Periodo)
-
-To comply with accounting compliance frameworks, historical financial records must be protected from backdated tampering.
-
-### 8.1 Period Statuses & Lock Rules
-1. **Open Period:** Normal posting, drafts, and payments permitted.
-2. **Soft Close:** Only designated Financial Controllers can post entries. Standard billing clerks are blocked.
-3. **Hard Close (Locked Period):** No postings, reversals, or adjustments permitted on or before `LockDate`. Attempting to post throws `FiscalPeriodLockedException`.
-4. **Year-End Closing (Cierre Anual):**
-   - At fiscal year end, a zero-out voucher automatically computes Net Income:
-     $$\text{NetIncome} = \sum \text{Income Accounts} - \sum \text{Expense Accounts}$$
-   - Clears all nominal Income and Expense accounts to zero balance.
-   - Transfers `NetIncome` into Equity account `3120 - Retained Earnings / Resultados Acumulados`.
+### 4.3 `PaymentEntry` State Transition Matrix
+| Current State | Allowed Event / Trigger | Next State | Side Effects & Domain Invariants |
+| :--- | :--- | :--- | :--- |
+| `Draft` | Post Payment | `Submitted` | Posts `GLEntry` (Debit Bank/Cash, Credit A/R). Decrements target invoice outstanding balance. |
+| `Submitted` | Bank Statement Match | `Cleared` | Matches imported `BankTransaction`. Stamps `ClearanceDate`. |
+| `Submitted` | Reverse / Cancel Payment | `Cancelled` | Reverses `GLEntry`, restores invoice outstanding debt. Permitted only if period is unlocked. |
 
 ---
 
-## 9. Customer Credit Control & Aging Policy
+## 5. Multi-Currency, FX Variance & Tax Withholding Invariants
 
-To prevent bad debt exposure, the system evaluates customer solvency prior to invoice submission.
-
-### 9.1 Rules & Constraints
-1. **Credit Limit Check:**
-   $$\text{CurrentExposure} = \sum \text{Unpaid Invoices} + \text{CurrentInvoice}.\text{GrandTotal} - \text{AdvanceCredits}$$
-   If $\text{CurrentExposure} > \text{Customer}.\text{CreditLimit}$ and $\text{Customer}.\text{EnforceCreditLimit} == \text{true}$:
-   - Invoice posting is blocked with `CreditLimitExceededException` unless explicitly overridden by an authorized Credit Manager.
-2. **Aging Buckets:**
-   Accounts Receivable are categorized dynamically by days past due:
-   - **Current:** $0 - 30$ days.
-   - **Tier 1:** $31 - 60$ days.
-   - **Tier 2:** $61 - 90$ days.
-   - **Delinquent:** $> 90$ days (automatically flags customer as on Credit Hold).
-
----
-
-## 10. Cash Discount & Early Payment Terms (Pronto Pago)
-
-### 10.1 Business Rules
-1. **Payment Terms Definition:** A term (e.g., `2/10 Net 30`) grants a 2% discount if payment is received within 10 days of the invoice date.
-2. **Discount Accounting Posting:**
-   When an early payment discount is applied:
-   - Debit: Bank Account for the discounted cash received.
-   - Debit: `5120 - Sales Cash Discounts Allowed` (Expense / Contra-Revenue account) for the discount amount.
-   - Credit: Accounts Receivable for the full gross invoice amount.
-   - Result: Invoice status is marked `Paid` with zero remaining balance.
-
----
-
-## 11. Exhaustive State Transition Matrix
-
-### 11.1 Sales Invoice State Matrix
-
-| Current State | Target State | Triggering Action | Allowed? | Pre-conditions & Validation | Resulting System Effect |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `Draft` | `Posted` | `PostInvoiceCommand` | **YES** | At least 1 item; open fiscal period; balanced ledger preview; valid credit limit. | Assigns voucher sequence; inserts immutable `GLEntry` records; sets `OutstandingAmount = GrandTotal`. |
-| `Draft` | `Cancelled` | `CancelDraftCommand` | **YES** | User confirmation. | Flags invoice as `Cancelled`. No ledger entries ever existed. |
-| `Posted` | `Draft` | *Any* | **NO** | Disallowed by Article III (Immutability). | Throws `InvalidStateTransitionException`. |
-| `Posted` | `PartiallyPaid`| `AllocatePaymentCommand` | **YES** | $0 < \text{Allocated} < \text{OutstandingAmount}$. | Deducts allocated amount from `OutstandingAmount`. |
-| `Posted` | `Paid` | `AllocatePaymentCommand` | **YES** | $\text{Allocated} == \text{OutstandingAmount}$. | Sets `OutstandingAmount = 0.0000`. |
-| `Posted` | `Cancelled` | `CancelPostedInvoiceCommand`| **YES** | No allocations exist ($\text{Allocations.Count} == 0$). | Generates balanced reversal `GLEntry` records. |
-| `PartiallyPaid`| `Cancelled` | *Any* | **NO** | Must un-allocate / cancel linked payments first. | Throws `InvoiceHasLinkedPaymentsException`. |
-| `Paid` | `Cancelled` | *Any* | **NO** | Must cancel linked payments first. | Throws `InvoiceHasLinkedPaymentsException`. |
-
-### 11.2 Payment Entry State Matrix
-
-| Current State | Target State | Triggering Action | Allowed? | Pre-conditions & Validation | Resulting System Effect |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `Draft` | `Submitted` | `PostPaymentCommand` | **YES** | $\text{PaidAmount} > 0$; allocations $\le$ invoice balances; open fiscal period. | Debits Bank, Credits A/R; updates invoice outstanding amounts; sets surplus as Advance. |
-| `Draft` | `Cancelled` | `CancelDraftCommand` | **YES** | None. | Deletes draft payment cleanly. |
-| `Submitted` | `Cancelled` | `CancelPaymentCommand` | **YES** | Valid cancellation reason; open fiscal period. | Inserts reversal `GLEntry` records; restores `OutstandingAmount` on every linked invoice. |
-| `Submitted` | `Draft` | *Any* | **NO** | Disallowed by Article III. | Throws `InvalidStateTransitionException`. |
-| `Cancelled` | *Any* | *Any* | **NO** | Cancelled payments are terminal. | Throws `TerminalStateModificationException`. |
+1. **Realized Foreign Exchange Gain/Loss Formula:**
+   $$\text{FX Variance} = \text{PaidAmount}_{\text{base}} - (\text{SettledForeignAmount} \times \text{InvoiceExchangeRate})$$
+   - If variance $> 0$: Credit `Realized FX Gain` (4210).
+   - If variance $< 0$: Debit `Realized FX Loss` (5210).
+2. **Fiscal Period Hard Lock Invariant:**
+   - Any command modifying or inserting records where `PostingDate <= Company.FiscalLockDate` is immediately rejected with `FiscalPeriodLockedException`.
+3. **Tax Withholding & Retention Invariant:**
+   - Applicable withholding taxes (e.g. VAT withholding, income tax retention) reduce the net payable to the supplier while creating a direct tax authority liability entry:
+   $$\text{Debit Expense/Inventory} = \text{Net} + \text{VAT}, \quad \text{Credit Retention Liability} = \text{Retention}, \quad \text{Credit Accounts Payable} = \text{Total} - \text{Retention}$$

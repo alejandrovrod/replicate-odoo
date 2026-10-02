@@ -52,19 +52,19 @@ This document provides granular, atomic, testable tasks for human engineers and 
 
 ## Phase 2: Master Data & Chart of Accounts (COA)
 
-- [ ] **Task 2.1: Domain Model `Account` & Hierarchical Tree**
+- [x] **Task 2.1: Domain Model `Account` & Hierarchical Tree**
   - **Action:** In `Erp.Domain`, create `Account` entity (Asset, Liability, Equity, Income, Expense, ParentAccountId, IsGroup).
   - **Acceptance:** Unit tests verify validation logic (e.g. root account cannot have invalid parent).
 
-- [ ] **Task 2.2: Configure SQL Server 2025 Temporal Table**
+- [x] **Task 2.2: Configure SQL Server 2025 Temporal Table**
   - **Action:** In `Erp.Infrastructure`, configure `AccountConfiguration` using EF Core `.IsTemporal(t => t.UseHistoryTable("AccountHistory"))`.
   - **Acceptance:** Updating an account code preserves previous record in `AccountHistory` with valid UTC timestamp period.
 
-- [ ] **Task 2.3: CQRS Queries & Tree Builder**
+- [x] **Task 2.3: CQRS Queries & Tree Builder**
   - **Action:** In `Erp.Application`, implement `CreateAccountCommand` and `GetAccountTreeQuery`.
   - **Acceptance:** `GetAccountTreeQuery` returns hierarchical nested JSON structure of accounts.
 
-- [ ] **Task 2.4: React `AccountTreeTable` UI**
+- [x] **Task 2.4: React `AccountTreeTable` UI**
   - **Action:** In `erp-client/src/features/accounting`, build the collapsible tree-table with expand/collapse and inline status indicators.
   - **Acceptance:** Tree displays hierarchical accounts correctly with zero layout shift.
 

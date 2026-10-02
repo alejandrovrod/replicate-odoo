@@ -1,0 +1,77 @@
+import axios, { type AxiosError } from 'axios'
+import { getTenantId } from '../store/useTenantStore'
+
+/**
+ * Single entry point for every network call (Constitution Article VII.3).
+ *
+ * - Injects `X-Tenant-ID` automatically from the tenant store.
+ * - Normalizes RFC 7807 `ProblemDetails` failures into `ApiError`, so callers can branch on
+ *   `status` / `code` instead of re-parsing response bodies.
+ * - Talks to `/api` only: `vite.config.ts` proxies it to the Aspire API's HTTPS endpoint
+ *   (`UseHttpsRedirection` would otherwise 307 every call off-origin), which keeps the SPA
+ *   free of hardcoded hosts/ports and avoids CORS entirely.
+ */
+export interface ProblemDetails {
+  type?: string
+  title?: string
+  status?: number
+  detail?: string
+  instance?: string
+  code?: string
+}
+
+export class ApiError extends Error {
+  readonly status: number
+  readonly code?: string
+  readonly title?: string
+
+  constructor(status: number, title: string, detail: string, code?: string) {
+    super(detail || title)
+    this.name = 'ApiError'
+    this.status = status
+    this.title = title
+    this.code = code
+  }
+}
+
+export const apiClient = axios.create({
+  baseURL: '/api',
+  headers: { 'Content-Type': 'application/json' },
+})
+
+apiClient.interceptors.request.use((config) => {
+  const tenantId = getTenantId()
+  if (tenantId) {
+    config.headers['X-Tenant-ID'] = tenantId
+  }
+  return config
+})
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ProblemDetails>) => {
+    const status = error.response?.status ?? 0
+    const problem = error.response?.data
+
+    // Request never reached a server (DNS, offline, CORS, aborted): surface it with status 0.
+    if (status === 0) {
+      return Promise.reject(new ApiError(0, 'Network Error', error.message))
+    }
+
+    if (problem && typeof problem === 'object') {
+      const extensions = problem as ProblemDetails & Record<string, unknown>
+      return Promise.reject(
+        new ApiError(
+          status,
+          problem.title ?? 'Request Failed',
+          problem.detail ?? error.message,
+          problem.code ?? (typeof extensions.code === 'string' ? extensions.code : undefined),
+        ),
+      )
+    }
+
+    return Promise.reject(
+      new ApiError(status, `HTTP ${status}`, error.message || 'Unexpected server response.'),
+    )
+  },
+)

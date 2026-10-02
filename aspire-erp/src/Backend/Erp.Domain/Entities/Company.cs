@@ -44,6 +44,28 @@ public class Company : ITenantEntity
     /// </summary>
     public string? StockReceivedAccountCode { get; set; }
 
+    /// <summary>
+    /// Company-level GL default for vendor bills (Tasks 4.3, same decision D3 code-not-FK shape as
+    /// <see cref="StockReceivedAccountCode"/>): the ACCOUNT CODE credited with the gross payable,
+    /// e.g. "2110 - Accounts Payable". Debited indirectly: the invoice credits it for
+    /// net + Input Tax (spec BY-01).
+    /// </summary>
+    public string? AccountsPayableAccountCode { get; set; }
+
+    /// <summary>
+    /// Company-level GL default for recoverable input tax (decision D3, Task 4.3): the ACCOUNT
+    /// CODE debited with <c>PurchaseInvoice.TaxAmount</c>, e.g. "1130 - Input Tax Recoverable"
+    /// (spec BY-01: Debit Input Tax Recoverable $100.00).
+    /// </summary>
+    public string? InputTaxRecoverableAccountCode { get; set; }
+
+    /// <summary>
+    /// Company-level GL default for purchase price variances (decision D3, Task 4.3): the ACCOUNT
+    /// CODE that absorbs the difference when the billed rate differs from the received rate,
+    /// e.g. "5120 - Purchase Price Difference". Only resolved when a variance actually exists.
+    /// </summary>
+    public string? PriceDifferenceAccountCode { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public Tenant? Tenant { get; set; }

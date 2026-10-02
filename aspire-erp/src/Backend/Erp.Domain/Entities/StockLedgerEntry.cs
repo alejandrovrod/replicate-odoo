@@ -29,10 +29,21 @@ public class StockLedgerEntry : ITenantEntity
 
     public Warehouse? Warehouse { get; set; }
 
-    /// <summary>Voucher that produced this row.</summary>
-    public Guid StockEntryId { get; set; }
+    /// <summary>
+    /// Stock voucher that produced this row - set when the source is a <see cref="StockEntry"/>.
+    /// NULLABLE since Phase 4: PurchaseReceipt rows carry <see cref="VoucherType"/>/
+    /// <see cref="VoucherNo"/> instead (module-agnostic provenance, the same shape GLEntry uses),
+    /// because the Kardex is fed by every stock-moving document, not only stock vouchers.
+    /// </summary>
+    public Guid? StockEntryId { get; set; }
 
     public StockEntry? StockEntry { get; set; }
+
+    /// <summary>Source document type, e.g. "StockEntry" or "PurchaseReceipt" (mirrors GLEntry.VoucherType).</summary>
+    public string VoucherType { get; set; } = string.Empty;
+
+    /// <summary>Source document number, e.g. "MR-2026-00001" or "PR-2026-00001" (gapless - Constitution III.4).</summary>
+    public string VoucherNo { get; set; } = string.Empty;
 
     public DateOnly PostingDate { get; set; }
 

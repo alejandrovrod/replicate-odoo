@@ -32,6 +32,12 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.AllowNegativeStock).HasColumnType("bit").HasDefaultValue(false);
         builder.Property(c => c.StockReceivedAccountCode).HasMaxLength(50);
 
+        // Phase 4 additions (Task 4.3, decision D3): the buying-side GL defaults - Accounts
+        // Payable, Input Tax Recoverable and the purchase price difference account.
+        builder.Property(c => c.AccountsPayableAccountCode).HasMaxLength(50);
+        builder.Property(c => c.InputTaxRecoverableAccountCode).HasMaxLength(50);
+        builder.Property(c => c.PriceDifferenceAccountCode).HasMaxLength(50);
+
         builder.Property(c => c.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(c => c.Tenant)

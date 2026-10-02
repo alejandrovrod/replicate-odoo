@@ -92,17 +92,17 @@ This document provides granular, atomic, testable tasks for human engineers and 
 
 ## Phase 4: Buying Cycle (Compras & Aprovisionamiento)
 
-- [ ] **Task 4.1: Domain Models `Supplier`, `PurchaseOrder`, and `PurchaseReceipt`**
+- [x] **Task 4.1: Domain Models `Supplier`, `PurchaseOrder`, and `PurchaseReceipt`**
   - **Action:** In `Erp.Domain`, implement `Supplier`, `PurchaseOrder`, `PurchaseReceipt`, and `PurchaseInvoice`.
   - **Acceptance:** Entities support multi-step procurement workflow (`Draft` -> `Ordered` -> `Received` -> `Billed`).
 
-- [ ] **Task 4.2: Accrual Accounting on Goods Receipt (Interim Liability)**
+- [x] **Task 4.2: Accrual Accounting on Goods Receipt (Interim Liability)**
   - **Action:** When `PurchaseReceipt` posts:
     - Debit: Stock In Hand (Inventory Asset)
     - Credit: Stock Received But Not Billed (Interim Liability).
   - **Acceptance:** Warehouse quantities increase and interim liability account reflects received goods value.
 
-- [ ] **Task 4.3: Vendor Bill Clearance (`PurchaseInvoice`)**
+- [x] **Task 4.3: Vendor Bill Clearance (`PurchaseInvoice`)**
   - **Action:** Posting `PurchaseInvoice` clears the interim liability and books Accounts Payable + Input VAT.
   - **Acceptance:** `Stock Received But Not Billed` balance zeroes out for matching quantities; Accounts Payable reflects vendor debt.
 

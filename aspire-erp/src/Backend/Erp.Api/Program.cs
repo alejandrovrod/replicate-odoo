@@ -6,6 +6,8 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Accounts.Commands;
 using Erp.Application.Features.Accounts.Queries;
+using Erp.Application.Features.Buying.Commands;
+using Erp.Application.Features.Buying.Queries;
 using Erp.Application.Features.Items.Commands;
 using Erp.Application.Features.Items.Queries;
 using Erp.Application.Features.Stock.Commands;
@@ -69,6 +71,23 @@ builder.Services.AddScoped<ICommandHandler<CreateWarehouseCommand, Result<Wareho
 builder.Services.AddScoped<IQueryHandler<GetWarehousesQuery, IReadOnlyList<WarehouseTreeNodeDto>>, GetWarehousesQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateStockEntryCommand, Result<StockEntryPostingDto>>, CreateStockEntryCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetStockEntriesQuery, IReadOnlyList<StockEntryDto>>, GetStockEntriesQueryHandler>();
+
+// Buying Cycle (Tasks 4.1-4.3): supplier master, purchase order workflow and the buying posting
+// engine (accrual on receipt, interim clearance + A/P + Input Tax on invoice). Same split as the
+// stock module: repositories in Erp.Infrastructure, handlers and services in Erp.Application.
+builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+builder.Services.AddScoped<IPurchasePostingService, PurchasePostingService>();
+
+builder.Services.AddScoped<ICommandHandler<CreateSupplierCommand, Result<SupplierDto>>, CreateSupplierCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSuppliersQuery, IReadOnlyList<SupplierDto>>, GetSuppliersQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<CreatePurchaseOrderCommand, Result<PurchaseOrderDto>>, CreatePurchaseOrderCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitPurchaseOrderCommand, Result<PurchaseOrderDto>>, SubmitPurchaseOrderCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPurchaseOrdersQuery, IReadOnlyList<PurchaseOrderDto>>, GetPurchaseOrdersQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<PostPurchaseReceiptCommand, Result<PurchaseReceiptPostingDto>>, PostPurchaseReceiptCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPurchaseReceiptsQuery, IReadOnlyList<PurchaseReceiptDto>>, GetPurchaseReceiptsQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<PostPurchaseInvoiceCommand, Result<PurchaseInvoicePostingDto>>, PostPurchaseInvoiceCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPurchaseInvoicesQuery, IReadOnlyList<PurchaseInvoiceDto>>, GetPurchaseInvoicesQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

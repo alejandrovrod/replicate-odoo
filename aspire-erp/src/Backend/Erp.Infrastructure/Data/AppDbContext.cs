@@ -47,6 +47,14 @@ public class AppDbContext : DbContext
 
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+
+    public DbSet<PurchaseReceipt> PurchaseReceipts => Set<PurchaseReceipt>();
+
+    public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

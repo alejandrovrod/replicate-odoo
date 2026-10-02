@@ -138,6 +138,8 @@ public sealed class StockPostingService : IStockPostingService
             foreach (var entry in ledger)
             {
                 entry.StockEntryId = stockEntry.Id;
+                entry.VoucherType = VoucherType;
+                entry.VoucherNo = stockEntry.VoucherNo;
             }
 
             foreach (var glLine in glLines)

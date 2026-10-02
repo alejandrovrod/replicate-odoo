@@ -20,6 +20,13 @@ public sealed class FakeAccountRepository : IAccountRepository
     /// <summary>Answer returned by FindActiveLeafByCodeAsync for company-level GL defaults.</summary>
     public IReadOnlyList<Account> AccountsByCode { get; set; } = Array.Empty<Account>();
 
+    /// <summary>
+    /// Per-code answers for FindActiveLeafByCodeAsync (the buying engine resolves several company
+    /// codes - 2120 / 2110 / 1130 / 5120 - in the same posting). Keys not present fall back to
+    /// <see cref="AccountsByCode"/>, which keeps the stock tests working unchanged.
+    /// </summary>
+    public Dictionary<string, IReadOnlyList<Account>> AccountsByCodeMap { get; } = new();
+
     public void Seed(params Account[] accounts) => _accounts.AddRange(accounts);
 
     public Task AddAsync(Account account, CancellationToken cancellationToken = default)
@@ -48,5 +55,6 @@ public sealed class FakeAccountRepository : IAccountRepository
         Guid companyId,
         string accountCode,
         CancellationToken cancellationToken = default)
-        => Task.FromResult(AccountsByCode);
+        => Task.FromResult(
+            AccountsByCodeMap.TryGetValue(accountCode, out var mapped) ? mapped : AccountsByCode);
 }

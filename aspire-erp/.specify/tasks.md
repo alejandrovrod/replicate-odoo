@@ -84,7 +84,7 @@ This document provides granular, atomic, testable tasks for human engineers and 
   - **Action:** Enforce anti-negative stock rule if company policy forbids negative inventory.
   - **Acceptance:** Attempting to issue more stock than currently available in warehouse throws `InsufficientStockException`.
 
-- [ ] **Task 3.4: React Inventory UI (Item List & Warehouse View)**
+- [x] **Task 3.4: React Inventory UI (Item List & Warehouse View)**
   - **Action:** Build `ItemList` with stock levels and `StockEntryModal` in `erp-client/src/features/stock`.
   - **Acceptance:** Users can create stock entries and view updated stock levels in real time.
 

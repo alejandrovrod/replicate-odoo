@@ -34,6 +34,11 @@ var sql = builder
     .WithHostPort(HostPorts.SqlServer)
     .WithHealthCheck("sqlserver-tcp");
 
+// Task 1.4: expose the erp-db catalog as ConnectionStrings:erp-db for Erp.Api (AddDbContext) and
+// for `dotnet ef database update`. NOTE: Aspire only builds the connection string - it does NOT
+// create the catalog, so the database must exist in the container (verified out-of-band).
+var sqlDb = sql.AddDatabase("erp-db");
+
 var redis = builder
     .AddRedis("erp-redis", port: HostPorts.Redis)
     .WithHostPort(HostPorts.Redis)
@@ -43,6 +48,7 @@ var redis = builder
 // NOT registered here - Task 0.3's DoD is a standalone `npm run build` + dev server.
 builder.AddProject<Projects.Erp_Api>("erp-api")
     .WithReference(sql)
+    .WithReference(sqlDb)
     .WithReference(redis)
     .WaitFor(sql)
     .WaitFor(redis);

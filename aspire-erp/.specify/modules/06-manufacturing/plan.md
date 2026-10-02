@@ -39,10 +39,17 @@ CREATE TABLE BOM (
     OperatingCost DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     ScrapCost DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     TotalCost DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
+    ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+    ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+    PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo),
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_BOM_Quantity CHECK (Quantity > 0.0000),
+    CONSTRAINT CK_BOM_Costs CHECK (RawMaterialCost >= 0.0000 AND OperatingCost >= 0.0000 AND TotalCost >= 0.0000),
     CONSTRAINT FK_BOM_Item FOREIGN KEY (ItemId) REFERENCES Item(Id),
     CONSTRAINT FK_BOM_UOM FOREIGN KEY (UomId) REFERENCES UOM(Id)
-);
+) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.BOMHistory));
+
+CREATE NONCLUSTERED INDEX IX_BOM_Tenant_Item ON BOM (TenantId, CompanyId, ItemId, IsActive);
 
 -- 3. BOM Component Item
 CREATE TABLE BOMItem (
@@ -54,6 +61,9 @@ CREATE TABLE BOMItem (
     ValuationRate DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     Amount DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     ScrapPercentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    CONSTRAINT CK_BOMItem_Quantity CHECK (Quantity > 0.0000),
+    CONSTRAINT CK_BOMItem_Rate CHECK (ValuationRate >= 0.0000),
+    CONSTRAINT CK_BOMItem_Amount CHECK (Amount >= 0.0000),
     CONSTRAINT FK_BOMItem_BOM FOREIGN KEY (BomId) REFERENCES BOM(Id) ON DELETE CASCADE,
     CONSTRAINT FK_BOMItem_Item FOREIGN KEY (ItemId) REFERENCES Item(Id)
 );
@@ -76,15 +86,37 @@ CREATE TABLE WorkOrder (
     PlannedEndDate DATE NOT NULL,
     ActualStartDate DATE NULL,
     ActualEndDate DATE NULL,
+    RowVersion ROWVERSION NOT NULL,
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_WorkOrder_Quantities CHECK (QuantityToProduce > 0.0000 AND ProducedQuantity >= 0.0000),
     CONSTRAINT FK_WorkOrder_Item FOREIGN KEY (ProductionItemId) REFERENCES Item(Id),
     CONSTRAINT FK_WorkOrder_BOM FOREIGN KEY (BomId) REFERENCES BOM(Id)
 );
+
+CREATE NONCLUSTERED INDEX IX_WorkOrder_Tenant_Status ON WorkOrder (TenantId, CompanyId, Status);
 ```
 
 ---
 
-## 2. Cost Capitalization Engine
+## 2. Domain Error Catalog & Exception Contracts
+
+```csharp
+namespace Erp.Domain.Manufacturing.Errors;
+
+public static class ManufacturingErrorCodes
+{
+    public const string InactiveBOM = "MFG_INACTIVE_BOM";
+    public const string CircularReference = "MFG_BOM_CIRCULAR_REF";
+    public const string InsufficientRawMaterials = "MFG_INSUFFICIENT_RAW_MATERIALS";
+    public const string InvalidWipWarehouse = "MFG_INVALID_WIP_WAREHOUSE";
+    public const string WorkOrderAlreadyCompleted = "MFG_WO_ALREADY_COMPLETED";
+    public const string WorkstationUnavailable = "MFG_WORKSTATION_UNAVAILABLE";
+}
+```
+
+---
+
+## 3. Cost Capitalization Engine
 
 ```csharp
 namespace Erp.Domain.Services;

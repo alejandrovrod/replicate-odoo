@@ -29,6 +29,7 @@ CREATE TABLE Customer (
     ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo),
+    CONSTRAINT CK_Customer_CreditLimit CHECK (CreditLimit >= 0.0000),
     CONSTRAINT FK_Customer_Company FOREIGN KEY (CompanyId) REFERENCES Company(Id),
     CONSTRAINT FK_Customer_Account FOREIGN KEY (DefaultReceivableAccountId) REFERENCES Account(Id)
 ) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.CustomerHistory));
@@ -51,7 +52,9 @@ CREATE TABLE SalesOrder (
     GrandTotal DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     DeliveredPercentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
     BilledPercentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    RowVersion ROWVERSION NOT NULL,
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_SalesOrder_Totals CHECK (NetTotal >= 0.0000 AND TaxTotal >= 0.0000 AND GrandTotal >= 0.0000),
     CONSTRAINT FK_SalesOrder_Customer FOREIGN KEY (CustomerId) REFERENCES Customer(Id)
 );
 
@@ -65,6 +68,9 @@ CREATE TABLE SalesOrderItem (
     BilledQuantity DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     Rate DECIMAL(18,4) NOT NULL,
     Amount DECIMAL(18,4) NOT NULL,
+    CONSTRAINT CK_SalesOrderItem_Quantity CHECK (Quantity > 0.0000),
+    CONSTRAINT CK_SalesOrderItem_Rate CHECK (Rate >= 0.0000),
+    CONSTRAINT CK_SalesOrderItem_Amount CHECK (Amount >= 0.0000),
     CONSTRAINT FK_SalesOrderItem_Header FOREIGN KEY (SalesOrderId) REFERENCES SalesOrder(Id) ON DELETE CASCADE,
     CONSTRAINT FK_SalesOrderItem_Item FOREIGN KEY (ItemId) REFERENCES Item(Id)
 );
@@ -87,7 +93,9 @@ CREATE TABLE SalesInvoice (
     GrandTotal DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     OutstandingAmount DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     PaidAmount DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
+    RowVersion ROWVERSION NOT NULL,
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_SalesInvoice_Totals CHECK (NetTotal >= 0.0000 AND TaxTotal >= 0.0000 AND GrandTotal >= 0.0000),
     CONSTRAINT FK_SalesInvoice_Customer FOREIGN KEY (CustomerId) REFERENCES Customer(Id)
 );
 

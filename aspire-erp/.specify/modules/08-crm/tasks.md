@@ -28,3 +28,12 @@
 - [ ] **Task 11.5: React Sales Funnel & Pipeline Board UI**
   - **Action:** Build Kanban opportunity pipeline board in `erp-client` with drag-and-drop stage updates.
   - **Acceptance:** Dragging opportunity across stages automatically recalculates weighted forecast banner.
+
+- [ ] **Task 11.6: Idempotent Webhook Lead Intake & Re-opening Handlers**
+  - **Action:** Implement idempotency filter for marketing webhook ingestion and command handler for re-opening closed lost deals.
+  - **Acceptance:** Replaying duplicate webhook payload returns cached result; re-opening lost deal sets stage to Negotiation cleanly.
+
+- [ ] **Task 11.7: CRM Forecasting & Conversion Unit & Integration Tests**
+  - **Action:** Write automated unit tests for weighted pipeline calculation and integration tests for lead-to-customer conversion.
+  - **Acceptance:** 100% test pass on probability bounds, loss reason enforcement, and optimistic concurrency locks.
+

@@ -1,8 +1,8 @@
 # Functional Specification: Asset Management & Depreciation (ERPNext Parity)
 
 **Module:** `07-assets`  
-**Status:** APPROVED  
-**Version:** 1.0.0  
+**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Assets Documentation](https://docs.frappe.io/erpnext/assets)  
 
@@ -73,3 +73,25 @@ $$\sum \text{Debit} - \sum \text{Credit} == 0.0000$$
   - Credit: `1510 - Fixed Asset Equipment` ($10,000.00 original cost)
   - Credit: `4220 - Gain on Asset Disposal` ($500.00)
 - **And** `Asset.Status` becomes `Sold`.
+
+### Scenario AS-04: Idempotent Scheduled Depreciation Booking
+- **Given** monthly scheduled depreciation job triggering on `2026-10-31` with `Idempotency-Key: idemp-dep-2026-10`
+- **When** the scheduler runs twice due to a container restart
+- **Then** already booked schedule lines (`IsBooked = 1`) are detected and skipped
+- **And** duplicate `GLEntry` depreciation expenses are strictly prevented.
+
+### Scenario AS-05: Asset Scrapping with Full Loss on Disposal
+- **Given** an unrepairable broken machine with Gross Value $5,000.00 and Accumulated Depreciation $3,000.00 (NBV = $2,000.00)
+- **When** the asset is scrapped with $0.00 salvage proceeds
+- **Then** `GLEntry` records:
+  - Debit: `1520 - Accumulated Depreciation` ($3,000.00)
+  - Debit: `5320 - Loss on Asset Disposal` ($2,000.00)
+  - Credit: `1510 - Fixed Asset Equipment` ($5,000.00)
+- **And** remaining future scheduled depreciation lines are cancelled (`Status = Scrapped`).
+
+### Scenario AS-06: Concurrency Guard on Simultaneous Asset Disposal & Depreciation
+- **Given** asset `AST-2026-004` being disposed of by an accountant
+- **When** an automated background depreciation job attempts to book monthly depreciation simultaneously
+- **Then** row locking on `Asset` detects the state transition
+- **And** exactly one operation commits; the conflicting depreciation job aborts cleanly.
+

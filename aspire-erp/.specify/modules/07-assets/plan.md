@@ -23,10 +23,13 @@ CREATE TABLE AssetCategory (
     CwipAccountId UNIQUEIDENTIFIER NULL,
     IsNonDepreciable BIT NOT NULL DEFAULT 0,
     IsActive BIT NOT NULL DEFAULT 1,
+    ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+    ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+    PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo),
     CONSTRAINT FK_AssetCategory_FixedAsset FOREIGN KEY (FixedAssetAccountId) REFERENCES Account(Id),
     CONSTRAINT FK_AssetCategory_AccumDep FOREIGN KEY (AccumulatedDepreciationAccountId) REFERENCES Account(Id),
     CONSTRAINT FK_AssetCategory_DepExpense FOREIGN KEY (DepreciationExpenseAccountId) REFERENCES Account(Id)
-);
+) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.AssetCategoryHistory));
 
 -- 2. Fixed Asset Master
 CREATE TABLE Asset (
@@ -46,10 +49,18 @@ CREATE TABLE Asset (
     TotalNumberOfDepreciations INT NOT NULL,
     FrequencyInMonths INT NOT NULL DEFAULT 1,
     Status NVARCHAR(30) NOT NULL DEFAULT 'Draft', -- Draft, Submitted, Capitalized, FullyDepreciated, Sold, Scrapped
+    RowVersion ROWVERSION NOT NULL,
+    ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+    ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+    PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo),
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_Asset_Values CHECK (GrossPurchaseAmount > 0.0000 AND SalvageValue >= 0.0000 AND AccumulatedDepreciation >= 0.0000),
+    CONSTRAINT CK_Asset_Periods CHECK (TotalNumberOfDepreciations > 0 AND FrequencyInMonths > 0),
     CONSTRAINT FK_Asset_Item FOREIGN KEY (ItemId) REFERENCES Item(Id),
     CONSTRAINT FK_Asset_Category FOREIGN KEY (AssetCategoryId) REFERENCES AssetCategory(Id)
-);
+) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.AssetHistory));
+
+CREATE NONCLUSTERED INDEX IX_Asset_Tenant_Category ON Asset (TenantId, CompanyId, AssetCategoryId, Status);
 
 -- 3. Asset Depreciation Schedule (Scheduled Amortization)
 CREATE TABLE AssetDepreciationSchedule (
@@ -60,13 +71,33 @@ CREATE TABLE AssetDepreciationSchedule (
     AccumulatedDepreciationAfter DECIMAL(18,4) NOT NULL,
     IsBooked BIT NOT NULL DEFAULT 0,
     JournalEntryId UNIQUEIDENTIFIER NULL,
+    CONSTRAINT CK_DepSchedule_Amount CHECK (DepreciationAmount > 0.0000),
     CONSTRAINT FK_DepSchedule_Asset FOREIGN KEY (AssetId) REFERENCES Asset(Id) ON DELETE CASCADE
 );
+
+CREATE NONCLUSTERED INDEX IX_AssetDepSchedule_Date ON AssetDepreciationSchedule (ScheduleDate, IsBooked);
 ```
 
 ---
 
-## 2. Depreciation Schedule Generation Algorithm
+## 2. Domain Error Catalog & Exception Contracts
+
+```csharp
+namespace Erp.Domain.Assets.Errors;
+
+public static class AssetErrorCodes
+{
+    public const string AssetAlreadyCapitalized = "ASSET_ALREADY_CAPITALIZED";
+    public const string SalvageValueExceedsCost = "ASSET_SALVAGE_EXCEEDS_COST";
+    public const string DepreciatedPastSalvage = "ASSET_DEPRECIATED_PAST_SALVAGE";
+    public const string DisposalBeforeCapitalization = "ASSET_DISPOSAL_BEFORE_CAPITALIZED";
+    public const string InactiveCategory = "ASSET_INACTIVE_CATEGORY";
+}
+```
+
+---
+
+## 3. Depreciation Schedule Generation Algorithm
 
 ```csharp
 namespace Erp.Domain.Services;

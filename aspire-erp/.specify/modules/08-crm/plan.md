@@ -27,8 +27,13 @@ CREATE TABLE Lead (
     ConvertedOpportunityId UNIQUEIDENTIFIER NULL,
     ConvertedCustomerId UNIQUEIDENTIFIER NULL,
     IsActive BIT NOT NULL DEFAULT 1,
+    ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+    ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+    PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo),
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
-);
+) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.LeadHistory));
+
+CREATE NONCLUSTERED INDEX IX_Lead_Tenant_Status ON Lead (TenantId, CompanyId, Status);
 
 -- 2. Commercial Opportunity
 CREATE TABLE Opportunity (
@@ -48,8 +53,16 @@ CREATE TABLE Opportunity (
     Status NVARCHAR(30) NOT NULL DEFAULT 'Open', -- Open, Won, Lost, Expired
     LossReason NVARCHAR(MAX) NULL,
     AssignedSalespersonId UNIQUEIDENTIFIER NULL,
-    CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
-);
+    RowVersion ROWVERSION NOT NULL,
+    ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+    ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+    PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo),
+    CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_Opportunity_Amount CHECK (OpportunityAmount >= 0.0000),
+    CONSTRAINT CK_Opportunity_Probability CHECK (Probability >= 0.00 AND Probability <= 100.00)
+) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.OpportunityHistory));
+
+CREATE NONCLUSTERED INDEX IX_Opportunity_Tenant_Stage ON Opportunity (TenantId, CompanyId, Stage, Status);
 
 -- 3. CRM Activity & Follow-Up Log
 CREATE TABLE CRMActivity (
@@ -67,7 +80,23 @@ CREATE TABLE CRMActivity (
 
 ---
 
-## 2. Weighted Pipeline Calculation
+## 2. Domain Error Catalog & Exception Contracts
+
+```csharp
+namespace Erp.Domain.Crm.Errors;
+
+public static class CRMErrorCodes
+{
+    public const string LossReasonRequired = "CRM_LOSS_REASON_REQUIRED";
+    public const string OpportunityAlreadyClosed = "CRM_OPPORTUNITY_ALREADY_CLOSED";
+    public const string LeadAlreadyConverted = "CRM_LEAD_ALREADY_CONVERTED";
+    public const string InvalidProbabilityRange = "CRM_INVALID_PROBABILITY_RANGE";
+}
+```
+
+---
+
+## 3. Weighted Pipeline Calculation
 
 ```csharp
 namespace Erp.Domain.Services;

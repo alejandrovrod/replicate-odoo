@@ -28,3 +28,12 @@
 - [ ] **Task 4.5: React Procurement Studio UI**
   - **Action:** Build `BuyingOverview.tsx` in `erp-client` with purchase order status list, receipt approval modals, and vendor aging cards.
   - **Acceptance:** Real-time visibility into unbilled receipts.
+
+- [ ] **Task 4.6: Idempotent Submission & Reversal Handlers**
+  - **Action:** Implement `Idempotency-Key` pipeline and `CancelPurchaseInvoiceCommandHandler` booking reversing `GLEntry` records.
+  - **Acceptance:** Replaying an identical bill returns cached response; cancellation zeroes Accounts Payable cleanly.
+
+- [ ] **Task 4.7: 3-Way Matching Concurrency & Integration Tests**
+  - **Action:** Write integration tests verifying concurrent billing against single receipt and asserting overbilling prevention.
+  - **Acceptance:** 100% of overbilling edge cases are blocked with `OverbillingNotAllowedException`.
+

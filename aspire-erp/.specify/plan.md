@@ -7,17 +7,17 @@
 **Architectural Parity:** ERPNext Architecture Diagram (`banking/src/App.tsx`, `gl_entry.py`, `accounts_controller.py`, `pos_controller.js`, `buying_controller.py`)  
 
 ### Modular Technical Plans (GitHub Spec Kit Triad: Spec · Plan · Tasks):
-| Module | Functional Spec | Technical Plan | Tasks Roadmap |
-| :--- | :--- | :--- | :--- |
-| **01. Accounting & General Ledger** | [spec.md](./modules/01-accounting/spec.md) | [plan.md](./modules/01-accounting/plan.md) | [tasks.md](./modules/01-accounting/tasks.md) |
-| **02. Stock & Inventory (Kardex FIFO)** | [spec.md](./modules/02-stock/spec.md) | [plan.md](./modules/02-stock/plan.md) | [tasks.md](./modules/02-stock/tasks.md) |
-| **03. Selling & Point of Sale (POS)** | [spec.md](./modules/03-selling/spec.md) | [plan.md](./modules/03-selling/plan.md) | [tasks.md](./modules/03-selling/tasks.md) |
-| **04. Buying & Procurement** | [spec.md](./modules/04-buying/spec.md) | [plan.md](./modules/04-buying/plan.md) | [tasks.md](./modules/04-buying/tasks.md) |
-| **05. Banking & Reconciliation Subsystem** | [spec.md](./modules/05-banking/spec.md) | [plan.md](./modules/05-banking/plan.md) | [tasks.md](./modules/05-banking/tasks.md) |
-| **06. Manufacturing & Production (BOM)** | [spec.md](./modules/06-manufacturing/spec.md) | [plan.md](./modules/06-manufacturing/plan.md) | [tasks.md](./modules/06-manufacturing/tasks.md) |
-| **07. Asset Management & Depreciation** | [spec.md](./modules/07-assets/spec.md) | [plan.md](./modules/07-assets/plan.md) | [tasks.md](./modules/07-assets/tasks.md) |
-| **08. CRM & Sales Pipeline** | [spec.md](./modules/08-crm/spec.md) | [plan.md](./modules/08-crm/plan.md) | [tasks.md](./modules/08-crm/tasks.md) |
-| **09. Human Resources & Payroll** | [spec.md](./modules/09-hr-payroll/spec.md) | [plan.md](./modules/09-hr-payroll/plan.md) | [tasks.md](./modules/09-hr-payroll/tasks.md) |
+| Module | Certification | Functional Spec | Technical Plan | Tasks Roadmap |
+| :--- | :---: | :--- | :--- | :--- |
+| **01. Accounting & General Ledger** | `100% CERTIFIED` | [spec.md](./modules/01-accounting/spec.md) | [plan.md](./modules/01-accounting/plan.md) | [tasks.md](./modules/01-accounting/tasks.md) |
+| **02. Stock & Inventory (Kardex FIFO)** | `100% CERTIFIED` | [spec.md](./modules/02-stock/spec.md) | [plan.md](./modules/02-stock/plan.md) | [tasks.md](./modules/02-stock/tasks.md) |
+| **03. Selling & Point of Sale (POS)** | `100% CERTIFIED` | [spec.md](./modules/03-selling/spec.md) | [plan.md](./modules/03-selling/plan.md) | [tasks.md](./modules/03-selling/tasks.md) |
+| **04. Buying & Procurement** | `100% CERTIFIED` | [spec.md](./modules/04-buying/spec.md) | [plan.md](./modules/04-buying/plan.md) | [tasks.md](./modules/04-buying/tasks.md) |
+| **05. Banking & Reconciliation Subsystem** | `100% CERTIFIED` | [spec.md](./modules/05-banking/spec.md) | [plan.md](./modules/05-banking/plan.md) | [tasks.md](./modules/05-banking/tasks.md) |
+| **06. Manufacturing & Production (BOM)** | `100% CERTIFIED` | [spec.md](./modules/06-manufacturing/spec.md) | [plan.md](./modules/06-manufacturing/plan.md) | [tasks.md](./modules/06-manufacturing/tasks.md) |
+| **07. Asset Management & Depreciation** | `100% CERTIFIED` | [spec.md](./modules/07-assets/spec.md) | [plan.md](./modules/07-assets/plan.md) | [tasks.md](./modules/07-assets/tasks.md) |
+| **08. CRM & Sales Pipeline** | `100% CERTIFIED` | [spec.md](./modules/08-crm/spec.md) | [plan.md](./modules/08-crm/plan.md) | [tasks.md](./modules/08-crm/tasks.md) |
+| **09. Human Resources & Payroll** | `100% CERTIFIED` | [spec.md](./modules/09-hr-payroll/spec.md) | [plan.md](./modules/09-hr-payroll/plan.md) | [tasks.md](./modules/09-hr-payroll/tasks.md) |
 
 ---
 

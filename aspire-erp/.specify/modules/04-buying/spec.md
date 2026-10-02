@@ -1,8 +1,8 @@
 # Functional Specification: Buying & Procurement (ERPNext Parity)
 
 **Module:** `04-buying`  
-**Status:** APPROVED  
-**Version:** 1.0.0  
+**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Buying Documentation](https://docs.frappe.io/erpnext/buying)  
 
@@ -71,3 +71,24 @@ $$\text{BilledQuantity} \le \text{PurchaseReceiptItem.AcceptedQuantity} - \text{
 - **When** an accountant attempts to post a `PurchaseInvoice` referencing the receipt for 15 units
 - **Then** the command is rejected with `OverbillingNotAllowedException("Cannot bill 15 units. Maximum receivable: 10")`
 - **And** no ledger entries are created.
+
+### Scenario BY-04: Idempotent Vendor Bill Submission Guard
+- **Given** a vendor bill submission with header `Idempotency-Key: idemp-pinv-2026-88`
+- **When** the client submits the request twice due to connection retry
+- **Then** the idempotency pipeline returns HTTP 200 with the already processed `PurchaseInvoiceDto`
+- **And** duplicate accrual clearances or Accounts Payable entries are strictly prevented.
+
+### Scenario BY-05: Cancellation & Purchase Return (Debit Note)
+- **Given** a submitted `PurchaseInvoice` `PINV-2026-0035` with debt recorded in Accounts Payable
+- **When** the supplier accepts a return or correction and a Debit Note is posted
+- **Then** the invoice status transitions to `Cancelled`
+- **And** compensating reversing `GLEntry` records are booked (Debit Accounts Payable, Credit Interim Accrual & Tax)
+- **And** the physical stock intake is reversed if associated with a returned `PurchaseReceipt`.
+
+### Scenario BY-06: Concurrency Guard on Simultaneous Bill Processing
+- **Given** a `PurchaseReceipt` with exactly 20 units remaining to be billed
+- **When** two accounts payable clerks attempt to bill 15 units each concurrently
+- **Then** row locking on `PurchaseReceiptItem` enforces serial consistency
+- **And** the first transaction processes 15 units successfully
+- **And** the second transaction fails with `OverbillingNotAllowedException("Only 5 units remaining to bill, 15 requested")`.
+

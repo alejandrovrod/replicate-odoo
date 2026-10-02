@@ -28,3 +28,12 @@
 - [ ] **Task 10.5: Asset Disposal & Gain/Loss Balancing**
   - **Action:** Implement `DisposeAssetCommand` creating balanced ledger entries upon sale or scrap.
   - **Acceptance:** Clears asset cost and accumulated depreciation; books difference to gain/loss on disposal.
+
+- [ ] **Task 10.6: Idempotent Depreciation Runner & Reversal Handlers**
+  - **Action:** Implement idempotency filter for scheduled depreciation runs and reversal handler for erroneous asset disposals.
+  - **Acceptance:** Multiple executions of monthly batch do not double-book depreciation expenses; reversal restores NBV.
+
+- [ ] **Task 10.7: Depreciation Schedule & Disposal Unit & Integration Tests**
+  - **Action:** Write automated unit tests for salvage value invariant verification and integration tests asserting balanced `GLEntry` on disposal.
+  - **Acceptance:** 100% test pass on schedule generation rounding and disposal gain/loss calculations.
+

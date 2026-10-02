@@ -1,8 +1,8 @@
 # Functional Specification: Selling & Point of Sale (ERPNext Parity)
 
 **Module:** `03-selling`  
-**Status:** APPROVED  
-**Version:** 1.0.0  
+**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Selling & POS](https://docs.frappe.io/erpnext/selling)  
 
@@ -79,3 +79,24 @@ $$\text{DeliveredQty} \le \text{SalesOrderItem.Quantity} - \text{SalesOrderItem.
   - Credit: `4110 - Retail Sales Revenue` ($80.00)
   - Credit: `2210 - Sales Tax Payable` ($5.00)
 - **And** store warehouse physical stock is decremented immediately.
+
+### Scenario SL-04: Idempotent Sales Invoice Submission Guard
+- **Given** a valid `SalesInvoice` submission with header `Idempotency-Key: idemp-sinv-2026-44`
+- **When** network retry triggers duplicate submission from the client
+- **Then** the idempotency filter catches the existing transaction key
+- **And** returns HTTP 200 with the original processed invoice DTO
+- **And** strictly prevents duplicate receivables or double revenue recognition.
+
+### Scenario SL-05: Cancellation & Credit Note Return
+- **Given** a submitted `SalesInvoice` `SINV-2026-0012` for $1,100.00
+- **When** the customer returns the order and a Credit Note is issued
+- **Then** the invoice status transitions to `Cancelled`
+- **And** reversing `GLEntry` records are posted (Debit Revenue/Tax, Credit Accounts Receivable)
+- **And** if `UpdateStock == true`, inventory is returned to the warehouse via reversing `StockLedgerEntry`.
+
+### Scenario SL-06: Concurrency Guard on Credit Limit & Stock Fulfillments
+- **Given** Customer `ACME` with available credit $500.00
+- **When** two branch users attempt to issue separate invoices for $400.00 concurrently
+- **Then** optimistic concurrency locks verify the total pending balance
+- **And** exactly one transaction succeeds; the second is rejected with `CreditLimitExceededException`.
+

@@ -49,7 +49,9 @@ CREATE TABLE PurchaseOrder (
     GrandTotal DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     ReceivedPercentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
     BilledPercentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    RowVersion ROWVERSION NOT NULL,
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_PurchaseOrder_Totals CHECK (NetTotal >= 0.0000 AND TaxTotal >= 0.0000 AND GrandTotal >= 0.0000),
     CONSTRAINT FK_PurchaseOrder_Supplier FOREIGN KEY (SupplierId) REFERENCES Supplier(Id)
 );
 
@@ -63,6 +65,9 @@ CREATE TABLE PurchaseOrderItem (
     BilledQuantity DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     Rate DECIMAL(18,4) NOT NULL,
     Amount DECIMAL(18,4) NOT NULL,
+    CONSTRAINT CK_PurchaseOrderItem_Quantity CHECK (Quantity > 0.0000),
+    CONSTRAINT CK_PurchaseOrderItem_Rate CHECK (Rate >= 0.0000),
+    CONSTRAINT CK_PurchaseOrderItem_Amount CHECK (Amount >= 0.0000),
     CONSTRAINT FK_PurchaseOrderItem_Header FOREIGN KEY (PurchaseOrderId) REFERENCES PurchaseOrder(Id) ON DELETE CASCADE,
     CONSTRAINT FK_PurchaseOrderItem_Item FOREIGN KEY (ItemId) REFERENCES Item(Id)
 );
@@ -77,7 +82,9 @@ CREATE TABLE PurchaseReceipt (
     PostingDate DATE NOT NULL,
     Status INT NOT NULL DEFAULT 1, -- Draft, Submitted, Cancelled
     TotalAmount DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
+    RowVersion ROWVERSION NOT NULL,
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_PurchaseReceipt_TotalAmount CHECK (TotalAmount >= 0.0000),
     CONSTRAINT FK_PurchaseReceipt_Supplier FOREIGN KEY (SupplierId) REFERENCES Supplier(Id)
 );
 
@@ -97,7 +104,9 @@ CREATE TABLE PurchaseInvoice (
     WithholdingTaxTotal DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     GrandTotal DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     OutstandingAmount DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
+    RowVersion ROWVERSION NOT NULL,
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_PurchaseInvoice_Totals CHECK (NetTotal >= 0.0000 AND TaxTotal >= 0.0000 AND GrandTotal >= 0.0000),
     CONSTRAINT FK_PurchaseInvoice_Supplier FOREIGN KEY (SupplierId) REFERENCES Supplier(Id)
 );
 ```

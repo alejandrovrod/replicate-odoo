@@ -32,3 +32,8 @@
 - [ ] **Task 6.6: React Banking Subsystem UI (SPA Parity)**
   - **Action:** Build `banking/src/App.tsx`, `BankStatementImporter.tsx` (drag-and-drop file upload with column mapping preview), `BankReconciliation.tsx` (dual-sided split comparison grid), and `VoucherQuickCreateDialog.tsx`.
   - **Acceptance:** Users can import statements, view matched suggestions, filter unreconciled transactions, open the quick voucher dialog, and reconcile in one click.
+
+- [ ] **Task 6.7: Staging Isolation & Dual-Sided Matching Integration Tests**
+  - **Action:** Write integration tests asserting that importing 1,000 statement lines writes zero `GLEntry` records, test de-duplication idempotency, and verify concurrent matching conflicts.
+  - **Acceptance:** 100% test pass asserting $\Delta \text{GLEntry}_{\text{Import}} == 0.0000$ and zero double-reconciliations under load.
+

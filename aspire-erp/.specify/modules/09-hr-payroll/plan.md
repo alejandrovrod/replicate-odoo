@@ -88,7 +88,9 @@ CREATE TABLE PayrollEntry (
     TotalNetPay AS (TotalGrossPay - TotalDeductions),
     AccrualJournalEntryId UNIQUEIDENTIFIER NULL,
     PaymentVoucherId UNIQUEIDENTIFIER NULL,
-    CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
+    RowVersion ROWVERSION NOT NULL,
+    CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_PayrollEntry_Totals CHECK (TotalGrossPay >= 0.0000 AND TotalDeductions >= 0.0000)
 );
 
 -- 6. Salary Slip (Pay Stub)
@@ -105,6 +107,8 @@ CREATE TABLE SalarySlip (
     TotalDeductions DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
     NetPay AS (GrossPay - TotalDeductions),
     Status NVARCHAR(30) NOT NULL DEFAULT 'Draft',
+    RowVersion ROWVERSION NOT NULL,
+    CONSTRAINT CK_SalarySlip_Totals CHECK (GrossPay >= 0.0000 AND TotalDeductions >= 0.0000),
     CONSTRAINT FK_SalarySlip_PayrollEntry FOREIGN KEY (PayrollEntryId) REFERENCES PayrollEntry(Id) ON DELETE CASCADE,
     CONSTRAINT FK_SalarySlip_Employee FOREIGN KEY (EmployeeId) REFERENCES Employee(Id)
 );

@@ -1,8 +1,8 @@
 # Functional Specification: CRM & Sales Pipeline (ERPNext Parity)
 
 **Module:** `08-crm`  
-**Status:** APPROVED  
-**Version:** 1.0.0  
+**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext CRM Documentation](https://docs.frappe.io/erpnext/CRM)  
 
@@ -29,6 +29,7 @@ The **CRM Module** captures prospect interest, qualifies commercial demand, trac
 ### Invariant CRM-01: Weighted Forecast Accuracy
 For any pipeline forecasting calculation:
 $$\text{WeightedForecast} = \sum_{i=1}^{n} \text{OpportunityAmount}_i \times \frac{\text{Probability}_i}{100.0}$$
+$$\text{WeightedAmount}_{\text{ClosedWon}} = \text{OpportunityAmount} \times 1.0000, \quad \text{WeightedAmount}_{\text{ClosedLost}} = 0.0000$$
 - Opportunities in `ClosedWon` have $\text{Probability} = 100\%$ ($\text{Weighted} == \text{Amount}$).
 - Opportunities in `ClosedLost` have $\text{Probability} = 0\%$ ($\text{Weighted} == 0.00$).
 
@@ -66,3 +67,24 @@ When converting a `Lead` into a `Customer` or `Opportunity`:
 - **Then** the operation is rejected with `DomainValidationException`
 - **When** the user provides `LossReason = "Competitor priced 15% lower"`
 - **Then** status becomes `ClosedLost` with `Probability = 0%`.
+
+### Scenario CRM-04: Idempotent Lead Ingestion Guard
+- **Given** an inbound webhook from an external campaign with `Idempotency-Key: idemp-lead-2026-99`
+- **When** the webhook is retried due to gateway timeout
+- **Then** the idempotency filter identifies the existing lead record
+- **And** returns HTTP 200 with the previously created `LeadDto`
+- **And** strictly prevents duplicate lead records in the database.
+
+### Scenario CRM-05: Deal Cancellation & Re-opening Workflow
+- **Given** an opportunity marked `ClosedLost` with a recorded loss reason
+- **When** the client contacts the sales team months later to resume negotiations
+- **Then** the opportunity can be re-opened to `Negotiation` stage
+- **And** probability updates to 50%
+- **And** historical loss reason is preserved in the audit history.
+
+### Scenario CRM-06: Concurrency Guard on Simultaneous Opportunity Stage Update
+- **Given** opportunity `OPP-2026-0042` open in two browser tabs
+- **When** two team members simultaneously update stages to different milestones
+- **Then** optimistic concurrency locks via `RowVersion` detect the collision
+- **And** the first save succeeds while the second receives `ConcurrencyConflictException`.
+

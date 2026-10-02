@@ -1,0 +1,23 @@
+# Build output
+bin/
+obj/
+dist/
+out/
+
+# Node
+node_modules/
+
+# IDE / editor
+.vs/
+.idea/
+*.user
+*.swp
+
+# Aspire
+.aspire/
+
+# Local configuration overrides
+appsettings.*.local.json
+
+# Logs
+*.log

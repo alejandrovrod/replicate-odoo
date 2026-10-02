@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
+    <!-- Explicit pin: the transitive Microsoft.OpenApi 2.0.0 is affected by GHSA-v5pm-xwqc-g5wc (NU1903);
+         2.7.5 is the first patched version in the 2.x line consumed by Microsoft.AspNetCore.OpenApi. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Erp.Application\Erp.Application.csproj" />
+    <ProjectReference Include="..\Erp.Infrastructure\Erp.Infrastructure.csproj" />
+    <ProjectReference Include="..\Erp.ServiceDefaults\Erp.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

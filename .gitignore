@@ -1,0 +1,15 @@
+# Project ignores
+alejandrovrod-replicate-odoo-*.txt
+*.txt
+
+# Build / IDE / Temp
+bin/
+obj/
+.vs/
+.vscode/
+node_modules/
+dist/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

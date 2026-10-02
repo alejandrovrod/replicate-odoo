@@ -40,6 +40,8 @@ CREATE TABLE Item (
     ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
     ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
     PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo),
+    CONSTRAINT CK_Item_SellingRate CHECK (StandardSellingRate >= 0.0000),
+    CONSTRAINT CK_Item_SafetyStock CHECK (SafetyStock >= 0.0000),
     CONSTRAINT FK_Item_Uom FOREIGN KEY (StockUomId) REFERENCES UOM(Id)
 ) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.ItemHistory));
 
@@ -75,7 +77,9 @@ CREATE TABLE StockEntry (
     FromWarehouseId UNIQUEIDENTIFIER NULL,
     ToWarehouseId UNIQUEIDENTIFIER NULL,
     TotalAmount DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
-    CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
+    RowVersion ROWVERSION NOT NULL,
+    CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_StockEntry_TotalAmount CHECK (TotalAmount >= 0.0000)
 );
 
 -- 5. Stock Entry Item (Movement Lines)
@@ -89,6 +93,9 @@ CREATE TABLE StockEntryItem (
     UomId UNIQUEIDENTIFIER NOT NULL,
     BasicRate DECIMAL(18,4) NOT NULL,
     Amount DECIMAL(18,4) NOT NULL,
+    CONSTRAINT CK_StockEntryItem_Quantity CHECK (Quantity > 0.0000),
+    CONSTRAINT CK_StockEntryItem_Rate CHECK (BasicRate >= 0.0000),
+    CONSTRAINT CK_StockEntryItem_Amount CHECK (Amount >= 0.0000),
     CONSTRAINT FK_StockEntryItem_Header FOREIGN KEY (StockEntryId) REFERENCES StockEntry(Id) ON DELETE CASCADE,
     CONSTRAINT FK_StockEntryItem_Item FOREIGN KEY (ItemId) REFERENCES Item(Id)
 );
@@ -113,6 +120,9 @@ CREATE TABLE StockLedgerEntry (
     VoucherId UNIQUEIDENTIFIER NOT NULL,
     IsCancelled BIT NOT NULL DEFAULT 0,
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT CK_SLE_ActualQty CHECK (ActualQty != 0.0000),
+    CONSTRAINT CK_SLE_IncomingRate CHECK (IncomingRate >= 0.0000),
+    CONSTRAINT CK_SLE_ValuationRate CHECK (ValuationRate >= 0.0000),
     CONSTRAINT FK_SLE_Item FOREIGN KEY (ItemId) REFERENCES Item(Id),
     CONSTRAINT FK_SLE_Warehouse FOREIGN KEY (WarehouseId) REFERENCES Warehouse(Id)
 );
@@ -124,7 +134,54 @@ INCLUDE (ActualQty, QtyAfterTransaction, ValuationRate, StockValue);
 
 ---
 
-## 2. FIFO Valuation Queue Algorithm
+## 2. Domain Error Catalog & Exception Contracts
+
+```csharp
+namespace Erp.Domain.Stock.Errors;
+
+public static class StockErrorCodes
+{
+    public const string InsufficientStock = "STOCK_INSUFFICIENT_QTY";
+    public const string NegativeStockProhibited = "STOCK_NEGATIVE_PROHIBITED";
+    public const string IdenticalWarehouseTransfer = "STOCK_IDENTICAL_WAREHOUSES";
+    public const string ItemInactive = "STOCK_ITEM_INACTIVE";
+    public const string WarehouseInactive = "STOCK_WAREHOUSE_INACTIVE";
+    public const string PeriodLocked = "STOCK_PERIOD_LOCKED";
+    public const string DuplicateSubmission = "STOCK_DUPLICATE_SUBMISSION";
+    public const string ConcurrencyConflict = "STOCK_CONCURRENCY_CONFLICT";
+}
+```
+
+---
+
+## 3. CQRS Commands & Queries
+
+```csharp
+namespace Erp.Application.Features.Stock.Commands;
+
+public record PostStockEntryCommand(
+    Guid TenantId,
+    Guid CompanyId,
+    string EntryNumber,
+    string Purpose,
+    DateTime PostingDate,
+    Guid? FromWarehouseId,
+    Guid? ToWarehouseId,
+    List<StockEntryItemDto> Items,
+    string IdempotencyKey
+) : IRequest<StockEntryResultDto>;
+
+public record CancelStockEntryCommand(
+    Guid TenantId,
+    Guid CompanyId,
+    Guid StockEntryId,
+    string Reason
+) : IRequest<Unit>;
+```
+
+---
+
+## 4. FIFO Valuation Queue Algorithm
 
 ```csharp
 namespace Erp.Domain.Services;

@@ -32,3 +32,16 @@
 - [ ] **Task 3.6: React Kardex & Stock Balance Viewer**
   - **Action:** Build `StockOverview.tsx` in `erp-client` showing warehouse cards, item balances, and immutable Kardex movements.
   - **Acceptance:** Real-time stock valuation and quantities render accurately.
+
+- [ ] **Task 3.7: Stock Movement Cancellation & Compensating SLEs**
+  - **Action:** Implement `CancelStockEntryCommandHandler` flagging `IsCancelled = 1` and appending negative quantity SLEs + reversing GLEntry records.
+  - **Acceptance:** Stock balance and financial accounts are restored to pre-transaction states without deleting database history.
+
+- [ ] **Task 3.8: Idempotency & Duplicate Submission Pipeline**
+  - **Action:** Implement ASP.NET Core idempotency middleware / behavior checking `Idempotency-Key` header with Redis / SQL cache.
+  - **Acceptance:** Replaying an identical submission returns HTTP 200 with the cached response and creates zero duplicate SLEs or GLEntries.
+
+- [ ] **Task 3.9: Concurrency & Stress Integration Testing**
+  - **Action:** Write adversarial multi-threaded integration test issuing concurrent stock requests against low inventory.
+  - **Acceptance:** Database optimistic concurrency / row locks prevent overselling; exactly available units are issued, excess requests throw `InsufficientStockException`.
+

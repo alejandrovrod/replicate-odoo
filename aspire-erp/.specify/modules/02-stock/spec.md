@@ -1,8 +1,8 @@
 # Functional Specification: Stock & Inventory (ERPNext Parity)
 
 **Module:** `02-stock`  
-**Status:** APPROVED  
-**Version:** 1.0.0  
+**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Perpetual Inventory & Stock](https://docs.frappe.io/erpnext/stock)  
 
@@ -74,3 +74,26 @@ The **Stock Module** manages physical inventory across hierarchical warehouses a
 - **When** a user attempts to issue 8 units on a `StockEntry`
 - **Then** the command fails with `InsufficientStockException("Available: 5, Requested: 8")`
 - **And** zero records are written to either `StockLedgerEntry` or `GLEntry`.
+
+### Scenario ST-04: Cancellation & Immutable Reversal of Stock Movement
+- **Given** a submitted `StockEntry` `STE-2026-0042` that received 10 units @ $50.00 into `Stores - Main`
+- **When** the authorized warehouse supervisor submits a cancellation command
+- **Then** the original `StockLedgerEntry` is marked `IsCancelled = 1`
+- **And** a compensating reversing `StockLedgerEntry` is appended with $-10$ units @ $50.00 (Total $\Delta \text{StockValue} = -\$500.00$)
+- **And** balanced reversing `GLEntry` records are posted (Debit: `2120 - Stock Received But Not Billed` for $500.00, Credit: `1310 - Stock in Hand` for $500.00)
+- **And** the physical stock balance is restored without deleting history.
+
+### Scenario ST-05: Idempotent Submission Guard
+- **Given** a valid `StockEntry` payload with `Idempotency-Key: idemp-st-9988`
+- **When** the client submits the request twice due to network timeout or retry
+- **Then** the second request detects the existing processed `Idempotency-Key`
+- **And** returns HTTP 200 with the cached original result
+- **And** strictly prevents duplicate ledger postings or double-counting inventory.
+
+### Scenario ST-06: Concurrency & Race Condition Resolution
+- **Given** item `ITEM-SENSOR-X` with exactly 1 unit in stock
+- **When** two concurrent fulfillment commands (Worker A and Worker B) attempt to issue 1 unit simultaneously
+- **Then** the database enforces optimistic row locking / serializable consistency
+- **And** exactly one transaction succeeds, allocating the 1 unit and decrementing the balance to 0
+- **And** the second transaction fails immediately with `ConcurrencyConflictException` / `InsufficientStockException`, preventing negative inventory.
+

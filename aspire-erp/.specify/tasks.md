@@ -72,15 +72,15 @@ This document provides granular, atomic, testable tasks for human engineers and 
 
 ## Phase 3: Stock & Inventory Module (ERPNext Parity)
 
-- [ ] **Task 3.1: Domain Models `Item`, `Warehouse`, and `UOM`**
+- [x] **Task 3.1: Domain Models `Item`, `Warehouse`, and `UOM`**
   - **Action:** In `Erp.Domain`, implement `Item` (SKU, valuation method, income/expense accounts), `Warehouse` (parent-child locations, linked stock account), and `UOM` with conversion factors.
   - **Acceptance:** Items validate unique SKU per tenant; Warehouses enforce tree structure.
 
-- [ ] **Task 3.2: Perpetual Inventory Engine (`StockLedgerEntry`)**
+- [x] **Task 3.2: Perpetual Inventory Engine (`StockLedgerEntry`)**
   - **Action:** Implement `StockEntry` (Material Receipt, Issue, Transfer) and `StockLedgerEntry` (Kardex FIFO valuation).
   - **Acceptance:** Moving stock immediately writes balanced General Ledger entries (Debit Inventory, Credit Adjustment / Expense).
 
-- [ ] **Task 3.3: Negative Stock Validation**
+- [x] **Task 3.3: Negative Stock Validation**
   - **Action:** Enforce anti-negative stock rule if company policy forbids negative inventory.
   - **Acceptance:** Attempting to issue more stock than currently available in warehouse throws `InsufficientStockException`.
 

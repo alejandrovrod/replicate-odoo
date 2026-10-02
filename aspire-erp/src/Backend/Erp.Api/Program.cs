@@ -1,10 +1,18 @@
 using System.Text.Json.Serialization;
 using Erp.Api.Authorization;
+using Erp.Api.Filters;
 using Erp.Api.Middleware;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Accounts.Commands;
 using Erp.Application.Features.Accounts.Queries;
+using Erp.Application.Features.Items.Commands;
+using Erp.Application.Features.Items.Queries;
+using Erp.Application.Features.Stock.Commands;
+using Erp.Application.Features.Stock.Queries;
+using Erp.Application.Features.Warehouses.Commands;
+using Erp.Application.Features.Warehouses.Queries;
+using Erp.Application.Services;
 using Erp.Domain.Repositories;
 using Erp.Infrastructure.Data;
 using Erp.Infrastructure.Data.Repositories;
@@ -43,6 +51,28 @@ builder.Services.AddScoped<ISender, Sender>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateAccountCommand, Result<AccountDto>>, CreateAccountCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAccountTreeQuery, IReadOnlyList<AccountTreeNodeDto>>, GetAccountTreeQueryHandler>();
+
+// Stock & Inventory (Tasks 3.1-3.3): masters, the perpetual-inventory posting engine and the
+// Article VI.4 idempotency filter. Repositories stay in Erp.Infrastructure, handlers in
+// Erp.Application - only the composition root knows both (decision C2).
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<IItemRepository, ItemRepository>();
+builder.Services.AddScoped<IUomRepository, UomRepository>();
+builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+builder.Services.AddScoped<IStockRepository, StockRepository>();
+builder.Services.AddScoped<IIdempotencyRepository, IdempotencyRepository>();
+builder.Services.AddScoped<IStockPostingService, StockPostingService>();
+
+builder.Services.AddScoped<ICommandHandler<CreateItemCommand, Result<ItemDto>>, CreateItemCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetItemsQuery, IReadOnlyList<ItemDto>>, GetItemsQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateWarehouseCommand, Result<WarehouseDto>>, CreateWarehouseCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetWarehousesQuery, IReadOnlyList<WarehouseTreeNodeDto>>, GetWarehousesQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateStockEntryCommand, Result<StockEntryPostingDto>>, CreateStockEntryCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetStockEntriesQuery, IReadOnlyList<StockEntryDto>>, GetStockEntriesQueryHandler>();
+
+// [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
+// from DI (Constitution Article VI.4).
+builder.Services.AddScoped<IdempotencyFilter>();
 
 // Constitution Article VI.1: the TenantMember policy. Phase 2 has NO authentication task, so the
 // requirement is "TenantResolutionMiddleware resolved a tenant" (TenantMemberHandler). Add

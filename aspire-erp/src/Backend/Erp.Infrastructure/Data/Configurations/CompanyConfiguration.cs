@@ -25,6 +25,13 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.Name).HasMaxLength(150).IsRequired();
         builder.Property(c => c.DefaultCurrency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
         builder.Property(c => c.TaxId).HasMaxLength(50).IsRequired();
+
+        // Phase 3 additions (decision D2): the two plan.md §3.2 columns the initial migration
+        // predates, plus the D3 code-not-FK GL default for stock receipts.
+        builder.Property(c => c.PeriodLockDate).HasColumnType("date");
+        builder.Property(c => c.AllowNegativeStock).HasColumnType("bit").HasDefaultValue(false);
+        builder.Property(c => c.StockReceivedAccountCode).HasMaxLength(50);
+
         builder.Property(c => c.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(c => c.Tenant)

@@ -1,27 +1,31 @@
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
-namespace Erp.Domain.UnitTests;
+namespace Erp.Application.UnitTests.Fakes;
 
-/// <summary>
-/// In-memory <see cref="IAccountRepository"/> double: no EF, no database. Tests configure the
-/// ancestor chain, the company's accounts and the duplicate-code answer per test.
-/// </summary>
+/// <summary>In-memory <see cref="IAccountRepository"/> for the posting-engine lookups (III.3).</summary>
 public sealed class FakeAccountRepository : IAccountRepository
 {
+    private readonly List<Account> _accounts = new();
+
     /// <summary>Chain returned by GetByIdWithAncestorsAsync: [self, parent, grandparent, ...].</summary>
     public IReadOnlyList<Account> Ancestors { get; set; } = Array.Empty<Account>();
 
-    /// <summary>Accounts returned by GetByCompanyAsync.</summary>
     public IReadOnlyList<Account> CompanyAccounts { get; set; } = Array.Empty<Account>();
 
     public bool CodeExists { get; set; }
 
     public Account? AddedAccount { get; private set; }
 
+    /// <summary>Answer returned by FindActiveLeafByCodeAsync for company-level GL defaults.</summary>
+    public IReadOnlyList<Account> AccountsByCode { get; set; } = Array.Empty<Account>();
+
+    public void Seed(params Account[] accounts) => _accounts.AddRange(accounts);
+
     public Task AddAsync(Account account, CancellationToken cancellationToken = default)
     {
         AddedAccount = account;
+        _accounts.Add(account);
         return Task.CompletedTask;
     }
 
@@ -34,14 +38,11 @@ public sealed class FakeAccountRepository : IAccountRepository
     public Task<IReadOnlyList<Account>> GetByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
         => Task.FromResult(CompanyAccounts);
 
-    /// <summary>Account returned by GetByIdAsync (needed by Constitution III.3 lookups).</summary>
+    /// <summary>Resolves by id from the seeded accounts (falling back to the explicit override).</summary>
     public Account? AccountById { get; set; }
 
     public Task<Account?> GetByIdAsync(Guid accountId, CancellationToken cancellationToken = default)
-        => Task.FromResult(AccountById);
-
-    /// <summary>Answer returned by FindActiveLeafByCodeAsync for company-level GL defaults.</summary>
-    public IReadOnlyList<Account> AccountsByCode { get; set; } = Array.Empty<Account>();
+        => Task.FromResult(_accounts.FirstOrDefault(a => a.Id == accountId) ?? AccountById);
 
     public Task<IReadOnlyList<Account>> FindActiveLeafByCodeAsync(
         Guid companyId,

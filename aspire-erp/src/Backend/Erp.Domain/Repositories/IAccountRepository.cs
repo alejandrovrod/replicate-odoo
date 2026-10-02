@@ -29,4 +29,19 @@ public interface IAccountRepository
 
     /// <summary>All accounts of one company - the flat source the tree query assembles into a hierarchy.</summary>
     Task<IReadOnlyList<Account>> GetByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>The account with the given id, or null when it does not exist in this tenant.</summary>
+    /// <remarks>
+    /// Needed by Constitution III.3 (every GL-referenced account must exist, be active and be a
+    /// leaf) and by the warehouse/item lookups that post against a linked account.
+    /// </remarks>
+    Task<Account?> GetByIdAsync(Guid accountId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every ACTIVE LEAF account with the given code inside the company (decision D3). Company-level
+    /// GL defaults are stored as account CODES instead of FKs, so the posting engine resolves them
+    /// here; the caller rejects a count other than exactly one (missing = configuration exception,
+    /// more than one = ambiguous configuration).
+    /// </summary>
+    Task<IReadOnlyList<Account>> FindActiveLeafByCodeAsync(Guid companyId, string accountCode, CancellationToken cancellationToken = default);
 }

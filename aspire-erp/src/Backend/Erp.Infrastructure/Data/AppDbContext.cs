@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Erp.Application.Common;
 using Erp.Domain.Common;
 using Erp.Domain.Entities;
+using Erp.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -31,6 +32,20 @@ public class AppDbContext : DbContext
     public DbSet<Company> Companies => Set<Company>();
 
     public DbSet<Account> Accounts => Set<Account>();
+
+    public DbSet<UOM> UOMs => Set<UOM>();
+
+    public DbSet<Item> Items => Set<Item>();
+
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+
+    public DbSet<StockEntry> StockEntries => Set<StockEntry>();
+
+    public DbSet<StockLedgerEntry> StockLedgerEntries => Set<StockLedgerEntry>();
+
+    public DbSet<GLEntry> GLEntries => Set<GLEntry>();
+
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
@@ -139,10 +154,33 @@ public class AppDbContext : DbContext
         }
     }
 
+    /// <summary>
+    /// Constitution Article III.2 (literal): GLEntry is INSERT-ONLY. Any Modified or Deleted
+    /// tracked GLEntry entry aborts the save by throwing - the Constitution also forbids the old
+    /// plan.md sample that silently cleared <c>IsModified</c>, so the ONLY legal handling is to
+    /// fail (the database trigger <c>trg_GLEntry_AppendOnly</c> backs this up for raw SQL).
+    /// </summary>
+    private void EnforceLedgerAppendOnly()
+    {
+        foreach (var entry in ChangeTracker.Entries<GLEntry>())
+        {
+            if (entry.State == EntityState.Modified)
+            {
+                throw new GLEntryAppendOnlyViolationException("UPDATE");
+            }
+
+            if (entry.State == EntityState.Deleted)
+            {
+                throw new GLEntryAppendOnlyViolationException("DELETE");
+            }
+        }
+    }
+
     // Overriding the (acceptAllChangesOnSuccess, cancellationToken) overload is sufficient: the
     // parameterless SaveChanges/SaveChangesAsync overloads funnel into these virtual methods.
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
+        EnforceLedgerAppendOnly();
         EnforceTenantInvariants();
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
@@ -151,6 +189,7 @@ public class AppDbContext : DbContext
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
+        EnforceLedgerAppendOnly();
         EnforceTenantInvariants();
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }

@@ -79,9 +79,44 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000
     VALUES ('a0000000-0000-4000-8000-000000005110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5110', 'Office Supplies Expense', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 'USD', 1);
 GO
 
--- Verification: 5 roots + 5 children = 10 rows, all sharing one Tenant/Company.
+-- --- Stock & Inventory accounts (Phase 3, tasks 3.1-3.2 / spec ST-01, ST-02) --
+-- 1310 Stock In Hand  : the asset account every warehouse posts its inventory value to.
+-- 2120 Stock Received But Not Billed : the interim liability credited on receipts (ST-01).
+-- 5210 Cost of Goods Sold : the expense debited on issues at FIFO cost (ST-02).
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001310')
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000001310', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1310', 'Stock In Hand', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000002120')
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000002120', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2120', 'Stock Received But Not Billed', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 'USD', 1);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000005210')
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000005210', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5210', 'Cost of Goods Sold', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 'USD', 1);
+GO
+
+-- --- Company stock posting defaults (decision D3) ---------------------------
+-- StockReceivedAccountCode is an ACCOUNT CODE, not a FK: a Company -> Account FK
+-- would be circular (Account already references Company). The posting engine
+-- resolves it to exactly one active leaf account of the same company.
+-- AllowNegativeStock stays at its plan.md default (0 = forbidden, Task 3.3).
+
+IF EXISTS (SELECT 1 FROM dbo.Company WHERE Id = '22222222-2222-4222-8222-222222222222')
+    UPDATE dbo.Company
+    SET StockReceivedAccountCode = '2120'
+    WHERE Id = '22222222-2222-4222-8222-222222222222'
+      AND (StockReceivedAccountCode IS NULL OR StockReceivedAccountCode <> '2120');
+GO
+
+-- Verification: 5 roots + 8 children = 13 rows, all sharing one Tenant/Company.
 SELECT AccountCode, AccountName, RootType, IsGroup, ParentAccountId
 FROM dbo.Account
 WHERE TenantId = '11111111-1111-4111-8111-111111111111'
 ORDER BY AccountCode;
+
+SELECT Id, AllowNegativeStock, PeriodLockDate, StockReceivedAccountCode
+FROM dbo.Company
+WHERE Id = '22222222-2222-4222-8222-222222222222';
 GO

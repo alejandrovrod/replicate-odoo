@@ -23,6 +23,27 @@ public class Company : ITenantEntity
 
     public string TaxId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Hard period lock (plan.md §3.2): documents dated on or before this day cannot be posted.
+    /// Added in Phase 3 to kill schema drift; enforced by later phases.
+    /// </summary>
+    public DateOnly? PeriodLockDate { get; set; }
+
+    /// <summary>
+    /// Company policy for Task 3.3: when false, issuing/transferring more stock than available
+    /// throws <see cref="Exceptions.InsufficientStockException"/>. plan.md §3.2 default = false.
+    /// </summary>
+    public bool AllowNegativeStock { get; set; }
+
+    /// <summary>
+    /// Company-level GL default for stock receipts (decision D3): the ACCOUNT CODE credited when
+    /// goods are received (spec ST-01: "2120 - Stock Received But Not Billed"). Stored as a plain
+    /// code, NOT a foreign key, because a Company -> Account FK would create a circular table
+    /// dependency (Account already references Company through FK_Account_Company). Resolved at
+    /// posting time to exactly one active leaf account of the same company.
+    /// </summary>
+    public string? StockReceivedAccountCode { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public Tenant? Tenant { get; set; }

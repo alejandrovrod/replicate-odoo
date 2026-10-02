@@ -67,4 +67,18 @@ public sealed class AccountRepository : IAccountRepository
         => await _dbContext.Accounts
             .Where(a => a.CompanyId == companyId)
             .ToListAsync(cancellationToken);
+
+    public Task<Account?> GetByIdAsync(Guid accountId, CancellationToken cancellationToken = default)
+        => _dbContext.Accounts.FirstOrDefaultAsync(a => a.Id == accountId, cancellationToken);
+
+    public async Task<IReadOnlyList<Account>> FindActiveLeafByCodeAsync(
+        Guid companyId,
+        string accountCode,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.Accounts
+            .Where(a => a.CompanyId == companyId
+                && a.AccountCode == accountCode
+                && a.IsActive
+                && !a.IsGroup)
+            .ToListAsync(cancellationToken);
 }

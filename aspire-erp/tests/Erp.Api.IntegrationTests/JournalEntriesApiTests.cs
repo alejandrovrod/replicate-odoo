@@ -576,3 +576,4 @@ public class JournalEntriesApiTests : IClassFixture<ErpApiFactory>
         string VoucherNo,
         string? Remarks);
 }
+

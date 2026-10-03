@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -104,7 +104,7 @@ namespace Erp.Infrastructure.Migrations
                     Code = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     ParentWarehouseId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    StockAccountId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AccountId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     IsGroup = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
                 },
@@ -125,7 +125,7 @@ namespace Erp.Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Warehouse_StockAccount",
-                        column: x => x.StockAccountId,
+                        column: x => x.AccountId,
                         principalTable: "Account",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -379,7 +379,7 @@ namespace Erp.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Warehouse_StockAccountId",
                 table: "Warehouse",
-                column: "StockAccountId");
+                column: "AccountId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Warehouse_Tenant_Company_Code",
@@ -447,3 +447,4 @@ namespace Erp.Infrastructure.Migrations
         }
     }
 }
+

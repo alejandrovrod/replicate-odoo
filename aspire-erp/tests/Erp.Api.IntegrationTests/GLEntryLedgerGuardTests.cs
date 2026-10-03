@@ -221,3 +221,4 @@ public class GLEntryLedgerGuardTests
         public void SetCurrentTenantId(Guid tenantId) => _tenantId = tenantId;
     }
 }
+

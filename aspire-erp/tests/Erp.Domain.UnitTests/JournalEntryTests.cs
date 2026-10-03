@@ -293,3 +293,4 @@ public sealed class JournalEntryTests
         JournalEntryValidator.EnsurePostableAccounts(new[] { leaf, otherLeaf }, companyId);
     }
 }
+

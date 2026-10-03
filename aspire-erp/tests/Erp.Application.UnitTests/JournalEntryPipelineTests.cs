@@ -683,3 +683,4 @@ public sealed class JournalEntryPipelineTests
         Assert.Equal(2, (await handler.HandleAsync(new GetJournalEntriesQuery(_companyId, 0))).Count);
     }
 }
+

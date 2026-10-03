@@ -81,3 +81,4 @@ public sealed class FakeStockRepository : IStockRepository
     public Task<IReadOnlyList<StockEntry>> GetRecentByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<StockEntry>>(_stockEntries.TakeLast(limit).Reverse().ToList());
 }
+

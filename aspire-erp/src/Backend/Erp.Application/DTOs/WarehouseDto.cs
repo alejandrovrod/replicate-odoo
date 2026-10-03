@@ -9,7 +9,7 @@ public sealed record WarehouseDto(
     string Code,
     string Name,
     Guid? ParentWarehouseId,
-    Guid StockAccountId,
+    Guid AccountId,
     bool IsGroup,
     bool IsActive)
 {
@@ -17,10 +17,10 @@ public sealed record WarehouseDto(
         new(
             warehouse.Id,
             warehouse.CompanyId,
-            warehouse.Code,
-            warehouse.Name,
+            warehouse.WarehouseCode,
+            warehouse.WarehouseName,
             warehouse.ParentWarehouseId,
-            warehouse.StockAccountId,
+            warehouse.AccountId ?? Guid.Empty,
             warehouse.IsGroup,
             warehouse.IsActive);
 }
@@ -31,7 +31,8 @@ public sealed record WarehouseTreeNodeDto(
     string Code,
     string Name,
     Guid? ParentWarehouseId,
-    Guid StockAccountId,
+    Guid AccountId,
     bool IsGroup,
     bool IsActive,
     IReadOnlyList<WarehouseTreeNodeDto> Children);
+

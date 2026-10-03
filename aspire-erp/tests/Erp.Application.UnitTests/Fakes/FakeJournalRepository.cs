@@ -120,3 +120,4 @@ public sealed class FakeJournalRepository : IJournalRepository
                 .Take(limit)
                 .ToList());
 }
+

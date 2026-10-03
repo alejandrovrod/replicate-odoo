@@ -82,3 +82,4 @@ public sealed class DoubleEntryGuardTests
         Assert.Throws<ArgumentNullException>(() => DoubleEntryGuard.EnsureBalanced(null!));
     }
 }
+

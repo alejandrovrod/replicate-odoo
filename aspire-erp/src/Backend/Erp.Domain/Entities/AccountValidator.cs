@@ -19,13 +19,19 @@ public static class AccountValidator
     public const int MaxCurrencyLength = 3;
 
     /// <summary>Field-level rules: required code/name (50/150), defined RootType, currency, company.</summary>
+    /// <param name="type">
+    /// Optional ERPNext account_type (Task 1.1): defaults to <see cref="AccountType.Other"/> so
+    /// existing callers that predate the Type column keep compiling; CreateAccountCommandHandler
+    /// always passes the resolved value (explicit client value or per-RootType default).
+    /// </param>
     /// <exception cref="AccountValidationException">An invariant was violated.</exception>
     public static void EnsureValidFields(
         Guid companyId,
         string? accountCode,
         string? accountName,
         AccountRootType rootType,
-        string? currency)
+        string? currency,
+        AccountType type = AccountType.Other)
     {
         if (companyId == Guid.Empty)
         {
@@ -67,6 +73,16 @@ public static class AccountValidator
             throw new AccountValidationException(
                 AccountErrorCodes.InvalidRootType,
                 $"RootType must be one of: {string.Join(", ", Enum.GetNames<AccountRootType>())}.");
+        }
+
+        if (!Enum.IsDefined(type))
+        {
+            // Task 1.1: Type is persisted as a NAME string (NVARCHAR(50)); an out-of-range cast
+            // (e.g. a JSON number outside the enum) must fail as a domain rule, not round-trip an
+            // empty/invalid value into the column.
+            throw new AccountValidationException(
+                AccountErrorCodes.InvalidAccountType,
+                $"Type must be one of: {string.Join(", ", Enum.GetNames<AccountType>())}.");
         }
 
         if (string.IsNullOrWhiteSpace(currency) || currency.Length > MaxCurrencyLength)

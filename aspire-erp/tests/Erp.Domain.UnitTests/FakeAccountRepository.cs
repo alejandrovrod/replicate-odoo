@@ -49,3 +49,4 @@ public sealed class FakeAccountRepository : IAccountRepository
         CancellationToken cancellationToken = default)
         => Task.FromResult(AccountsByCode);
 }
+

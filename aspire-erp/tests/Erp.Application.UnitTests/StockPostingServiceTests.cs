@@ -43,9 +43,9 @@ public sealed class StockPostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            Code = "WH-01",
-            Name = "Main Stores",
-            StockAccountId = _stockAccount.Id,
+            ItemCode = "WH-01",
+            ItemName = "Main Stores",
+            AccountId = _stockAccount.Id,
         };
         _warehouses.Seed(_warehouse);
 
@@ -53,11 +53,11 @@ public sealed class StockPostingServiceTests
         {
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
-            Code = "IT-001",
-            Name = "Steel Bracket",
+            ItemCode = "IT-001",
+            ItemName = "Steel Bracket",
             ValuationMethod = ValuationMethod.Fifo,
-            BaseUOMId = Guid.NewGuid(),
-            ExpenseAccountId = _expenseAccount.Id,
+            StockUomId = Guid.NewGuid(),
+            
         };
         _items.Seed(_item);
 
@@ -65,7 +65,7 @@ public sealed class StockPostingServiceTests
         {
             Id = _companyId,
             TenantId = _tenantId,
-            Name = "Acme Holding",
+            ItemName = "Acme Holding",
             AllowNegativeStock = false,
             StockReceivedAccountCode = "2120",
         };
@@ -196,9 +196,9 @@ public sealed class StockPostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            Code = "WH-02",
-            Name = "Branch Stores",
-            StockAccountId = _stockAccount.Id, // SAME GL account
+            ItemCode = "WH-02",
+            ItemName = "Branch Stores",
+            AccountId = _stockAccount.Id, // SAME GL account
         };
         _warehouses.Seed(target);
 
@@ -235,9 +235,9 @@ public sealed class StockPostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            Code = "WH-03",
-            Name = "External Store",
-            StockAccountId = otherStockAccount.Id,
+            ItemCode = "WH-03",
+            ItemName = "External Store",
+            AccountId = otherStockAccount.Id,
         };
         _warehouses.Seed(target);
 
@@ -471,9 +471,9 @@ public sealed class StockPostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            Code = "WH-09",
-            Name = "Other",
-            StockAccountId = _stockAccount.Id,
+            ItemCode = "WH-09",
+            ItemName = "Other",
+            AccountId = _stockAccount.Id,
         };
         _warehouses.Seed(other);
 
@@ -509,7 +509,7 @@ public sealed class StockPostingServiceTests
     [Fact]
     public async Task PostAsync_WarehouseWithoutStockAccount_ThrowsConfigurationException()
     {
-        _warehouse.StockAccountId = Guid.Empty;
+        _warehouse.AccountId = Guid.Empty;
 
         var request = Request(
             StockEntryType.MaterialReceipt,
@@ -551,20 +551,7 @@ public sealed class StockPostingServiceTests
         Assert.Equal(StockErrorCodes.InvalidGlAccount, ex.Code);
     }
 
-    [Fact]
-    public async Task PostAsync_ItemWithoutExpenseAccount_ThrowsConfigurationExceptionOnIssue()
-    {
-        _item.ExpenseAccountId = null;
 
-        var request = Request(
-            StockEntryType.MaterialIssue,
-            new List<StockPostingLine> { new(_item.Id, 1m, null) });
-
-        var ex = await Assert.ThrowsAsync<StockPostingConfigurationException>(
-            () => CreateService().PostAsync(request));
-
-        Assert.Contains("ExpenseAccount", ex.Message, StringComparison.Ordinal);
-    }
 
     [Fact]
     public async Task PostAsync_NonFifoValuationMethod_IsNotSupportedYet()
@@ -598,3 +585,7 @@ public sealed class StockPostingServiceTests
         await Assert.ThrowsAsync<ArgumentNullException>(() => CreateService().PostAsync(null!));
     }
 }
+
+
+
+

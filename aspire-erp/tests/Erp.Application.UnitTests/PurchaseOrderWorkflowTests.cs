@@ -31,14 +31,14 @@ public sealed class PurchaseOrderWorkflowTests
         {
             Id = _companyId,
             TenantId = Guid.NewGuid(),
-            Name = "Acme Industrial",
+            ItemName = "Acme Industrial",
         };
 
         _supplier = new Supplier
         {
             Id = Guid.NewGuid(),
-            Code = "SUP-001",
-            Name = "Acme Industrial Supplies",
+            ItemCode = "SUP-001",
+            ItemName = "Acme Industrial Supplies",
             IsActive = true,
         };
         _suppliers.Seed(_supplier);
@@ -46,10 +46,10 @@ public sealed class PurchaseOrderWorkflowTests
         _item = new Item
         {
             Id = Guid.NewGuid(),
-            Code = "IT-001",
-            Name = "Steel Bracket",
+            ItemCode = "IT-001",
+            ItemName = "Steel Bracket",
             ValuationMethod = ValuationMethod.Fifo,
-            BaseUOMId = Guid.NewGuid(),
+            StockUomId = Guid.NewGuid(),
         };
         _items.Seed(_item);
     }
@@ -131,8 +131,8 @@ public sealed class PurchaseOrderWorkflowTests
         var inactive = new Supplier
         {
             Id = Guid.NewGuid(),
-            Code = "SUP-002",
-            Name = "Retired Vendor",
+            ItemCode = "SUP-002",
+            ItemName = "Retired Vendor",
             IsActive = false,
         };
         _suppliers.Seed(inactive);
@@ -244,3 +244,5 @@ public sealed class PurchaseOrderWorkflowTests
         Assert.Contains(nameof(PurchaseOrder), result.Error!.Message);
     }
 }
+
+

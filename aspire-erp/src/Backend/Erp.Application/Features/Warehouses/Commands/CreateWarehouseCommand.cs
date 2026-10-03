@@ -12,7 +12,8 @@ public sealed record CreateWarehouseCommand(
     Guid CompanyId,
     string Code,
     string Name,
-    Guid StockAccountId,
+    Guid AccountId,
     Guid? ParentWarehouseId = null,
     bool IsGroup = false,
     bool IsActive = true) : ICommand<Result<WarehouseDto>>;
+

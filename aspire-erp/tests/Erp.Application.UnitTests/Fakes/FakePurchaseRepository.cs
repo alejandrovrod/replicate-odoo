@@ -148,3 +148,4 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
         return receipt;
     }
 }
+

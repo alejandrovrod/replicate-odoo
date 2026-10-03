@@ -56,8 +56,8 @@ public sealed class GetItemsQueryHandler : IQueryHandler<GetItemsQuery, IReadOnl
 
             list.Add(new ItemStockDto(
                 warehouse.Id,
-                warehouse.Code,
-                warehouse.Name,
+                warehouse.WarehouseCode,
+                warehouse.WarehouseName,
                 balance.Qty,
                 balance.Value));
         }
@@ -75,3 +75,4 @@ public sealed class GetItemsQueryHandler : IQueryHandler<GetItemsQuery, IReadOnl
         return result;
     }
 }
+

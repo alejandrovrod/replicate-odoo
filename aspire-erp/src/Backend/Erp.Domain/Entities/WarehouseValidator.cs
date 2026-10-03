@@ -82,7 +82,7 @@ public static class WarehouseValidator
         {
             throw new StockValidationException(
                 StockErrorCodes.ParentIsNotGroup,
-                $"Warehouse '{parent.Code}' is not a group warehouse and cannot have children.");
+                $"Warehouse '{parent.WarehouseCode}' is not a group warehouse and cannot have children.");
         }
     }
 

@@ -86,3 +86,4 @@ public sealed class CreateSupplierCommandHandlerTests
         Assert.False(_suppliers.AddedSupplier!.IsActive);
     }
 }
+

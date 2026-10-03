@@ -26,11 +26,11 @@ public sealed class ItemRepository : IItemRepository
     }
 
     public Task<bool> ExistsSkuAsync(string code, CancellationToken cancellationToken = default)
-        => _dbContext.Items.AnyAsync(i => i.Code == code, cancellationToken);
+        => _dbContext.Items.AnyAsync(i => i.ItemCode == code, cancellationToken);
 
     public async Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken cancellationToken = default)
         => await _dbContext.Items
-            .OrderBy(i => i.Code)
+            .OrderBy(i => i.ItemCode)
             .ToListAsync(cancellationToken);
 
     public Task<Item?> GetByIdAsync(Guid itemId, CancellationToken cancellationToken = default)

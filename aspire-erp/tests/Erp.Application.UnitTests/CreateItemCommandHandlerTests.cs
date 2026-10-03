@@ -21,7 +21,7 @@ public sealed class CreateItemCommandHandlerTests
 
     public CreateItemCommandHandlerTests()
     {
-        _uoms.Seed(new UOM { Id = _uomId, Code = "EA", Name = "Each", ToBaseFactor = 1m });
+        _uoms.Seed(new UOM { Id = _uomId, UomName = "Each", Symbol = "EA", MustBeWholeNumber = true });
         _accounts.Seed(new Account
         {
             Id = _expenseAccountId,
@@ -116,3 +116,4 @@ public sealed class CreateItemCommandHandlerTests
         Assert.Equal("invalid_valuation_method", result.Error!.Code);
     }
 }
+

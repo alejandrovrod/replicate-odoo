@@ -28,12 +28,13 @@ public sealed record ItemDto(
     public static ItemDto From(Item item, IReadOnlyList<ItemStockDto>? stock = null) =>
         new(
             item.Id,
-            item.Code,
-            item.Name,
+            item.ItemCode,
+            item.ItemName,
             item.ValuationMethod,
-            item.BaseUOMId,
-            item.IncomeAccountId,
-            item.ExpenseAccountId,
+            item.StockUomId,
+            null,
+            null,
             item.IsActive,
             stock ?? (IReadOnlyList<ItemStockDto>)Array.Empty<ItemStockDto>());
 }
+

@@ -57,8 +57,8 @@ public sealed class GetStockEntriesQueryHandler : IQueryHandler<GetStockEntriesQ
                 itemById.TryGetValue(line.ItemId, out var item);
                 lines.Add(new StockEntryLineDto(
                     line.ItemId,
-                    item?.Code ?? line.ItemId.ToString(),
-                    item?.Name ?? string.Empty,
+                    item?.ItemCode ?? line.ItemId.ToString(),
+                    item?.ItemName ?? string.Empty,
                     line.Qty,
                     line.Rate,
                     line.LineNumber));

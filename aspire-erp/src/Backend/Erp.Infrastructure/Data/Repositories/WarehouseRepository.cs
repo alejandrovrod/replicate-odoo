@@ -67,6 +67,6 @@ public sealed class WarehouseRepository : IWarehouseRepository
 
     public Task<bool> ExistsByCodeAsync(Guid companyId, string code, CancellationToken cancellationToken = default)
         => _dbContext.Warehouses.AnyAsync(
-            w => w.CompanyId == companyId && w.Code == code,
+            w => w.CompanyId == companyId && w.WarehouseCode == code,
             cancellationToken);
 }

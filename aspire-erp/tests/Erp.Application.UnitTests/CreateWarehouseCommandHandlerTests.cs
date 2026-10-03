@@ -38,10 +38,10 @@ public sealed class CreateWarehouseCommandHandlerTests
         {
             Id = id,
             CompanyId = companyId,
-            Code = "GRP",
-            Name = "Group",
+            WarehouseCode = "GRP",
+            WarehouseName = "Group",
             IsGroup = true,
-            StockAccountId = _stockAccountId,
+            AccountId = _stockAccountId,
         };
 
     [Fact]
@@ -135,9 +135,9 @@ public sealed class CreateWarehouseCommandHandlerTests
         {
             Id = Guid.NewGuid(),
             CompanyId = _companyId,
-            Code = "SN",
-            Name = "Already there",
-            StockAccountId = _stockAccountId,
+            WarehouseCode = "SN",
+            WarehouseName = "Already there",
+            AccountId = _stockAccountId,
         });
 
         var result = await CreateHandler().HandleAsync(
@@ -178,3 +178,6 @@ public sealed class CreateWarehouseCommandHandlerTests
         Assert.Equal("warehouse_code_required", result.Error!.Code);
     }
 }
+
+
+

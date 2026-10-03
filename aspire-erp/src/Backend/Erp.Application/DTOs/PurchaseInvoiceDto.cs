@@ -35,8 +35,8 @@ public sealed record PurchaseInvoiceDto(
             lines.Add(new PurchaseInvoiceLineDto(
                 line.PurchaseReceiptLineId,
                 line.ItemId,
-                item?.Code ?? line.ItemId.ToString(),
-                item?.Name ?? string.Empty,
+                item?.ItemCode ?? line.ItemId.ToString(),
+                item?.ItemName ?? string.Empty,
                 line.Qty,
                 line.Rate,
                 line.LineNumber));

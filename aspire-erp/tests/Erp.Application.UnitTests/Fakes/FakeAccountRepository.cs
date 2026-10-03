@@ -58,3 +58,4 @@ public sealed class FakeAccountRepository : IAccountRepository
         => Task.FromResult(
             AccountsByCodeMap.TryGetValue(accountCode, out var mapped) ? mapped : AccountsByCode);
 }
+

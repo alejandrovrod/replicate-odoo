@@ -73,13 +73,13 @@ public sealed class StockPostingService : IStockPostingService
 
             // Resolve + sanity-check the GL accounts BEFORE any write (Constitution III.3).
             var sourceStockAccount = await RequirePostableAccountAsync(
-                sourceWarehouse.StockAccountId, company.Id, $"warehouse '{sourceWarehouse.Code}'", token);
+                sourceWarehouse.AccountId ?? Guid.Empty, company.Id, $"warehouse '{sourceWarehouse.WarehouseCode}'", token);
 
             Account? targetStockAccount = null;
             if (targetWarehouse is not null)
             {
                 targetStockAccount = await RequirePostableAccountAsync(
-                    targetWarehouse.StockAccountId, company.Id, $"warehouse '{targetWarehouse.Code}'", token);
+                    targetWarehouse.AccountId ?? Guid.Empty, company.Id, $"warehouse '{targetWarehouse.WarehouseCode}'", token);
             }
 
             var ledger = new List<StockLedgerEntry>(request.Lines.Count);
@@ -179,7 +179,7 @@ public sealed class StockPostingService : IStockPostingService
         {
             throw new StockValidationException(
                 StockErrorCodes.WarehouseNotFound,
-                $"Warehouse '{source.Code}' does not belong to company '{request.CompanyId}'.");
+                $"Warehouse '{source.WarehouseCode}' does not belong to company '{request.CompanyId}'.");
         }
 
         if (request.EntryType != StockEntryType.MaterialTransfer)
@@ -217,7 +217,7 @@ public sealed class StockPostingService : IStockPostingService
         {
             throw new StockValidationException(
                 StockErrorCodes.InvalidTargetWarehouse,
-                $"Target warehouse '{target.Code}' must belong to the same company as the source warehouse.");
+                $"Target warehouse '{target.WarehouseCode}' must belong to the same company as the source warehouse.");
         }
 
         return (source, target);
@@ -389,7 +389,7 @@ public sealed class StockPostingService : IStockPostingService
         var expenseAccount = await RequireItemExpenseAccountAsync(item, token);
         var layers = await GetLayersAsync(line, warehouse, request, ledger, token);
         var consumption = FifoValuation.Consume(
-            layers, line.Qty, company.AllowNegativeStock, item.Code, warehouse.Code);
+            layers, line.Qty, company.AllowNegativeStock, item.ItemCode, warehouse.WarehouseCode);
 
         ledger.Add(NewLedgerEntry(line, warehouse.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost));
 
@@ -417,7 +417,7 @@ public sealed class StockPostingService : IStockPostingService
 
         var layers = await GetLayersAsync(line, source, request, ledger, token);
         var consumption = FifoValuation.Consume(
-            layers, line.Qty, company.AllowNegativeStock, item.Code, source.Code);
+            layers, line.Qty, company.AllowNegativeStock, item.ItemCode, source.WarehouseCode);
 
         // Out of the source warehouse and INTO the target at the consumed value: value is preserved.
         ledger.Add(NewLedgerEntry(line, source.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost));
@@ -439,31 +439,14 @@ public sealed class StockPostingService : IStockPostingService
         {
             // Phase 3 implements FIFO ONLY (decision D5): do not half-build LIFO / Moving Average.
             throw new NotSupportedException(
-                $"Item '{item.Code}' uses valuation method '{item.ValuationMethod}', which is not supported yet. "
+                $"Item '{item.ItemCode}' uses valuation method '{item.ValuationMethod}', which is not supported yet. "
                 + "Phase 3 of the perpetual inventory engine implements ValuationMethod.Fifo only.");
         }
     }
 
-    private async Task<Account> RequireItemExpenseAccountAsync(Item item, CancellationToken token)
+    private Task<Account> RequireItemExpenseAccountAsync(Item item, CancellationToken token)
     {
-        if (item.ExpenseAccountId is not { } accountId || accountId == Guid.Empty)
-        {
-            throw new StockPostingConfigurationException(
-                $"Item '{item.Code}' has no ExpenseAccount configured; issues need an expense account "
-                + "(e.g. 5210 Cost of Goods Sold) to debit the COGS.");
-        }
-
-        var account = await _accounts.GetByIdAsync(accountId, token)
-            ?? throw new StockPostingConfigurationException(
-                $"The ExpenseAccount '{accountId}' of item '{item.Code}' does not exist.");
-
-        if (!account.IsActive || account.IsGroup)
-        {
-            throw new StockPostingConfigurationException(
-                $"The ExpenseAccount '{account.AccountCode}' of item '{item.Code}' must be an active leaf account.");
-        }
-
-        return account;
+        throw new NotImplementedException("Task 3.2: Configure accounts via Item Defaults/Company Defaults.");
     }
 
     /// <summary>
@@ -559,7 +542,7 @@ public sealed class StockPostingService : IStockPostingService
             PartyId = null,
             CostCenterId = null,
             IsCancelled = false,
-            Remarks = $"{request.EntryType}: {item.Code} x{line.Qty:0.####}",
+            Remarks = $"{request.EntryType}: {item.ItemCode} x{line.Qty:0.####}",
         });
 
     private async Task<string> NextVoucherAsync(StockPostingRequest request, Guid companyId, CancellationToken token)
@@ -615,7 +598,7 @@ public sealed class StockPostingService : IStockPostingService
         foreach (var line in stockEntry.Items.OrderBy(l => l.LineNumber))
         {
             var item = items[line.ItemId];
-            lines.Add(new StockEntryLineDto(line.ItemId, item.Code, item.Name, line.Qty, line.Rate, line.LineNumber));
+            lines.Add(new StockEntryLineDto(line.ItemId, item.ItemCode, item.ItemName, line.Qty, line.Rate, line.LineNumber));
         }
 
         var dto = new StockEntryDto(
@@ -658,3 +641,5 @@ public sealed class StockPostingService : IStockPostingService
 
     private static decimal Round4(decimal value) => Math.Round(value, 4, MidpointRounding.AwayFromZero);
 }
+
+

@@ -29,3 +29,4 @@ public sealed class LedgerMutatingCollection
     /// <summary>Collection name shared by every class that writes ledger rows or the freeze date.</summary>
     public const string Name = "LedgerMutating";
 }
+

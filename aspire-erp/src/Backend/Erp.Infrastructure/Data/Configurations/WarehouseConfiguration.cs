@@ -19,8 +19,8 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
             .ValueGeneratedOnAdd()
             .HasDefaultValueSql("NEWSEQUENTIALID()");
 
-        builder.Property(w => w.Code).HasMaxLength(50).IsRequired();
-        builder.Property(w => w.Name).HasMaxLength(150).IsRequired();
+        builder.Property(w => w.WarehouseCode).HasMaxLength(50).IsRequired();
+        builder.Property(w => w.WarehouseName).HasMaxLength(150).IsRequired();
         builder.Property(w => w.IsGroup).HasDefaultValue(false);
         builder.Property(w => w.IsActive).HasDefaultValue(true);
 
@@ -36,15 +36,12 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
             .HasConstraintName("FK_Warehouse_Parent")
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(w => w.StockAccount)
-            .WithMany()
-            .HasForeignKey(w => w.StockAccountId)
-            .HasConstraintName("FK_Warehouse_StockAccount")
-            .OnDelete(DeleteBehavior.Restrict);
+
 
         // Constitution IV.1: TenantId leads the composite unique index.
-        builder.HasIndex(w => new { w.TenantId, w.CompanyId, w.Code })
+        builder.HasIndex(w => new { w.TenantId, w.CompanyId, w.WarehouseCode })
             .IsUnique()
             .HasDatabaseName("IX_Warehouse_Tenant_Company_Code");
     }
 }
+

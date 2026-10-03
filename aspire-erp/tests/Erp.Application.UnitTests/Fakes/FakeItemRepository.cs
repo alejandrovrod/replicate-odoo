@@ -30,7 +30,7 @@ public sealed class FakeItemRepository : IItemRepository
     }
 
     public Task<bool> ExistsSkuAsync(string code, CancellationToken cancellationToken = default)
-        => Task.FromResult(SkuExists || _items.Any(i => i.Code == code));
+        => Task.FromResult(SkuExists || _items.Any(i => i.ItemCode == code));
 
     public Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Item>>(_items);
@@ -41,3 +41,6 @@ public sealed class FakeItemRepository : IItemRepository
     public Task<IReadOnlyList<Item>> GetByIdsAsync(IReadOnlyList<Guid> itemIds, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Item>>(_items.Where(i => itemIds.Contains(i.Id)).ToList());
 }
+
+
+

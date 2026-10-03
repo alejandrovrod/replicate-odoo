@@ -33,5 +33,8 @@ public sealed class FakeWarehouseRepository : IWarehouseRepository
         => Task.FromResult<IReadOnlyList<Warehouse>>(_warehouses.Where(w => w.CompanyId == companyId).ToList());
 
     public Task<bool> ExistsByCodeAsync(Guid companyId, string code, CancellationToken cancellationToken = default)
-        => Task.FromResult(_warehouses.Any(w => w.CompanyId == companyId && w.Code == code));
+        => Task.FromResult(_warehouses.Any(w => w.CompanyId == companyId && w.ItemCode == code));
 }
+
+
+

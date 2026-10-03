@@ -86,3 +86,4 @@ public sealed class FakeGLEntryRepository : IGLEntryRepository
             .Where(g => filter.From is not { } from || g.PostingDate >= from)
             .Where(g => filter.To is not { } to || g.PostingDate <= to);
 }
+

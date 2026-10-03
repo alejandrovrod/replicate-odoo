@@ -36,8 +36,8 @@ public sealed record PurchaseOrderDto(
             itemsById.TryGetValue(line.ItemId, out var item);
             lines.Add(new PurchaseOrderLineDto(
                 line.ItemId,
-                item?.Code ?? line.ItemId.ToString(),
-                item?.Name ?? string.Empty,
+                item?.ItemCode ?? line.ItemId.ToString(),
+                item?.ItemName ?? string.Empty,
                 line.Qty,
                 line.Rate,
                 line.LineNumber));

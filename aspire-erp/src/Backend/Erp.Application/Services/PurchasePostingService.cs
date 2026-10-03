@@ -81,7 +81,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
             // Resolve + sanity-check the GL accounts BEFORE any write (Constitution III.3).
             var stockAccount = await RequirePostableAccountAsync(
-                warehouse.StockAccountId, company.Id, $"warehouse '{warehouse.Code}'", token);
+                warehouse.AccountId ?? Guid.Empty, company.Id, $"warehouse '{warehouse.WarehouseCode}'", token);
             var receivedAccount = await RequireAccountByCodeAsync(
                 company.Id,
                 company.StockReceivedAccountCode,
@@ -122,11 +122,11 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 AddGlLine(
                     glLines, request.PostingDate, company.Id, ReceiptVoucherType, stockAccount,
                     debit: amount, credit: 0m,
-                    remarks: $"PurchaseReceipt: {item.Code} x{line.Qty:0.####}");
+                    remarks: $"PurchaseReceipt: {item.ItemCode} x{line.Qty:0.####}");
                 AddGlLine(
                     glLines, request.PostingDate, company.Id, ReceiptVoucherType, receivedAccount,
                     debit: 0m, credit: amount,
-                    remarks: $"PurchaseReceipt: {item.Code} x{line.Qty:0.####}");
+                    remarks: $"PurchaseReceipt: {item.ItemCode} x{line.Qty:0.####}");
             }
 
             // Constitution III.1: balance must hold to four decimals BEFORE anything is saved.
@@ -255,7 +255,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
                     throw new PurchaseValidationException(
                         PurchaseErrorCodes.QuantityMismatch,
                         $"Invoice quantity {line.Qty:0.####} must equal received quantity "
-                        + $"{receiptLine.Qty:0.####} for item '{items[line.ItemId].Code}' (full three-way match).");
+                        + $"{receiptLine.Qty:0.####} for item '{items[line.ItemId].ItemCode}' (full three-way match).");
                 }
             }
 
@@ -294,7 +294,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 AddGlLine(
                     glLines, request.PostingDate, company.Id, InvoiceVoucherType, receivedAccount,
                     debit: interim, credit: 0m,
-                    remarks: $"PurchaseInvoice: {item.Code} x{line.Qty:0.####} accrual clearance");
+                    remarks: $"PurchaseInvoice: {item.ItemCode} x{line.Qty:0.####} accrual clearance");
             }
 
             var taxAmount = Round4(request.TaxAmount);
@@ -392,7 +392,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
         {
             throw new StockValidationException(
                 StockErrorCodes.WarehouseNotFound,
-                $"Warehouse '{warehouse.Code}' does not belong to company '{companyId}'.");
+                $"Warehouse '{warehouse.WarehouseCode}' does not belong to company '{companyId}'.");
         }
 
         return warehouse;
@@ -692,3 +692,4 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
     private static decimal Round4(decimal value) => Math.Round(value, 4, MidpointRounding.AwayFromZero);
 }
+

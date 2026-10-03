@@ -136,3 +136,4 @@ public sealed class ErpApiFactory : WebApplicationFactory<Program>
         command.ExecuteNonQuery();
     }
 }
+

@@ -22,8 +22,8 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
         // Optimistic concurrency (specs ST-06/BY-06): store-generated rowversion token.
         builder.Property(i => i.RowVersion).IsRowVersion();
 
-        builder.Property(i => i.Code).HasMaxLength(50).IsRequired();
-        builder.Property(i => i.Name).HasMaxLength(150).IsRequired();
+        builder.Property(i => i.ItemCode).HasMaxLength(50).IsRequired();
+        builder.Property(i => i.ItemName).HasMaxLength(150).IsRequired();
 
         // Persist the enum NAME ('Fifo', ...) - same precedent as Account.RootType (plan §7.3).
         builder.Property(i => i.ValuationMethod)
@@ -33,26 +33,16 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
 
         builder.Property(i => i.IsActive).HasDefaultValue(true);
 
-        builder.HasOne(i => i.BaseUOM)
+        builder.HasOne(i => i.StockUom)
             .WithMany()
-            .HasForeignKey(i => i.BaseUOMId)
+            .HasForeignKey(i => i.StockUomId)
             .HasConstraintName("FK_Item_UOM")
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(i => i.IncomeAccount)
-            .WithMany()
-            .HasForeignKey(i => i.IncomeAccountId)
-            .HasConstraintName("FK_Item_IncomeAccount")
-            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(i => i.ExpenseAccount)
-            .WithMany()
-            .HasForeignKey(i => i.ExpenseAccountId)
-            .HasConstraintName("FK_Item_ExpenseAccount")
-            .OnDelete(DeleteBehavior.Restrict);
 
         // Task 3.1 DoD: unique SKU PER TENANT (items are tenant-wide, not company-scoped).
-        builder.HasIndex(i => new { i.TenantId, i.Code })
+        builder.HasIndex(i => new { i.TenantId, i.ItemCode })
             .IsUnique()
             .HasDatabaseName("IX_Item_Tenant_Code");
     }

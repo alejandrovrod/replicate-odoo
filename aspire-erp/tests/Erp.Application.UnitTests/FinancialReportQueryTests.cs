@@ -474,3 +474,4 @@ public sealed class FinancialReportQueryTests
             CreatedAt = DateTimeOffset.UtcNow,
         };
 }
+

@@ -175,3 +175,4 @@ public sealed class WarehouseValidatorTests
         Assert.Throws<ArgumentNullException>(() => WarehouseValidator.EnsureNoCycle(Guid.NewGuid(), null!));
     }
 }
+

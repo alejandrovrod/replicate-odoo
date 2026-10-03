@@ -55,7 +55,7 @@ public sealed class PurchasePostingServiceTests
         {
             Id = _companyId,
             TenantId = _tenantId,
-            Name = "Acme Industrial",
+            ItemName = "Acme Industrial",
             AllowNegativeStock = false,
             StockReceivedAccountCode = "2120",
             AccountsPayableAccountCode = "2110",
@@ -68,9 +68,9 @@ public sealed class PurchasePostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            Code = "WH-01",
-            Name = "Main Stores",
-            StockAccountId = _stockAccount.Id,
+            ItemCode = "WH-01",
+            ItemName = "Main Stores",
+            AccountId = _stockAccount.Id,
         };
         _warehouses.Seed(_warehouse);
 
@@ -78,10 +78,10 @@ public sealed class PurchasePostingServiceTests
         {
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
-            Code = "IT-001",
-            Name = "Steel Bracket",
+            ItemCode = "IT-001",
+            ItemName = "Steel Bracket",
             ValuationMethod = ValuationMethod.Fifo,
-            BaseUOMId = Guid.NewGuid(),
+            StockUomId = Guid.NewGuid(),
         };
         _items.Seed(_item);
 
@@ -89,8 +89,8 @@ public sealed class PurchasePostingServiceTests
         {
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
-            Code = "SUP-001",
-            Name = "Acme Industrial Supplies",
+            ItemCode = "SUP-001",
+            ItemName = "Acme Industrial Supplies",
             IsActive = true,
         };
     }
@@ -269,7 +269,7 @@ public sealed class PurchasePostingServiceTests
     [Fact]
     public async Task PostReceiptAsync_WarehouseWithoutStockAccount_FailsWithConfigurationException()
     {
-        _warehouse.StockAccountId = Guid.Empty;
+        _warehouse.AccountId = Guid.Empty;
 
         await Assert.ThrowsAsync<PurchasePostingConfigurationException>(() =>
             CreateService().PostReceiptAsync(NewReceiptRequest()));
@@ -541,3 +541,5 @@ public sealed class PurchasePostingServiceTests
             + $"D={invoicePosting.TotalDebit:0.0000}, C={invoicePosting.TotalCredit:0.0000}.");
     }
 }
+
+

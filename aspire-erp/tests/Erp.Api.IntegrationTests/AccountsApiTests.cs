@@ -143,3 +143,4 @@ public class AccountsApiTests : IClassFixture<ErpApiFactory>
         return (string)(await command.ExecuteScalarAsync())!;
     }
 }
+

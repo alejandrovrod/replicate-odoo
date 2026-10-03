@@ -58,12 +58,10 @@ public sealed class CreateItemCommandHandler : ICommandHandler<CreateItemCommand
             {
                 // Id is generated here so tests can inspect the entity before it is persisted.
                 Id = Guid.NewGuid(),
-                Code = code,
-                Name = command.Name.Trim(),
+                ItemCode = code,
+                ItemName = command.Name.Trim(),
                 ValuationMethod = command.ValuationMethod,
-                BaseUOMId = command.BaseUOMId,
-                IncomeAccountId = command.IncomeAccountId,
-                ExpenseAccountId = command.ExpenseAccountId,
+                StockUomId = command.BaseUOMId,
                 IsActive = command.IsActive,
 
                 // TenantId is intentionally NOT set: AppDbContext stamps CurrentTenantId on insert

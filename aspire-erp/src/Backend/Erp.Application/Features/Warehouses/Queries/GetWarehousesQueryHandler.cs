@@ -54,7 +54,7 @@ public sealed class GetWarehousesQueryHandler : IQueryHandler<GetWarehousesQuery
 
             if (childrenByParent.TryGetValue(warehouse.Id, out var children))
             {
-                children.Sort((x, y) => string.CompareOrdinal(x.Code, y.Code));
+                children.Sort((x, y) => string.CompareOrdinal(x.WarehouseCode, y.WarehouseCode));
                 childNodes = new List<WarehouseTreeNodeDto>(children.Count);
                 foreach (var child in children)
                 {
@@ -64,10 +64,10 @@ public sealed class GetWarehousesQueryHandler : IQueryHandler<GetWarehousesQuery
 
             return new WarehouseTreeNodeDto(
                 warehouse.Id,
-                warehouse.Code,
-                warehouse.Name,
+                warehouse.WarehouseCode,
+                warehouse.WarehouseName,
                 warehouse.ParentWarehouseId,
-                warehouse.StockAccountId,
+                warehouse.AccountId ?? Guid.Empty,
                 warehouse.IsGroup,
                 warehouse.IsActive,
                 childNodes ?? (IReadOnlyList<WarehouseTreeNodeDto>)Array.Empty<WarehouseTreeNodeDto>());
@@ -82,7 +82,7 @@ public sealed class GetWarehousesQueryHandler : IQueryHandler<GetWarehousesQuery
             }
         }
 
-        roots.Sort((x, y) => string.CompareOrdinal(x.Code, y.Code));
+        roots.Sort((x, y) => string.CompareOrdinal(x.WarehouseCode, y.WarehouseCode));
 
         var tree = new List<WarehouseTreeNodeDto>(roots.Count);
         foreach (var root in roots)
@@ -93,3 +93,4 @@ public sealed class GetWarehousesQueryHandler : IQueryHandler<GetWarehousesQuery
         return tree;
     }
 }
+

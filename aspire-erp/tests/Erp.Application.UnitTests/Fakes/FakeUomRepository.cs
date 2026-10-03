@@ -15,3 +15,4 @@ public sealed class FakeUomRepository : IUomRepository
     public Task<UOM?> GetByIdAsync(Guid uomId, CancellationToken cancellationToken = default)
         => Task.FromResult(_uoms.FirstOrDefault(u => u.Id == uomId));
 }
+

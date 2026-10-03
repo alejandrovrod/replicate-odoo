@@ -779,3 +779,4 @@ public class FinancialReportsApiTests : IClassFixture<ErpApiFactory>
         public decimal Expenses { get; set; }
     }
 }
+

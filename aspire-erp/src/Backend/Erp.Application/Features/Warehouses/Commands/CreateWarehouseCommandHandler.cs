@@ -30,14 +30,14 @@ public sealed class CreateWarehouseCommandHandler : ICommandHandler<CreateWareho
                 command.CompanyId,
                 command.Code,
                 command.Name,
-                command.StockAccountId);
+                command.AccountId);
 
             // The linked stock account must exist (FK sanity -> avoids a 500 from the database).
-            if (await _accounts.GetByIdAsync(command.StockAccountId, cancellationToken) is null)
+            if (await _accounts.GetByIdAsync(command.AccountId, cancellationToken) is null)
             {
                 throw new StockValidationException(
                     StockErrorCodes.MissingStockAccount,
-                    $"The linked stock account '{command.StockAccountId}' does not exist in this tenant.");
+                    $"The linked stock account '{command.AccountId}' does not exist in this tenant.");
             }
 
             IReadOnlyList<Warehouse> ancestors = Array.Empty<Warehouse>();
@@ -58,10 +58,10 @@ public sealed class CreateWarehouseCommandHandler : ICommandHandler<CreateWareho
             {
                 Id = Guid.NewGuid(),
                 CompanyId = command.CompanyId,
-                Code = command.Code.Trim(),
-                Name = command.Name.Trim(),
+                WarehouseCode = command.Code.Trim(),
+                WarehouseName = command.Name.Trim(),
                 ParentWarehouseId = command.ParentWarehouseId,
-                StockAccountId = command.StockAccountId,
+                AccountId = command.AccountId,
                 IsGroup = command.IsGroup,
                 IsActive = command.IsActive,
 
@@ -81,11 +81,11 @@ public sealed class CreateWarehouseCommandHandler : ICommandHandler<CreateWareho
                 WarehouseValidator.EnsureNoCycle(warehouse.Id, ancestorChain);
             }
 
-            if (await _warehouses.ExistsByCodeAsync(warehouse.CompanyId, warehouse.Code, cancellationToken))
+            if (await _warehouses.ExistsByCodeAsync(warehouse.CompanyId, warehouse.WarehouseCode, cancellationToken))
             {
                 throw new StockValidationException(
                     StockErrorCodes.DuplicateWarehouseCode,
-                    $"Warehouse code '{warehouse.Code}' already exists in this company.");
+                    $"Warehouse code '{warehouse.WarehouseCode}' already exists in this company.");
             }
 
             await _warehouses.AddAsync(warehouse, cancellationToken);
@@ -98,3 +98,4 @@ public sealed class CreateWarehouseCommandHandler : ICommandHandler<CreateWareho
         }
     }
 }
+

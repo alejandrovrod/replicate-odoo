@@ -6,6 +6,7 @@ using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Erp.Api.Filters;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -17,10 +18,9 @@ namespace Erp.Api.Controllers.V1;
 /// (VI.1), JSON content negotiation (VI.2) and exhaustive status documentation (VI.3).
 /// </summary>
 /// <remarks>
-/// <para><b>No <c>[IdempotencyKeyRequired]</c> here (AC-06 / Constitution VI.4 - FLAGGED).</b>
-/// The two transition actions DO post to GLEntry, so Article VI.4 will demand the filter once
-/// AC-06 ("Idempotent Submission Guard") gets an owning task in tasks.md; today it is explicitly
-/// out of scope for 2.3/2.4, so the endpoints run without it - see the report note.</para>
+/// <para>The two transition actions DO post to GLEntry, so Article VI.4 demands the 
+/// <c>[IdempotencyKeyRequired]</c> filter to prevent duplicate submissions (AC-06 / 
+/// "Idempotent Submission Guard").</para>
 /// <para><b>Consumes placement.</b> Mirrors PurchaseOrdersController: <c>[Consumes("application/json")]</c>
 /// only on the action that always receives a body (create); the transition bodies are OPTIONAL
 /// (an empty body is legal), so constraining their content type would 415 a client that POSTs
@@ -164,6 +164,7 @@ public sealed class JournalEntriesController : ControllerBase
     /// <param name="request">Optional optimistic concurrency token.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/submit")]
+    [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -200,6 +201,7 @@ public sealed class JournalEntriesController : ControllerBase
     /// <param name="request">Optional optimistic concurrency token.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/cancel")]
+    [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

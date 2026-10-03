@@ -57,6 +57,6 @@
   - **Action:** Build `GeneralLedgerOverview.tsx` in `erp-client` with voucher drill-down, account filtering, and debit/credit total validation.
   - **Acceptance:** Table renders chronological audit entries with verified balance badge.
 
-- [ ] **Task 2.7: Idempotency-Key Handling (AC-06)**
+- [x] **Task 2.7: Idempotency-Key Handling (AC-06)**
   - **Action:** Integrate Idempotency-Key validation in `Erp.Api` and `Erp.Domain` to prevent duplicate submissions on retries.
   - **Acceptance:** Repeated submissions with the same idempotency key return the cached result without duplicating `GLEntry` records.

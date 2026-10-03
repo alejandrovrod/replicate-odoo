@@ -1,4 +1,4 @@
-import { useActionState, type SetStateAction } from 'react'
+import { useActionState } from 'react'
 import { ApiError } from '../api/client'
 
 type ActionState<TData> = {

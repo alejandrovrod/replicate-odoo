@@ -94,7 +94,7 @@ CREATE TABLE Company (
     Name NVARCHAR(150) NOT NULL,
     DefaultCurrency NVARCHAR(3) NOT NULL DEFAULT 'USD',
     TaxId NVARCHAR(50) NOT NULL,
-    PeriodLockDate DATE NULL,
+    FrozenAccountsDate DATE NULL,
     AllowNegativeStock BIT NOT NULL DEFAULT 0,
     CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
     CONSTRAINT FK_Company_Tenant FOREIGN KEY (TenantId) REFERENCES Tenant(Id)

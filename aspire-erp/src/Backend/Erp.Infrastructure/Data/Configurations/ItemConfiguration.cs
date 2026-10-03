@@ -19,6 +19,9 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
             .ValueGeneratedOnAdd()
             .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        // Optimistic concurrency (specs ST-06/BY-06): store-generated rowversion token.
+        builder.Property(i => i.RowVersion).IsRowVersion();
+
         builder.Property(i => i.Code).HasMaxLength(50).IsRequired();
         builder.Property(i => i.Name).HasMaxLength(150).IsRequired();
 

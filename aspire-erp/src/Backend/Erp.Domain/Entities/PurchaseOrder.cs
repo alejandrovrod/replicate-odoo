@@ -60,6 +60,15 @@ public class PurchaseOrder : ITenantEntity
 
     public DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>
+    /// Optimistic concurrency token (SQL Server <c>rowversion</c> - spec BY-06): the workflow
+    /// (Draft -&gt; Ordered -&gt; Received -&gt; Billed) is a read-modify-write, so EF puts the
+    /// original value in the UPDATE ... WHERE clause and a concurrent transition between the load
+    /// and the save throws <c>DbUpdateConcurrencyException</c> instead of being silently lost.
+    /// Store-generated: never set from code.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = null!;
+
     public ICollection<PurchaseOrderLine> Lines { get; set; } = new List<PurchaseOrderLine>();
 }
 

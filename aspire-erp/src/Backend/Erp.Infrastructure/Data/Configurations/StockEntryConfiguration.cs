@@ -19,6 +19,9 @@ public sealed class StockEntryConfiguration : IEntityTypeConfiguration<StockEntr
             .ValueGeneratedOnAdd()
             .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        // Optimistic concurrency (spec ST-06): store-generated rowversion token.
+        builder.Property(s => s.RowVersion).IsRowVersion();
+
         builder.Property(s => s.EntryType)
             .HasConversion<string>()
             .HasMaxLength(20)

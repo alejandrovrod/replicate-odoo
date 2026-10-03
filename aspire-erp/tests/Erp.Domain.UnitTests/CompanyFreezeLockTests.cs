@@ -84,3 +84,4 @@ public sealed class CompanyFreezeLockTests
         Assert.Contains("2025-12-31", ex.Message, StringComparison.Ordinal);
     }
 }
+

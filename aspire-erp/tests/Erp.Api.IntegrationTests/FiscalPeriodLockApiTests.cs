@@ -155,3 +155,4 @@ public class FiscalPeriodLockApiTests : IClassFixture<ErpApiFactory>
         return checked((int)(long)(await command.ExecuteScalarAsync())!);
     }
 }
+

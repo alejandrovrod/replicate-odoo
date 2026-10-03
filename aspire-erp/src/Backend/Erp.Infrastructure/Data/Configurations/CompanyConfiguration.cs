@@ -26,9 +26,11 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.DefaultCurrency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
         builder.Property(c => c.TaxId).HasMaxLength(50).IsRequired();
 
-        // Phase 3 additions (decision D2): the two plan.md §3.2 columns the initial migration
-        // predates, plus the D3 code-not-FK GL default for stock receipts.
-        builder.Property(c => c.PeriodLockDate).HasColumnType("date");
+        // Phase 3 additions (decision D2): the two plan.md §2 columns the initial migration
+        // predates, plus the D3 code-not-FK GL default for stock receipts. PeriodLockDate was
+        // renamed to FrozenAccountsDate (tasks.md 2.2, plan.md §2 literal name) by the
+        // RenamePeriodLockDateToFrozenAccountsDate migration.
+        builder.Property(c => c.FrozenAccountsDate).HasColumnType("date");
         builder.Property(c => c.AllowNegativeStock).HasColumnType("bit").HasDefaultValue(false);
         builder.Property(c => c.StockReceivedAccountCode).HasMaxLength(50);
 

@@ -53,6 +53,12 @@ public sealed class CreateStockEntryCommandHandler : ICommandHandler<CreateStock
             // Task 3.3: the acceptance criterion is this exception reaching the caller as a 4xx.
             return Result<StockEntryPostingDto>.Failure(ex.Code, ex.Message);
         }
+        catch (FiscalPeriodLockedException ex)
+        {
+            // tasks.md 2.2 / spec AC-04: PostingDate <= Company.FrozenAccountsDate. The service
+            // threw BEFORE building any GLEntry line, so the failure carries zero data changes.
+            return Result<StockEntryPostingDto>.Failure(ex.Code, ex.Message);
+        }
         catch (NotSupportedException ex)
         {
             // Only FIFO is implemented in Phase 3 - report it as an explicit client-visible failure.

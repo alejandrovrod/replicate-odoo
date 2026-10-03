@@ -139,7 +139,18 @@ public sealed class PurchaseRepository : IPurchaseRepository
 
     public async Task UpdateOrderAsync(PurchaseOrder order, CancellationToken cancellationToken = default)
     {
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Spec BY-06: another request transitioned the order (or edited it) between our load
+            // and this save - the RowVersion WHERE clause matched 0 rows. Translate EF's exception
+            // into the typed domain failure the handlers convert into a 409 Result.Failure,
+            // mirroring the unique-violation translation in AddInvoiceAsync above.
+            throw new ConcurrencyConflictException(nameof(PurchaseOrder), order.Id, ex);
+        }
     }
 
     public async Task AddReceiptAsync(PurchaseReceipt receipt, CancellationToken cancellationToken = default)

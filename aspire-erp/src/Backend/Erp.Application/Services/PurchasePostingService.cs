@@ -28,6 +28,9 @@ public sealed class PurchasePostingService : IPurchasePostingService
     private const string ReceiptVoucherPrefix = "PR";
     private const string InvoiceVoucherPrefix = "PINV";
 
+    /// <summary>plan.md §2 GLEntry.PartyType vocabulary value for supplier parties.</summary>
+    private const string SupplierPartyType = "Supplier";
+
     private readonly ICompanyRepository _companies;
     private readonly IAccountRepository _accounts;
     private readonly IWarehouseRepository _warehouses;
@@ -68,6 +71,10 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 ?? throw new StockValidationException(
                     StockErrorCodes.CompanyNotFound,
                     $"Company '{request.CompanyId}' was not found in this tenant.");
+
+            // tasks.md 2.2 / spec AC-04: hard fiscal period lock - FIRST check, before any
+            // GLEntry/StockLedgerEntry line is built, so a back-dated receipt modifies zero data.
+            company.EnsurePostingDateUnlocked(request.PostingDate);
 
             var warehouse = await ResolveWarehouseAsync(request.WarehouseId, company.Id, token);
             var items = await LoadItemsAsync(request.Lines.Select(l => l.ItemId), token);
@@ -145,9 +152,16 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 entry.VoucherNo = receipt.VoucherNo;
             }
 
+            // plan.md §2 voucher provenance: the receipt aggregate is the source document; the
+            // supplier party rides on the GL lines only when the receipt fulfils an order
+            // (direct purchases have no counterparty on the document chain -> null).
+            Guid? supplierId = order?.SupplierId;
             foreach (var glLine in glLines)
             {
                 glLine.VoucherNo = receipt.VoucherNo;
+                glLine.VoucherId = receipt.Id;
+                glLine.PartyType = supplierId.HasValue ? SupplierPartyType : null;
+                glLine.PartyId = supplierId;
             }
 
             await _purchases.AddReceiptAsync(receipt, token);
@@ -180,6 +194,10 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 ?? throw new StockValidationException(
                     StockErrorCodes.CompanyNotFound,
                     $"Company '{request.CompanyId}' was not found in this tenant.");
+
+            // tasks.md 2.2 / spec AC-04: hard fiscal period lock - FIRST check, before any
+            // GLEntry line is built, so a back-dated invoice modifies zero data.
+            company.EnsurePostingDateUnlocked(request.PostingDate);
 
             var receipt = await _purchases.GetReceiptByIdAsync(request.PurchaseReceiptId, token)
                 ?? throw new PurchaseValidationException(
@@ -335,9 +353,15 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 Lines = BuildInvoiceLines(request, items),
             };
 
+            // plan.md §2 voucher provenance: the invoice aggregate is the source document; the
+            // supplier party rides on the GL lines when the receipt chain reaches an order.
+            Guid? supplierId = receipt.PurchaseOrder?.SupplierId;
             foreach (var glLine in glLines)
             {
                 glLine.VoucherNo = invoice.VoucherNo;
+                glLine.VoucherId = invoice.Id;
+                glLine.PartyType = supplierId.HasValue ? SupplierPartyType : null;
+                glLine.PartyId = supplierId;
             }
 
             await _purchases.AddInvoiceAsync(invoice, token);
@@ -541,10 +565,24 @@ public sealed class PurchasePostingService : IPurchasePostingService
             Account = account,
             Debit = Round4(debit),
             Credit = Round4(credit),
+
+            // plan.md §2 account-currency pair: single-currency postings book the ledger amount
+            // 1:1 and snapshot the account currency (multi-currency restatement = spec AC-05, later).
+            DebitInAccountCurrency = Round4(debit),
+            CreditInAccountCurrency = Round4(credit),
+            AccountCurrency = account.Currency,
+
             VoucherType = voucherType,
 
-            // VoucherNo is stamped after the gapless number is assigned (same transaction).
+            // VoucherNo + VoucherId are stamped after the gapless number is assigned and the
+            // source aggregate exists (same transaction); the supplier party (when the document
+            // chain reaches a PurchaseOrder) and the absent cost center are stamped there too.
             VoucherNo = string.Empty,
+            VoucherId = Guid.Empty,
+            PartyType = null,
+            PartyId = null,
+            CostCenterId = null,
+            IsCancelled = false,
             Remarks = remarks,
         });
 

@@ -116,7 +116,8 @@ FROM dbo.Account
 WHERE TenantId = '11111111-1111-4111-8111-111111111111'
 ORDER BY AccountCode;
 
-SELECT Id, AllowNegativeStock, PeriodLockDate, StockReceivedAccountCode
+-- FrozenAccountsDate (was PeriodLockDate, renamed by tasks.md 2.2): NULL = open periods.
+SELECT Id, AllowNegativeStock, FrozenAccountsDate, StockReceivedAccountCode
 FROM dbo.Company
 WHERE Id = '22222222-2222-4222-8222-222222222222';
 GO

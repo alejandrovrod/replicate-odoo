@@ -63,6 +63,11 @@ public sealed class StockPostingService : IStockPostingService
                     StockErrorCodes.CompanyNotFound,
                     $"Company '{request.CompanyId}' was not found in this tenant.");
 
+            // tasks.md 2.2 / spec AC-04: hard fiscal period lock. Checked FIRST - before a single
+            // GLEntry or StockLedgerEntry line is built - so a back-dated attempt against a frozen
+            // company modifies ZERO data (the exception unwinds the transaction).
+            company.EnsurePostingDateUnlocked(request.PostingDate);
+
             var (sourceWarehouse, targetWarehouse) = await ResolveWarehousesAsync(request, token);
             var items = await LoadItemsAsync(request, token);
 
@@ -145,6 +150,10 @@ public sealed class StockPostingService : IStockPostingService
             foreach (var glLine in glLines)
             {
                 glLine.VoucherNo = stockEntry.VoucherNo;
+
+                // plan.md §2: VoucherId is the durable link to the source aggregate; a stock
+                // entry has no counterparty dimension, so PartyType/PartyId stay null.
+                glLine.VoucherId = stockEntry.Id;
             }
 
             await _stock.AddStockEntryAsync(stockEntry, token);
@@ -533,10 +542,23 @@ public sealed class StockPostingService : IStockPostingService
             Account = account,
             Debit = Round4(debit),
             Credit = Round4(credit),
+
+            // plan.md §2 account-currency pair: single-currency postings book the ledger amount
+            // 1:1 and snapshot the account currency (multi-currency restatement = spec AC-05, later).
+            DebitInAccountCurrency = Round4(debit),
+            CreditInAccountCurrency = Round4(credit),
+            AccountCurrency = account.Currency,
+
             VoucherType = VoucherType,
 
-            // VoucherNo is stamped after the gapless number is assigned (same transaction).
+            // VoucherNo + VoucherId are stamped after the gapless number is assigned (same
+            // transaction); no party dimension on stock vouchers; no cost center module yet.
             VoucherNo = string.Empty,
+            VoucherId = Guid.Empty,
+            PartyType = null,
+            PartyId = null,
+            CostCenterId = null,
+            IsCancelled = false,
             Remarks = $"{request.EntryType}: {item.Code} x{line.Qty:0.####}",
         });
 

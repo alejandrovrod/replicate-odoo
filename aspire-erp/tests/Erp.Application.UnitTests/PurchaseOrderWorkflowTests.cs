@@ -225,4 +225,22 @@ public sealed class PurchaseOrderWorkflowTests
         Assert.Equal(PurchaseErrorCodes.PurchaseOrderNotFound, result.Error!.Code);
         Assert.Equal(PurchaseOrderStatus.Draft, order.Status);
     }
+
+    [Fact]
+    public async Task Submit_ConcurrentModification_FailsWithConcurrencyConflict()
+    {
+        // Spec BY-06: another request saved the order between our load and our save, so the
+        // RowVersion check rejects the update - the handler must surface it as a typed failure
+        // (mapped to 409 by the API), never as an unhandled exception.
+        var order = SeedOrder(PurchaseOrderStatus.Draft);
+        _purchases.FailNextOrderUpdate = true;
+
+        var result = await SubmitOrderHandler().HandleAsync(
+            new SubmitPurchaseOrderCommand(_companyId, order.Id));
+
+        Assert.False(result.IsSuccess);
+        Assert.NotNull(result.Error);
+        Assert.Equal(ConcurrencyErrorCodes.ConcurrencyConflict, result.Error!.Code);
+        Assert.Contains(nameof(PurchaseOrder), result.Error!.Message);
+    }
 }

@@ -317,6 +317,57 @@ public sealed class StockPostingServiceTests
         Assert.Equal(-65m, sle.QtyChange);
     }
 
+    // ------------------------------------------------- fiscal period lock (task 2.2 / AC-04)
+
+    [Fact]
+    public async Task PostAsync_BackDatedAgainstFrozenCompany_ThrowsFiscalPeriodLockAndWritesNothing()
+    {
+        // spec AC-04 Gherkin: freeze date 2025-12-31, attempt posts on 2025-12-15.
+        _companies.Company!.FrozenAccountsDate = new DateOnly(2025, 12, 31);
+
+        var request = Request(
+                StockEntryType.MaterialReceipt,
+                new List<StockPostingLine> { new(_item.Id, 10m, 5m) })
+            with { PostingDate = new DateOnly(2025, 12, 15) };
+
+        var ex = await Assert.ThrowsAsync<FiscalPeriodLockedException>(
+            () => CreateService().PostAsync(request));
+
+        Assert.Equal(AccountingErrorCodes.FiscalPeriodLocked, ex.Code);
+        Assert.Equal(new DateOnly(2025, 12, 15), ex.PostingDate);
+        Assert.Equal(new DateOnly(2025, 12, 31), ex.FrozenAccountsDate);
+
+        // AC-04: "no data is modified" - the domain check runs before the FIRST line is built.
+        Assert.Empty(_stock.StockEntries);
+        Assert.Empty(_stock.AddedLedger);
+        Assert.Empty(_stock.AddedGlEntries);
+    }
+
+    [Fact]
+    public async Task PostAsync_AllPostings_SatisfyDoubleEntryZeroSumInvariant()
+    {
+        // Task 2.1 acceptance AT THE SERVICE LEVEL: whatever these services emit obeys
+        // spec AC-01 |sum D - sum C| <= 0.0001. The THROW side lives in DoubleEntryGuardTests;
+        // an imbalanced line set is structurally unreachable through this service because both
+        // sides of every line pair derive from ONE rounded amount (the guard stays as
+        // defense-in-depth for the user-authored journal lines of tasks.md 2.3).
+        SeedFifoLayers();
+
+        var service = CreateService();
+        var receipt = await service.PostAsync(
+            Request(StockEntryType.MaterialReceipt, new List<StockPostingLine> { new(_item.Id, 60m, 10.00m) }));
+        var issue = await service.PostAsync(
+            Request(StockEntryType.MaterialIssue, new List<StockPostingLine> { new(_item.Id, 25m, null) }));
+
+        foreach (var posting in new[] { receipt, issue })
+        {
+            Assert.True(
+                Math.Abs(posting.TotalDebit - posting.TotalCredit) <= 0.0001m,
+                $"Voucher {posting.Entry.VoucherNo} is out of balance: "
+                + $"D={posting.TotalDebit:0.0000}, C={posting.TotalCredit:0.0000}.");
+        }
+    }
+
     // ------------------------------------------------------------------ validation failures
 
     [Fact]

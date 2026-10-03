@@ -24,10 +24,33 @@ public class Company : ITenantEntity
     public string TaxId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Hard period lock (plan.md §3.2): documents dated on or before this day cannot be posted.
-    /// Added in Phase 3 to kill schema drift; enforced by later phases.
+    /// Hard period lock (plan.md §2 "FrozenAccountsDate DATE NULL" / spec AC-04): documents dated
+    /// on or before this day cannot be posted. NULL = every period open. Enforced by
+    /// <see cref="EnsurePostingDateUnlocked"/> at every posting entry point.
     /// </summary>
-    public DateOnly? PeriodLockDate { get; set; }
+    public DateOnly? FrozenAccountsDate { get; set; }
+
+    /// <summary>
+    /// Spec AC-04 / tasks.md 2.2: rejects a posting dated inside the closed fiscal period. The
+    /// canonical plan.md §3 rule: <c>FrozenAccountsDate.HasValue &amp;&amp; postingDate &lt;=
+    /// FrozenAccountsDate</c> -&gt; <see cref="FiscalPeriodLockedException"/>.
+    /// </summary>
+    /// <remarks>
+    /// Domain method (Constitution I.2): pure, no I/O, reusable by EVERY posting pipeline - the
+    /// stock and purchase services call it before the first GLEntry line is built, and the
+    /// JournalEntry pipeline (tasks.md 2.3) calls it the same way.
+    /// </remarks>
+    /// <param name="postingDate">Accounting date of the voucher being posted.</param>
+    /// <exception cref="Exceptions.FiscalPeriodLockedException">
+    /// <paramref name="postingDate"/> &lt;= <see cref="FrozenAccountsDate"/>.
+    /// </exception>
+    public void EnsurePostingDateUnlocked(DateOnly postingDate)
+    {
+        if (FrozenAccountsDate.HasValue && postingDate <= FrozenAccountsDate.Value)
+        {
+            throw new Exceptions.FiscalPeriodLockedException(postingDate, FrozenAccountsDate.Value);
+        }
+    }
 
     /// <summary>
     /// Company policy for Task 3.3: when false, issuing/transferring more stock than available

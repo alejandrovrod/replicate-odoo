@@ -126,6 +126,11 @@ public sealed class PurchaseOrdersController : ControllerBase
                     "Purchase Order Conflict",
                     error.Message,
                     error.Code),
+                ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Concurrent Update Conflict",
+                    error.Message,
+                    error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
                     "Purchase Order Rejected",

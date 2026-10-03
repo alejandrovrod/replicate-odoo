@@ -8,6 +8,8 @@ using Erp.Application.Features.Accounts.Commands;
 using Erp.Application.Features.Accounts.Queries;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
+using Erp.Application.Features.GeneralLedger.Commands;
+using Erp.Application.Features.GeneralLedger.Queries;
 using Erp.Application.Features.Items.Commands;
 using Erp.Application.Features.Items.Queries;
 using Erp.Application.Features.Stock.Commands;
@@ -89,6 +91,27 @@ builder.Services.AddScoped<IQueryHandler<GetPurchaseReceiptsQuery, IReadOnlyList
 builder.Services.AddScoped<ICommandHandler<PostPurchaseInvoiceCommand, Result<PurchaseInvoicePostingDto>>, PostPurchaseInvoiceCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPurchaseInvoicesQuery, IReadOnlyList<PurchaseInvoiceDto>>, GetPurchaseInvoicesQueryHandler>();
 
+// Journal Entry pipeline (tasks.md 2.3/2.4): the manual-voucher aggregate, the gapless JV number
+// and the ATOMIC submit/cancel ledger appends. Same split as every other module: repository in
+// Erp.Infrastructure, commands/queries/DTOs in Erp.Application - only the composition root knows
+// both (decision C2).
+builder.Services.AddScoped<IJournalRepository, JournalRepository>();
+builder.Services.AddScoped<ICommandHandler<CreateJournalEntryCommand, Result<JournalEntryDto>>, CreateJournalEntryCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitJournalEntryCommand, Result<JournalEntryDto>>, SubmitJournalEntryCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelJournalEntryCommand, Result<JournalEntryDto>>, CancelJournalEntryCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetJournalEntriesQuery, IReadOnlyList<JournalEntryDto>>, GetJournalEntriesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetJournalEntryQuery, JournalEntryDto?>, GetJournalEntryQueryHandler>();
+
+// Financial Reporting (tasks.md 2.5): the four read-only report queries over GLEntry. The ledger
+// repository exposes NO write path (Constitution III.2 - append-only ledger), so a report can
+// never mutate what it measures. Same split as every other module: repository in Erp.Infrastructure,
+// queries/handlers/DTOs in Erp.Application - only the composition root knows both (decision C2).
+builder.Services.AddScoped<IGLEntryRepository, GLEntryRepository>();
+builder.Services.AddScoped<IQueryHandler<GetGeneralLedgerQuery, GeneralLedgerReportDto>, GetGeneralLedgerQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetTrialBalanceQuery, TrialBalanceReportDto>, GetTrialBalanceQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBalanceSheetQuery, BalanceSheetReportDto>, GetBalanceSheetQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetProfitAndLossQuery, ProfitAndLossReportDto>, GetProfitAndLossQueryHandler>();
+
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).
 builder.Services.AddScoped<IdempotencyFilter>();
@@ -126,3 +149,12 @@ app.MapControllers();
 app.MapDefaultEndpoints();
 
 app.Run();
+
+/// <summary>
+/// Exposes the top-level-statement entry point as a public type so Task 1.3's HTTP integration
+/// tests (tests/Erp.Api.IntegrationTests) can reference it as WebApplicationFactory&lt;Program&gt;.
+/// Minimal change: top-level programs compile to an internal class without this declaration.
+/// </summary>
+public partial class Program
+{
+}

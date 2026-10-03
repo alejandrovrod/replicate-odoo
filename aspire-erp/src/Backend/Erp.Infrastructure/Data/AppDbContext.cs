@@ -55,6 +55,8 @@ public class AppDbContext : DbContext
 
     public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
 
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

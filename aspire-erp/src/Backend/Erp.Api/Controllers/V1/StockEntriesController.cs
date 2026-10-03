@@ -85,8 +85,10 @@ public sealed class StockEntriesController : ControllerBase
         {
             var error = result.Error!;
 
-            // RFC 7807: duplicates conflict, every other domain failure - including the Task 3.3
-            // negative-stock rejection - is a bad request carrying the stable machine code.
+            // RFC 7807: duplicates conflict (and so does a frozen fiscal period, spec AC-04 -
+            // 409 keeps every state conflict in one status), every other domain failure -
+            // including the Task 3.3 negative-stock rejection - is a bad request carrying the
+            // stable machine code.
             return error.Code switch
             {
                 StockErrorCodes.DuplicateItemCode
@@ -95,6 +97,11 @@ public sealed class StockEntriesController : ControllerBase
                         "Duplicate Stock Master",
                         error.Message,
                         error.Code),
+                AccountingErrorCodes.FiscalPeriodLocked => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Fiscal Period Locked",
+                    error.Message,
+                    error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
                     "Stock Entry Rejected",

@@ -1,5 +1,7 @@
 using Erp.Domain.Entities;
+using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Infrastructure.Data.Repositories;
@@ -22,8 +24,27 @@ public sealed class AccountRepository : IAccountRepository
     public async Task AddAsync(Account account, CancellationToken cancellationToken = default)
     {
         await _dbContext.Accounts.AddAsync(account, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // UQ_Account_Tenant_Company_Code (plan.md §7.3) is the hard backstop of the
+            // duplicate-code rule (Task 1.1): the handler's ExistsByCodeAsync pre-check can be
+            // raced by a concurrent insert, so translate the race into the same domain failure
+            // the pre-check raises instead of leaking an EF/SQL exception to the API layer
+            // (mirrors PurchaseRepository.AddInvoiceAsync).
+            _dbContext.Entry(account).State = EntityState.Detached;
+            throw new AccountValidationException(
+                AccountErrorCodes.DuplicateAccountCode,
+                $"Account code '{account.AccountCode}' already exists in this company's Chart of Accounts.");
+        }
     }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex) =>
+        ex.InnerException is SqlException { Number: 2601 or 2627 };
 
     public async Task<IReadOnlyList<Account>> GetByIdWithAncestorsAsync(Guid accountId, CancellationToken cancellationToken = default)
     {

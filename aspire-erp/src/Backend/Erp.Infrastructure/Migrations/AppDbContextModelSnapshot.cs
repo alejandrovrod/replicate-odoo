@@ -77,8 +77,21 @@ namespace Erp.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Other");
 
                     b.HasKey("Id");
 
@@ -87,7 +100,8 @@ namespace Erp.Infrastructure.Migrations
                     b.HasIndex("ParentAccountId");
 
                     b.HasIndex("TenantId", "CompanyId", "AccountCode")
-                        .HasDatabaseName("IX_Account_Tenant_Company_Code");
+                        .IsUnique()
+                        .HasDatabaseName("UQ_Account_Tenant_Company_Code");
 
                     b.ToTable("Account", (string)null);
 
@@ -131,6 +145,9 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("nvarchar(3)")
                         .HasDefaultValue("USD");
 
+                    b.Property<DateOnly?>("FrozenAccountsDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("InputTaxRecoverableAccountCode")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -144,9 +161,6 @@ namespace Erp.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasColumnName("PeriodEnd");
-
-                    b.Property<DateOnly?>("PeriodLockDate")
-                        .HasColumnType("date");
 
                     b.Property<DateTime>("PeriodStart")
                         .ValueGeneratedOnAddOrUpdate()
@@ -196,10 +210,20 @@ namespace Erp.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("AccountCurrency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("USD");
+
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CostCenterId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -212,10 +236,32 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("CreditInAccountCurrency")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<decimal>("Debit")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0m);
+
+                    b.Property<decimal>("DebitInAccountCurrency")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<bool>("IsCancelled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid?>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PartyType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateOnly>("PostingDate")
                         .HasColumnType("date");
@@ -224,6 +270,9 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("VoucherId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("VoucherNo")
@@ -240,16 +289,19 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasIndex("AccountId");
 
-                    b.HasIndex("TenantId", "AccountId", "PostingDate")
-                        .HasDatabaseName("IX_GLEntry_Tenant_Account_Date");
+                    b.HasIndex("TenantId", "VoucherType", "VoucherId")
+                        .HasDatabaseName("IX_GLEntry_Tenant_Voucher");
 
-                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("TenantId", "AccountId", "PostingDate"), new[] { "Debit", "Credit", "VoucherType", "VoucherNo" });
+                    b.HasIndex("TenantId", "CompanyId", "AccountId", "PostingDate")
+                        .HasDatabaseName("IX_GLEntry_Tenant_Company_Account_Date");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("TenantId", "CompanyId", "AccountId", "PostingDate"), new[] { "Debit", "Credit", "VoucherType", "VoucherNo" });
 
                     b.ToTable("GLEntry", null, t =>
                         {
-                            t.HasCheckConstraint("CK_Credit_Positive", "[Credit] >= 0");
+                            t.HasCheckConstraint("CK_Credit_NonNegative", "[Credit] >= 0");
 
-                            t.HasCheckConstraint("CK_Debit_Positive", "[Debit] >= 0");
+                            t.HasCheckConstraint("CK_Debit_NonNegative", "[Debit] >= 0");
                         });
                 });
 
@@ -324,6 +376,12 @@ namespace Erp.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
@@ -345,6 +403,115 @@ namespace Erp.Infrastructure.Migrations
                         .HasDatabaseName("IX_Item_Tenant_Code");
 
                     b.ToTable("Item", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.JournalEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+                    b.Property<DateOnly>("PostingDate")
+                        .HasColumnType("date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("UserRemark")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VoucherNo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("TenantId", "CompanyId", "CreatedAt")
+                        .HasDatabaseName("IX_JournalEntry_Tenant_Company_CreatedAt");
+
+                    b.HasIndex("TenantId", "CompanyId", "VoucherNo")
+                        .HasDatabaseName("IX_JournalEntry_Tenant_Company_Voucher");
+
+                    b.ToTable("JournalEntry", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.JournalEntryLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CostCenterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Credit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Debit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid>("JournalEntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PartyType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("JournalEntryId", "LineNumber")
+                        .HasDatabaseName("IX_JournalEntryLine_JournalEntry_Line");
+
+                    b.ToTable("JournalEntryLine", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_JournalEntryLine_Credit_NonNegative", "[Credit] >= 0");
+
+                            t.HasCheckConstraint("CK_JournalEntryLine_Debit_NonNegative", "[Debit] >= 0");
+                        });
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoice", b =>
@@ -457,6 +624,12 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<DateOnly>("PostingDate")
                         .HasColumnType("date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -626,6 +799,12 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<DateOnly>("PostingDate")
                         .HasColumnType("date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<Guid?>("TargetWarehouseId")
                         .HasColumnType("uniqueidentifier");
@@ -985,6 +1164,36 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("IncomeAccount");
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.JournalEntry", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_JournalEntry_Company");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.JournalEntryLine", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_JournalEntryLine_Account");
+
+                    b.HasOne("Erp.Domain.Entities.JournalEntry", "JournalEntry")
+                        .WithMany("Lines")
+                        .HasForeignKey("JournalEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("JournalEntry");
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoice", b =>
                 {
                     b.HasOne("Erp.Domain.Entities.Company", null)
@@ -1225,6 +1434,11 @@ namespace Erp.Infrastructure.Migrations
             modelBuilder.Entity("Erp.Domain.Entities.Account", b =>
                 {
                     b.Navigation("Children");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.JournalEntry", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoice", b =>

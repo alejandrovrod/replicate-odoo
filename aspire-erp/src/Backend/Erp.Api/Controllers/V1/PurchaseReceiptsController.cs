@@ -81,13 +81,25 @@ public sealed class PurchaseReceiptsController : ControllerBase
         {
             var error = result.Error!;
 
-            // RFC 7807: workflow conflicts (an order that cannot receive) are 409, every other
-            // domain rejection is a bad request carrying the stable machine code.
+            // RFC 7807: workflow conflicts (an order that cannot receive), RowVersion races
+            // (spec BY-06) and a frozen fiscal period (spec AC-04 - the request conflicts with
+            // the state of the fiscal calendar) are 409, every other domain rejection is a bad
+            // request carrying the stable machine code.
             return error.Code switch
             {
                 PurchaseErrorCodes.InvalidStatusTransition => Problem(
                     StatusCodes.Status409Conflict,
                     "Purchase Order Conflict",
+                    error.Message,
+                    error.Code),
+                ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Concurrent Update Conflict",
+                    error.Message,
+                    error.Code),
+                AccountingErrorCodes.FiscalPeriodLocked => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Fiscal Period Locked",
                     error.Message,
                     error.Code),
                 _ => Problem(

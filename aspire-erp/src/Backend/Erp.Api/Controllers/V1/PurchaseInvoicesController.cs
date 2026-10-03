@@ -82,8 +82,10 @@ public sealed class PurchaseInvoicesController : ControllerBase
         {
             var error = result.Error!;
 
-            // RFC 7807: the one-invoice-per-receipt rule conflicts with the existing bill, every
-            // other domain rejection (three-way match included) is a bad request.
+            // RFC 7807: the one-invoice-per-receipt rule conflicts with the existing bill, a
+            // stale order status, a RowVersion race (spec BY-06) or a frozen fiscal period
+            // (spec AC-04) are 409, every other domain rejection (three-way match included)
+            // is a bad request.
             return error.Code switch
             {
                 PurchaseErrorCodes.InvoiceAlreadyExists => Problem(
@@ -94,6 +96,16 @@ public sealed class PurchaseInvoicesController : ControllerBase
                 PurchaseErrorCodes.InvalidStatusTransition => Problem(
                     StatusCodes.Status409Conflict,
                     "Purchase Order Conflict",
+                    error.Message,
+                    error.Code),
+                ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Concurrent Update Conflict",
+                    error.Message,
+                    error.Code),
+                AccountingErrorCodes.FiscalPeriodLocked => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Fiscal Period Locked",
                     error.Message,
                     error.Code),
                 _ => Problem(

@@ -66,8 +66,21 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// When set, the NEXT <c>UpdateOrderAsync</c> fails like the real repository does after a
+    /// RowVersion mismatch (<c>DbUpdateConcurrencyException</c> translated to
+    /// <see cref="ConcurrencyConflictException"/>); the flag resets itself so only one call fails.
+    /// </summary>
+    public bool FailNextOrderUpdate { get; set; }
+
     public Task UpdateOrderAsync(PurchaseOrder order, CancellationToken cancellationToken = default)
     {
+        if (FailNextOrderUpdate)
+        {
+            FailNextOrderUpdate = false;
+            throw new ConcurrencyConflictException(nameof(PurchaseOrder), order.Id);
+        }
+
         // In-memory: the entity instance IS the store; workflow mutations are already applied.
         return Task.CompletedTask;
     }

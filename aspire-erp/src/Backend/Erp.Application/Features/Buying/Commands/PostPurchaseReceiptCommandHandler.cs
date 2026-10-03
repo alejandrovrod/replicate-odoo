@@ -46,5 +46,16 @@ public sealed class PostPurchaseReceiptCommandHandler
         {
             return Result<PurchaseReceiptPostingDto>.Failure(ex.Code, ex.Message);
         }
+        catch (ConcurrencyConflictException ex)
+        {
+            // Spec BY-06: the order status changed between the load and the save (RowVersion).
+            return Result<PurchaseReceiptPostingDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (FiscalPeriodLockedException ex)
+        {
+            // tasks.md 2.2 / spec AC-04: PostingDate <= Company.FrozenAccountsDate. The service
+            // threw BEFORE building any GLEntry line, so the failure carries zero data changes.
+            return Result<PurchaseReceiptPostingDto>.Failure(ex.Code, ex.Message);
+        }
     }
 }

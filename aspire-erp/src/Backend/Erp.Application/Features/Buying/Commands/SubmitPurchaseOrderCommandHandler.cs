@@ -64,6 +64,11 @@ public sealed class SubmitPurchaseOrderCommandHandler
         {
             return Result<PurchaseOrderDto>.Failure(ex.Code, ex.Message);
         }
+        catch (ConcurrencyConflictException ex)
+        {
+            // Spec BY-06: the order changed under our feet (RowVersion mismatch on save).
+            return Result<PurchaseOrderDto>.Failure(ex.Code, ex.Message);
+        }
     }
 
     private async Task<Dictionary<Guid, Item>> LoadItemsAsync(PurchaseOrder order, CancellationToken cancellationToken)

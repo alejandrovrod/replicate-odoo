@@ -218,6 +218,22 @@ public sealed class PurchasePostingServiceTests
         Assert.Equal(order.Id, result.Receipt.PurchaseOrderId);
     }
 
+    [Fact]
+    public async Task PostReceiptAsync_ConcurrentOrderUpdate_ThrowsConcurrencyConflict()
+    {
+        // Spec BY-06: the workflow transition is a read-modify-write, so a RowVersion mismatch on
+        // save surfaces as a typed domain exception that bubbles to the CQRS handler (which turns
+        // it into Result.Failure -> 409). The service must NOT swallow it.
+        var order = SeedOrder(PurchaseOrderStatus.Ordered);
+        _purchases.FailNextOrderUpdate = true;
+
+        var ex = await Assert.ThrowsAsync<ConcurrencyConflictException>(() =>
+            CreateService().PostReceiptAsync(NewReceiptRequest(order.Id)));
+
+        Assert.Equal(ConcurrencyErrorCodes.ConcurrencyConflict, ex.Code);
+        Assert.Equal(order.Id, ex.EntityId);
+    }
+
     [Theory]
     [InlineData(PurchaseOrderStatus.Draft)]
     [InlineData(PurchaseOrderStatus.Billed)]
@@ -447,5 +463,81 @@ public sealed class PurchasePostingServiceTests
                 NewInvoiceRequest(receipt.Id, taxAmount: 0m, MatchLine(receiptLine, rate: 100m))));
 
         Assert.Empty(_purchases.Invoices);
+    }
+
+    // ------------------------------------------------ fiscal period lock (task 2.2 / AC-04)
+
+    [Fact]
+    public async Task PostReceiptAsync_BackDatedAgainstFrozenCompany_ThrowsFiscalPeriodLockAndWritesNothing()
+    {
+        // spec AC-04 Gherkin: freeze 2025-12-31, the receipt attempts to post on 2025-12-15.
+        _companies.Company!.FrozenAccountsDate = new DateOnly(2025, 12, 31);
+
+        var request = new PurchaseReceiptPostingRequest(
+            _companyId, _warehouse.Id, null, new DateOnly(2025, 12, 15),
+            new[] { new PurchaseReceiptPostingLine(_item.Id, 10m, 100m) });
+
+        var ex = await Assert.ThrowsAsync<FiscalPeriodLockedException>(
+            () => CreateService().PostReceiptAsync(request));
+
+        Assert.Equal(AccountingErrorCodes.FiscalPeriodLocked, ex.Code);
+        Assert.Equal(new DateOnly(2025, 12, 15), ex.PostingDate);
+        Assert.Equal(new DateOnly(2025, 12, 31), ex.FrozenAccountsDate);
+
+        // AC-04: "no data is modified" - the domain check runs before the FIRST line is built.
+        Assert.Empty(_purchases.Receipts);
+        Assert.Empty(_stock.AddedLedger);
+        Assert.Empty(_stock.AddedGlEntries);
+    }
+
+    [Fact]
+    public async Task PostInvoiceAsync_PostingDateOnFreezeDate_ThrowsFiscalPeriodLockAndAppendsNoGlRows()
+    {
+        // Boundary at the SERVICE level: freeze ON the posting day (the "<=" of spec AC-04).
+        var receipt = await PostStandardReceiptAsync();
+        var glBefore = _stock.AddedGlEntries.Count;
+        _companies.Company!.FrozenAccountsDate = receipt.PostingDate;
+
+        var request = new PurchaseInvoicePostingRequest(
+            _companyId, receipt.Id, receipt.PostingDate, 0m,
+            new[] { MatchLine(receipt.Lines.Single(), rate: 100m) });
+
+        var ex = await Assert.ThrowsAsync<FiscalPeriodLockedException>(
+            () => CreateService().PostInvoiceAsync(request));
+
+        Assert.Equal(AccountingErrorCodes.FiscalPeriodLocked, ex.Code);
+        Assert.Empty(_purchases.Invoices);
+
+        // AC-04: zero GLEntry rows appended by the rejected attempt.
+        Assert.Equal(glBefore, _stock.AddedGlEntries.Count);
+    }
+
+    // ---------------------------------------------- double-entry invariant (task 2.1 / AC-01)
+
+    [Fact]
+    public async Task PurchasePostings_SatisfyDoubleEntryZeroSumInvariant()
+    {
+        // Task 2.1 acceptance AT THE SERVICE LEVEL: the busiest GL paths - the receipt accrual
+        // and the BY-01 invoice with input tax AND a price variance - must each obey
+        // spec AC-01 |sum D - sum C| <= 0.0001. The THROW side lives in DoubleEntryGuardTests;
+        // an imbalanced line set is structurally unreachable here (every pair derives from ONE
+        // rounded amount) - it becomes reachable with the user-authored lines of tasks.md 2.3.
+        var service = CreateService();
+        var receiptPosting = await service.PostReceiptAsync(NewReceiptRequest());
+        var receipt = _purchases.Receipts.Single();
+
+        var invoiceRequest = new PurchaseInvoicePostingRequest(
+            _companyId, receipt.Id, PostingDate, 100m,
+            new[] { MatchLine(receipt.Lines.Single(), rate: 120m) });
+        var invoicePosting = await service.PostInvoiceAsync(invoiceRequest);
+
+        Assert.True(
+            Math.Abs(receiptPosting.TotalDebit - receiptPosting.TotalCredit) <= 0.0001m,
+            $"Receipt {receiptPosting.Receipt.VoucherNo} is out of balance: "
+            + $"D={receiptPosting.TotalDebit:0.0000}, C={receiptPosting.TotalCredit:0.0000}.");
+        Assert.True(
+            Math.Abs(invoicePosting.TotalDebit - invoicePosting.TotalCredit) <= 0.0001m,
+            $"Invoice {invoicePosting.Invoice.VoucherNo} is out of balance: "
+            + $"D={invoicePosting.TotalDebit:0.0000}, C={invoicePosting.TotalCredit:0.0000}.");
     }
 }

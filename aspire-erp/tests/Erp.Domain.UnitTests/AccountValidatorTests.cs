@@ -119,6 +119,55 @@ public class AccountValidatorTests
         AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash and Bank", AccountRootType.Asset, "USD");
     }
 
+    // -------------------------------------------- account type rules (plan.md §7.3 Type, Task 1.1)
+
+    [Theory]
+    [InlineData(999)]
+    [InlineData(-1)]
+    public void EnsureValidFields_UndefinedAccountType_ThrowsInvalidAccountType(int rawValue)
+    {
+        // Type is persisted as a NAME string (NVARCHAR(50)); an out-of-range cast (e.g. a JSON
+        // number outside the enum) must fail as a domain rule instead of writing garbage.
+        var ex = Assert.Throws<AccountValidationException>(() =>
+            AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, "USD", (AccountType)rawValue));
+
+        Assert.Equal(AccountErrorCodes.InvalidAccountType, CodeOf(ex));
+    }
+
+    [Fact]
+    public void EnsureValidFields_ValidAccountType_DoesNotThrow()
+    {
+        AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, "USD", AccountType.Cash);
+    }
+
+    [Fact]
+    public void EnsureValidFields_OmittedAccountType_DefaultsToOther()
+    {
+        // Backward compatibility (Task 1.1): the parameter is optional, so callers written before
+        // the Type column existed validate the entity-level default (AccountType.Other).
+        AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, "USD");
+    }
+
+    [Fact]
+    public void AccountType_OtherIsValueZero_MatchesEntityAndDatabaseDefault()
+    {
+        // AccountType.Other must stay the first member: it is the CLR default of the property
+        // (EF "not set" sentinel), the Account.Type initializer, the SQL DEFAULT of the column
+        // and the Asset/Liability per-RootType default - all must converge on 'Other'.
+        Assert.Equal(0, (int)AccountType.Other);
+        Assert.Equal(AccountType.Other, default(AccountType));
+    }
+
+    [Fact]
+    public void AccountType_AllNamesFitInTheFiftyCharacterColumn()
+    {
+        // plan.md §7.3: Type NVARCHAR(50) - the NAME conversion cannot store longer members.
+        foreach (var name in Enum.GetNames<AccountType>())
+        {
+            Assert.True(name.Length <= 50, $"AccountType member '{name}' exceeds 50 characters.");
+        }
+    }
+
     // ------------------------------------------------------- parent rules (invariants §3.2.1/3.2.2)
 
     [Fact]

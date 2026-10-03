@@ -145,4 +145,57 @@ public class CreateAccountCommandHandlerTests
         Assert.False(result.IsSuccess);
         Assert.Equal(AccountErrorCodes.AccountCodeRequired, result.Error!.Code);
     }
+
+    // ----------------------------------------------- optional Type (Task 1.1, backward compatible)
+
+    [Theory]
+    [InlineData(AccountRootType.Asset, AccountType.Other)]
+    [InlineData(AccountRootType.Liability, AccountType.Other)]
+    [InlineData(AccountRootType.Equity, AccountType.Equity)]
+    [InlineData(AccountRootType.Income, AccountType.Revenue)]
+    [InlineData(AccountRootType.Expense, AccountType.Expense)]
+    public async Task Create_WithoutType_AppliesPerRootTypeDefault(AccountRootType rootType, AccountType expected)
+    {
+        // Existing clients (and the pre-Type e2e scripts) do not send `type`: the handler
+        // resolves the documented per-RootType default so Type NVARCHAR(50) NOT NULL is always
+        // meaningful. The default must land BOTH on the persisted entity and the returned DTO.
+        var repository = new FakeAccountRepository();
+        var handler = new CreateAccountCommandHandler(repository);
+
+        var result = await handler.HandleAsync(
+            new CreateAccountCommand(CompanyId, "7000", "Root", rootType, IsGroup: true, ParentAccountId: null));
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(repository.AddedAccount);
+        Assert.Equal(expected, repository.AddedAccount!.Type);
+        Assert.Equal(expected, result.Value!.Type);
+    }
+
+    [Fact]
+    public async Task Create_WithExplicitType_PersistsAndReturnsIt()
+    {
+        var repository = new FakeAccountRepository();
+        var handler = new CreateAccountCommandHandler(repository);
+
+        var result = await handler.HandleAsync(
+            new CreateAccountCommand(CompanyId, "1115", "Petty Cash", AccountRootType.Asset, IsGroup: false, ParentAccountId: null, Type: AccountType.Cash));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(AccountType.Cash, repository.AddedAccount!.Type); // persisted value
+        Assert.Equal(AccountType.Cash, result.Value!.Type);            // DTO value (JSON "type")
+    }
+
+    [Fact]
+    public async Task Create_WithUndefinedType_ReturnsInvalidAccountTypeFailure()
+    {
+        var repository = new FakeAccountRepository();
+        var handler = new CreateAccountCommandHandler(repository);
+
+        var result = await handler.HandleAsync(
+            new CreateAccountCommand(CompanyId, "1116", "Bad Type", AccountRootType.Asset, IsGroup: false, ParentAccountId: null, Type: (AccountType)999));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(AccountErrorCodes.InvalidAccountType, result.Error!.Code);
+        Assert.Null(repository.AddedAccount);
+    }
 }

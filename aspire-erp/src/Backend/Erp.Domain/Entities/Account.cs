@@ -46,6 +46,15 @@ public class Account : ITenantEntity
     public AccountRootType RootType { get; set; }
 
     /// <summary>
+    /// ERPNext-parity sub-classification (Bank, Cash, Receivable, Payable, COGS, Stock, ...):
+    /// NVARCHAR(50) NOT NULL per plan.md §7.3, persisted as the enum NAME (see
+    /// <see cref="AccountType"/>). Defaults to <see cref="AccountType.Other"/>; when a client
+    /// omits `type`, CreateAccountCommandHandler resolves a per-RootType default instead
+    /// (documented on CreateAccountCommand.Type).
+    /// </summary>
+    public AccountType Type { get; set; } = AccountType.Other;
+
+    /// <summary>
     /// Group Account = non-posting folder (direct postings forbidden); Leaf = posting account.
     /// A leaf is terminal: it can never have children (ubiquitous language 1, invariant 3.2.1).
     /// </summary>
@@ -58,6 +67,14 @@ public class Account : ITenantEntity
     public string Currency { get; set; } = "USD";
 
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Optimistic concurrency token (SQL Server <c>rowversion</c> - specs ST-06/BY-06): EF puts
+    /// the original value in the UPDATE ... WHERE clause, so a concurrent change made between the
+    /// load and the save throws <c>DbUpdateConcurrencyException</c> instead of silently winning.
+    /// Store-generated: never set from code.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = null!;
 
     public Company? Company { get; set; }
 

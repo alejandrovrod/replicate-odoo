@@ -13,6 +13,7 @@ public static class AccountErrorCodes
     public const string AccountNameRequired = "account_name_required";
     public const string AccountNameTooLong = "account_name_too_long";
     public const string InvalidRootType = "invalid_root_type";
+    public const string InvalidAccountType = "invalid_account_type";
     public const string CurrencyInvalid = "currency_invalid";
     public const string ParentNotFound = "parent_not_found";
     public const string ParentIsSelf = "parent_is_self";

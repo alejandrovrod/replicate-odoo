@@ -8,6 +8,7 @@ using Erp.Application.Features.Accounts.Commands;
 using Erp.Application.Features.Accounts.Queries;
 using Erp.Application.Features.Banking.Commands;
 using Erp.Application.Features.Banking.Parsers;
+using Erp.Application.Features.Banking.Queries;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
 using Erp.Application.Features.GeneralLedger.Commands;
@@ -151,12 +152,23 @@ builder.Services.AddScoped<IQueryHandler<GetProfitAndLossQuery, ProfitAndLossRep
 
 // Banking & Reconciliation staging (tasks.md 6.1/6.2): the statement import engine and its
 // parsers. Same split as every other module: repository in Erp.Infrastructure, commands/parsers
-// in Erp.Application - only the composition root knows both (decision C2). NO controllers yet
-// (Block B); NO GL dependency anywhere on this path (invariant BN-01 by construction).
+// in Erp.Application - only the composition root knows both (decision C2). NO GL dependency
+// anywhere on the import path (invariant BN-01 by construction).
 builder.Services.AddScoped<IBankRepository, BankRepository>();
 builder.Services.AddScoped<ICsvStatementParser, CsvStatementParser>();
 builder.Services.AddScoped<IOfxStatementParser, OfxStatementParser>();
 builder.Services.AddScoped<ICommandHandler<ImportBankStatementCommand, Result<BankStatementImportSummary>>, ImportBankStatementCommandHandler>();
+
+// Banking rules engine + reconciliation (Block B, tasks 6.3/6.4): the heuristic rule run, the
+// dual-sided reconcile / un-reconcile transitions, rule management and the staging reads
+// behind the workbench controllers. The reconcile handler reads GL vouchers through the
+// existing read-only IGLEntryRepository (zero GL writes - GLEntry is append-only).
+builder.Services.AddScoped<ICommandHandler<ApplyMatchingRulesCommand, Result<RuleMatchSummary>>, ApplyMatchingRulesCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateBankTransactionRuleCommand, Result<BankTransactionRuleDto>>, CreateBankTransactionRuleCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<ReconcileBankTransactionCommand, Result<ReconciliationSummary>>, ReconcileBankTransactionCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UnreconcileBankTransactionCommand, Result<bool>>, UnreconcileBankTransactionCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBankTransactionsQuery, IReadOnlyList<BankTransactionDto>>, GetBankTransactionsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBankTransactionRulesQuery, IReadOnlyList<BankTransactionRuleDto>>, GetBankTransactionRulesQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

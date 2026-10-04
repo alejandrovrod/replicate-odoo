@@ -18,6 +18,9 @@ public sealed class FakeGLEntryRepository : IGLEntryRepository
 {
     private readonly List<GLEntry> _rows = new();
 
+    /// <summary>Every seeded ledger row - the byte-identical assertions read this.</summary>
+    public IReadOnlyList<GLEntry> Rows => _rows;
+
     /// <summary>Seeds ledger rows (their <c>Account</c> navigation must be populated).</summary>
     public void Seed(params GLEntry[] rows) => _rows.AddRange(rows);
 

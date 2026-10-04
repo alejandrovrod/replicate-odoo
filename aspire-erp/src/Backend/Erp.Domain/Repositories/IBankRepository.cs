@@ -25,6 +25,11 @@ public interface IBankRepository
     /// <summary>Gets a bank account by its ID (the handler rejects unknown or foreign accounts).</summary>
     Task<BankAccount?> GetAccountByIdAsync(Guid bankAccountId, CancellationToken cancellationToken = default);
 
+    /// <summary>All bank accounts of a company (tenant source for global rules).</summary>
+    Task<IReadOnlyList<BankAccount>> GetAccountsByCompanyAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Subset of <paramref name="transactionIds"/> (bank FITIDs) already imported for the
     /// account - the de-duplication read for idempotent re-imports (scenario BN-05).
@@ -39,4 +44,78 @@ public interface IBankRepository
 
     /// <summary>Persists the staging rows of a batch (inside the ambient import transaction).</summary>
     Task AddTransactionsAsync(IReadOnlyList<BankTransaction> transactions, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Active rules for a company ordered by <c>Priority</c> ascending, account-scoped rules for
+    /// <paramref name="bankAccountId"/> first, then global rules (null account) - the handler
+    /// documents this precedence and the first matching rule wins per transaction.
+    /// </summary>
+    Task<IReadOnlyList<BankTransactionRule>> GetActiveRulesAsync(
+        Guid companyId,
+        Guid? bankAccountId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>All rules of a company (active and inactive) for the management read.</summary>
+    Task<IReadOnlyList<BankTransactionRule>> GetRulesByCompanyAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Persists one heuristic rule (inside the ambient transaction).</summary>
+    Task AddRuleAsync(BankTransactionRule rule, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets one staging transaction by id (reconciliation + rule-run targeting).</summary>
+    Task<BankTransaction?> GetTransactionByIdAsync(Guid transactionId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Unreconciled staging transactions of a company (optionally one account) - the rule-run
+    /// candidate set. <c>Matched</c> lines are NOT re-processed: a rule match is terminal until
+    /// a reconcile / un-reconcile moves the line again.
+    /// </summary>
+    Task<IReadOnlyList<BankTransaction>> GetUnreconciledTransactionsAsync(
+        Guid companyId,
+        Guid? bankAccountId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Gets staging transactions of a company (optionally filtered) for the list read.</summary>
+    Task<IReadOnlyList<BankTransaction>> GetTransactionsAsync(
+        Guid companyId,
+        Guid? bankAccountId,
+        BankTransactionStatus? status,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves the mutated staging transaction. Translates EF's
+    /// <c>DbUpdateConcurrencyException</c> (RowVersion WHERE clause matched 0 rows) into
+    /// <see cref="Exceptions.ConcurrencyConflictException"/>, mirroring
+    /// PurchaseRepository.UpdateOrderAsync.
+    /// </summary>
+    Task UpdateTransactionAsync(BankTransaction transaction, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets a payment voucher by id (reconciliation counterpart).</summary>
+    Task<PaymentEntry?> GetPaymentEntryByIdAsync(Guid paymentEntryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves the mutated payment voucher. Same concurrency translation as
+    /// <see cref="UpdateTransactionAsync"/>.
+    /// </summary>
+    Task UpdatePaymentEntryAsync(PaymentEntry entry, CancellationToken cancellationToken = default);
+
+    /// <summary>Allocation slices already recorded for one staging transaction.</summary>
+    Task<IReadOnlyList<BankReconciliation>> GetReconciliationsByTransactionAsync(
+        Guid bankTransactionId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Total amount already consumed from one payment voucher across ALL reconciliations
+    /// (the over-consumption guard reads this).
+    /// </summary>
+    Task<decimal> GetConsumedAmountForPaymentEntryAsync(
+        Guid paymentEntryId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Persists reconciliation links (inside the ambient reconcile transaction).</summary>
+    Task AddReconciliationsAsync(IReadOnlyList<BankReconciliation> links, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes the links of one staging transaction (un-reconcile path).</summary>
+    Task RemoveReconciliationsAsync(Guid bankTransactionId, CancellationToken cancellationToken = default);
 }

@@ -69,6 +69,18 @@ public sealed class BankTransaction : ITenantEntity
     public DateOnly? ClearanceDate { get; set; }
 
     /// <summary>
+    /// Suggestion pre-populated by the rules engine (task 6.3, scenario BN-02): the counterparty
+    /// role of the first matching rule, if it names one. Null until a rule stamps it.
+    /// </summary>
+    public string? SuggestedPartyType { get; set; }
+
+    /// <summary>Suggested counterparty row id from the first matching rule, if it names one.</summary>
+    public Guid? SuggestedPartyId { get; set; }
+
+    /// <summary>Suggested clearing / expense account from the first matching rule, if it names one.</summary>
+    public Guid? SuggestedAccountId { get; set; }
+
+    /// <summary>
     /// Optimistic concurrency token (SQL Server <c>rowversion</c> - scenario BN-07): two clerks
     /// matching the same line concurrently resolve to exactly one winner. Store-generated.
     /// </summary>

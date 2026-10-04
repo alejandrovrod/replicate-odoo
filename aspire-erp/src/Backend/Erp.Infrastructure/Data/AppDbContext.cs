@@ -79,6 +79,10 @@ public class AppDbContext : DbContext
 
     public DbSet<PaymentAllocation> PaymentAllocations => Set<PaymentAllocation>();
 
+    public DbSet<BankTransactionRule> BankTransactionRules => Set<BankTransactionRule>();
+
+    public DbSet<BankReconciliation> BankReconciliations => Set<BankReconciliation>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

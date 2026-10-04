@@ -43,6 +43,14 @@ public sealed class BankTransactionConfiguration : IEntityTypeConfiguration<Bank
         builder.Property(t => t.AllocatedAmount)
             .HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
         builder.Property(t => t.ClearanceDate).HasColumnType("date");
+
+        // Task 6.3 suggestion columns (scenario BN-02): pre-populated party/accounts of the
+        // first matching rule. Nullable, no FK (party may be a customer/supplier/employee id) -
+        // migration deferred to Block C with the rest of the Block B DDL deltas.
+        builder.Property(t => t.SuggestedPartyType).HasMaxLength(50);
+        builder.Property(t => t.SuggestedPartyId);
+        builder.Property(t => t.SuggestedAccountId);
+
         builder.Property(t => t.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(t => t.BankAccount)

@@ -21,4 +21,18 @@ public static class BankingErrorCodes
     // Staging invariant BN-02 (deposit / withdrawal mutual exclusivity)
     public const string BothSidesPosted = "both_sides_posted";
     public const string NegativeTransactionAmount = "negative_transaction_amount";
+
+    // Heuristic rules engine (task 6.3)
+    public const string CompanyNotFound = "company_not_found";
+    public const string BankTransactionRuleNotFound = "bank_transaction_rule_not_found";
+    public const string InvalidRulePattern = "invalid_rule_pattern";
+
+    // Reconciliation (task 6.4)
+    public const string BankTransactionNotFound = "bank_transaction_not_found";
+    public const string PaymentEntryNotFound = "payment_entry_not_found";
+    public const string GlVoucherNotFound = "gl_voucher_not_found";
+    public const string InvalidStatusTransition = "invalid_status_transition";
+    public const string ReconciliationAmountMismatch = "reconciliation_amount_mismatch";
+    public const string GlAmountMismatch = "gl_amount_mismatch";
+    public const string InvalidReconciliationAmount = "invalid_reconciliation_amount";
 }

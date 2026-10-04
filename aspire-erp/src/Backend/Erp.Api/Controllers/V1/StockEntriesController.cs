@@ -114,6 +114,49 @@ public sealed class StockEntriesController : ControllerBase
         return CreatedAtAction(nameof(Get), new { companyId = posting.Entry.CompanyId }, posting);
     }
 
+    /// <summary>
+    /// Cancels a stock voucher (spec AC-07). Cancellation is append-only: it flags the voucher as
+    /// cancelled and appends compensating (negative) rows to the Kardex and General Ledger.
+    /// </summary>
+    [HttpPost("{id:guid}/cancel")]
+    [IdempotencyKeyRequired]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Cancel(
+        [FromRoute] Guid id,
+        [FromQuery] Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.SendAsync(new CancelStockEntryCommand(companyId, id), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+            return error.Code switch
+            {
+                StockErrorCodes.VoucherNotFound => Problem(
+                    StatusCodes.Status404NotFound,
+                    "Stock Entry Not Found",
+                    error.Message,
+                    error.Code),
+                StockErrorCodes.InvalidStatusTransition or AccountingErrorCodes.FiscalPeriodLocked => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Conflict",
+                    error.Message,
+                    error.Code),
+                _ => Problem(
+                    StatusCodes.Status400BadRequest,
+                    "Cancellation Rejected",
+                    error.Message,
+                    error.Code),
+            };
+        }
+
+        return Ok();
+    }
+
     private ObjectResult Problem(int status, string title, string detail, string? code)
     {
         var problem = new ProblemDetails

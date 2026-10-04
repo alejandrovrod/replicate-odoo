@@ -43,6 +43,8 @@ public interface IStockRepository
     /// <summary>Persists one stock voucher with its lines (inside the ambient posting transaction).</summary>
     Task AddStockEntryAsync(StockEntry stockEntry, CancellationToken cancellationToken = default);
 
+    Task UpdateStockEntryAsync(StockEntry stockEntry, CancellationToken cancellationToken = default);
+
     /// <summary>Persists the Kardex rows produced by a voucher (inside the ambient posting transaction).</summary>
     Task AddLedgerEntriesAsync(IReadOnlyList<StockLedgerEntry> ledgerEntries, CancellationToken cancellationToken = default);
 
@@ -59,6 +61,15 @@ public interface IStockRepository
 
     /// <summary>Most recent stock vouchers of a company (newest first) for the list view.</summary>
     Task<IReadOnlyList<StockEntry>> GetRecentByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets a stock entry by its ID, including its Items.</summary>
+    Task<StockEntry?> GetEntryByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the Kardex rows produced by a voucher number.</summary>
+    Task<IReadOnlyList<StockLedgerEntry>> GetLedgerEntriesByVoucherAsync(string voucherNo, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the GL rows produced by a voucher ID.</summary>
+    Task<IReadOnlyList<GLEntry>> GetGlEntriesByVoucherIdAsync(Guid voucherId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Read-model row for one (item, warehouse) pair inside a company.</summary>

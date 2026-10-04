@@ -92,6 +92,12 @@ public sealed class StockRepository : IStockRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task UpdateStockEntryAsync(StockEntry stockEntry, CancellationToken cancellationToken = default)
+    {
+        _dbContext.StockEntries.Update(stockEntry);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task AddLedgerEntriesAsync(
         IReadOnlyList<StockLedgerEntry> ledgerEntries,
         CancellationToken cancellationToken = default)
@@ -180,6 +186,21 @@ public sealed class StockRepository : IStockRepository
             .OrderByDescending(e => e.CreatedAt)
             .ThenByDescending(e => e.Id)
             .Take(limit)
+            .ToListAsync(cancellationToken);
+
+    public async Task<StockEntry?> GetEntryByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _dbContext.StockEntries
+            .Include(e => e.Items)
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<StockLedgerEntry>> GetLedgerEntriesByVoucherAsync(string voucherNo, CancellationToken cancellationToken = default)
+        => await _dbContext.StockLedgerEntries
+            .Where(e => e.VoucherNo == voucherNo)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<GLEntry>> GetGlEntriesByVoucherIdAsync(Guid voucherId, CancellationToken cancellationToken = default)
+        => await _dbContext.GLEntries
+            .Where(e => e.VoucherId == voucherId)
             .ToListAsync(cancellationToken);
 
     private static void AddParameter(DbCommand command, string name, object value)

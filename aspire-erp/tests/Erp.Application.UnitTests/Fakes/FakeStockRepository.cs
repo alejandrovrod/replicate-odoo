@@ -80,5 +80,31 @@ public sealed class FakeStockRepository : IStockRepository
 
     public Task<IReadOnlyList<StockEntry>> GetRecentByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<StockEntry>>(_stockEntries.TakeLast(limit).Reverse().ToList());
+
+    public Task UpdateStockEntryAsync(StockEntry stockEntry, CancellationToken cancellationToken = default)
+    {
+        var index = _stockEntries.FindIndex(e => e.Id == stockEntry.Id);
+        if (index >= 0)
+        {
+            _stockEntries[index] = stockEntry;
+        }
+        else
+        {
+            _stockEntries.Add(stockEntry);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<StockEntry?> GetEntryByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => Task.FromResult(_stockEntries.FirstOrDefault(e => e.Id == id));
+
+    public Task<IReadOnlyList<StockLedgerEntry>> GetLedgerEntriesByVoucherAsync(string voucherNo, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<StockLedgerEntry>>(
+            _persistedLedger.Where(e => e.VoucherNo == voucherNo).ToList());
+
+    public Task<IReadOnlyList<GLEntry>> GetGlEntriesByVoucherIdAsync(Guid voucherId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<GLEntry>>(
+            _addedGl.Where(g => g.VoucherId == voucherId).ToList());
 }
 

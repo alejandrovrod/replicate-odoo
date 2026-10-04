@@ -37,14 +37,15 @@ public sealed class StockPostingServiceTests
         _expenseAccount = NewAccount("5210", "Cost of Goods Sold");
         _accounts.Seed(_stockAccount, _receivedAccount, _expenseAccount);
         _accounts.AccountsByCode = new[] { _receivedAccount };
+        _accounts.AccountsByCodeMap["5210"] = new[] { _expenseAccount };
 
         _warehouse = new Warehouse
         {
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            ItemCode = "WH-01",
-            ItemName = "Main Stores",
+            WarehouseCode = "WH-01",
+            WarehouseName = "Main Stores",
             AccountId = _stockAccount.Id,
         };
         _warehouses.Seed(_warehouse);
@@ -65,9 +66,10 @@ public sealed class StockPostingServiceTests
         {
             Id = _companyId,
             TenantId = _tenantId,
-            ItemName = "Acme Holding",
+            Name = "Acme Holding",
             AllowNegativeStock = false,
             StockReceivedAccountCode = "2120",
+            CogsAccountCode = "5210",
         };
     }
 
@@ -196,8 +198,8 @@ public sealed class StockPostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            ItemCode = "WH-02",
-            ItemName = "Branch Stores",
+            WarehouseCode = "WH-02",
+            WarehouseName = "Branch Stores",
             AccountId = _stockAccount.Id, // SAME GL account
         };
         _warehouses.Seed(target);
@@ -235,8 +237,8 @@ public sealed class StockPostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            ItemCode = "WH-03",
-            ItemName = "External Store",
+            WarehouseCode = "WH-03",
+            WarehouseName = "External Store",
             AccountId = otherStockAccount.Id,
         };
         _warehouses.Seed(target);
@@ -471,8 +473,8 @@ public sealed class StockPostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            ItemCode = "WH-09",
-            ItemName = "Other",
+            WarehouseCode = "WH-09",
+            WarehouseName = "Other",
             AccountId = _stockAccount.Id,
         };
         _warehouses.Seed(other);

@@ -61,6 +61,12 @@ public class StockEntry : ITenantEntity
     public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
+    /// True when this voucher was cancelled. Cancellation appends compensating rows to the Kardex
+    /// and General Ledger (Constitution III.3) instead of mutating/deleting the original rows.
+    /// </summary>
+    public bool IsCancelled { get; set; }
+
+    /// <summary>
     /// Optimistic concurrency token (SQL Server <c>rowversion</c> - spec ST-06): EF puts the
     /// original value in the UPDATE ... WHERE clause, so a concurrent change made between the
     /// load and the save throws <c>DbUpdateConcurrencyException</c> instead of silently winning.

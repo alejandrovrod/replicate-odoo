@@ -25,6 +25,7 @@ public sealed class StockLedgerEntryConfiguration : IEntityTypeConfiguration<Sto
         builder.Property(e => e.Amount).HasColumnType("decimal(18,4)").IsRequired();
         builder.Property(e => e.VoucherType).HasMaxLength(50).IsRequired();
         builder.Property(e => e.VoucherNo).HasMaxLength(100).IsRequired();
+        builder.Property(e => e.IsCancelled).HasDefaultValue(false);
         builder.Property(e => e.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(e => e.Item)

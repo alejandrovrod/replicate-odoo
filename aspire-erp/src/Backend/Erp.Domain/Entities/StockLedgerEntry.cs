@@ -61,4 +61,10 @@ public class StockLedgerEntry : ITenantEntity
     /// PostingDate, then CreatedAt, then Id).
     /// </summary>
     public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>
+    /// True when this row IS a compensating reversal of a cancelled voucher, or if it is the original
+    /// row that was cancelled (Constitution III.3).
+    /// </summary>
+    public bool IsCancelled { get; set; }
 }

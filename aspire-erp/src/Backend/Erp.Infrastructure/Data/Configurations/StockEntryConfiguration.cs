@@ -29,6 +29,7 @@ public sealed class StockEntryConfiguration : IEntityTypeConfiguration<StockEntr
 
         builder.Property(s => s.PostingDate).HasColumnType("date").IsRequired();
         builder.Property(s => s.VoucherNo).HasMaxLength(100).IsRequired();
+        builder.Property(s => s.IsCancelled).HasDefaultValue(false);
         builder.Property(s => s.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(s => s.Warehouse)

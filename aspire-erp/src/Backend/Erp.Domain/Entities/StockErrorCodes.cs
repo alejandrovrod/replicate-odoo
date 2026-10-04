@@ -43,6 +43,8 @@ public static class StockErrorCodes
     public const string ParentWarehouseNotFound = "parent_warehouse_not_found";
     public const string InvalidTargetWarehouse = "invalid_target_warehouse";
     public const string InsufficientStock = "insufficient_stock";
+    public const string VoucherNotFound = "voucher_not_found";
+    public const string InvalidStatusTransition = "invalid_status_transition";
 
     // General Ledger configuration / invariants (Constitution Article III)
     public const string MissingExpenseAccount = "missing_expense_account";

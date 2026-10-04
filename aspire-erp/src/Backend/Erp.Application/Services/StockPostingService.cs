@@ -386,7 +386,11 @@ public sealed class StockPostingService : IStockPostingService
     {
         EnsureFifoSupported(item);
 
-        var expenseAccount = await RequireItemExpenseAccountAsync(item, token);
+        var cogsAccount = await RequireAccountByCodeAsync(
+            company.Id,
+            company.CogsAccountCode,
+            "Company.CogsAccountCode",
+            token);
         var layers = await GetLayersAsync(line, warehouse, request, ledger, token);
         var consumption = FifoValuation.Consume(
             layers, line.Qty, company.AllowNegativeStock, item.ItemCode, warehouse.WarehouseCode);
@@ -394,7 +398,7 @@ public sealed class StockPostingService : IStockPostingService
         ledger.Add(NewLedgerEntry(line, warehouse.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost));
 
         // spec ST-02: Debit Cost of Goods Sold / Credit Stock In Hand for the FIFO cost.
-        AddGlLine(glLines, request, company.Id, expenseAccount, debit: consumption.TotalCost, credit: 0m, line, item);
+        AddGlLine(glLines, request, company.Id, cogsAccount, debit: consumption.TotalCost, credit: 0m, line, item);
         AddGlLine(glLines, request, company.Id, stockAccount, debit: 0m, credit: consumption.TotalCost, line, item);
 
         return consumption;
@@ -442,11 +446,6 @@ public sealed class StockPostingService : IStockPostingService
                 $"Item '{item.ItemCode}' uses valuation method '{item.ValuationMethod}', which is not supported yet. "
                 + "Phase 3 of the perpetual inventory engine implements ValuationMethod.Fifo only.");
         }
-    }
-
-    private Task<Account> RequireItemExpenseAccountAsync(Item item, CancellationToken token)
-    {
-        throw new NotImplementedException("Task 3.2: Configure accounts via Item Defaults/Company Defaults.");
     }
 
     /// <summary>

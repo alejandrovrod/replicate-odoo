@@ -3,7 +3,7 @@
 **Module:** `07-assets`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IN PROGRESS (Block A: 10.1, 10.2, 10.3 complete)  
+**Status:** IN PROGRESS (Block A: 10.1-10.3 complete; Block B: 10.4, 10.5 complete)  
 
 ---
 
@@ -21,11 +21,11 @@
   - **Action:** Implement `DepreciationScheduler` generating monthly straight-line schedule lines without rounding loss.
   - **Acceptance:** Invariant verified: $\sum \text{DepreciationSchedule.Amounts} == \text{GrossAmount} - \text{SalvageValue}$.
 
-- [ ] **Task 10.4: Scheduled Periodic Depreciation Posting Background Worker**
+- [x] **Task 10.4: Scheduled Periodic Depreciation Posting Background Worker**
   - **Action:** Implement background worker posting scheduled depreciation lines into `GLEntry` on their respective due dates.
   - **Acceptance:** Debits depreciation expense, credits accumulated depreciation, and marks schedule lines booked.
 
-- [ ] **Task 10.5: Asset Disposal & Gain/Loss Balancing**
+- [x] **Task 10.5: Asset Disposal & Gain/Loss Balancing**
   - **Action:** Implement `DisposeAssetCommand` creating balanced ledger entries upon sale or scrap.
   - **Acceptance:** Clears asset cost and accumulated depreciation; books difference to gain/loss on disposal.
 

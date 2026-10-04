@@ -1,7 +1,7 @@
 # Functional Specification: Accounting & General Ledger (ERPNext Parity)
 
 **Module:** `01-accounting`  
-**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Status:** CERTIFIED — scope amended 2026-10-04 after retro-verification (invariants AC-05/AC-06 and scenario AC-05 marked DEFERRED inline)  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Accounting Documentation](https://docs.frappe.io/erpnext/accounting)  
@@ -46,10 +46,14 @@ The **Accounting Module** is the foundational core of the ERP. Every business op
 - If `PostingDate <= Company.FrozenAccountsDate`, all posting, modification, or cancellation is blocked with `FiscalPeriodLockedException`.
 
 ### Invariant AC-05: Realized Foreign Exchange Gain/Loss
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** no exchange-rate, settlement or FX posting path exists anywhere in the implementation, and no scenario exercises FX. Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+
 - When transactions settle in foreign currencies at differing exchange rates, variance must post automatically to the predefined `Exchange Gain/Loss Account`:
   $$\text{RealizedFX} = \text{PaymentAmount}_{\text{FC}} \times (\text{Rate}_{\text{Settlement}} - \text{Rate}_{\text{Original}})$$
 
 ### Invariant AC-06: Period Closing Balance Roll-Forward
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** no period-closing implementation exists (no fiscal-year handling, no closing voucher, account `3100 - Retained Earnings` is not even present in the seeded chart) and no test covers it. Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+
 - At fiscal year close, net profit transfers to Retained Earnings:
   $$\Delta \text{RetainedEarnings} = \sum \text{IncomeBalances} - \sum \text{ExpenseBalances}$$
   1. All Income balances are debited to 0.
@@ -87,6 +91,8 @@ The **Accounting Module** is the foundational core of the ERP. Every business op
 - **And** no data is modified.
 
 ### Scenario AC-05: Period Closing Voucher (Year-End Close)
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** unimplemented and untested — no `FiscalYear`/`PeriodClosingVoucher` entity, handler or covering test exists. Out of the certified scope of this module; deferred together with invariants AC-05 (FX) and AC-06 (roll-forward) and tracked as a carry-forward flag in this module's archive report.
+
 - **Given** Fiscal Year 2025 with total Revenue $500,000 and total Expenses $380,000 (Net Profit $120,000)
 - **When** the `PeriodClosingVoucher` is posted on `2025-12-31`
 - **Then** all Income accounts are debited to zero

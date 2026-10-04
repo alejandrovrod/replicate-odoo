@@ -3,6 +3,7 @@ import {
   Boxes,
   ChevronLeft,
   ChevronRight,
+  Factory,
   Landmark,
   Layers,
   LayoutDashboard,
@@ -44,6 +45,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Operations',
     items: [
       { id: 'stock', label: 'Stock & Kardex', icon: Boxes },
+      { id: 'manufacturing', label: 'Manufacturing', icon: Factory, badge: 'ERPNext' },
       { id: 'selling', label: 'Selling & POS', icon: Receipt },
       { id: 'buying', label: 'Buying & Vendors', icon: Truck },
     ],

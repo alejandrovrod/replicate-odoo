@@ -15,6 +15,7 @@ const ROUTE_TITLES: Record<NavRoute, { title: string; category: string }> = {
   'accounting-journal': { title: 'General Ledger Entries', category: 'Accounting' },
   banking: { title: 'Bank Reconciliation & Feeds', category: 'Treasury' },
   stock: { title: 'Inventory & Warehouses (Kardex)', category: 'Stock' },
+  manufacturing: { title: 'Work Orders & BOM Studio', category: 'Manufacturing' },
   selling: { title: 'Sales Invoices & POS', category: 'Selling' },
   buying: { title: 'Purchase Orders & Vendor Bills', category: 'Buying' },
 }

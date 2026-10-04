@@ -6,6 +6,7 @@ export type NavRoute =
   | 'accounting-journal'
   | 'banking'
   | 'stock'
+  | 'manufacturing'
   | 'selling'
   | 'buying'
 
@@ -25,6 +26,7 @@ const parseHash = (): NavRoute => {
     'accounting-journal',
     'banking',
     'stock',
+    'manufacturing',
     'selling',
     'buying',
   ]

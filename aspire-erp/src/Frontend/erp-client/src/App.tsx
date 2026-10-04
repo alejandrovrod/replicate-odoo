@@ -4,6 +4,7 @@ import { GeneralLedgerOverview } from './features/accounting/GeneralLedgerOvervi
 import { BankingOverview } from './features/banking/BankingOverview'
 import { BuyingOverview } from './features/buying/BuyingOverview'
 import { DashboardOverview } from './features/dashboard/DashboardOverview'
+import { ManufacturingOverview } from './features/manufacturing/ManufacturingOverview'
 import { SellingOverview } from './features/selling/SellingOverview'
 import { StockOverview } from './features/stock/StockOverview'
 import { useNavigationStore } from './store/useNavigationStore'
@@ -36,6 +37,8 @@ function App() {
       {currentRoute === 'banking' && <BankingOverview />}
 
       {currentRoute === 'stock' && <StockOverview />}
+
+      {currentRoute === 'manufacturing' && <ManufacturingOverview />}
 
       {currentRoute === 'selling' && <SellingOverview />}
 

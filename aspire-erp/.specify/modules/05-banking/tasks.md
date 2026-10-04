@@ -3,7 +3,7 @@
 **Module:** `05-banking`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IN PROGRESS (Block A: 6.1, 6.2 complete)  
+**Status:** IN PROGRESS (Block A: 6.1, 6.2 complete; Block B: 6.3, 6.4 complete)  
 
 ---
 
@@ -17,11 +17,11 @@
   - **Action:** Create `BankStatementImport` and `BankTransaction` entities. Implement parser services for CSV and OFX formats in `Erp.Application.Banking`.
   - **Acceptance:** Statement lines are imported directly into `BankTransaction` in `Unreconciled` status. Strictly enforces the **Staging Isolation Invariant**: zero accounting entries are posted to `GLEntry`.
 
-- [ ] **Task 6.3: Heuristic Rules Engine (`BankTransactionRule`)**
+- [x] **Task 6.3: Heuristic Rules Engine (`BankTransactionRule`)**
   - **Action:** Implement `IBankTransactionRuleEvaluator` executing configured rules by priority against description regexes, substrings, and transaction amounts.
   - **Acceptance:** Auto-populates Party, Account, and marks transactions as `Matched` or triggers auto-voucher creation.
 
-- [ ] **Task 6.4: Bank Reconciliation Service (`BankReconciliationTool`)**
+- [x] **Task 6.4: Bank Reconciliation Service (`BankReconciliationTool`)**
   - **Action:** Implement `ReconcileBankTransactionCommand` matching staging transactions against existing `PaymentEntry` or `GLEntry` records.
   - **Acceptance:** Updates `BankTransaction.Status` to `Reconciled`, stamps `ClearanceDate`, and verifies that the Bank Reconciliation Statement difference equals $0.00.
 

@@ -3,17 +3,17 @@
 **Module:** `05-banking`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** READY TO IMPLEMENT  
+**Status:** IN PROGRESS (Block A: 6.1, 6.2 complete)  
 
 ---
 
 ## Phase 6: Treasury, Payments & Banking Subsystem
 
-- [ ] **Task 6.1: Domain Models `PaymentEntry` and `PaymentAllocation`**
+- [x] **Task 6.1: Domain Models `PaymentEntry` and `PaymentAllocation`**
   - **Action:** Create `PaymentEntry` (PaymentType: Receive/Pay, PaidAmount, BankAccount) and `PaymentAllocation`.
   - **Acceptance:** Validates anti-overpayment invariant (`AllocatedAmount <= Invoice.OutstandingAmount`).
 
-- [ ] **Task 6.2: Bank Statement Import & Staging Engine**
+- [x] **Task 6.2: Bank Statement Import & Staging Engine**
   - **Action:** Create `BankStatementImport` and `BankTransaction` entities. Implement parser services for CSV and OFX formats in `Erp.Application.Banking`.
   - **Acceptance:** Statement lines are imported directly into `BankTransaction` in `Unreconciled` status. Strictly enforces the **Staging Isolation Invariant**: zero accounting entries are posted to `GLEntry`.
 

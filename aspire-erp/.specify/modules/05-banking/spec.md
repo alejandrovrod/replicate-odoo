@@ -1,7 +1,7 @@
 # Functional Specification: Banking & Reconciliation (ERPNext Parity)
 
 **Module:** `05-banking`  
-**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Status:** IN PROGRESS — Block A implemented (tasks 6.1, 6.2); Block B/C pending  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Bank Reconciliation](https://docs.frappe.io/erpnext/bank-reconciliation)  

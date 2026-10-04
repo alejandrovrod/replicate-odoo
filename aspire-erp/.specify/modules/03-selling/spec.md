@@ -1,7 +1,7 @@
 # Functional Specification: Selling & Point of Sale (ERPNext Parity)
 
 **Module:** `03-selling`  
-**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Status:** CERTIFIED — scope amended 2026-10-04 after retro-verification (SL-01 invoice clause, invariants SL-01/SL-03 and scenarios SL-03..SL-06 marked DEFERRED inline)  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Selling & POS](https://docs.frappe.io/erpnext/selling)  
@@ -28,6 +28,8 @@ The **Selling Module** manages commercial relationships with Customers, quotatio
 ## 2. Core Business Invariants & Commercial Rules
 
 ### Invariant SL-01: Double-Entry Revenue Invariant
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** the sales-invoice posting path this equation describes is not reachable — `CreateSalesInvoiceCommandHandler`/`SubmitSalesInvoiceCommandHandler` are DI-registered but routed to no endpoint, `TaxTotal` is forced to `0`, and no test asserts any sales-invoice GL row. Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+
 Upon posting a standard `SalesInvoice`:
 $$\text{Debit: Accounts Receivable} = \text{GrandTotal}$$
 $$\text{Credit: Sales Revenue Account} = \text{NetTotal}$$
@@ -39,7 +41,11 @@ Before submitting a `SalesOrder` or credit `SalesInvoice`:
 $$\text{Customer.OutstandingDebt} + \text{GrandTotal} \le \text{Customer.CreditLimit}$$
 - If breached and `Customer.BypassCreditLimitCheck == false`, the command is rejected with `CreditLimitExceededException`.
 
+> **SCOPE AMENDMENT 2026-10-04 (retro-verify):** the `SalesOrder` path of this invariant is certified (evaluator unit tests + API-level 409 coverage). The `credit SalesInvoice` clause is **DEFERRED** together with the sales-invoice posting path (see SL-01): no reachable code updates `Customer.OutstandingAmount`, and no test exercises cumulative exposure through an invoice.
+
 ### Invariant SL-03: Atomic POS Checkout
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** the POS path cannot run end to end as shipped — the cashier modal posts an unseeded hard-coded customer/profile and tenders a tax-inclusive amount against a server that forces `TaxTotal = 0`, the checkout books no COGS/stock pair, and zero tests cover `POST /api/v1/sales-invoices/pos`. Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+
 When `IsPOS == true`:
 1. `SalesInvoice` is created in `Paid` status with `OutstandingAmount == 0.00`.
 2. Immediate payment vouchers debit `Cash In Drawer` or `Card Clearing Account` for $\text{PaidAmount} == \text{GrandTotal}$.
@@ -62,6 +68,8 @@ $$\text{DeliveredQty} \le \text{SalesOrderItem.Quantity} - \text{SalesOrderItem.
 - **Then** `GLEntry` debits `Accounts Receivable` for $1,100.00, credits `Sales Revenue` for $1,000.00, and credits `Tax Payable` for $100.00
 - **And** the Customer's outstanding debt increases by $1,100.00.
 
+> **SCOPE AMENDMENT 2026-10-04 (retro-verify):** only the `DeliveryNote` half of this cycle is certified (relief + COGS, tested at unit and API level). The `SalesInvoice` half — the A/R / revenue / tax posting and the debt increase — is **DEFERRED** with invariant SL-01: that code is unrouted and untested.
+
 ### Scenario SL-02: Reject Invoice on Credit Limit Breach
 - **Given** Customer `ACME Corp` with Credit Limit $5,000.00 and existing outstanding balance $4,600.00
 - **When** a user attempts to submit a new credit invoice for $650.00
@@ -69,6 +77,8 @@ $$\text{DeliveredQty} \le \text{SalesOrderItem.Quantity} - \text{SalesOrderItem.
 - **And** the submission is blocked with `CreditLimitExceededException("Credit limit $5,000 exceeded. Current: $4,600, Attempted: $650")`.
 
 ### Scenario SL-03: High-Speed POS Multi-Tender Checkout
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** unimplemented end to end and untested (see invariant SL-03). Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+
 - **Given** an active retail POS register session
 - **When** the cashier scans items totaling $85.00 ($80.00 net + $5.00 tax)
 - **And** tenders payment: $50.00 in Cash and $35.00 via Credit Card
@@ -81,6 +91,8 @@ $$\text{DeliveredQty} \le \text{SalesOrderItem.Quantity} - \text{SalesOrderItem.
 - **And** store warehouse physical stock is decremented immediately.
 
 ### Scenario SL-04: Idempotent Sales Invoice Submission Guard
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** no reachable sales-invoice mutation carries `[IdempotencyKeyRequired]` (the only sales-invoice route, `POST .../pos`, is unguarded) and no test replays a sales-invoice submission. Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+
 - **Given** a valid `SalesInvoice` submission with header `Idempotency-Key: idemp-sinv-2026-44`
 - **When** network retry triggers duplicate submission from the client
 - **Then** the idempotency filter catches the existing transaction key
@@ -88,6 +100,8 @@ $$\text{DeliveredQty} \le \text{SalesOrderItem.Quantity} - \text{SalesOrderItem.
 - **And** strictly prevents duplicate receivables or double revenue recognition.
 
 ### Scenario SL-05: Cancellation & Credit Note Return
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** no `CancelSalesInvoice` handler, endpoint or test exists; `SalesInvoiceStatus.Cancelled` is never assigned and `UpdateStock` is hard-coded `false`, so the stock-return clause has no code path. Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+
 - **Given** a submitted `SalesInvoice` `SINV-2026-0012` for $1,100.00
 - **When** the customer returns the order and a Credit Note is issued
 - **Then** the invoice status transitions to `Cancelled`
@@ -95,6 +109,8 @@ $$\text{DeliveredQty} \le \text{SalesOrderItem.Quantity} - \text{SalesOrderItem.
 - **And** if `UpdateStock == true`, inventory is returned to the warehouse via reversing `StockLedgerEntry`.
 
 ### Scenario SL-06: Concurrency Guard on Credit Limit & Stock Fulfillments
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** untested — no concurrent-credit-invoice test exists and a `RowVersion` conflict maps to `server_error` instead of `CreditLimitExceededException`. Related carry-forward safety flag: `SalesPostingService.PostDeliveryNoteAsync` reads FIFO layers WITHOUT the stock range lock that `StockPostingService` takes, so concurrent delivery notes on one item/warehouse can still oversell (no selling scenario exercises that race today). Out of the certified scope of this module; tracked as carry-forward flags in this module's archive report.
+
 - **Given** Customer `ACME` with available credit $500.00
 - **When** two branch users attempt to issue separate invoices for $400.00 concurrently
 - **Then** optimistic concurrency locks verify the total pending balance

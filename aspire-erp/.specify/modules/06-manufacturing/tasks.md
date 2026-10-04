@@ -3,7 +3,7 @@
 **Module:** `06-manufacturing`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IN PROGRESS (Block A: 9.1, 9.2 complete; Block B: 9.3, 9.4 complete)  
+**Status:** IMPLEMENTATION COMPLETE — all 7 tasks verified (pending Spec Kit verify + archive)  
 
 ---
 
@@ -25,15 +25,15 @@
   - **Action:** Implement material transfer to WIP and manufacture completion stock entries with automated cost capitalization into `GLEntry`.
   - **Acceptance:** Relieves components from WIP, credits operations absorption account, and debits finished goods stock.
 
-- [ ] **Task 9.5: React Manufacturing & BOM Studio UI**
+- [x] **Task 9.5: React Manufacturing & BOM Studio UI**
   - **Action:** Build BOM tree editor and Work Order execution board in `erp-client`.
   - **Acceptance:** Real-time visibility into production status and shop floor execution.
 
-- [ ] **Task 9.6: Idempotent Manufacturing & Reversal Handlers**
+- [x] **Task 9.6: Idempotent Manufacturing & Reversal Handlers**
   - **Action:** Implement `Idempotency-Key` pipeline for manufacture completion and cancellation handler for reversing material transfers.
   - **Acceptance:** Replaying duplicate completion returns cached result; cancelling work order reverses WIP stock back to stores.
 
-- [ ] **Task 9.7: BOM Recursion & Cost Roll-up Unit & Integration Tests**
+- [x] **Task 9.7: BOM Recursion & Cost Roll-up Unit & Integration Tests**
   - **Action:** Write automated unit tests for BOM circular dependency prevention and integration tests verifying $\sum \text{Debit} == \sum \text{Credit}$ on manufacture.
   - **Acceptance:** 100% test pass on cost roll-up calculations, scrap deductions, and concurrency guards.
 

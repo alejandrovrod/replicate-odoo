@@ -139,3 +139,19 @@ public sealed class ManufacturingCostEngine
     }
 }
 ```
+
+---
+
+## 4. As-Built Addendum (v1.1.0 record, 2026-10-04 — verify W3)
+
+Append-only record of implementation deltas vs §§1–3 above. The approved design stands; this section states what shipped, so future readers don't re-litigate it.
+
+| # | Plan text | As-built | Rationale |
+|---|-----------|----------|-----------|
+| A1 | §2 SCREAMING_SNAKE `MFG_*` in `Erp.Domain.Manufacturing.Errors` | snake_case codes in `Erp.Domain.Entities` (`inactive_bom`, `circular_reference`, …) | Repo-wide convention (`StockErrorCodes`, `BankingErrorCodes`); every mapping + test asserts it |
+| A2 | §1 has no `BOMOperation` table | `BomOperation` table added (FK→BOM cascade, FK→Workstation restrict, duration CHECK) | tasks.md 9.2 directive + MF-01 operations costing; the $200 MF-03 leg cannot post without it. No `JobCard` table (actuals deferred) |
+| A3 | §1 table `BOM` | Table named `BillOfMaterials` (+ `BillOfMaterialsHistory`); constraint/index names keep plan identity (`FK_BOM_Item`, `IX_BOM_Tenant_Item`) | EF entity-name convention |
+| A4 | Submit gate: spec says "active" only | Submit additionally requires `IsDefault` (`non_default_bom`) | Task 9.3 acceptance; tested |
+| A5 | — (no cancel semantics in plan) | Draft cancel rejected (workflow no-op by design); Completed never reversed; compensating transfer reuses `IStockPostingService` | Documented in handler remarks |
+| A6 | MF-01 formula includes scrap | Scrap-bearing BOMs fail manufacture LOUDLY (`scrap_valuation_not_supported`) — no scrap GL account/flow exists | No invented accounting policy; engine still computes scrap (deferred design input) |
+| A7 | — (no BOM write API in plan) | `BomsController` is read-only (list + detail); no BOM-create command/UI | Out of scope; editor honestly read-only, BOMs enter via seeds/SQL |

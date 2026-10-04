@@ -2,6 +2,7 @@ using Erp.Api.Filters;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Manufacturing.Commands;
+using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,13 +10,17 @@ using Microsoft.AspNetCore.Mvc;
 namespace Erp.Api.Controllers.V1;
 
 /// <summary>
-/// Work order endpoints (Tasks 9.3/9.4): create in Draft with the gapless WO-YYYY-NNNNN voucher,
+/// Work order endpoints (Tasks 9.3/9.4/9.6): create in Draft with the gapless WO-YYYY-NNNNN voucher,
 /// the Draft -&gt; Submitted transition, the MF-02 Stores -&gt; WIP transfer (Submitted -&gt;
-/// InProcess) and the MF-03 manufacture completion (InProcess -&gt; Completed). Attributes follow
+/// InProcess), the MF-03 manufacture completion (InProcess -&gt; Completed) and the MF-05
+/// cancellation (Submitted/InProcess -&gt; Cancelled, with a compensating WIP -&gt; Stores
+/// transfer when materials were issued). Attributes follow
 /// Constitution Article VI: explicit route + versioning + TenantMember policy (VI.1) and
-/// exhaustive status documentation (VI.3). Only the two posting mutations carry the literal
-/// <c>[IdempotencyKeyRequired]</c> guard (Article VI.4) - create and submit write no
-/// StockLedgerEntry/GLEntry rows, so the purchase-order precedent (no filter) applies to them.
+/// exhaustive status documentation (VI.3). The three ledger-posting mutations (transfer,
+/// complete, cancel-with-reversal) carry the literal
+/// <c>[IdempotencyKeyRequired]</c> guard (Article VI.4) - create, submit and the list read
+/// write no StockLedgerEntry/GLEntry rows, so the purchase-order precedent (no filter) applies
+/// to them.
 /// </summary>
 [ApiController]
 [Route("api/v1/[controller]")]
@@ -114,14 +119,40 @@ public sealed class WorkOrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Lists the company's work-order headers, newest first (Task 9.5 execution board reads).
+    /// Read-only: no stock, no GL, no idempotency guard.
+    /// </summary>
+    /// <param name="companyId">Company that owns the orders.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<WorkOrderDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> List(
+        [FromQuery] Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        if (companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                "Invalid Company",
+                "The companyId query parameter must be a non-empty GUID.",
+                ManufacturingErrorCodes.WorkOrderNotFound);
+        }
+
+        var orders = await _sender.SendAsync(new GetWorkOrdersQuery(companyId), cancellationToken);
+        return Ok(orders);
+    }
+
+    /// <summary>
     /// Transfers a Submitted order's components Stores -&gt; WIP (spec MF-02: Dr 1320 / Cr 1310 at
     /// FIFO value) and advances it to InProcess.
     /// </summary>
     /// <remarks>
     /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4). A missing header is a 400,
     /// a replayed key returns the stored response verbatim, and reusing a key with a different
-    /// payload is a 409. Duplicate completion replay safety (spec MF-04) rides this pipeline;
-    /// the live replay test lands in Block C.
+    /// payload is a 409. Duplicate completion replay safety (spec MF-04) rides this pipeline
+    /// (proven live by WorkOrderManufacturingApiTests).
     /// </remarks>
     /// <param name="id">Work order id.</param>
     /// <param name="companyId">Company that owns the order.</param>
@@ -167,8 +198,8 @@ public sealed class WorkOrdersController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4) - same replay contract as
-    /// the transfer route. Duplicate completion replay safety (spec MF-04) rides this pipeline;
-    /// the live replay test lands in Block C.
+    /// the transfer route. Duplicate completion replay safety (spec MF-04) rides this pipeline
+    /// (proven live by WorkOrderManufacturingApiTests).
     /// </remarks>
     /// <param name="id">Work order id.</param>
     /// <param name="companyId">Company that owns the order.</param>
@@ -207,6 +238,70 @@ public sealed class WorkOrdersController : ControllerBase
 
         var posting = result.Value!;
         return CreatedAtAction(nameof(Submit), new { id, companyId = posting.Entry.CompanyId }, posting);
+    }
+
+    /// <summary>
+    /// Cancels a Submitted or InProcess order (spec MF-05). An InProcess order (MF-02 transfer
+    /// posted) additionally reverses its transfer with a compensating WIP -&gt; Stores voucher
+    /// so WIP nets back to zero; a never-transferred order cancels as a pure status transition.
+    /// </summary>
+    /// <remarks>
+    /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4) - the reversal posts
+    /// StockLedgerEntry/GLEntry rows, so the same replay contract as the transfer and complete
+    /// routes applies.
+    /// </remarks>
+    /// <param name="id">Work order id.</param>
+    /// <param name="companyId">Company that owns the order.</param>
+    /// <param name="postingDate">Accounting date of the reversal (defaults to today).</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:guid}/cancel")]
+    [IdempotencyKeyRequired]
+    [ProducesResponseType(typeof(WorkOrderDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Cancel(
+        Guid id,
+        [FromQuery] Guid companyId,
+        [FromQuery] DateOnly? postingDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                "Invalid Work Order",
+                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                ManufacturingErrorCodes.WorkOrderNotFound);
+        }
+
+        var result = await _sender.SendAsync(
+            new CancelWorkOrderCommand(companyId, id, postingDate), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+            return error.Code switch
+            {
+                ManufacturingErrorCodes.WorkOrderNotFound or ManufacturingErrorCodes.BomNotFound => Problem(
+                    StatusCodes.Status404NotFound,
+                    "Work Order Not Found",
+                    error.Message,
+                    error.Code),
+                ManufacturingErrorCodes.InvalidStatusTransition or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Work Order Conflict",
+                    error.Message,
+                    error.Code),
+                _ => Problem(
+                    StatusCodes.Status400BadRequest,
+                    "Work Order Rejected",
+                    error.Message,
+                    error.Code),
+            };
+        }
+
+        return Ok(result.Value);
     }
 
     /// <summary>

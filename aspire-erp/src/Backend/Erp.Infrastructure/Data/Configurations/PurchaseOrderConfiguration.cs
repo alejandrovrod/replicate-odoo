@@ -21,7 +21,7 @@ public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<Purcha
             .HasDefaultValueSql("NEWSEQUENTIALID()");
 
         // Optimistic concurrency (spec BY-06): store-generated rowversion token - this is what
-        // makes concurrent Draft -> Ordered / Ordered -> Received transitions fail loudly
+        // makes concurrent Draft -> Submitted / Submitted -> PartiallyReceived transitions fail loudly
         // (DbUpdateConcurrencyException -> ConcurrencyConflictException -> 409) instead of
         // letting a stale status overwrite a newer one.
         builder.Property(o => o.RowVersion).IsRowVersion();

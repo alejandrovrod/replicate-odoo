@@ -10,7 +10,7 @@ namespace Erp.Api.Controllers.V1;
 
 /// <summary>
 /// Purchase order endpoints (Task 4.1): create in Draft with the gapless PO-YYYY-NNNNN voucher and
-/// the Draft -&gt; Ordered transition. No <c>[IdempotencyKeyRequired]</c> on either action: neither
+/// the Draft -&gt; Submitted transition. No <c>[IdempotencyKeyRequired]</c> on either action: neither
 /// writes StockLedgerEntry nor GLEntry, so Article VI.4 does not apply - workflow conflicts
 /// (<c>invalid_status_transition</c>) surface as 409 instead.
 /// </summary>
@@ -154,7 +154,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Advances one Draft order to Ordered (Task 4.1 workflow). Any state other than Draft is a 409
+    /// Advances one Draft order to Submitted (Task 4.1 workflow). Any state other than Draft is a 409
     /// (<c>invalid_status_transition</c>): the order conflicts with the requested state.
     /// </summary>
     /// <param name="id">Purchase order id.</param>

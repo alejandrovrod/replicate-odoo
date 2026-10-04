@@ -7,7 +7,7 @@ using Erp.Domain.Repositories;
 namespace Erp.Application.Features.Buying.Commands;
 
 /// <summary>
-/// Executes <see cref="SubmitPurchaseOrderCommand"/>: Draft -&gt; Ordered (Task 4.1 workflow).
+/// Executes <see cref="SubmitPurchaseOrderCommand"/>: Draft -&gt; Submitted (Task 4.1 workflow).
 /// Any other current state fails with <c>invalid_status_transition</c>, which the API maps to a
 /// 409 - the order conflicts with the requested state. No stock and no GL impact.
 /// </summary>

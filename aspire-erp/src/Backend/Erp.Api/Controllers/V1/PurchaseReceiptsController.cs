@@ -61,7 +61,7 @@ public sealed class PurchaseReceiptsController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4). A missing header is a 400, a
-    /// replayed key returns the stored response verbatim, and reusing a key with a different payload
+    /// replayed key returns the stored body with HTTP 200, and reusing a key with a different payload
     /// is a 409. A Draft/Billed referenced order is a 409 (<c>invalid_status_transition</c>).
     /// </remarks>
     /// <param name="command">Receipt data (company, warehouse, optional order, posting date, lines).</param>

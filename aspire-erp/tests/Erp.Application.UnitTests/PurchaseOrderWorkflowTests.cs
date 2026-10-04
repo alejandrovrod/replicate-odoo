@@ -6,7 +6,7 @@ using Xunit;
 namespace Erp.Application.UnitTests;
 
 /// <summary>
-/// Task 4.1 acceptance: the purchase order workflow (Draft -&gt; Ordered -&gt; Received -&gt; Billed)
+/// Task 4.1 acceptance: the purchase order workflow (Draft -&gt; Submitted -&gt; PartiallyReceived -&gt; Completed)
 /// exercised through the CQRS handlers - gapless PO-YYYY-NNNNN vouchers, supplier existence/activity
 /// rules and the invalid_status_transition failures that the API maps to 409 - against in-memory
 /// repository doubles (Constitution I.2/I.3).
@@ -172,7 +172,7 @@ public sealed class PurchaseOrderWorkflowTests
     // ------------------------------------------------------------------------- submit (ordered)
 
     [Fact]
-    public async Task Submit_DraftOrder_AdvancesToOrdered()
+    public async Task Submit_DraftOrder_AdvancesToSubmitted()
     {
         var created = await CreateOrderHandler().HandleAsync(NewOrder());
         Assert.True(created.IsSuccess);

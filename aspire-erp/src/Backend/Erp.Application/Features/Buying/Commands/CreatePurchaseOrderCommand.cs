@@ -8,7 +8,7 @@ public sealed record CreatePurchaseOrderItem(Guid ItemId, decimal Quantity, deci
 
 /// <summary>
 /// Creates one purchase order in Draft with its gapless PO-YYYY-NNNNN voucher (Task 4.1).
-/// No stock and no GL impact - the workflow starts here: Draft -&gt; Ordered -&gt; Received -&gt; Billed.
+/// No stock and no GL impact - the workflow starts here: Draft -&gt; Submitted -&gt; PartiallyReceived -&gt; Completed.
 /// </summary>
 public sealed record CreatePurchaseOrderCommand(
     Guid CompanyId,

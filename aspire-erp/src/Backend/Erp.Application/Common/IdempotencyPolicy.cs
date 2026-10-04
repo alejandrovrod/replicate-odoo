@@ -6,7 +6,7 @@ public enum IdempotencyDecision
     /// <summary>No record for this key: reserve it, run the action, then store or release it.</summary>
     Proceed,
 
-    /// <summary>Same key AND same payload, already completed: replay the stored status + body verbatim.</summary>
+    /// <summary>Same key AND same payload, already completed: replay the stored body with HTTP 200 (the filter never echoes the stored status).</summary>
     ReplayStoredResponse,
 
     /// <summary>Same key AND same payload, still executing: 409 - ask the client to retry later.</summary>

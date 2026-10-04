@@ -3,7 +3,7 @@ using Erp.Domain.Common;
 namespace Erp.Domain.Entities;
 
 /// <summary>
-/// Procurement workflow of Task 4.1 (.specify/spec.md §6): Draft -&gt; Ordered -&gt; Received -&gt; Billed.
+/// Procurement workflow of Task 4.1 (.specify/spec.md §6): Draft -&gt; Submitted -&gt; PartiallyReceived -&gt; Completed.
 /// Persisted as the enum NAME (nvarchar(20)), matching the StockEntryType/RootType precedent.
 /// </summary>
 public enum PurchaseOrderStatus
@@ -40,7 +40,7 @@ public class PurchaseOrder : ITenantEntity
 
     public Supplier? Supplier { get; set; }
 
-    /// <summary>Workflow state (Task 4.1 acceptance: Draft -&gt; Ordered -&gt; Received -&gt; Billed).</summary>
+    /// <summary>Workflow state (Task 4.1 acceptance: Draft -&gt; Submitted -&gt; PartiallyReceived -&gt; Completed).</summary>
     public PurchaseOrderStatus Status { get; set; } = PurchaseOrderStatus.Draft;
 
     public DateOnly TransactionDate { get; set; }
@@ -59,7 +59,7 @@ public class PurchaseOrder : ITenantEntity
 
     /// <summary>
     /// Optimistic concurrency token (SQL Server <c>rowversion</c> - spec BY-06): the workflow
-    /// (Draft -&gt; Ordered -&gt; Received -&gt; Billed) is a read-modify-write, so EF puts the
+    /// (Draft -&gt; Submitted -&gt; PartiallyReceived -&gt; Completed) is a read-modify-write, so EF puts the
     /// original value in the UPDATE ... WHERE clause and a concurrent transition between the load
     /// and the save throws <c>DbUpdateConcurrencyException</c> instead of being silently lost.
     /// Store-generated: never set from code.

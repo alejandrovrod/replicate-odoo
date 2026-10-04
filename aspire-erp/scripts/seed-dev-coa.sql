@@ -97,17 +97,30 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000
     VALUES ('a0000000-0000-4000-8000-000000005210', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5210', 'Cost of Goods Sold', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 'USD', 1);
 GO
 
--- --- Company stock posting defaults (decision D3) ---------------------------
--- StockReceivedAccountCode is an ACCOUNT CODE, not a FK: a Company -> Account FK
--- would be circular (Account already references Company). The posting engine
--- resolves it to exactly one active leaf account of the same company.
+-- --- Company posting defaults (decision D3 + module 03/04 consumers) --------
+-- Every value is an ACCOUNT CODE, not a FK: a Company -> Account FK would be
+-- circular (Account already references Company). The posting engine resolves
+-- each code to exactly one active leaf account of the same company.
+--   StockReceivedAccountCode      : interim accrual credit (receipts, Task 4.3).
+--   CogsAccountCode               : FIFO issue / delivery note debit
+--                                    (Option A decision; tasks 3.2/5.2b).
+--   DefaultReceivableAccountCode  : A/R debit when the customer carries no
+--                                    override (Task 5.3, SubmitSalesInvoice).
+--   DefaultIncomeAccountCode      : sales revenue credit when the customer
+--                                    carries no override (Task 5.3).
 -- AllowNegativeStock stays at its plan.md default (0 = forbidden, Task 3.3).
 
 IF EXISTS (SELECT 1 FROM dbo.Company WHERE Id = '22222222-2222-4222-8222-222222222222')
     UPDATE dbo.Company
-    SET StockReceivedAccountCode = '2120'
+    SET StockReceivedAccountCode = '2120',
+        CogsAccountCode = '5210',
+        DefaultReceivableAccountCode = '1120',
+        DefaultIncomeAccountCode = '4110'
     WHERE Id = '22222222-2222-4222-8222-222222222222'
-      AND (StockReceivedAccountCode IS NULL OR StockReceivedAccountCode <> '2120');
+      AND (StockReceivedAccountCode IS NULL OR StockReceivedAccountCode <> '2120'
+        OR CogsAccountCode IS NULL OR CogsAccountCode <> '5210'
+        OR DefaultReceivableAccountCode IS NULL OR DefaultReceivableAccountCode <> '1120'
+        OR DefaultIncomeAccountCode IS NULL OR DefaultIncomeAccountCode <> '4110');
 GO
 
 -- Verification: 5 roots + 8 children = 13 rows, all sharing one Tenant/Company.
@@ -117,7 +130,8 @@ WHERE TenantId = '11111111-1111-4111-8111-111111111111'
 ORDER BY AccountCode;
 
 -- FrozenAccountsDate (was PeriodLockDate, renamed by tasks.md 2.2): NULL = open periods.
-SELECT Id, AllowNegativeStock, FrozenAccountsDate, StockReceivedAccountCode
+SELECT Id, AllowNegativeStock, FrozenAccountsDate, StockReceivedAccountCode,
+       CogsAccountCode, DefaultReceivableAccountCode, DefaultIncomeAccountCode
 FROM dbo.Company
 WHERE Id = '22222222-2222-4222-8222-222222222222';
 GO

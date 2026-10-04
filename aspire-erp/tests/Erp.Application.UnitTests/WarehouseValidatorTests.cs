@@ -19,9 +19,9 @@ public sealed class WarehouseValidatorTests
         {
             Id = id,
             CompanyId = companyId,
-            Code = "WH-1",
-            Name = "Warehouse",
-            StockAccountId = StockAccount,
+            WarehouseCode = "WH-1",
+            WarehouseName = "Warehouse",
+            AccountId = StockAccount,
             IsGroup = isGroup,
             ParentWarehouseId = parentId,
         };

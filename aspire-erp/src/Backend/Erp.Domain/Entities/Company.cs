@@ -89,6 +89,19 @@ public class Company : ITenantEntity
     /// </summary>
     public string? PriceDifferenceAccountCode { get; set; }
 
+    /// <summary>
+    /// Company-level GL default for cost of goods sold (decision D3, spec ST-02): the ACCOUNT CODE
+    /// debited with the FIFO consumption value when stock is issued, e.g. "5210 - Cost of Goods
+    /// Sold". The item-level ExpenseAccountId was removed by the stock entity refactor: issues
+    /// resolve this company default at posting time to exactly one active leaf account of the
+    /// same company (same shape as <see cref="StockReceivedAccountCode"/>).
+    /// </summary>
+    public string? CogsAccountCode { get; set; }
+
+    public string? DefaultReceivableAccountCode { get; set; }
+    
+    public string? DefaultIncomeAccountCode { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public Tenant? Tenant { get; set; }

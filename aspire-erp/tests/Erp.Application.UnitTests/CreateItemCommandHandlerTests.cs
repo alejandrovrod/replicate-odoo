@@ -54,7 +54,7 @@ public sealed class CreateItemCommandHandlerTests
 
         var saved = _items.AddedItem;
         Assert.NotNull(saved);
-        Assert.Equal("IT-001", saved!.Code);
+        Assert.Equal("IT-001", saved!.ItemCode);
         Assert.Equal(Guid.Empty, saved.TenantId); // stamped by AppDbContext, never by the handler
     }
 

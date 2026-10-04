@@ -39,6 +39,9 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.AccountsPayableAccountCode).HasMaxLength(50);
         builder.Property(c => c.InputTaxRecoverableAccountCode).HasMaxLength(50);
         builder.Property(c => c.PriceDifferenceAccountCode).HasMaxLength(50);
+        builder.Property(c => c.CogsAccountCode).HasMaxLength(50);
+        builder.Property(c => c.DefaultReceivableAccountCode).HasMaxLength(50);
+        builder.Property(c => c.DefaultIncomeAccountCode).HasMaxLength(50);
 
         builder.Property(c => c.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 

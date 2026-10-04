@@ -55,7 +55,7 @@ public sealed class CreateWarehouseCommandHandlerTests
         Assert.Equal("SN", result.Value!.Code); // trimmed
         var saved = _warehouses.AddedWarehouse;
         Assert.NotNull(saved);
-        Assert.Equal("SN", saved!.Code);
+        Assert.Equal("SN", saved!.WarehouseCode);
         Assert.Null(saved.ParentWarehouseId);
         Assert.Equal(Guid.Empty, saved.TenantId); // stamped by AppDbContext
     }

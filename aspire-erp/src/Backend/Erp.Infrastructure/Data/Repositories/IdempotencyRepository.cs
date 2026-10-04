@@ -75,6 +75,24 @@ public sealed class IdempotencyRepository : IIdempotencyRepository
         }
 
         _dbContext.IdempotencyRecords.Remove(record);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // The action failed on a RowVersion race AFTER mutating tracked business entities
+            // (the BN-07 save race: the handler translated it into a clean 409, but the dead
+            // entities stay in the tracker). Retrying them inside THIS save tears the
+            // already-written 409 with a raw 500. Their transaction already rolled back, so
+            // detach them and retry the release alone (the TryReserveAsync precedent above).
+            foreach (var entry in ex.Entries)
+            {
+                entry.State = EntityState.Detached;
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 }

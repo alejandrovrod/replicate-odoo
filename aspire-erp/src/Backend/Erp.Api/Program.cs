@@ -19,6 +19,7 @@ using Erp.Application.Features.Selling.Commands;
 using Erp.Application.Features.Selling.Queries;
 using Erp.Application.Features.Stock.Commands;
 using Erp.Application.Features.Stock.Queries;
+using Erp.Application.Features.Manufacturing.Commands;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
 using Erp.Application.Services;
@@ -170,6 +171,18 @@ builder.Services.AddScoped<ICommandHandler<UnreconcileBankTransactionCommand, Re
 builder.Services.AddScoped<ICommandHandler<CreateVoucherFromBankTransactionCommand, Result<JournalEntryDto>>, CreateVoucherFromBankTransactionCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBankTransactionsQuery, IReadOnlyList<BankTransactionDto>>, GetBankTransactionsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBankTransactionRulesQuery, IReadOnlyList<BankTransactionRuleDto>>, GetBankTransactionRulesQueryHandler>();
+
+// Manufacturing (Block A masters + Block B work-order workflow and postings, tasks 9.1-9.4):
+// the master/workflow repository, the manufacture posting engine and the four commands behind
+// the work-orders controller. Same split as every other module: repository in
+// Erp.Infrastructure, handlers and services in Erp.Application - only the composition root
+// knows both (decision C2).
+builder.Services.AddScoped<IManufacturingRepository, ManufacturingRepository>();
+builder.Services.AddScoped<IManufacturingPostingService, ManufacturingPostingService>();
+builder.Services.AddScoped<ICommandHandler<CreateWorkOrderCommand, Result<WorkOrderDto>>, CreateWorkOrderCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitWorkOrderCommand, Result<WorkOrderDto>>, SubmitWorkOrderCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<TransferMaterialsToWipCommand, Result<StockEntryPostingDto>>, TransferMaterialsToWipCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CompleteManufactureCommand, Result<StockEntryPostingDto>>, CompleteManufactureCommandHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

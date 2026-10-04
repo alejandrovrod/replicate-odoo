@@ -131,6 +131,13 @@ public sealed class StockPostingService : IStockPostingService
                             sourceStockAccount, targetStockAccount!, ledger, glLines, token);
                         break;
 
+                    case StockEntryType.Manufacture:
+                        throw new StockValidationException(
+                            StockErrorCodes.InvalidValuationMethod,
+                            "A manufacture voucher cannot be posted through the stock engine: it carries "
+                            + "work-order costing (WIP consumption + operating absorption) and posts only "
+                            + "through IManufacturingPostingService.");
+
                     default:
                         throw new StockValidationException(
                             StockErrorCodes.InvalidValuationMethod,
@@ -570,6 +577,10 @@ public sealed class StockPostingService : IStockPostingService
             StockEntryType.MaterialReceipt => "MR",
             StockEntryType.MaterialIssue => "MI",
             StockEntryType.MaterialTransfer => "MT",
+            StockEntryType.Manufacture => throw new StockValidationException(
+                StockErrorCodes.InvalidValuationMethod,
+                "A manufacture voucher takes its MF-YYYY-NNNNN number from IManufacturingPostingService, "
+                + "not from the stock voucher sequence."),
             _ => throw new StockValidationException(
                 StockErrorCodes.InvalidValuationMethod,
                 $"Unknown stock entry type '{request.EntryType}'."),

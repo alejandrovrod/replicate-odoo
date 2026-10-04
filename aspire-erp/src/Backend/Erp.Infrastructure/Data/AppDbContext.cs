@@ -91,6 +91,8 @@ public class AppDbContext : DbContext
 
     public DbSet<BomOperation> BomOperations => Set<BomOperation>();
 
+    public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

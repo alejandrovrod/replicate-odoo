@@ -17,6 +17,15 @@ public enum StockEntryType
 
     /// <summary>Move between two warehouses of the same company; value is preserved.</summary>
     MaterialTransfer,
+
+    /// <summary>
+    /// Work-order completion (Task 9.4, spec MF-03): components are consumed from the WIP warehouse
+    /// at FIFO cost and finished goods are received into the target warehouse with operating cost
+    /// capitalized (Dr 1330 / Cr 1320 / Cr 5210). Posted ONLY through
+    /// <c>IManufacturingPostingService</c> - <c>StockPostingService</c> rejects this type because
+    /// its three-leg voucher does not fit the receipt/issue/transfer request shape.
+    /// </summary>
+    Manufacture,
 }
 
 /// <summary>

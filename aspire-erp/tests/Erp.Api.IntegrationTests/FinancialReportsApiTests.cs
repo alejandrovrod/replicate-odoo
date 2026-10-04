@@ -515,10 +515,18 @@ public class FinancialReportsApiTests : IClassFixture<ErpApiFactory>
 
     /// <summary>
     /// POSTs a syntactically valid but EMPTY JSON body - the transition endpoints allow it, so
-    /// "no concurrency token" is a legal request.
+    /// "no concurrency token" is a legal request. Each call carries a FRESH <c>Idempotency-Key</c>
+    /// because submit is a guarded ledger-posting mutation (Constitution VI.4).
     /// </summary>
-    private static Task<HttpResponseMessage> PostEmptyBodyAsync(HttpClient client, string url) =>
-        client.PostAsync(url, new StringContent(string.Empty, Encoding.UTF8, "application/json"));
+    private static Task<HttpResponseMessage> PostEmptyBodyAsync(HttpClient client, string url)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        return client.SendAsync(request);
+    }
 
     /// <summary>
     /// Asserts the RFC 7807 contract of a rejection: status line, <c>status</c>, <c>title</c> and

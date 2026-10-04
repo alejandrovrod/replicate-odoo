@@ -385,9 +385,15 @@ public class JournalEntriesApiTests : IClassFixture<ErpApiFactory>
         var staleToken = Convert.ToBase64String(new byte[8]);
         Assert.NotEqual(draft["rowVersion"]!.GetValue<string>(), staleToken);
 
-        using var conflictResponse = await client.PostAsJsonAsync(
-            $"/api/v1/journal-entries/{id}/submit?companyId={ErpApiFactory.DevCompanyId}",
-            new { rowVersion = staleToken });
+        var conflictRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/v1/journal-entries/{id}/submit?companyId={ErpApiFactory.DevCompanyId}")
+        {
+            Content = JsonContent.Create(new { rowVersion = staleToken }),
+        };
+        conflictRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+
+        using var conflictResponse = await client.SendAsync(conflictRequest);
 
         await AssertProblemAsync(
             conflictResponse,
@@ -455,9 +461,18 @@ public class JournalEntriesApiTests : IClassFixture<ErpApiFactory>
     /// <summary>
     /// POSTs a syntactically valid but EMPTY JSON body: the transition endpoints declare
     /// <c>EmptyBodyBehavior.Allow</c>, so "no concurrency token" must be a legal request.
+    /// Each call carries a FRESH <c>Idempotency-Key</c> because submit/cancel are guarded
+    /// mutations (Constitution VI.4) and the filter rejects requests without the header.
     /// </summary>
-    private static Task<HttpResponseMessage> PostEmptyBodyAsync(HttpClient client, string url) =>
-        client.PostAsync(url, new StringContent(string.Empty, Encoding.UTF8, "application/json"));
+    private static Task<HttpResponseMessage> PostEmptyBodyAsync(HttpClient client, string url)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString("N"));
+        return client.SendAsync(request);
+    }
 
     /// <summary>
     /// Asserts the RFC 7807 contract of a rejection: status line, <c>status</c> extension and the

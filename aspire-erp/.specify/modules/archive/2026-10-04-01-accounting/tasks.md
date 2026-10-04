@@ -3,7 +3,7 @@
 **Module:** `01-accounting`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IN PROGRESS  
+**Status:** CERTIFIED — amended scope 2026-10-04 (11/11 tasks verified; FX + period-closing DEFERRED)  
 
 ---
 

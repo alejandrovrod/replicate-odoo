@@ -85,9 +85,9 @@ Actúa conjuntamente como `@dotnet-core-expert`, `@database-optimizer` y `@exper
 ### Instrucciones de Ejecución:
 1. **Lectura de Especificaciones:**
    Antes de tocar código, lean estrictamente en este orden los artefactos certificados del módulo:
-   - `aspire-erp/.specify/modules/01-accounting/spec.md` (Entendimiento de negocio, UX y reglas).
-   - `aspire-erp/.specify/modules/01-accounting/plan.md` (Decisiones de arquitectura Backend y Frontend).
-   - `aspire-erp/.specify/modules/01-accounting/tasks.md` (Lista de tareas accionables).
+   - `aspire-erp/.specify/modules/archive/2026-10-04-01-accounting/spec.md` (Entendimiento de negocio, UX y reglas).
+   - `aspire-erp/.specify/modules/archive/2026-10-04-01-accounting/plan.md` (Decisiones de arquitectura Backend y Frontend).
+   - `aspire-erp/.specify/modules/archive/2026-10-04-01-accounting/tasks.md` (Lista de tareas accionables).
 
 2. **Auditoría de Código Existente vs Nuevo Spec:**
    - **Backend/DB:** Analicen el código en `src/Backend/` relacionado con `Account` y `GLEntry`. Verifiquen consistencia transaccional, `RowVersion`, y aserciones de doble partida.

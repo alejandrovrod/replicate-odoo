@@ -10,7 +10,7 @@
 ### Modular Specifications (GitHub Spec Kit Triad: Spec · Plan · Tasks):
 | Module | Certification | Functional Spec | Technical Plan | Tasks Roadmap |
 | :--- | :---: | :--- | :--- | :--- |
-| **01. Accounting & General Ledger** | `100% CERTIFIED` | [spec.md](./modules/01-accounting/spec.md) | [plan.md](./modules/01-accounting/plan.md) | [tasks.md](./modules/01-accounting/tasks.md) |
+| **01. Accounting & General Ledger** | `CERTIFIED — amended scope` | [spec.md](./modules/archive/2026-10-04-01-accounting/spec.md) | [plan.md](./modules/archive/2026-10-04-01-accounting/plan.md) | [tasks.md](./modules/archive/2026-10-04-01-accounting/tasks.md) |
 | **02. Stock & Inventory (Kardex FIFO)** | `100% CERTIFIED` | [spec.md](./modules/archive/2026-10-04-02-stock/spec.md) | [plan.md](./modules/archive/2026-10-04-02-stock/plan.md) | [tasks.md](./modules/archive/2026-10-04-02-stock/tasks.md) |
 | **03. Selling & Point of Sale (POS)** | `100% CERTIFIED` | [spec.md](./modules/03-selling/spec.md) | [plan.md](./modules/03-selling/plan.md) | [tasks.md](./modules/03-selling/tasks.md) |
 | **04. Buying & Procurement** | `100% CERTIFIED` | [spec.md](./modules/archive/2026-10-03-04-buying/spec.md) | [plan.md](./modules/archive/2026-10-03-04-buying/plan.md) | [tasks.md](./modules/archive/2026-10-03-04-buying/tasks.md) |

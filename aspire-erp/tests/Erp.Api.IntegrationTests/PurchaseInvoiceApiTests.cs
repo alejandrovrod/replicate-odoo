@@ -292,6 +292,52 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
         Assert.Equal("invoice_already_exists", problem["code"]!.GetValue<string>());
     }
 
+    // ------------------------------------------------------------------------------ verify W10
+
+    /// <summary>
+    /// Verify W10: the receipt POST carries the same <c>[IdempotencyKeyRequired]</c> guard as the
+    /// invoice, so a replayed receipt answers 200 with the stored body byte-for-byte and books NO
+    /// new ledger row - the shared filter was previously exercised only through invoices.
+    /// </summary>
+    [Fact]
+    public async Task ReceiptCreate_ReplayedWithSameKey_Returns200WithIdenticalBodyAndBooksNothingNew()
+    {
+        using var client = CreateClient();
+        var key = Guid.NewGuid().ToString("N");
+
+        var payload = SerializePayload(new
+        {
+            companyId = ErpApiFactory.DevCompanyId,
+            warehouseId = WarehouseId,
+            supplierId = SupplierId,
+            postingDate = Format(DateOnly.FromDateTime(DateTime.UtcNow)),
+            lines = new[] { new { itemId = ItemId, qty = Qty, rate = Rate } },
+        });
+
+        using var first = await PostRawAsync(client, "/api/v1/purchasereceipts", payload, key);
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        var firstBytes = await first.Content.ReadAsByteArrayAsync();
+
+        var receiptId = JsonNode
+            .Parse(Encoding.UTF8.GetString(firstBytes))!["receipt"]!["id"]!.GetValue<Guid>();
+        var before = await ReadVoucherLedgerAsync(client, receiptId, "PurchaseReceipt");
+        Assert.Equal(2, before.Count); // Dr 1310 / Cr 2120 - one accrual pair.
+
+        // The replay: identical URL, identical raw body, identical key -> 200 + stored body.
+        using var replay = await PostRawAsync(client, "/api/v1/purchasereceipts", payload, key);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        Assert.Equal(
+            Convert.ToHexString(firstBytes),
+            Convert.ToHexString(await replay.Content.ReadAsByteArrayAsync()));
+
+        // Oracle: the ledger itself - no new row for the replayed posting.
+        var after = await ReadVoucherLedgerAsync(client, receiptId, "PurchaseReceipt");
+        Assert.Equal(before.Count, after.Count);
+        Assert.Equal(
+            before.Select(row => row.Id).OrderBy(id => id),
+            after.Select(row => row.Id).OrderBy(id => id));
+    }
+
     /// <summary>
     /// The endpoint is a guarded mutation and hides unknown ids: no <c>Idempotency-Key</c> is 400,
     /// an id that does not exist in this tenant is 404 <c>purchase_invoice_not_found</c>.
@@ -467,12 +513,15 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
     /// Reads every ledger row of one invoice voucher from the pinned general-ledger contract -
     /// the BY-04/BY-05 oracle ("no additional rows", "one row per original line, sides swapped").
     /// </summary>
-    private async Task<List<LedgerRow>> ReadVoucherLedgerAsync(HttpClient client, Guid voucherId)
+    private async Task<List<LedgerRow>> ReadVoucherLedgerAsync(
+        HttpClient client,
+        Guid voucherId,
+        string voucherType = "PurchaseInvoice")
     {
         using var response = await client.GetAsync(
             $"/api/v1/FinancialReports/general-ledger"
             + $"?companyId={ErpApiFactory.DevCompanyId}"
-            + $"&voucherId={voucherId}&voucherType=PurchaseInvoice");
+            + $"&voucherId={voucherId}&voucherType={voucherType}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

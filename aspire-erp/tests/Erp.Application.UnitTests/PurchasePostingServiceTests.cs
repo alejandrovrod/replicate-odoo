@@ -216,6 +216,29 @@ public sealed class PurchasePostingServiceTests
         Assert.Equal(PurchaseOrderStatus.PartiallyReceived, result.OrderStatus);
         Assert.Equal(PurchaseOrderStatus.PartiallyReceived, order.Status);
         Assert.Equal(order.Id, result.Receipt.PurchaseOrderId);
+
+        // Task 4.5 / verify W5: the receipt fills the line's received quantity and the header
+        // percentage; the billing columns stay put.
+        Assert.Equal(10m, Assert.Single(order.Items).ReceivedQuantity);
+        Assert.Equal(100m, order.ReceivedPercentage);
+        Assert.Equal(0m, order.BilledPercentage);
+    }
+
+    [Fact]
+    public async Task PostReceiptAsync_PartialReceipt_TracksReceivedPercentage()
+    {
+        // Task 4.5: 4 of the ordered 10 units arrive -> 40% received, nothing billed yet.
+        var order = SeedOrder(PurchaseOrderStatus.Submitted);
+        var request = new PurchaseReceiptPostingRequest(
+            _companyId, _warehouse.Id, _supplier.Id, order.Id, PostingDate,
+            new[] { new PurchaseReceiptPostingLine(_item.Id, 4m, 100m) });
+
+        var result = await CreateService().PostReceiptAsync(request);
+
+        Assert.Equal(PurchaseOrderStatus.PartiallyReceived, result.OrderStatus);
+        Assert.Equal(4m, Assert.Single(order.Items).ReceivedQuantity);
+        Assert.Equal(40m, order.ReceivedPercentage);
+        Assert.Equal(0m, order.BilledPercentage);
     }
 
     [Fact]
@@ -323,10 +346,48 @@ public sealed class PurchasePostingServiceTests
         Assert.Equal(PurchaseOrderStatus.Completed, result.OrderStatus);
         Assert.Equal(PurchaseOrderStatus.Completed, order.Status);
 
+        // Task 4.5 / verify W5: billing advanced the line and both header progress columns.
+        Assert.Equal(10m, Assert.Single(order.Items).BilledQuantity);
+        Assert.Equal(100m, order.BilledPercentage);
+        Assert.Equal(100m, order.ReceivedPercentage);
+
         Assert.Single(_purchases.Invoices);
 
         // ONE transaction per posting: receipt + invoice.
         Assert.Equal(2, _purchases.TransactionCount);
+    }
+
+    [Fact]
+    public async Task PostInvoiceAsync_PartialBill_KeepsOrderOpenAndCompletesWhenFullyBilled()
+    {
+        // Task 4.1 / verify W6: an order must NOT close on a partial bill - completion happens
+        // only when every ordered line is fully billed.
+        var order = SeedOrder(PurchaseOrderStatus.Submitted);
+        var receipt = await PostStandardReceiptAsync(order.Id);
+        var receiptLine = receipt.Lines.Single();
+        var service = CreateService();
+
+        // First bill: 4 of the 10 units -> stays PartiallyReceived with 40% billed.
+        var partial = await service.PostInvoiceAsync(new PurchaseInvoicePostingRequest(
+            _companyId, _supplier.Id, "BILL-PARTIAL-1", PostingDate, PostingDate.AddDays(30), 0m,
+            new[] { new PurchaseInvoicePostingLine(receiptLine.Id, receiptLine.ItemId, 4m, 100m) }));
+
+        Assert.Equal(PurchaseOrderStatus.PartiallyReceived, partial.OrderStatus);
+        Assert.Equal(PurchaseOrderStatus.PartiallyReceived, order.Status);
+        Assert.Equal(4m, Assert.Single(order.Items).BilledQuantity);
+        Assert.Equal(40m, order.BilledPercentage);
+        Assert.Equal(100m, order.ReceivedPercentage);
+
+        // Second bill clears the remaining 6 units -> ONLY NOW the order completes.
+        var final = await service.PostInvoiceAsync(new PurchaseInvoicePostingRequest(
+            _companyId, _supplier.Id, "BILL-PARTIAL-2", PostingDate, PostingDate.AddDays(30), 0m,
+            new[] { new PurchaseInvoicePostingLine(receiptLine.Id, receiptLine.ItemId, 6m, 100m) }));
+
+        Assert.Equal(PurchaseOrderStatus.Completed, final.OrderStatus);
+        Assert.Equal(PurchaseOrderStatus.Completed, order.Status);
+        Assert.Equal(10m, Assert.Single(order.Items).BilledQuantity);
+        Assert.Equal(100m, order.BilledPercentage);
+        Assert.Equal(2, _purchases.Invoices.Count);
     }
 
     [Fact]

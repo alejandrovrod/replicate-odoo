@@ -178,6 +178,12 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
             if (order is not null)
             {
+                // Task 4.5 progress columns (verify W5): the receipt advances the linked order's
+                // per-line received quantities and the header percentage before the workflow step.
+                ApplyOrderProgress(
+                    order,
+                    request.Lines.Select(l => (l.ItemId, l.Qty)),
+                    received: true);
                 order.Status = PurchaseOrderStatus.PartiallyReceived;
                 await _purchases.UpdateOrderAsync(order, token);
             }
@@ -378,8 +384,9 @@ public sealed class PurchasePostingService : IPurchasePostingService
             await _purchases.AddInvoiceAsync(invoice, token);
             await _stock.AddGlEntriesAsync(glLines, token);
 
-            // Task 4.1 workflow: billing the receipt closes the order.
-            // Check all orders referenced by the billed receipts.
+            // Task 4.1 workflow (verify W5/W6): billing advances the linked orders' per-line billed
+            // quantities and header percentage, and an order completes ONLY when every line is
+            // fully billed - a partial bill keeps it PartiallyReceived instead of faking a close.
             var ordersToUpdate = receipts
                 .Select(r => r.PurchaseOrder)
                 .Where(o => o is not null && o.Status != PurchaseOrderStatus.Completed)
@@ -388,10 +395,25 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
             foreach (var order in ordersToUpdate)
             {
-                // In a real implementation we would check if ALL quantities are fully billed.
-                // For Task 4.4 acceptance, we just mark as Completed.
-                order!.Status = PurchaseOrderStatus.Completed;
-                await _purchases.UpdateOrderAsync(order, token);
+                // Re-load with Include(Items): the receipt navigation carries the header only. EF
+                // resolves to the SAME tracked instance (the fake returns the same object), so the
+                // mutation below lands on the aggregate that UpdateOrderAsync persists.
+                var loaded = await _purchases.GetOrderByIdAsync(order!.Id, token) ?? order;
+
+                var billedLines = request.Lines
+                    .Where(l =>
+                        receiptLinesById[l.PurchaseReceiptLineId].PurchaseReceipt!.PurchaseOrderId
+                        == loaded.Id)
+                    .Select(l => (l.ItemId, l.Qty));
+
+                ApplyOrderProgress(loaded, billedLines, received: false);
+
+                if (loaded.Items.Count > 0 && loaded.Items.All(i => i.BilledQuantity >= i.Quantity))
+                {
+                    loaded.Status = PurchaseOrderStatus.Completed;
+                }
+
+                await _purchases.UpdateOrderAsync(loaded, token);
             }
 
             return BuildInvoiceResult(invoice, glLines, items, ordersToUpdate.FirstOrDefault()?.Status);
@@ -535,6 +557,59 @@ public sealed class PurchasePostingService : IPurchasePostingService
         }
 
         return matches[0];
+    }
+
+    // ------------------------------------------------------------------------- order progress
+
+    /// <summary>
+    /// Task 4.5 acceptance (verify W5): mirrors posted quantities onto the linked order's lines
+    /// (matched by ItemId, greedily filling the lines that still have headroom) and refreshes both
+    /// header percentages from the line totals. Items the order does not buy are ignored - a
+    /// receipt may reference an order while posting an item outside it, which is not progress.
+    /// </summary>
+    private static void ApplyOrderProgress(
+        PurchaseOrder order,
+        IEnumerable<(Guid ItemId, decimal Qty)> postedLines,
+        bool received)
+    {
+        foreach (var (itemId, qty) in postedLines)
+        {
+            var targets = order.Items.Where(i => i.ItemId == itemId).ToList();
+            if (targets.Count == 0)
+            {
+                continue;
+            }
+
+            var target = (received
+                    ? targets.FirstOrDefault(i => i.ReceivedQuantity < i.Quantity)
+                    : targets.FirstOrDefault(i => i.BilledQuantity < i.Quantity))
+                ?? targets[0];
+
+            if (received)
+            {
+                target.ReceivedQuantity += qty;
+            }
+            else
+            {
+                target.BilledQuantity += qty;
+            }
+        }
+
+        var orderedQty = order.Items.Sum(i => i.Quantity);
+        if (orderedQty <= 0m)
+        {
+            return;
+        }
+
+        // decimal(5,2) columns: round half away from zero, same convention as Round4.
+        order.ReceivedPercentage = Math.Round(
+            order.Items.Sum(i => i.ReceivedQuantity) / orderedQty * 100m,
+            2,
+            MidpointRounding.AwayFromZero);
+        order.BilledPercentage = Math.Round(
+            order.Items.Sum(i => i.BilledQuantity) / orderedQty * 100m,
+            2,
+            MidpointRounding.AwayFromZero);
     }
 
     // ------------------------------------------------------------------------------- persistence

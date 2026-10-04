@@ -11,7 +11,7 @@ namespace Erp.Infrastructure.Data.Repositories;
 /// <summary>
 /// EF Core implementation of <see cref="IAssetsRepository"/>: category/asset persistence, the
 /// capitalization GL writes and the gapless AST number generator (Constitution III.4). No manual
-/// <c>.Where(e =&gt; e.TenantId == ...)</c> on LINQ queries (Constitution II.3 - the global query
+/// <c>.Where(e => e.TenantId == ...)</c> on LINQ queries (Constitution II.3 - the global query
 /// filter does it); the raw SQL asset-code statement scopes by TenantId itself because EF query
 /// filters do not apply to raw SQL.
 /// </summary>
@@ -158,6 +158,70 @@ public sealed class AssetsRepository : IAssetsRepository
         return $"{prefix}-{year}-{nextSequence:D5}";
     }
 
+    public async Task<string> NextReversalVoucherNumberAsync(
+        Guid companyId,
+        string prefix,
+        int year,
+        CancellationToken cancellationToken = default)
+    {
+        var transaction = _dbContext.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "Reversal voucher numbering must run inside the posting transaction (Constitution III.4): "
+                + "outside one the UPDLOCK/HOLDLOCK range lock cannot protect the sequence.");
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        var tenantId = _dbContext.CurrentTenantId;
+        var pattern = $"{prefix}-{year}-%";
+
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT MAX(VoucherNo) FROM dbo.GLEntry WITH (UPDLOCK, HOLDLOCK) "
+            + "WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND VoucherNo LIKE @Pattern;";
+        command.Transaction = transaction.GetDbTransaction();
+
+        AddParameter(command, "@TenantId", tenantId);
+        AddParameter(command, "@CompanyId", companyId);
+        AddParameter(command, "@Pattern", pattern);
+
+        var scalar = await command.ExecuteScalarAsync(cancellationToken);
+        var max = scalar as string;
+
+        var nextSequence = 1;
+        if (!string.IsNullOrEmpty(max))
+        {
+            var separator = max.LastIndexOf('-');
+            if (separator < 0 || !int.TryParse(max[(separator + 1)..], out var currentSequence))
+            {
+                throw new InvalidOperationException(
+                    $"Stored voucher number '{max}' does not follow the PREFIX-YYYY-NNNNN format.");
+            }
+
+            if (currentSequence >= 99999)
+            {
+                throw new InvalidOperationException(
+                    $"Voucher sequence for '{prefix}-{year}' is exhausted (max 99999).");
+            }
+
+            nextSequence = currentSequence + 1;
+        }
+
+        return $"{prefix}-{year}-{nextSequence:D5}";
+    }
+
+    public async Task<bool> HasDisposalReversalAsync(Guid assetId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.GLEntries
+            .AnyAsync(g => g.VoucherType == "Asset" 
+                && g.Remarks != null && g.Remarks.Contains("Reversal of disposal", StringComparison.OrdinalIgnoreCase)
+                && g.VoucherNo.StartsWith("RDS-")
+                && g.VoucherId == assetId, cancellationToken);
+    }
+
     public async Task<AssetCategory?> GetCategoryByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.AssetCategories.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
@@ -198,6 +262,12 @@ public sealed class AssetsRepository : IAssetsRepository
         => await _dbContext.AssetDepreciationSchedules
             .Where(e => e.AssetId == assetId)
             .OrderBy(e => e.ScheduleDate)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<GLEntry>> GetDisposalGlEntriesAsync(Guid assetId, CancellationToken cancellationToken = default)
+        => await _dbContext.GLEntries
+            .Where(e => e.VoucherId == assetId && e.VoucherType == "Asset" && e.VoucherNo != null && e.VoucherNo.StartsWith("DSP-"))
+            .OrderBy(e => e.Id)
             .ToListAsync(cancellationToken);
 
     public async Task AddCategoryAsync(AssetCategory category, CancellationToken cancellationToken = default)

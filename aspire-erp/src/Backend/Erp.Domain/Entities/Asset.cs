@@ -101,6 +101,18 @@ public class Asset : ITenantEntity
     public DateOnly? DisposalDate { get; set; }
 
     /// <summary>
+    /// Proceeds amount from the disposal (Task 10.5): positive for sales, zero for scraps.
+    /// Used by the reversal logic to reconstruct the original GL lines.
+    /// </summary>
+    public decimal DisposalProceedsAmount { get; set; }
+
+    /// <summary>
+    /// Voucher number of the disposal that led to this asset's current state.
+    /// Used by the reversal logic to find the original GL lines.
+    /// </summary>
+    public string DisposalVoucherNo { get; set; } = string.Empty;
+
+    /// <summary>
     /// Optimistic concurrency token (SQL Server <c>rowversion</c> - spec AS-06): capitalization
     /// and the Block B disposal/depreciation race are read-modify-write, so EF puts the original
     /// value in the UPDATE ... WHERE clause and a concurrent transition throws
@@ -177,5 +189,32 @@ public class Asset : ITenantEntity
 
         Status = terminalStatus;
         DisposalDate = disposalDate;
+    }
+
+    /// <summary>
+    /// Reverses a disposal (Task 10.6 / spec AS-05 reversal): restores the asset to
+    /// Capitalized (or FullyDepreciated) by clearing DisposalDate, resetting status,
+    /// and clearing disposal proceeds. Called by the cancel handler after the GL
+    /// reversal and schedule line reopening are done.
+    /// </summary>
+    public void UndoDisposal(AssetStatus restoredStatus)
+    {
+        if (Status is not (AssetStatus.Sold or AssetStatus.Scrapped))
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.InvalidStatusTransition,
+                $"Only a Sold or Scrapped asset can have its disposal cancelled; asset '{AssetCode}' is '{Status}'.");
+        }
+
+        if (restoredStatus is not (AssetStatus.Capitalized or AssetStatus.FullyDepreciated))
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.InvalidStatusTransition,
+                $"Reversal must land in Capitalized or FullyDepreciated (received '{restoredStatus}').");
+        }
+
+        Status = restoredStatus;
+        DisposalDate = null;
+        DisposalProceedsAmount = 0m;
     }
 }

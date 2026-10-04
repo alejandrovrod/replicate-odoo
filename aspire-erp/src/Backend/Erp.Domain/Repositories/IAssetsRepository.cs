@@ -37,7 +37,7 @@ public interface IAssetsRepository
     Task<IReadOnlyList<AssetCategory>> GetCategoriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Every schedule line with ScheduleDate &lt;= <paramref name="asOfDate"/> on this company's
+    /// Every schedule line with ScheduleDate <= <paramref name="asOfDate"/> on this company's
     /// assets, ordered by (ScheduleDate, Id) - REGARDLESS of status (Task 10.4). Booked/Cancelled
     /// rows travel with their identity so the run can skip-and-report them (spec AS-04
     /// replay safety) instead of pretending they do not exist.
@@ -71,7 +71,13 @@ public interface IAssetsRepository
     Task UpdateScheduleAsync(AssetDepreciationSchedule line, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Next gapless voucher number for a depreciation or disposal posting, e.g. 2026 -&gt;
+    /// Gets the disposal voucher lines for an asset by its disposal date and voucher prefix (DSP-).
+    /// Used by the reversal handler to read the exact GL entries that need to be undone.
+    /// </summary>
+    Task<IReadOnlyList<GLEntry>> GetDisposalGlEntriesAsync(Guid assetId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Next gapless voucher number for a depreciation or disposal posting, e.g. 2026 ->
     /// "DEP-2026-00001". Constitution III.4: SELECT MAX(VoucherNo) WITH (UPDLOCK, HOLDLOCK) over
     /// dbo.GLEntry inside the AMBIENT posting transaction (the lock is released only by
     /// commit/rollback, and a rollback does not consume a number). DEP-/DSP- patterns never
@@ -82,7 +88,19 @@ public interface IAssetsRepository
         Guid companyId, string prefix, int year, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Next gapless asset code for a company/year, e.g. 2026 -&gt; "AST-2026-00001".
+    /// Next gapless reversal voucher number (prefix RDP for depreciation reversal, RDS for disposal reversal).
+    /// Runs SELECT MAX(VoucherNo) WITH (UPDLOCK, HOLDLOCK) inside the AMBIENT posting transaction.
+    /// </summary>
+    Task<string> NextReversalVoucherNumberAsync(
+        Guid companyId, string prefix, int year, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if there are existing RDS reversal GL entries for the given asset's disposal.
+    /// </summary>
+    Task<bool> HasDisposalReversalAsync(Guid assetId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Next gapless asset code for a company/year, e.g. 2026 -> "AST-2026-00001".
     /// Runs SELECT MAX(AssetCode) WITH (UPDLOCK, HOLDLOCK) inside the AMBIENT posting transaction
     /// (Constitution III.4: the lock is released only by commit/rollback, and a rollback does not
     /// consume a number).

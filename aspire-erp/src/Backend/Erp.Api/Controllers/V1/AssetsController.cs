@@ -10,11 +10,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace Erp.Api.Controllers.V1;
 
 /// <summary>
-/// Asset endpoints (Tasks 10.2/10.4/10.5): list and detail reads, the Draft/Submitted -&gt;
-/// Capitalized transition, the periodic depreciation batch run and the Sold/Scrapped disposal.
+/// Asset endpoints (Tasks 10.2/10.4/10.5/10.6): list and detail reads, the Draft/Submitted ->
+/// Capitalized transition, the periodic depreciation batch run, the Sold/Scrapped disposal,
+/// and the disposal reversal.
 /// Attributes follow Constitution Article VI: explicit route + versioning + TenantMember policy
-/// (VI.1) and exhaustive status documentation (VI.3). The two ledger-posting mutations
-/// (depreciation-run, dispose) carry the literal <c>[IdempotencyKeyRequired]</c> guard
+/// (VI.1) and exhaustive status documentation (VI.3). The ledger-posting mutations
+/// (depreciation-run, dispose, reverse-disposal) carry the literal <c>[IdempotencyKeyRequired]</c> guard
 /// (Article VI.4); capitalize posts its CWIP voucher through the same guard for replay safety.
 /// </summary>
 /// <remarks>
@@ -225,6 +226,52 @@ public sealed class AssetsController : ControllerBase
     }
 
     /// <summary>
+    /// Reverses an asset disposal (Task 10.6, spec AS-05 reversal): undoes the disposal GL
+    /// voucher, reopens cancelled schedule lines, restores AccumulatedDepreciation and the
+    /// asset's Capitalized/FullyDepreciated status, and clears DisposalDate.
+    /// </summary>
+    /// <remarks>
+    /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4). Only Sold/Scrapped
+    /// assets can be reversed; an already-reversed asset fails with <c>already_reversed</c>.
+    /// The reversal voucher (RDS-YYYY-NNNNN) mirrors the original disposal GL exactly.
+    /// </remarks>
+    /// <param name="id">Asset id.</param>
+    /// <param name="request">Company, optional posting date (defaults to disposal date), and RowVersion for concurrency.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:guid}/reverse-disposal")]
+    [IdempotencyKeyRequired]
+    [ProducesResponseType(typeof(AssetDisposalReversalDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ReverseDisposal(
+        Guid id,
+        [FromBody] CancelDisposeAssetRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || request.CompanyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                "Invalid Asset",
+                "Both the route id and the request companyId must be non-empty GUIDs.",
+                AssetErrorCodes.AssetNotFound);
+        }
+
+        var result = await _sender.SendAsync(
+            new CancelDisposeAssetCommand(
+                request.CompanyId, id, request.PostingDate, request.RowVersion),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return AssetProblem(result.Error!);
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
     /// RFC 7807 mapping for the asset posting routes, mirroring the manufacturing controller:
     /// missing masters are 404, state conflicts (bad transition, frozen period, concurrency
     /// race) are 409, every other domain failure - including the proceeds-shape and
@@ -243,6 +290,8 @@ public sealed class AssetsController : ControllerBase
                     error.Message,
                     error.Code),
             AssetErrorCodes.InvalidStatusTransition
+                or AssetErrorCodes.AssetNotDisposed
+                or AssetErrorCodes.AlreadyReversed
                 or ConcurrencyErrorCodes.ConcurrencyConflict
                 or AccountingErrorCodes.FiscalPeriodLocked => Problem(
                     StatusCodes.Status409Conflict,
@@ -293,10 +342,19 @@ public sealed record DepreciationRunRequest(
 
 /// <summary>
 /// Disposal request body: the company, the accounting date, the cash proceeds (0 = scrap) and
-/// the receiving bank account (required exactly when proceeds &gt; 0).
+/// the receiving bank account (required exactly when proceeds > 0).
 /// </summary>
 public sealed record DisposeAssetRequest(
     Guid CompanyId,
     DateOnly DisposalDate,
     decimal ProceedsAmount,
     Guid? ProceedsBankAccountId = null);
+
+/// <summary>
+/// Disposal reversal request body: the company, optional posting date (defaults to disposal date),
+/// and the RowVersion for optimistic concurrency (required to prevent lost updates per spec AS-06).
+/// </summary>
+public sealed record CancelDisposeAssetRequest(
+    Guid CompanyId,
+    DateOnly? PostingDate = null,
+    byte[]? RowVersion = null);

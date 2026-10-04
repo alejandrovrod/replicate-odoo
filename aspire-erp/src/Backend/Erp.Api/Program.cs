@@ -202,6 +202,7 @@ builder.Services.AddScoped<ICommandHandler<CreateAssetCategoryCommand, Result<As
 builder.Services.AddScoped<ICommandHandler<CapitalizeAssetCommand, Result<AssetCapitalizationDto>>, CapitalizeAssetCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<PostDueDepreciationsCommand, Result<DepreciationRunDto>>, PostDueDepreciationsCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DisposeAssetCommand, Result<AssetDisposalDto>>, DisposeAssetCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelDisposeAssetCommand, Result<AssetDisposalReversalDto>>, CancelDisposeAssetCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAssetCategoriesQuery, IReadOnlyList<AssetCategoryDto>>, GetAssetCategoriesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAssetsQuery, IReadOnlyList<AssetDto>>, GetAssetsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAssetDetailQuery, AssetDetailDto?>, GetAssetDetailQueryHandler>();

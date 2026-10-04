@@ -136,3 +136,13 @@ public sealed record AssetDisposalDto(
     decimal ProceedsAmount,
     decimal NetGainLoss,
     int CancelledFutureLines);
+
+/// <summary>
+/// Disposal reversal result (Task 10.6, spec AS-05 reversal): the restored asset, the reversal
+/// voucher, and the number of schedule lines reopened to Scheduled. <see cref="ReopenedLines"/>
+/// counts the Cancelled lines that were restored.
+/// </summary>
+public sealed record AssetDisposalReversalDto(
+    AssetDto Asset,
+    string ReversalVoucherNo,
+    int ReopenedLines);

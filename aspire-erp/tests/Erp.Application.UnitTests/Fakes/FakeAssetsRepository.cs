@@ -48,6 +48,12 @@ public sealed class FakeAssetsRepository : IAssetsRepository
     /// </summary>
     public bool FailNextAssetUpdate { get; set; }
 
+    /// <summary>Test helper: clears captured GL entries for multi-stage tests (e.g. dispose then reverse).</summary>
+    public void ClearAddedGlEntries() => _addedGl.Clear();
+
+    /// <summary>Test helper: directly adds GL entries for multi-stage test setup.</summary>
+    public void AddGlEntriesDirect(IEnumerable<GLEntry> lines) => _addedGl.AddRange(lines);
+
     public void SeedCategory(params AssetCategory[] categories) => _categories.AddRange(categories);
 
     public void SeedAsset(params Asset[] assets) => _assets.AddRange(assets);
@@ -147,6 +153,15 @@ public sealed class FakeAssetsRepository : IAssetsRepository
         => Task.FromResult<IReadOnlyList<AssetDepreciationSchedule>>(
             _schedules.Where(s => s.AssetId == assetId).OrderBy(s => s.ScheduleDate).ToList());
 
+    public Task<IReadOnlyList<GLEntry>> GetDisposalGlEntriesAsync(Guid assetId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<GLEntry>>(
+            _addedGl
+                .Where(e => e.VoucherId == assetId && e.VoucherType == "Asset" && e.VoucherNo != null && e.VoucherNo.StartsWith("DSP-"))
+                .OrderBy(e => e.Id)
+                .ToList());
+    }
+
     public Task AddCategoryAsync(AssetCategory category, CancellationToken cancellationToken = default)
     {
         _categories.Add(category);
@@ -209,5 +224,41 @@ public sealed class FakeAssetsRepository : IAssetsRepository
         _voucherSequences.TryGetValue(key, out var current);
         _voucherSequences[key] = current + 1;
         return Task.FromResult($"{prefix}-{year}-{current + 1:D5}");
+    }
+
+    public Task<string> NextReversalVoucherNumberAsync(
+        Guid companyId,
+        string prefix,
+        int year,
+        CancellationToken cancellationToken = default)
+    {
+        var key = (companyId, prefix, year);
+        _voucherSequences.TryGetValue(key, out var current);
+        _voucherSequences[key] = current + 1;
+        return Task.FromResult($"{prefix}-{year}-{current + 1:D5}");
+    }
+
+    public Task<bool> HasDisposalReversalAsync(Guid assetId, CancellationToken cancellationToken = default)
+    {
+        // Find the original disposal voucher number from DSP- entries for this asset
+        var disposalVoucherNos = _addedGl
+            .Where(d => d.VoucherType == "Asset" 
+                && d.VoucherId == assetId
+                && d.VoucherNo.StartsWith("DSP-"))
+            .Select(d => d.VoucherNo)
+            .Distinct()
+            .ToList();
+
+        if (disposalVoucherNos.Count == 0)
+        {
+            return Task.FromResult(false);
+        }
+
+        // Check if there are RDS reversal lines referencing any of these disposal voucher numbers
+        return Task.FromResult(_addedGl
+            .Any(g => g.VoucherType == "Asset" 
+                && g.Remarks?.Contains("Reversal of disposal", StringComparison.OrdinalIgnoreCase) == true
+                && g.VoucherNo.StartsWith("RDS-")
+                && disposalVoucherNos.Any(v => g.Remarks.Contains(v))));
     }
 }

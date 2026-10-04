@@ -44,4 +44,8 @@ public static class AssetErrorCodes
     // Disposal (Task 10.5, spec AS-03/AS-05)
     public const string MissingGainLossAccount = "missing_gain_loss_account";
     public const string InvalidProceeds = "invalid_proceeds";
+
+    // Disposal Reversal (Task 10.6, spec AS-05 reversal)
+    public const string AssetNotDisposed = "asset_not_disposed";
+    public const string AlreadyReversed = "already_reversed";
 }

@@ -229,6 +229,8 @@ public sealed class DisposeAssetCommandHandler
 
                 var terminal = proceeds > 0 ? AssetStatus.Sold : AssetStatus.Scrapped;
                 asset.Dispose(terminal, command.DisposalDate);
+                asset.DisposalProceedsAmount = proceeds;
+                asset.DisposalVoucherNo = voucherNo;
                 await _assets.UpdateAssetAsync(asset, token);
 
                 await _assets.AddGlEntriesAsync(glLines, token);

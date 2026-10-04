@@ -3,7 +3,7 @@
 **Module:** `06-manufacturing`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IN PROGRESS (Block A: 9.1, 9.2 complete)  
+**Status:** IN PROGRESS (Block A: 9.1, 9.2 complete; Block B: 9.3, 9.4 complete)  
 
 ---
 
@@ -17,11 +17,11 @@
   - **Action:** Implement `BOM`, `BOMItem`, and `BOMOperation` with automated cost calculation (raw materials + operations - scrap).
   - **Acceptance:** Validates that finished item cannot be a component of itself (anti-cycle check).
 
-- [ ] **Task 9.3: Work Order Scheduling & Material Reservation**
+- [x] **Task 9.3: Work Order Scheduling & Material Reservation**
   - **Action:** Create `WorkOrder` aggregate root with planned dates, source raw material warehouse, and WIP transit warehouse.
   - **Acceptance:** Submitting work order verifies that referenced BOM is active and default.
 
-- [ ] **Task 9.4: Stock Movements for Manufacturing (WIP & Finish)**
+- [x] **Task 9.4: Stock Movements for Manufacturing (WIP & Finish)**
   - **Action:** Implement material transfer to WIP and manufacture completion stock entries with automated cost capitalization into `GLEntry`.
   - **Acceptance:** Relieves components from WIP, credits operations absorption account, and debits finished goods stock.
 

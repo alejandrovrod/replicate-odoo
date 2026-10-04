@@ -35,4 +35,8 @@ public static class BankingErrorCodes
     public const string ReconciliationAmountMismatch = "reconciliation_amount_mismatch";
     public const string GlAmountMismatch = "gl_amount_mismatch";
     public const string InvalidReconciliationAmount = "invalid_reconciliation_amount";
+
+    // On-the-fly voucher dialog (task 6.5)
+    public const string ExpenseAccountNotFound = "expense_account_not_found";
+    public const string BankGlAccountNotFound = "bank_gl_account_not_found";
 }

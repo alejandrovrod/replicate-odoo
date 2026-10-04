@@ -167,6 +167,7 @@ builder.Services.AddScoped<ICommandHandler<ApplyMatchingRulesCommand, Result<Rul
 builder.Services.AddScoped<ICommandHandler<CreateBankTransactionRuleCommand, Result<BankTransactionRuleDto>>, CreateBankTransactionRuleCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<ReconcileBankTransactionCommand, Result<ReconciliationSummary>>, ReconcileBankTransactionCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UnreconcileBankTransactionCommand, Result<bool>>, UnreconcileBankTransactionCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateVoucherFromBankTransactionCommand, Result<JournalEntryDto>>, CreateVoucherFromBankTransactionCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBankTransactionsQuery, IReadOnlyList<BankTransactionDto>>, GetBankTransactionsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBankTransactionRulesQuery, IReadOnlyList<BankTransactionRuleDto>>, GetBankTransactionRulesQueryHandler>();
 
@@ -213,6 +214,6 @@ app.Run();
 /// tests (tests/Erp.Api.IntegrationTests) can reference it as WebApplicationFactory&lt;Program&gt;.
 /// Minimal change: top-level programs compile to an internal class without this declaration.
 /// </summary>
-public partial class Program
-{
-}
+// public partial class Program
+// {
+// }

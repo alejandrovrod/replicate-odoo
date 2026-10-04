@@ -53,6 +53,18 @@ public sealed class BankTransactionsController : ControllerBase
     /// <summary>Un-reconcile request (scenario BN-06).</summary>
     public sealed record UnreconcileRequest(Guid CompanyId, byte[]? RowVersion = null);
 
+    /// <summary>
+    /// Quick-voucher request (task 6.5, scenario BN-04): posts a balanced SUBMITTED journal
+    /// voucher from the line and reconciles it atomically. <c>Amount</c> defaults to
+    /// |Deposit - Withdrawal|; when given it must equal that value exactly.
+    /// </summary>
+    public sealed record QuickVoucherRequest(
+        Guid CompanyId,
+        string ExpenseAccountCode,
+        decimal? Amount = null,
+        string? Memo = null,
+        byte[]? RowVersion = null);
+
     /// <summary>Returns the company's staging lines (optional account / status filter).</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<BankTransactionDto>), StatusCodes.Status200OK)]
@@ -198,6 +210,66 @@ public sealed class BankTransactionsController : ControllerBase
         }
 
         return Ok();
+    }
+
+    /// <summary>
+    /// Creates a balanced SUBMITTED journal voucher from one staging line and reconciles the
+    /// line against it, atomically (task 6.5, scenario BN-04: a $15 bank fee becomes
+    /// Dr expense / Cr bank with the difference at $0.00).
+    /// </summary>
+    /// <remarks>
+    /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4).
+    /// </remarks>
+    [HttpPost("{id:guid}/quick-voucher")]
+    [IdempotencyKeyRequired]
+    [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> QuickVoucher(
+        [FromRoute] Guid id,
+        [FromBody] QuickVoucherRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.SendAsync(
+            new CreateVoucherFromBankTransactionCommand(
+                request.CompanyId,
+                id,
+                request.ExpenseAccountCode,
+                request.Amount,
+                request.Memo,
+                request.RowVersion),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+            return error.Code switch
+            {
+                BankingErrorCodes.BankTransactionNotFound
+                    or BankingErrorCodes.BankAccountNotFound
+                    or BankingErrorCodes.CompanyNotFound => Problem(
+                        StatusCodes.Status404NotFound,
+                        "Quick Voucher Counterpart Not Found",
+                        error.Message,
+                        error.Code),
+                BankingErrorCodes.InvalidStatusTransition
+                    or ConcurrencyErrorCodes.ConcurrencyConflict
+                    or AccountingErrorCodes.FiscalPeriodLocked => Problem(
+                        StatusCodes.Status409Conflict,
+                        "Conflict",
+                        error.Message,
+                        error.Code),
+                _ => Problem(
+                    StatusCodes.Status400BadRequest,
+                    "Quick Voucher Rejected",
+                    error.Message,
+                    error.Code),
+            };
+        }
+
+        var entry = result.Value!;
+        return CreatedAtAction(nameof(QuickVoucher), new { id }, entry);
     }
 
     private ObjectResult ToReconcileActionResult(Result<ReconciliationSummary> result)

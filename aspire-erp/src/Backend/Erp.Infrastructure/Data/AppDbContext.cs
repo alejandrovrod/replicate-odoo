@@ -69,6 +69,16 @@ public class AppDbContext : DbContext
 
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
 
+    public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
+
+    public DbSet<BankStatementImport> BankStatementImports => Set<BankStatementImport>();
+
+    public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();
+
+    public DbSet<PaymentEntry> PaymentEntries => Set<PaymentEntry>();
+
+    public DbSet<PaymentAllocation> PaymentAllocations => Set<PaymentAllocation>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

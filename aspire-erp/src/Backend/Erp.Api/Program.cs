@@ -6,6 +6,8 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Accounts.Commands;
 using Erp.Application.Features.Accounts.Queries;
+using Erp.Application.Features.Banking.Commands;
+using Erp.Application.Features.Banking.Parsers;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
 using Erp.Application.Features.GeneralLedger.Commands;
@@ -146,6 +148,15 @@ builder.Services.AddScoped<IQueryHandler<GetGeneralLedgerQuery, GeneralLedgerRep
 builder.Services.AddScoped<IQueryHandler<GetTrialBalanceQuery, TrialBalanceReportDto>, GetTrialBalanceQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBalanceSheetQuery, BalanceSheetReportDto>, GetBalanceSheetQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetProfitAndLossQuery, ProfitAndLossReportDto>, GetProfitAndLossQueryHandler>();
+
+// Banking & Reconciliation staging (tasks.md 6.1/6.2): the statement import engine and its
+// parsers. Same split as every other module: repository in Erp.Infrastructure, commands/parsers
+// in Erp.Application - only the composition root knows both (decision C2). NO controllers yet
+// (Block B); NO GL dependency anywhere on this path (invariant BN-01 by construction).
+builder.Services.AddScoped<IBankRepository, BankRepository>();
+builder.Services.AddScoped<ICsvStatementParser, CsvStatementParser>();
+builder.Services.AddScoped<IOfxStatementParser, OfxStatementParser>();
+builder.Services.AddScoped<ICommandHandler<ImportBankStatementCommand, Result<BankStatementImportSummary>>, ImportBankStatementCommandHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

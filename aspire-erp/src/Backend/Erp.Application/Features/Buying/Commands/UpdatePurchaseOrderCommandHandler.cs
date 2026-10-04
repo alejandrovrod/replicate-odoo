@@ -7,45 +7,47 @@ using Erp.Domain.Repositories;
 namespace Erp.Application.Features.Buying.Commands;
 
 /// <summary>
-/// Executes <see cref="CreatePurchaseOrderCommand"/>: company/supplier/item resolution, pure
-/// Domain line validation and the gapless PO voucher - all inside ONE transaction, because the
-/// number is assigned by a SELECT MAX ... WITH (UPDLOCK, HOLDLOCK) that requires it
-/// (Constitution III.4). The order is created in Draft (Task 4.1).
+/// Executes <see cref="UpdatePurchaseOrderCommand"/>: validates the order is in Draft state,
+/// clears and replaces the lines, updates the header fields, and saves.
 /// </summary>
-public sealed class CreatePurchaseOrderCommandHandler
-    : ICommandHandler<CreatePurchaseOrderCommand, Result<PurchaseOrderDto>>
+public sealed class UpdatePurchaseOrderCommandHandler
+    : ICommandHandler<UpdatePurchaseOrderCommand, Result<PurchaseOrderDto>>
 {
-    private const string VoucherPrefix = "PO";
-
-    private readonly ICompanyRepository _companies;
     private readonly ISupplierRepository _suppliers;
     private readonly IItemRepository _items;
     private readonly IPurchaseRepository _purchases;
 
-    public CreatePurchaseOrderCommandHandler(
-        ICompanyRepository companies,
+    public UpdatePurchaseOrderCommandHandler(
         ISupplierRepository suppliers,
         IItemRepository items,
         IPurchaseRepository purchases)
     {
-        _companies = companies;
         _suppliers = suppliers;
         _items = items;
         _purchases = purchases;
     }
 
     public async Task<Result<PurchaseOrderDto>> HandleAsync(
-        CreatePurchaseOrderCommand command,
+        UpdatePurchaseOrderCommand command,
         CancellationToken cancellationToken = default)
     {
         try
         {
             PurchaseValidator.EnsureHasLines(command.Items);
 
-            var company = await _companies.GetByIdAsync(command.CompanyId, cancellationToken)
+            var order = await _purchases.GetOrderByIdAsync(command.PurchaseOrderId, cancellationToken)
                 ?? throw new PurchaseValidationException(
-                    PurchaseErrorCodes.CompanyNotFound,
-                    $"Company '{command.CompanyId}' was not found in this tenant.");
+                    PurchaseErrorCodes.PurchaseOrderNotFound,
+                    $"Purchase order '{command.PurchaseOrderId}' was not found in this tenant.");
+
+            if (order.CompanyId != command.CompanyId)
+            {
+                throw new PurchaseValidationException(
+                    PurchaseErrorCodes.PurchaseOrderNotFound,
+                    $"Purchase order '{order.OrderNumber}' does not belong to company '{command.CompanyId}'.");
+            }
+
+            PurchaseValidator.EnsureDraft(order.Status);
 
             var supplier = await _suppliers.GetByIdAsync(command.SupplierId, cancellationToken)
                 ?? throw new PurchaseValidationException(
@@ -56,41 +58,31 @@ public sealed class CreatePurchaseOrderCommandHandler
             {
                 throw new PurchaseValidationException(
                     PurchaseErrorCodes.SupplierInactive,
-                    $"Supplier '{supplier.Code}' is inactive and cannot receive new purchase orders.");
+                    $"Supplier '{supplier.Code}' is inactive and cannot be used in a purchase order.");
             }
 
             var items = await LoadItemsAsync(command.Items!, cancellationToken);
 
-            // Calculate totals
             decimal netTotal = 0;
             foreach (var item in command.Items!)
             {
                 netTotal += item.Quantity * item.Rate;
             }
 
-            // One transaction for number + insert: a rollback releases the lock and consumes no number.
-            var order = await _purchases.ExecuteInTransactionAsync(async token =>
-            {
-                var entity = new PurchaseOrder
-                {
-                    Id = Guid.NewGuid(),
-                    CompanyId = company.Id,
-                    SupplierId = supplier.Id,
-                    Status = PurchaseOrderStatus.Draft,
-                    TransactionDate = command.TransactionDate,
-                    ScheduleDate = command.ScheduleDate,
-                    OrderNumber = await _purchases.NextOrderVoucherNumberAsync(
-                        company.Id, VoucherPrefix, command.TransactionDate.Year, token),
-                    NetTotal = netTotal,
-                    TaxTotal = 0,
-                    GrandTotal = netTotal,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    Items = BuildItems(command.Items!, items),
-                };
+            order.SupplierId = supplier.Id;
+            order.TransactionDate = command.TransactionDate;
+            order.ScheduleDate = command.ScheduleDate;
+            order.NetTotal = netTotal;
+            order.GrandTotal = netTotal;
 
-                await _purchases.AddOrderAsync(entity, token);
-                return entity;
-            }, cancellationToken);
+            order.Items.Clear();
+            var newItems = BuildItems(command.Items!, items);
+            foreach (var ni in newItems)
+            {
+                order.Items.Add(ni);
+            }
+
+            await _purchases.UpdateOrderAsync(order, cancellationToken);
 
             return Result<PurchaseOrderDto>.Success(PurchaseOrderDto.Build(order, supplier, items));
         }
@@ -102,10 +94,14 @@ public sealed class CreatePurchaseOrderCommandHandler
         {
             return Result<PurchaseOrderDto>.Failure(ex.Code, ex.Message);
         }
+        catch (ConcurrencyConflictException ex)
+        {
+            return Result<PurchaseOrderDto>.Failure(ex.Code, ex.Message);
+        }
     }
 
     private async Task<Dictionary<Guid, Item>> LoadItemsAsync(
-        IReadOnlyList<CreatePurchaseOrderItem> items,
+        IReadOnlyList<UpdatePurchaseOrderItem> items,
         CancellationToken cancellationToken)
     {
         var ids = new List<Guid>(items.Count);
@@ -144,7 +140,7 @@ public sealed class CreatePurchaseOrderCommandHandler
     }
 
     private static List<PurchaseOrderItem> BuildItems(
-        IReadOnlyList<CreatePurchaseOrderItem> items,
+        IReadOnlyList<UpdatePurchaseOrderItem> items,
         IReadOnlyDictionary<Guid, Item> itemMap)
     {
         var result = new List<PurchaseOrderItem>(items.Count);

@@ -16,6 +16,7 @@ public sealed record PostPurchaseReceiptLine(Guid ItemId, decimal Qty, decimal R
 public sealed record PostPurchaseReceiptCommand(
     Guid CompanyId,
     Guid WarehouseId,
+    Guid SupplierId,
     Guid? PurchaseOrderId = null,
     DateOnly? PostingDate = null,
     IReadOnlyList<PostPurchaseReceiptLine>? Lines = null) : ICommand<Result<PurchaseReceiptPostingDto>>;

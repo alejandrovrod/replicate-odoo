@@ -3,8 +3,8 @@ using Erp.Application.DTOs;
 
 namespace Erp.Application.Features.Buying.Commands;
 
-/// <summary>One ordered line of a <see cref="CreatePurchaseOrderCommand"/>.</summary>
-public sealed record CreatePurchaseOrderLine(Guid ItemId, decimal Qty, decimal Rate);
+/// <summary>One ordered item of a <see cref="CreatePurchaseOrderCommand"/>.</summary>
+public sealed record CreatePurchaseOrderItem(Guid ItemId, decimal Quantity, decimal Rate);
 
 /// <summary>
 /// Creates one purchase order in Draft with its gapless PO-YYYY-NNNNN voucher (Task 4.1).
@@ -13,5 +13,6 @@ public sealed record CreatePurchaseOrderLine(Guid ItemId, decimal Qty, decimal R
 public sealed record CreatePurchaseOrderCommand(
     Guid CompanyId,
     Guid SupplierId,
-    DateOnly? PostingDate = null,
-    IReadOnlyList<CreatePurchaseOrderLine>? Lines = null) : ICommand<Result<PurchaseOrderDto>>;
+    DateOnly TransactionDate,
+    DateOnly ScheduleDate,
+    IReadOnlyList<CreatePurchaseOrderItem>? Items = null) : ICommand<Result<PurchaseOrderDto>>;

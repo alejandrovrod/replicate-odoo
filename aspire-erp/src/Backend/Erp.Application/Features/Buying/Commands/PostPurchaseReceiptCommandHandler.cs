@@ -29,6 +29,7 @@ public sealed class PostPurchaseReceiptCommandHandler
             var request = new PurchaseReceiptPostingRequest(
                 command.CompanyId,
                 command.WarehouseId,
+                command.SupplierId,
                 command.PurchaseOrderId,
                 command.PostingDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 (command.Lines ?? Array.Empty<PostPurchaseReceiptLine>())

@@ -1,19 +1,73 @@
-import { FileText, Truck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { FileText, Truck, AlertCircle } from 'lucide-react'
+import { apiClient } from '../../api/client'
+import { useTenantStore } from '../../store/useTenantStore'
+import { PurchaseReceiptModal } from './PurchaseReceiptModal'
+
+interface PurchaseOrder {
+  id: string
+  orderNumber: string
+  supplierId: string
+  supplierName: string
+  transactionDate: string
+  grandTotal: number
+  status: string
+  billedPercentage: number
+  receivedPercentage: number
+  items: {
+    itemId: string
+    itemName: string
+    quantity: number
+    receivedQuantity: number
+    rate: number
+  }[]
+}
 
 export function BuyingOverview() {
-  const purchaseOrders = [
-    { id: 'PO-2026-0018', vendor: 'Global Metal Supplies', date: '2026-10-01', amount: '$8,400.00', status: 'Received & Billed' },
-    { id: 'PO-2026-0019', vendor: 'Apex Packaging Ltd', date: '2026-09-29', amount: '$2,150.00', status: 'Awaiting Receipt' },
-    { id: 'PO-2026-0020', vendor: 'Precision Fasteners Inc', date: '2026-09-28', amount: '$4,920.00', status: 'Received (Unbilled)' },
-  ]
+  const companyId = useTenantStore((state) => state.companyId)
+  const [orders, setOrders] = useState<PurchaseOrder[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
+  
+  const fetchOrders = async () => {
+    if (!companyId) return
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await apiClient.get(`/v1/purchaseorders?companyId=${companyId}`)
+      setOrders(response.data)
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch purchase orders')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchOrders()
+  }, [companyId])
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount)
+  }
+
+  // Calculate some simple vendor aging mock metrics from actual orders
+  const unbilledAmount = orders
+    .filter(o => o.receivedPercentage > 0 && o.billedPercentage < 100)
+    .reduce((sum, o) => sum + (o.grandTotal * (1 - (o.billedPercentage / 100))), 0)
+    
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Buying & Procurement Subsystem</h2>
           <p className="mt-1 text-xs text-slate-600">
-            Purchase orders, material receipts, and 3-way matching with interim accruals (`Stock Received But Not Billed`).
+            Purchase orders, material receipts, and 3-way matching with interim accruals.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -34,9 +88,23 @@ export function BuyingOverview() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
+          <h3 className="text-sm font-medium text-slate-500">Unbilled Receipts (Accrued)</h3>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{formatCurrency(unbilledAmount)}</p>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
         <h3 className="text-base font-semibold text-slate-900">Procurement Orders (`PurchaseOrder`)</h3>
         <p className="text-xs text-slate-500 mb-4">Vendor commitments and interim accrual status.</p>
+
+        {error && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -47,34 +115,67 @@ export function BuyingOverview() {
                 <th className="py-2.5 font-semibold">Order Date</th>
                 <th className="py-2.5 font-semibold text-right">Amount</th>
                 <th className="py-2.5 font-semibold text-right">Status</th>
+                <th className="py-2.5 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {purchaseOrders.map((po) => (
-                <tr key={po.id} className="hover:bg-slate-50">
-                  <td className="py-3 font-mono font-medium text-slate-900">{po.id}</td>
-                  <td className="py-3 text-slate-800">{po.vendor}</td>
-                  <td className="py-3 font-mono text-slate-500">{po.date}</td>
-                  <td className="py-3 text-right font-mono font-bold text-slate-900">{po.amount}</td>
-                  <td className="py-3 text-right">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        po.status === 'Received & Billed'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : po.status === 'Received (Unbilled)'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-sky-100 text-sky-800'
-                      }`}
-                    >
-                      {po.status}
-                    </span>
-                  </td>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-500">Loading orders...</td>
                 </tr>
-              ))}
+              ) : orders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-500">No purchase orders found.</td>
+                </tr>
+              ) : (
+                orders.map((po) => (
+                  <tr key={po.id} className="hover:bg-slate-50">
+                    <td className="py-3 font-mono font-medium text-slate-900">{po.orderNumber}</td>
+                    <td className="py-3 text-slate-800">{po.supplierName}</td>
+                    <td className="py-3 font-mono text-slate-500">{po.transactionDate}</td>
+                    <td className="py-3 text-right font-mono font-bold text-slate-900">
+                      {formatCurrency(po.grandTotal)}
+                    </td>
+                    <td className="py-3 text-right">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          po.status === 'Completed'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : po.status === 'PartiallyReceived'
+                              ? 'bg-amber-100 text-amber-800'
+                              : po.status === 'Draft'
+                                ? 'bg-slate-100 text-slate-800'
+                                : 'bg-sky-100 text-sky-800'
+                        }`}
+                      >
+                        {po.status}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      {po.status === 'Submitted' || po.status === 'PartiallyReceived' ? (
+                        <button
+                          onClick={() => setSelectedOrder(po)}
+                          className="rounded text-indigo-600 hover:text-indigo-800 font-semibold"
+                        >
+                          Receive
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {selectedOrder && (
+        <PurchaseReceiptModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onSuccess={fetchOrders}
+        />
+      )}
     </div>
   )
 }

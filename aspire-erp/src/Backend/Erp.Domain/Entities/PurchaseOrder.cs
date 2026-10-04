@@ -8,17 +8,11 @@ namespace Erp.Domain.Entities;
 /// </summary>
 public enum PurchaseOrderStatus
 {
-    /// <summary>Created but not yet placed with the supplier; editable, no stock or GL impact.</summary>
     Draft,
-
-    /// <summary>Submitted/confirmed - the supplier has the order. A PurchaseReceipt may reference it.</summary>
-    Ordered,
-
-    /// <summary>A PurchaseReceipt posted against the order: goods arrived, interim liability booked.</summary>
-    Received,
-
-    /// <summary>A PurchaseInvoice cleared the receipt: interim liability zeroed, Accounts Payable booked.</summary>
-    Billed,
+    Submitted,
+    PartiallyReceived,
+    Completed,
+    Cancelled
 }
 
 /// <summary>
@@ -49,14 +43,17 @@ public class PurchaseOrder : ITenantEntity
     /// <summary>Workflow state (Task 4.1 acceptance: Draft -&gt; Ordered -&gt; Received -&gt; Billed).</summary>
     public PurchaseOrderStatus Status { get; set; } = PurchaseOrderStatus.Draft;
 
-    /// <summary>Order date (also the reference date for the sequence year of the voucher).</summary>
-    public DateOnly PostingDate { get; set; }
+    public DateOnly TransactionDate { get; set; }
 
-    /// <summary>
-    /// Gapless voucher number (Constitution III.4): PO-2026-00001. Assigned inside the creation
-    /// transaction - Draft orders already carry their number, like ERPNext's naming series on save.
-    /// </summary>
-    public string VoucherNo { get; set; } = string.Empty;
+    public DateOnly ScheduleDate { get; set; }
+
+    public string OrderNumber { get; set; } = string.Empty;
+
+    public decimal NetTotal { get; set; }
+    public decimal TaxTotal { get; set; }
+    public decimal GrandTotal { get; set; }
+    public decimal ReceivedPercentage { get; set; }
+    public decimal BilledPercentage { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 
@@ -69,11 +66,11 @@ public class PurchaseOrder : ITenantEntity
     /// </summary>
     public byte[] RowVersion { get; set; } = null!;
 
-    public ICollection<PurchaseOrderLine> Lines { get; set; } = new List<PurchaseOrderLine>();
+    public ICollection<PurchaseOrderItem> Items { get; set; } = new List<PurchaseOrderItem>();
 }
 
 /// <summary>One line of a <see cref="PurchaseOrder"/>: how much of which item to buy, at which committed rate.</summary>
-public class PurchaseOrderLine
+public class PurchaseOrderItem
 {
     public Guid Id { get; set; }
 
@@ -86,10 +83,15 @@ public class PurchaseOrderLine
     public Item? Item { get; set; }
 
     /// <summary>Ordered quantity in the item's Base UOM (decimal(18,4), strictly positive).</summary>
-    public decimal Qty { get; set; }
+    public decimal Quantity { get; set; }
+
+    public decimal ReceivedQuantity { get; set; }
+    public decimal BilledQuantity { get; set; }
 
     /// <summary>Committed unit rate (decimal(18,6), strictly positive) - the price the supplier accepted.</summary>
     public decimal Rate { get; set; }
+
+    public decimal Amount { get; set; }
 
     /// <summary>1-based line number inside the order.</summary>
     public int LineNumber { get; set; }

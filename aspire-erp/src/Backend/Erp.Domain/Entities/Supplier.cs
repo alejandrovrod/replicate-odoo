@@ -25,6 +25,16 @@ public class Supplier : ITenantEntity
     /// <summary>Display name (max 150 chars).</summary>
     public string Name { get; set; } = string.Empty;
 
+    public string TaxId { get; set; } = string.Empty;
+
+    public Guid? DefaultPayableAccountId { get; set; }
+
+    public string BillingCurrency { get; set; } = "USD";
+
+    public int PaymentTermsDays { get; set; } = 30;
+
+    public decimal OutstandingAmount { get; set; }
+
     /// <summary>Inactive suppliers cannot be referenced by new purchase orders.</summary>
     public bool IsActive { get; set; } = true;
 

@@ -89,6 +89,68 @@ public sealed class PurchaseOrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Updates a Draft purchase order. Replaces all line items.
+    /// </summary>
+    /// <param name="companyId">The company ID from the route.</param>
+    /// <param name="id">The purchase order ID from the route.</param>
+    /// <param name="command">The update payload.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The updated purchase order details.</returns>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(PurchaseOrderDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromQuery] Guid companyId,
+        [FromBody] UpdatePurchaseOrderCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (id != command.PurchaseOrderId)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request",
+                detail: "The ID in the route must match the ID in the payload.");
+        }
+
+        if (companyId != command.CompanyId)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request",
+                detail: "The Company ID in the route must match the payload.");
+        }
+
+        var result = await _sender.SendAsync(command, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok(result.Value);
+        }
+
+        var error = result.Error!;
+        return error.Code switch
+        {
+            PurchaseErrorCodes.PurchaseOrderNotFound or PurchaseErrorCodes.CompanyNotFound or PurchaseErrorCodes.SupplierNotFound => NotFound(
+                Problem(
+                    statusCode: StatusCodes.Status404NotFound,
+                    title: "Resource Not Found",
+                    detail: error.Message)),
+            PurchaseErrorCodes.InvalidStatusTransition or ConcurrencyErrorCodes.ConcurrencyConflict => Conflict(
+                Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: "Conflict",
+                    detail: error.Message)),
+            _ => BadRequest(
+                Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "Bad Request",
+                    detail: error.Message)),
+        };
+    }
+
+    /// <summary>
     /// Advances one Draft order to Ordered (Task 4.1 workflow). Any state other than Draft is a 409
     /// (<c>invalid_status_transition</c>): the order conflicts with the requested state.
     /// </summary>

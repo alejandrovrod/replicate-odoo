@@ -91,6 +91,7 @@ builder.Services.AddScoped<IQueryHandler<GetPurchaseOrdersQuery, IReadOnlyList<P
 builder.Services.AddScoped<ICommandHandler<PostPurchaseReceiptCommand, Result<PurchaseReceiptPostingDto>>, PostPurchaseReceiptCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPurchaseReceiptsQuery, IReadOnlyList<PurchaseReceiptDto>>, GetPurchaseReceiptsQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<PostPurchaseInvoiceCommand, Result<PurchaseInvoicePostingDto>>, PostPurchaseInvoiceCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelPurchaseInvoiceCommand, Result<PurchaseInvoiceDto>>, CancelPurchaseInvoiceCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPurchaseInvoicesQuery, IReadOnlyList<PurchaseInvoiceDto>>, GetPurchaseInvoicesQueryHandler>();
 
 // Selling (Task 5.1): customer master, the plan.md §2 credit-limit gate's owner. Same split as

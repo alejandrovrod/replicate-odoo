@@ -1,6 +1,7 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Services;
+using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 
 namespace Erp.Application.Features.Buying.Commands;
@@ -28,8 +29,10 @@ public sealed class PostPurchaseInvoiceCommandHandler
         {
             var request = new PurchaseInvoicePostingRequest(
                 command.CompanyId,
-                command.PurchaseReceiptId,
+                command.SupplierId,
+                command.BillNumber,
                 command.PostingDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+                command.DueDate ?? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30),
                 command.TaxAmount,
                 (command.Lines ?? Array.Empty<PostPurchaseInvoiceLine>())
                     .Select(l => new PurchaseInvoicePostingLine(
@@ -57,6 +60,14 @@ public sealed class PostPurchaseInvoiceCommandHandler
             // tasks.md 2.2 / spec AC-04: PostingDate <= Company.FrozenAccountsDate. The service
             // threw BEFORE building any GLEntry line, so the failure carries zero data changes.
             return Result<PurchaseInvoicePostingDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (OverbillingNotAllowedException ex)
+        {
+            // Task 4.4 / spec BY-03 and BY-06: the cumulative three-way match rejected the bill
+            // (attemptingToBillQty > receivedQty - previouslyBilledQty). The service threw before
+            // voucher numbering and before any GLEntry line, so no ledger row exists.
+            return Result<PurchaseInvoicePostingDto>.Failure(
+                PurchaseErrorCodes.OverbillingNotAllowed, ex.Message);
         }
     }
 }

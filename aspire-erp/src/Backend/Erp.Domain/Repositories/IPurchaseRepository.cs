@@ -1,4 +1,5 @@
 using Erp.Domain.Entities;
+using Erp.Domain.Exceptions;
 
 namespace Erp.Domain.Repositories;
 
@@ -44,8 +45,6 @@ public interface IPurchaseRepository
 
     /// <summary>
     /// Persists a posted purchase invoice with its lines (inside the ambient posting transaction).
-    /// The unique (TenantId, PurchaseReceiptId) index backs the ONE-invoice-per-receipt rule:
-    /// a duplicate insert is translated to a domain failure instead of leaking an EF exception.
     /// </summary>
     Task AddInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default);
 
@@ -61,9 +60,21 @@ public interface IPurchaseRepository
     /// <summary>Most recent purchase receipts of a company (newest first) with lines.</summary>
     Task<IReadOnlyList<PurchaseReceipt>> GetRecentReceiptsByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
 
-    /// <summary>True when the receipt already has a purchase invoice (Task 4.3: one bill per receipt).</summary>
-    Task<bool> ReceiptHasInvoiceAsync(Guid purchaseReceiptId, CancellationToken cancellationToken = default);
+    /// <summary>Fetches receipt lines with their parent receipts.</summary>
+    Task<IReadOnlyList<PurchaseReceiptLine>> GetReceiptLinesByIdsAsync(IEnumerable<Guid> receiptLineIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Sum of all previously billed quantities for a given receipt line.</summary>
+    Task<decimal> GetBilledQuantityForReceiptLineAsync(Guid purchaseReceiptLineId, CancellationToken cancellationToken = default);
 
     /// <summary>Most recent purchase invoices of a company (newest first) with lines.</summary>
     Task<IReadOnlyList<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>The invoice with its lines, or null when it does not exist in this tenant (spec BY-05).</summary>
+    Task<PurchaseInvoice?> GetInvoiceByIdAsync(Guid purchaseInvoiceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves status/amount transitions of an already-tracked invoice (spec BY-05). Translates the
+    /// RowVersion mismatch into <see cref="ConcurrencyConflictException"/> like UpdateOrderAsync.
+    /// </summary>
+    Task UpdateInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default);
 }

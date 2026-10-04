@@ -7,6 +7,11 @@ public sealed record SupplierDto(
     Guid Id,
     string Code,
     string Name,
+    string TaxId,
+    Guid? DefaultPayableAccountId,
+    string BillingCurrency,
+    int PaymentTermsDays,
+    decimal OutstandingAmount,
     bool IsActive,
     DateTimeOffset CreatedAt)
 {
@@ -15,6 +20,11 @@ public sealed record SupplierDto(
             supplier.Id,
             supplier.Code,
             supplier.Name,
+            supplier.TaxId,
+            supplier.DefaultPayableAccountId,
+            supplier.BillingCurrency,
+            supplier.PaymentTermsDays,
+            supplier.OutstandingAmount,
             supplier.IsActive,
             supplier.CreatedAt);
 }

@@ -10,4 +10,8 @@ namespace Erp.Application.Features.Buying.Commands;
 public sealed record CreateSupplierCommand(
     string Code,
     string Name,
+    string TaxId = "",
+    Guid? DefaultPayableAccountId = null,
+    string BillingCurrency = "USD",
+    int PaymentTermsDays = 30,
     bool IsActive = true) : ICommand<Result<SupplierDto>>;

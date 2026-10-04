@@ -14,7 +14,7 @@ public static class PurchaseValidator
 
     /// <summary>Supplier field rules: required code (50) / name (150).</summary>
     /// <exception cref="PurchaseValidationException">An invariant was violated.</exception>
-    public static void EnsureValidSupplierFields(string? code, string? name)
+    public static void EnsureValidSupplierFields(string? code, string? name, string? currency, int paymentTerms)
     {
         if (string.IsNullOrWhiteSpace(code))
         {
@@ -42,6 +42,19 @@ public static class PurchaseValidator
             throw new PurchaseValidationException(
                 PurchaseErrorCodes.SupplierNameTooLong,
                 $"Supplier Name must not exceed {MaxNameLength} characters.");
+        }
+        if (string.IsNullOrWhiteSpace(currency) || currency.Length != 3)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.InvalidCurrency,
+                "Billing Currency must be exactly 3 characters.");
+        }
+
+        if (paymentTerms < 0)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.InvalidPaymentTerms,
+                "Payment Terms must not be negative.");
         }
     }
 
@@ -114,7 +127,19 @@ public static class PurchaseValidator
         }
     }
 
-    /// <summary>Workflow rule (Task 4.1): only a Draft order can be submitted to Ordered.</summary>
+    /// <summary>Workflow rule (Task 4.1): only a Draft order can be updated.</summary>
+    /// <exception cref="PurchaseValidationException">The order is not in Draft.</exception>
+    public static void EnsureDraft(PurchaseOrderStatus status)
+    {
+        if (status != PurchaseOrderStatus.Draft)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.InvalidStatusTransition,
+                $"Only a Draft purchase order can be modified; the order is '{status}'.");
+        }
+    }
+
+    /// <summary>Workflow rule (Task 4.1): only a Draft order can be submitted to Submitted.</summary>
     /// <exception cref="PurchaseValidationException">The order is not in Draft.</exception>
     public static void EnsureSubmittable(PurchaseOrderStatus status)
     {
@@ -127,17 +152,17 @@ public static class PurchaseValidator
     }
 
     /// <summary>
-    /// Workflow rule (Task 4.1): a receipt may reference an order that is Ordered or already
-    /// Received (multiple receipts per order); Draft is not placed yet and Billed is closed.
+    /// Workflow rule (Task 4.1): a receipt may reference an order that is Submitted or already
+    /// PartiallyReceived (multiple receipts per order).
     /// </summary>
     /// <exception cref="PurchaseValidationException">The order does not accept receipts.</exception>
     public static void EnsureReceiptAllowed(PurchaseOrderStatus status)
     {
-        if (status is not (PurchaseOrderStatus.Ordered or PurchaseOrderStatus.Received))
+        if (status is not (PurchaseOrderStatus.Submitted or PurchaseOrderStatus.PartiallyReceived))
         {
             throw new PurchaseValidationException(
                 PurchaseErrorCodes.InvalidStatusTransition,
-                $"A purchase receipt requires an Ordered order; the order is '{status}'.");
+                $"A purchase receipt requires a Submitted or PartiallyReceived order; the order is '{status}'.");
         }
     }
 }

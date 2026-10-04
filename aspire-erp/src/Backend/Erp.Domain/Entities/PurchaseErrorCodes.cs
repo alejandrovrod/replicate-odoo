@@ -17,6 +17,8 @@ public static class PurchaseErrorCodes
     public const string DuplicateSupplierCode = "duplicate_supplier_code";
     public const string SupplierNotFound = "supplier_not_found";
     public const string SupplierInactive = "supplier_inactive";
+    public const string InvalidCurrency = "invalid_currency";
+    public const string InvalidPaymentTerms = "invalid_payment_terms";
 
     // Purchase order (Task 4.1)
     public const string PurchaseOrderNotFound = "purchase_order_not_found";
@@ -37,4 +39,13 @@ public static class PurchaseErrorCodes
     public const string ReceiptLineMismatch = "receipt_line_mismatch";
     public const string QuantityMismatch = "quantity_mismatch";
     public const string InvalidTaxAmount = "invalid_tax_amount";
+
+    // Three-way match overbilling rejection (Task 4.4 / spec BY-03 and BY-06): the invoice bills
+    // more than the receipt line still has available. It is a bad REQUEST (400), not a conflict.
+    public const string OverbillingNotAllowed = "overbilling_not_allowed";
+
+    // Purchase invoice cancellation (Task 4.6 / spec BY-05)
+    public const string InvoiceNotFound = "purchase_invoice_not_found";
+    public const string InvoiceAlreadyCancelled = "invoice_already_cancelled";
+    public const string InvoiceNotPosted = "invoice_not_posted";
 }

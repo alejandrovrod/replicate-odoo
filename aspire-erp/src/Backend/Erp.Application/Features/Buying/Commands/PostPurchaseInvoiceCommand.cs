@@ -19,7 +19,9 @@ public sealed record PostPurchaseInvoiceLine(
 /// </summary>
 public sealed record PostPurchaseInvoiceCommand(
     Guid CompanyId,
-    Guid PurchaseReceiptId,
+    Guid SupplierId,
+    string BillNumber,
+    DateOnly? DueDate = null,
     DateOnly? PostingDate = null,
     decimal TaxAmount = 0m,
     IReadOnlyList<PostPurchaseInvoiceLine>? Lines = null) : ICommand<Result<PurchaseInvoicePostingDto>>;

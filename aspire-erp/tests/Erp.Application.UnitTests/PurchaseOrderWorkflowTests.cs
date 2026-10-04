@@ -31,14 +31,14 @@ public sealed class PurchaseOrderWorkflowTests
         {
             Id = _companyId,
             TenantId = Guid.NewGuid(),
-            ItemName = "Acme Industrial",
+            Name = "Acme Industrial",
         };
 
         _supplier = new Supplier
         {
             Id = Guid.NewGuid(),
-            ItemCode = "SUP-001",
-            ItemName = "Acme Industrial Supplies",
+            Code = "SUP-001",
+            Name = "Acme Industrial Supplies",
             IsActive = true,
         };
         _suppliers.Seed(_supplier);
@@ -61,8 +61,8 @@ public sealed class PurchaseOrderWorkflowTests
         new(_suppliers, _items, _purchases);
 
     private CreatePurchaseOrderCommand NewOrder() =>
-        new(_companyId, _supplier.Id, PostingDate,
-            new[] { new CreatePurchaseOrderLine(_item.Id, 10m, 100m) });
+        new(_companyId, _supplier.Id, PostingDate, PostingDate,
+            new[] { new CreatePurchaseOrderItem(_item.Id, 10m, 100m) });
 
     private PurchaseOrder SeedOrder(PurchaseOrderStatus status, Guid? companyId = null)
     {
@@ -72,12 +72,12 @@ public sealed class PurchaseOrderWorkflowTests
             CompanyId = companyId ?? _companyId,
             SupplierId = _supplier.Id,
             Status = status,
-            PostingDate = PostingDate,
-            VoucherNo = "PO-2026-00001",
+            TransactionDate = PostingDate,
+            OrderNumber = "PO-2026-00001",
             CreatedAt = DateTimeOffset.UtcNow,
-            Lines = new List<PurchaseOrderLine>
+            Items = new List<PurchaseOrderItem>
             {
-                new() { Id = Guid.NewGuid(), ItemId = _item.Id, Qty = 10m, Rate = 100m, LineNumber = 1 },
+                new() { Id = Guid.NewGuid(), ItemId = _item.Id, Quantity = 10m, Rate = 100m, LineNumber = 1 },
             },
         };
         _purchases.SeedOrder(order);
@@ -94,17 +94,17 @@ public sealed class PurchaseOrderWorkflowTests
 
         Assert.True(first.IsSuccess);
         Assert.NotNull(first.Value);
-        Assert.Equal("PO-2026-00001", first.Value!.VoucherNo);
+        Assert.Equal("PO-2026-00001", first.Value!.OrderNumber);
         Assert.Equal(PurchaseOrderStatus.Draft, first.Value.Status);
-        Assert.Equal("PO-2026-00002", second.Value!.VoucherNo);
+        Assert.Equal("PO-2026-00002", second.Value!.OrderNumber);
         Assert.Equal(PurchaseOrderStatus.Draft, second.Value.Status);
 
         Assert.Equal(2, _purchases.Orders.Count);
         var saved = _purchases.Orders[0];
         Assert.Equal(_supplier.Id, saved.SupplierId);
-        var line = Assert.Single(saved.Lines);
+        var line = Assert.Single(saved.Items);
         Assert.Equal(_item.Id, line.ItemId);
-        Assert.Equal(10m, line.Qty);
+        Assert.Equal(10m, line.Quantity);
         Assert.Equal(100m, line.Rate);
         Assert.Equal(1, line.LineNumber);
 
@@ -116,8 +116,8 @@ public sealed class PurchaseOrderWorkflowTests
     public async Task Create_UnknownSupplier_FailsWithSupplierNotFound()
     {
         var result = await CreateOrderHandler().HandleAsync(
-            new CreatePurchaseOrderCommand(_companyId, Guid.NewGuid(), PostingDate,
-                new[] { new CreatePurchaseOrderLine(_item.Id, 10m, 100m) }));
+            new CreatePurchaseOrderCommand(_companyId, Guid.NewGuid(), PostingDate, PostingDate,
+                new[] { new CreatePurchaseOrderItem(_item.Id, 10m, 100m) }));
 
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
@@ -131,15 +131,15 @@ public sealed class PurchaseOrderWorkflowTests
         var inactive = new Supplier
         {
             Id = Guid.NewGuid(),
-            ItemCode = "SUP-002",
-            ItemName = "Retired Vendor",
+            Code = "SUP-002",
+            Name = "Retired Vendor",
             IsActive = false,
         };
         _suppliers.Seed(inactive);
 
         var result = await CreateOrderHandler().HandleAsync(
-            new CreatePurchaseOrderCommand(_companyId, inactive.Id, PostingDate,
-                new[] { new CreatePurchaseOrderLine(_item.Id, 10m, 100m) }));
+            new CreatePurchaseOrderCommand(_companyId, inactive.Id, PostingDate, PostingDate,
+                new[] { new CreatePurchaseOrderItem(_item.Id, 10m, 100m) }));
 
         Assert.False(result.IsSuccess);
         Assert.Equal(PurchaseErrorCodes.SupplierInactive, result.Error!.Code);
@@ -150,7 +150,7 @@ public sealed class PurchaseOrderWorkflowTests
     public async Task Create_NoLines_FailsWithNoLines()
     {
         var result = await CreateOrderHandler().HandleAsync(
-            new CreatePurchaseOrderCommand(_companyId, _supplier.Id, PostingDate, Lines: null));
+            new CreatePurchaseOrderCommand(_companyId, _supplier.Id, PostingDate, PostingDate, Items: null));
 
         Assert.False(result.IsSuccess);
         Assert.Equal(PurchaseErrorCodes.NoLines, result.Error!.Code);
@@ -161,8 +161,8 @@ public sealed class PurchaseOrderWorkflowTests
     public async Task Create_UnknownItem_FailsWithItemNotFound()
     {
         var result = await CreateOrderHandler().HandleAsync(
-            new CreatePurchaseOrderCommand(_companyId, _supplier.Id, PostingDate,
-                new[] { new CreatePurchaseOrderLine(Guid.NewGuid(), 10m, 100m) }));
+            new CreatePurchaseOrderCommand(_companyId, _supplier.Id, PostingDate, PostingDate,
+                new[] { new CreatePurchaseOrderItem(Guid.NewGuid(), 10m, 100m) }));
 
         Assert.False(result.IsSuccess);
         Assert.Equal(StockErrorCodes.ItemNotFound, result.Error!.Code);
@@ -181,15 +181,15 @@ public sealed class PurchaseOrderWorkflowTests
             new SubmitPurchaseOrderCommand(_companyId, created.Value!.Id));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(PurchaseOrderStatus.Ordered, result.Value!.Status);
-        Assert.Equal("PO-2026-00001", result.Value.VoucherNo);
-        Assert.Equal(PurchaseOrderStatus.Ordered, _purchases.Orders[0].Status);
+        Assert.Equal(PurchaseOrderStatus.Submitted, result.Value!.Status);
+        Assert.Equal("PO-2026-00001", result.Value.OrderNumber);
+        Assert.Equal(PurchaseOrderStatus.Submitted, _purchases.Orders[0].Status);
     }
 
     [Theory]
-    [InlineData(PurchaseOrderStatus.Ordered)]
-    [InlineData(PurchaseOrderStatus.Received)]
-    [InlineData(PurchaseOrderStatus.Billed)]
+    [InlineData(PurchaseOrderStatus.Submitted)]
+    [InlineData(PurchaseOrderStatus.PartiallyReceived)]
+    [InlineData(PurchaseOrderStatus.Completed)]
     public async Task Submit_NonDraftOrder_FailsWithInvalidStatusTransition(PurchaseOrderStatus status)
     {
         var order = SeedOrder(status);
@@ -242,6 +242,54 @@ public sealed class PurchaseOrderWorkflowTests
         Assert.NotNull(result.Error);
         Assert.Equal(ConcurrencyErrorCodes.ConcurrencyConflict, result.Error!.Code);
         Assert.Contains(nameof(PurchaseOrder), result.Error!.Message);
+    }
+
+    private UpdatePurchaseOrderCommandHandler UpdateOrderHandler()
+    {
+        return new UpdatePurchaseOrderCommandHandler(_suppliers, _items, _purchases);
+    }
+
+    [Fact]
+    public async Task Update_DraftOrder_ReplacesLinesAndCalculatesTotals()
+    {
+        var order = SeedOrder(PurchaseOrderStatus.Draft);
+
+        var newItem = new Item { Id = Guid.NewGuid() };
+        _items.Seed(newItem);
+
+        var result = await UpdateOrderHandler().HandleAsync(
+            new UpdatePurchaseOrderCommand(_companyId, order.Id, _supplier.Id, PostingDate, PostingDate,
+                new[] { new UpdatePurchaseOrderItem(newItem.Id, 20m, 50m) }));
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(order.Items);
+        var line = order.Items.Single();
+        Assert.Equal(newItem.Id, line.ItemId);
+        Assert.Equal(20m, line.Quantity);
+        Assert.Equal(50m, line.Rate);
+        Assert.Equal(1000m, line.Amount);
+        Assert.Equal(1000m, order.NetTotal);
+        Assert.Equal(1000m, order.GrandTotal);
+    }
+
+    [Theory]
+    [InlineData(PurchaseOrderStatus.Submitted)]
+    [InlineData(PurchaseOrderStatus.PartiallyReceived)]
+    [InlineData(PurchaseOrderStatus.Completed)]
+    [InlineData(PurchaseOrderStatus.Cancelled)]
+    public async Task Update_NonDraftOrder_FailsWithInvalidStatusTransition(PurchaseOrderStatus status)
+    {
+        var order = SeedOrder(status);
+        var oldNetTotal = order.NetTotal;
+
+        var result = await UpdateOrderHandler().HandleAsync(
+            new UpdatePurchaseOrderCommand(_companyId, order.Id, _supplier.Id, PostingDate, PostingDate,
+                new[] { new UpdatePurchaseOrderItem(_item.Id, 100m, 100m) }));
+
+        Assert.False(result.IsSuccess);
+        Assert.NotNull(result.Error);
+        Assert.Equal(PurchaseErrorCodes.InvalidStatusTransition, result.Error!.Code);
+        Assert.Equal(oldNetTotal, order.NetTotal); // untouched
     }
 }
 

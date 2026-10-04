@@ -14,6 +14,7 @@ public sealed record PurchaseReceiptPostingLine(Guid ItemId, decimal Qty, decima
 public sealed record PurchaseReceiptPostingRequest(
     Guid CompanyId,
     Guid WarehouseId,
+    Guid SupplierId,
     Guid? PurchaseOrderId,
     DateOnly PostingDate,
     IReadOnlyList<PurchaseReceiptPostingLine> Lines);
@@ -34,8 +35,10 @@ public sealed record PurchaseInvoicePostingLine(
 /// </summary>
 public sealed record PurchaseInvoicePostingRequest(
     Guid CompanyId,
-    Guid PurchaseReceiptId,
+    Guid SupplierId,
+    string BillNumber,
     DateOnly PostingDate,
+    DateOnly DueDate,
     decimal TaxAmount,
     IReadOnlyList<PurchaseInvoicePostingLine> Lines);
 

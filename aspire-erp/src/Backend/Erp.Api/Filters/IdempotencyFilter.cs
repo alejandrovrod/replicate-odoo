@@ -21,10 +21,10 @@ namespace Erp.Api.Filters;
 /// </para>
 /// <para>
 /// Flow: header check (missing/empty -> 400 ProblemDetails) -> SHA-256 of the raw body ->
-/// classification via <see cref="IdempotencyPolicy"/> (replay 2xx verbatim / 409 in progress /
-/// 409 key reuse with a different payload) -> atomic reservation -> run the action while capturing
-/// the response body -> 2xx stores status+body, anything else DELETES the reservation so the client
-/// can legitimately retry the same key.
+/// classification via <see cref="IdempotencyPolicy"/> (replay -> 200 OK with the stored 2xx body
+/// verbatim / 409 in progress / 409 key reuse with a different payload) -> atomic reservation ->
+/// run the action while capturing the response body -> 2xx stores status+body, anything else
+/// DELETES the reservation so the client can legitimately retry the same key.
 /// </para>
 /// <para>
 /// CRASH-WINDOW TRADE-OFF: a crash (or process kill) between the reservation INSERT and the
@@ -177,9 +177,13 @@ public sealed class IdempotencyFilter : IAsyncResourceFilter
         switch (decision)
         {
             case IdempotencyDecision.ReplayStoredResponse:
-                http.Response.StatusCode = stored!.ResponseStatus!.Value;
+                // Spec BY-04: a replay of an ALREADY-COMPLETED request is a no-op that answers
+                // 200 OK with the original body VERBATIM (only 2xx responses are ever stored),
+                // instead of echoing the stored status - e.g. a re-sent POST that first returned
+                // 201 still gets a 200 "already done" answer.
+                http.Response.StatusCode = StatusCodes.Status200OK;
                 http.Response.ContentType = "application/json";
-                var bytes = Encoding.UTF8.GetBytes(stored.ResponseBody ?? string.Empty);
+                var bytes = Encoding.UTF8.GetBytes(stored!.ResponseBody ?? string.Empty);
                 await http.Response.Body.WriteAsync(bytes, cancellationToken);
                 break;
 

@@ -47,7 +47,7 @@ public sealed class GetPurchaseOrdersQueryHandler
                 supplierIds.Add(order.SupplierId);
             }
 
-            foreach (var line in order.Lines)
+            foreach (var line in order.Items)
             {
                 itemIds.Add(line.ItemId);
             }

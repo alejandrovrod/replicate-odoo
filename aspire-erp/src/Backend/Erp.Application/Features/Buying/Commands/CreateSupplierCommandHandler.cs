@@ -25,7 +25,7 @@ public sealed class CreateSupplierCommandHandler : ICommandHandler<CreateSupplie
     {
         try
         {
-            PurchaseValidator.EnsureValidSupplierFields(command.Code, command.Name);
+            PurchaseValidator.EnsureValidSupplierFields(command.Code, command.Name, command.BillingCurrency, command.PaymentTermsDays);
 
             var code = command.Code.Trim();
 
@@ -42,6 +42,11 @@ public sealed class CreateSupplierCommandHandler : ICommandHandler<CreateSupplie
                 Id = Guid.NewGuid(),
                 Code = code,
                 Name = command.Name.Trim(),
+                TaxId = command.TaxId.Trim(),
+                DefaultPayableAccountId = command.DefaultPayableAccountId,
+                BillingCurrency = command.BillingCurrency,
+                PaymentTermsDays = command.PaymentTermsDays,
+                OutstandingAmount = 0.0000m,
                 IsActive = command.IsActive,
 
                 // TenantId is intentionally NOT set: AppDbContext stamps CurrentTenantId on insert

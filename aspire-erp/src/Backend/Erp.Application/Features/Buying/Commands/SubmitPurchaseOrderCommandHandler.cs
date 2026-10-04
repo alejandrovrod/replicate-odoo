@@ -43,12 +43,12 @@ public sealed class SubmitPurchaseOrderCommandHandler
             {
                 throw new PurchaseValidationException(
                     PurchaseErrorCodes.PurchaseOrderNotFound,
-                    $"Purchase order '{order.VoucherNo}' does not belong to company '{command.CompanyId}'.");
+                    $"Purchase order '{order.OrderNumber}' does not belong to company '{command.CompanyId}'.");
             }
 
             PurchaseValidator.EnsureSubmittable(order.Status);
 
-            order.Status = PurchaseOrderStatus.Ordered;
+            order.Status = PurchaseOrderStatus.Submitted;
             await _purchases.UpdateOrderAsync(order, cancellationToken);
 
             var supplier = await _suppliers.GetByIdAsync(order.SupplierId, cancellationToken)
@@ -73,8 +73,8 @@ public sealed class SubmitPurchaseOrderCommandHandler
 
     private async Task<Dictionary<Guid, Item>> LoadItemsAsync(PurchaseOrder order, CancellationToken cancellationToken)
     {
-        var ids = new List<Guid>(order.Lines.Count);
-        foreach (var line in order.Lines)
+        var ids = new List<Guid>(order.Items.Count);
+        foreach (var line in order.Items)
         {
             if (!ids.Contains(line.ItemId))
             {

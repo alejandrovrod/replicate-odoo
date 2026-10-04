@@ -6,9 +6,10 @@ namespace Erp.Application.UnitTests.Fakes;
 
 /// <summary>
 /// In-memory <see cref="IPurchaseRepository"/>: gapless vouchers come from a per-(prefix, year)
-/// sequence, the posting transaction simply executes its callback, the ONE-invoice-per-receipt
-/// rule is enforced like the real unique index, and every persisted aggregate is captured so
-/// tests can assert on PurchaseOrder / PurchaseReceipt / PurchaseInvoice rows without a database.
+/// sequence, the posting transaction simply executes its callback, invoices accumulate against the
+/// same receipt line exactly like production (the cumulative three-way match is the only guard) and
+/// every persisted aggregate is captured so tests can assert on PurchaseOrder / PurchaseReceipt /
+/// PurchaseInvoice rows without a database.
 /// </summary>
 public sealed class FakePurchaseRepository : IPurchaseRepository
 {
@@ -31,6 +32,9 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
 
     /// <summary>Pre-loads a receipt (invoice tests can start from an already-posted receipt).</summary>
     public void SeedReceipt(params PurchaseReceipt[] receipts) => _receipts.AddRange(receipts);
+
+    /// <summary>Pre-loads an invoice (cancellation tests start from an already-posted bill).</summary>
+    public void SeedInvoice(params PurchaseInvoice[] invoices) => _invoices.AddRange(invoices);
 
     public Task<T> ExecuteInTransactionAsync<T>(
         Func<CancellationToken, Task<T>> operation,
@@ -87,21 +91,15 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
 
     public Task AddReceiptAsync(PurchaseReceipt receipt, CancellationToken cancellationToken = default)
     {
+        receipt.PurchaseOrder = _orders.FirstOrDefault(o => o.Id == receipt.PurchaseOrderId);
         _receipts.Add(receipt);
         return Task.CompletedTask;
     }
 
     public Task AddInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default)
     {
-        // Mirrors the unique (TenantId, PurchaseReceiptId) index of the real repository.
-        if (_invoices.Any(i => i.PurchaseReceiptId == invoice.PurchaseReceiptId))
-        {
-            throw new PurchaseValidationException(
-                PurchaseErrorCodes.InvoiceAlreadyExists,
-                $"Receipt '{invoice.PurchaseReceiptId}' already has a purchase invoice "
-                + "(one invoice per receipt, full three-way match).");
-        }
-
+        // Progressive billing is legal (several invoices may bill one receipt); the cumulative
+        // three-way match in ThreeWayMatchValidator is the guard, exactly as in production.
         _invoices.Add(invoice);
         return Task.CompletedTask;
     }
@@ -130,12 +128,60 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
 
     public Task<bool> ReceiptHasInvoiceAsync(
         Guid purchaseReceiptId, CancellationToken cancellationToken = default)
-        => Task.FromResult(_invoices.Any(i => i.PurchaseReceiptId == purchaseReceiptId));
+    {
+        var receipt = _receipts.FirstOrDefault(r => r.Id == purchaseReceiptId);
+        if (receipt == null) return Task.FromResult(false);
+        var receiptLineIds = receipt.Lines.Select(l => l.Id).ToHashSet();
+        return Task.FromResult(_invoices.SelectMany(i => i.Lines).Any(l => receiptLineIds.Contains(l.PurchaseReceiptLineId)));
+    }
 
     public Task<IReadOnlyList<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(
         Guid companyId, int limit, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<PurchaseInvoice>>(
             _invoices.Where(i => i.CompanyId == companyId).Take(limit).ToList());
+
+    public Task<PurchaseInvoice?> GetInvoiceByIdAsync(
+        Guid purchaseInvoiceId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_invoices.FirstOrDefault(i => i.Id == purchaseInvoiceId));
+
+    /// <summary>
+    /// When set, the NEXT <c>UpdateInvoiceAsync</c> fails like the real repository does after a
+    /// RowVersion mismatch; the flag resets itself so only one call fails.
+    /// </summary>
+    public bool FailNextInvoiceUpdate { get; set; }
+
+    public Task UpdateInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default)
+    {
+        if (FailNextInvoiceUpdate)
+        {
+            FailNextInvoiceUpdate = false;
+            throw new ConcurrencyConflictException(nameof(PurchaseInvoice), invoice.Id);
+        }
+
+        // In-memory: the entity instance IS the store; the cancel mutation is already applied.
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<PurchaseReceiptLine>> GetReceiptLinesByIdsAsync(
+        IEnumerable<Guid> lineIds, CancellationToken cancellationToken = default)
+    {
+        var ids = lineIds.ToHashSet();
+        var lines = _receipts
+            .SelectMany(r => r.Lines.Select(l => { l.PurchaseReceipt = r; return l; }))
+            .Where(l => ids.Contains(l.Id))
+            .ToList();
+        return Task.FromResult<IReadOnlyList<PurchaseReceiptLine>>(lines);
+    }
+
+    public Task<decimal> GetBilledQuantityForReceiptLineAsync(
+        Guid receiptLineId, CancellationToken cancellationToken = default)
+    {
+        var billed = _invoices
+            .SelectMany(i => i.Lines)
+            .Where(l => l.PurchaseReceiptLineId == receiptLineId)
+            .Sum(l => l.Qty);
+        return Task.FromResult(billed);
+    }
 
     /// <summary>Reproduces the .Include(r => r.PurchaseOrder) of the real repository.</summary>
     private PurchaseReceipt? AttachOrder(PurchaseReceipt? receipt)

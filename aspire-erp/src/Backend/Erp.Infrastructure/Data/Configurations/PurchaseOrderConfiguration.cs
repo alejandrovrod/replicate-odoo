@@ -27,12 +27,23 @@ public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<Purcha
         builder.Property(o => o.RowVersion).IsRowVersion();
 
         builder.Property(o => o.Status)
-            .HasConversion<string>()
-            .HasMaxLength(20)
+            .HasConversion<int>()
+            .HasDefaultValue(PurchaseOrderStatus.Draft)
             .IsRequired();
 
-        builder.Property(o => o.PostingDate).HasColumnType("date").IsRequired();
-        builder.Property(o => o.VoucherNo).HasMaxLength(100).IsRequired();
+        builder.Property(o => o.TransactionDate).HasColumnType("date").IsRequired();
+        builder.Property(o => o.ScheduleDate).HasColumnType("date").IsRequired();
+        builder.Property(o => o.OrderNumber).HasMaxLength(50).IsRequired();
+        
+        builder.Property(o => o.NetTotal).HasColumnType("decimal(18,4)").HasDefaultValue(0.0000m);
+        builder.Property(o => o.TaxTotal).HasColumnType("decimal(18,4)").HasDefaultValue(0.0000m);
+        builder.Property(o => o.GrandTotal).HasColumnType("decimal(18,4)").HasDefaultValue(0.0000m);
+        
+        builder.Property(o => o.ReceivedPercentage).HasColumnType("decimal(5,2)").HasDefaultValue(0.00m);
+        builder.Property(o => o.BilledPercentage).HasColumnType("decimal(5,2)").HasDefaultValue(0.00m);
+
+        builder.ToTable(t => t.HasCheckConstraint("CK_PurchaseOrder_Totals", "[NetTotal] >= 0.0000 AND [TaxTotal] >= 0.0000 AND [GrandTotal] >= 0.0000"));
+
         builder.Property(o => o.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(o => o.Supplier)
@@ -48,13 +59,13 @@ public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<Purcha
             .OnDelete(DeleteBehavior.Restrict);
 
         // Lines are part of the aggregate: delete the order, delete its lines.
-        builder.HasMany(o => o.Lines)
+        builder.HasMany(o => o.Items)
             .WithOne(l => l.PurchaseOrder)
             .HasForeignKey(l => l.PurchaseOrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Gapless voucher lookup (Constitution III.4) - TenantId leads per Constitution IV.1.
-        builder.HasIndex(o => new { o.TenantId, o.CompanyId, o.VoucherNo })
-            .HasDatabaseName("IX_PurchaseOrder_Tenant_Company_Voucher");
+        builder.HasIndex(o => new { o.TenantId, o.CompanyId, o.OrderNumber })
+            .HasDatabaseName("IX_PurchaseOrder_Tenant_Company_OrderNumber");
     }
 }

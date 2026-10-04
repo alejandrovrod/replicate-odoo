@@ -4,11 +4,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Erp.Infrastructure.Data.Configurations;
 
-/// <summary>
-/// Purchase receipt header (Task 4.2): posted on creation (no draft state, same decision as
-/// StockEntry - VoucherNo NOT NULL assigned inside the posting transaction). Optional link to
-/// the fulfilled order advances its workflow status.
-/// </summary>
 public sealed class PurchaseReceiptConfiguration : IEntityTypeConfiguration<PurchaseReceipt>
 {
     public void Configure(EntityTypeBuilder<PurchaseReceipt> builder)
@@ -20,9 +15,25 @@ public sealed class PurchaseReceiptConfiguration : IEntityTypeConfiguration<Purc
             .ValueGeneratedOnAdd()
             .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.Property(r => r.RowVersion).IsRowVersion();
+
+        builder.Property(r => r.Status)
+            .HasConversion<int>()
+            .HasDefaultValue(PurchaseReceiptStatus.Draft)
+            .IsRequired();
+
         builder.Property(r => r.PostingDate).HasColumnType("date").IsRequired();
-        builder.Property(r => r.VoucherNo).HasMaxLength(100).IsRequired();
+        builder.Property(r => r.VoucherNo).HasMaxLength(50).IsRequired();
+        builder.Property(r => r.TotalAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0.0000m);
         builder.Property(r => r.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+        builder.ToTable(t => t.HasCheckConstraint("CK_PurchaseReceipt_TotalAmount", "[TotalAmount] >= 0.0000"));
+
+        builder.HasOne(r => r.Supplier)
+            .WithMany()
+            .HasForeignKey(r => r.SupplierId)
+            .HasConstraintName("FK_PurchaseReceipt_Supplier")
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(r => r.PurchaseOrder)
             .WithMany()
@@ -42,14 +53,12 @@ public sealed class PurchaseReceiptConfiguration : IEntityTypeConfiguration<Purc
             .HasConstraintName("FK_PurchaseReceipt_Company")
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Lines are part of the aggregate: delete the receipt, delete its lines.
         builder.HasMany(r => r.Lines)
             .WithOne(l => l.PurchaseReceipt)
             .HasForeignKey(l => l.PurchaseReceiptId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Gapless voucher lookup (Constitution III.4) - TenantId leads per Constitution IV.1.
         builder.HasIndex(r => new { r.TenantId, r.CompanyId, r.VoucherNo })
-            .HasDatabaseName("IX_PurchaseReceipt_Tenant_Company_Voucher");
+            .HasDatabaseName("IX_PurchaseReceipt_Tenant_Company_VoucherNo");
     }
 }

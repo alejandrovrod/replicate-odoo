@@ -55,7 +55,7 @@ public sealed class PurchasePostingServiceTests
         {
             Id = _companyId,
             TenantId = _tenantId,
-            ItemName = "Acme Industrial",
+            Name = "Acme Industrial",
             AllowNegativeStock = false,
             StockReceivedAccountCode = "2120",
             AccountsPayableAccountCode = "2110",
@@ -68,8 +68,8 @@ public sealed class PurchasePostingServiceTests
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
             CompanyId = _companyId,
-            ItemCode = "WH-01",
-            ItemName = "Main Stores",
+            WarehouseCode = "WH-01",
+            WarehouseName = "Main Stores",
             AccountId = _stockAccount.Id,
         };
         _warehouses.Seed(_warehouse);
@@ -89,8 +89,8 @@ public sealed class PurchasePostingServiceTests
         {
             Id = Guid.NewGuid(),
             TenantId = _tenantId,
-            ItemCode = "SUP-001",
-            ItemName = "Acme Industrial Supplies",
+            Code = "SUP-001",
+            Name = "Acme Industrial Supplies",
             IsActive = true,
         };
     }
@@ -118,12 +118,12 @@ public sealed class PurchasePostingServiceTests
             CompanyId = _companyId,
             SupplierId = _supplier.Id,
             Status = status,
-            PostingDate = PostingDate.AddDays(-7),
-            VoucherNo = "PO-2026-00001",
+            TransactionDate = PostingDate.AddDays(-7),
+            OrderNumber = "PO-2026-00001",
             CreatedAt = DateTimeOffset.UtcNow,
-            Lines = new List<PurchaseOrderLine>
+            Items = new List<PurchaseOrderItem>
             {
-                new() { Id = Guid.NewGuid(), ItemId = _item.Id, Qty = 10m, Rate = 100m, LineNumber = 1 },
+                new() { Id = Guid.NewGuid(), ItemId = _item.Id, Quantity = 10m, Rate = 100m, LineNumber = 1 },
             },
         };
         _purchases.SeedOrder(order);
@@ -132,7 +132,7 @@ public sealed class PurchasePostingServiceTests
 
     // The service reads company/warehouse from the request arguments, so build them per test:
     private PurchaseReceiptPostingRequest NewReceiptRequest(Guid? purchaseOrderId = null) =>
-        new(_companyId, _warehouse.Id, purchaseOrderId, PostingDate,
+        new(_companyId, _warehouse.Id, _supplier.Id, purchaseOrderId, PostingDate,
             new[] { new PurchaseReceiptPostingLine(_item.Id, 10m, 100m) });
 
     /// <summary>Posts the standard receipt (10 units @ $100) and returns the persisted aggregate.</summary>
@@ -147,7 +147,7 @@ public sealed class PurchasePostingServiceTests
 
     private PurchaseInvoicePostingRequest NewInvoiceRequest(
         Guid receiptId, decimal taxAmount, params PurchaseInvoicePostingLine[] lines) =>
-        new(_companyId, receiptId, PostingDate, taxAmount, lines);
+        new(_companyId, _supplier.Id, "BILL-001", PostingDate, PostingDate.AddDays(30), taxAmount, lines);
 
     // ------------------------------------------------------------------------ receipt (task 4.2)
 
@@ -209,12 +209,12 @@ public sealed class PurchasePostingServiceTests
     [Fact]
     public async Task PostReceiptAsync_OrderedOrder_AdvancesWorkflowToReceived()
     {
-        var order = SeedOrder(PurchaseOrderStatus.Ordered);
+        var order = SeedOrder(PurchaseOrderStatus.Submitted);
 
         var result = await CreateService().PostReceiptAsync(NewReceiptRequest(order.Id));
 
-        Assert.Equal(PurchaseOrderStatus.Received, result.OrderStatus);
-        Assert.Equal(PurchaseOrderStatus.Received, order.Status);
+        Assert.Equal(PurchaseOrderStatus.PartiallyReceived, result.OrderStatus);
+        Assert.Equal(PurchaseOrderStatus.PartiallyReceived, order.Status);
         Assert.Equal(order.Id, result.Receipt.PurchaseOrderId);
     }
 
@@ -224,7 +224,7 @@ public sealed class PurchasePostingServiceTests
         // Spec BY-06: the workflow transition is a read-modify-write, so a RowVersion mismatch on
         // save surfaces as a typed domain exception that bubbles to the CQRS handler (which turns
         // it into Result.Failure -> 409). The service must NOT swallow it.
-        var order = SeedOrder(PurchaseOrderStatus.Ordered);
+        var order = SeedOrder(PurchaseOrderStatus.Submitted);
         _purchases.FailNextOrderUpdate = true;
 
         var ex = await Assert.ThrowsAsync<ConcurrencyConflictException>(() =>
@@ -236,7 +236,7 @@ public sealed class PurchasePostingServiceTests
 
     [Theory]
     [InlineData(PurchaseOrderStatus.Draft)]
-    [InlineData(PurchaseOrderStatus.Billed)]
+    [InlineData(PurchaseOrderStatus.Completed)]
     public async Task PostReceiptAsync_OrderNotReceivable_FailsWithInvalidStatusTransition(
         PurchaseOrderStatus status)
     {
@@ -283,7 +283,7 @@ public sealed class PurchasePostingServiceTests
     public async Task PostInvoiceAsync_By01_ClearsAccrualBooksTaxAndPayable()
     {
         // BY-01 arrange: the receipt accrued SRNB at $1,000 (10 @ $100).
-        var order = SeedOrder(PurchaseOrderStatus.Ordered);
+        var order = SeedOrder(PurchaseOrderStatus.Submitted);
         var receipt = await PostStandardReceiptAsync(order.Id);
         var receiptLine = receipt.Lines.Single();
 
@@ -312,11 +312,16 @@ public sealed class PurchasePostingServiceTests
             Assert.Equal("PurchaseInvoice", g.VoucherType);
             Assert.Equal("PINV-2026-00001", g.VoucherNo);
         });
-        Assert.Equal(100m, result.Invoice.TaxAmount);
+        Assert.Equal(100m, result.Invoice.TaxTotal);
+
+        // Spec BY-05: a posted bill is born Unpaid - that is the state cancellation transitions
+        // FROM (Unpaid -> Cancelled), so the payable can be reversed later.
+        Assert.Equal(PurchaseInvoiceStatus.Unpaid, result.Invoice.Status);
+        Assert.Equal(1100m, result.Invoice.OutstandingAmount);
 
         // Task 4.1: billing the receipt closes the order.
-        Assert.Equal(PurchaseOrderStatus.Billed, result.OrderStatus);
-        Assert.Equal(PurchaseOrderStatus.Billed, order.Status);
+        Assert.Equal(PurchaseOrderStatus.Completed, result.OrderStatus);
+        Assert.Equal(PurchaseOrderStatus.Completed, order.Status);
 
         Assert.Single(_purchases.Invoices);
 
@@ -362,19 +367,21 @@ public sealed class PurchasePostingServiceTests
     }
 
     [Fact]
-    public async Task PostInvoiceAsync_QuantityAboveReceived_FailsWithQuantityMismatch()
+    public async Task PostInvoiceAsync_QuantityAboveReceived_FailsWithOverbillingNotAllowed()
     {
         var receipt = await PostStandardReceiptAsync();
         var receiptLine = receipt.Lines.Single();
 
         var request = NewInvoiceRequest(
             receipt.Id, taxAmount: 0m,
-            new PurchaseInvoicePostingLine(receiptLine.Id, receiptLine.ItemId, 5m, 100m));
+            new PurchaseInvoicePostingLine(receiptLine.Id, receiptLine.ItemId, 15m, 100m));
 
-        var ex = await Assert.ThrowsAsync<PurchaseValidationException>(() =>
+        var ex = await Assert.ThrowsAsync<OverbillingNotAllowedException>(() =>
             CreateService().PostInvoiceAsync(request));
 
-        Assert.Equal(PurchaseErrorCodes.QuantityMismatch, ex.Code);
+        // spec BY-03 literal: nothing billed yet, so the ceiling is the received quantity.
+        Assert.Equal("Cannot bill 15 units. Maximum receivable: 10", ex.Message);
+
         Assert.Empty(_purchases.Invoices);
         Assert.Equal(2, _purchases.TransactionCount); // receipt + the rolled-back invoice attempt
     }
@@ -400,7 +407,7 @@ public sealed class PurchasePostingServiceTests
     {
         // Receipt with TWO lines; the invoice bills only the first one (partial match).
         var twoLineRequest = new PurchaseReceiptPostingRequest(
-            _companyId, _warehouse.Id, null, PostingDate,
+            _companyId, _warehouse.Id, _supplier.Id, null, PostingDate,
             new[]
             {
                 new PurchaseReceiptPostingLine(_item.Id, 10m, 100m),
@@ -420,7 +427,7 @@ public sealed class PurchasePostingServiceTests
     }
 
     [Fact]
-    public async Task PostInvoiceAsync_AlreadyInvoiced_FailsWithInvoiceAlreadyExists()
+    public async Task PostInvoiceAsync_BillOnFullyBilledReceipt_FailsWithOverbillingNotAllowed()
     {
         var receipt = await PostStandardReceiptAsync();
         var receiptLine = receipt.Lines.Single();
@@ -428,12 +435,14 @@ public sealed class PurchasePostingServiceTests
         await CreateService().PostInvoiceAsync(
             NewInvoiceRequest(receipt.Id, taxAmount: 0m, MatchLine(receiptLine, rate: 100m)));
 
-        var ex = await Assert.ThrowsAsync<PurchaseValidationException>(() =>
+        var ex = await Assert.ThrowsAsync<OverbillingNotAllowedException>(() =>
             CreateService().PostInvoiceAsync(
                 NewInvoiceRequest(receipt.Id, taxAmount: 0m, MatchLine(receiptLine, rate: 100m))));
 
-        Assert.Equal(PurchaseErrorCodes.InvoiceAlreadyExists, ex.Code);
-        Assert.Single(_purchases.Invoices); // one invoice per receipt (unique index backstop)
+        // spec BY-06 form: the receipt is fully billed, so nothing remains for the second bill.
+        Assert.Equal("Only 0 units remaining to bill, 10 requested", ex.Message);
+
+        Assert.Single(_purchases.Invoices); // the second bill is rejected by the cumulative validator
     }
 
     [Fact]
@@ -474,7 +483,7 @@ public sealed class PurchasePostingServiceTests
         _companies.Company!.FrozenAccountsDate = new DateOnly(2025, 12, 31);
 
         var request = new PurchaseReceiptPostingRequest(
-            _companyId, _warehouse.Id, null, new DateOnly(2025, 12, 15),
+            _companyId, _warehouse.Id, _supplier.Id, null, new DateOnly(2025, 12, 15),
             new[] { new PurchaseReceiptPostingLine(_item.Id, 10m, 100m) });
 
         var ex = await Assert.ThrowsAsync<FiscalPeriodLockedException>(
@@ -499,7 +508,7 @@ public sealed class PurchasePostingServiceTests
         _companies.Company!.FrozenAccountsDate = receipt.PostingDate;
 
         var request = new PurchaseInvoicePostingRequest(
-            _companyId, receipt.Id, receipt.PostingDate, 0m,
+            _companyId, _supplier.Id, "INV-001", receipt.PostingDate, receipt.PostingDate.AddDays(30), 0m,
             new[] { MatchLine(receipt.Lines.Single(), rate: 100m) });
 
         var ex = await Assert.ThrowsAsync<FiscalPeriodLockedException>(
@@ -527,7 +536,7 @@ public sealed class PurchasePostingServiceTests
         var receipt = _purchases.Receipts.Single();
 
         var invoiceRequest = new PurchaseInvoicePostingRequest(
-            _companyId, receipt.Id, PostingDate, 100m,
+            _companyId, _supplier.Id, "INV-001", PostingDate, PostingDate.AddDays(30), 100m,
             new[] { MatchLine(receipt.Lines.Single(), rate: 120m) });
         var invoicePosting = await service.PostInvoiceAsync(invoiceRequest);
 

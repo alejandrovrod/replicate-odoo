@@ -17,6 +17,7 @@ public sealed class PurchaseInvoiceLineConfiguration : IEntityTypeConfiguration<
         {
             table.HasCheckConstraint("CK_PurchaseInvoiceLine_Qty_Positive", "[Qty] > 0");
             table.HasCheckConstraint("CK_PurchaseInvoiceLine_Rate_NonNegative", "[Rate] >= 0");
+            table.HasCheckConstraint("CK_PurchaseInvoiceLine_Amount_NonNegative", "[Amount] >= 0");
         });
 
         builder.HasKey(l => l.Id);
@@ -25,7 +26,8 @@ public sealed class PurchaseInvoiceLineConfiguration : IEntityTypeConfiguration<
             .HasDefaultValueSql("NEWSEQUENTIALID()");
 
         builder.Property(l => l.Qty).HasColumnType("decimal(18,4)").IsRequired();
-        builder.Property(l => l.Rate).HasColumnType("decimal(18,6)").IsRequired();
+        builder.Property(l => l.Rate).HasColumnType("decimal(18,4)").IsRequired();
+        builder.Property(l => l.Amount).HasColumnType("decimal(18,4)").IsRequired();
         builder.Property(l => l.LineNumber).IsRequired();
 
         builder.HasOne(l => l.PurchaseReceiptLine)

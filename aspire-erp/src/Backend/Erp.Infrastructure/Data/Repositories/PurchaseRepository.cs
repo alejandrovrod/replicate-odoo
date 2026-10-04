@@ -27,6 +27,13 @@ public sealed class PurchaseRepository : IPurchaseRepository
     private const string ReceiptTable = "dbo.PurchaseReceipt";
     private const string InvoiceTable = "dbo.PurchaseInvoice";
 
+    // Number column per table: PurchaseOrder stores its gapless sequence in OrderNumber (the
+    // column predates the voucher vocabulary), while receipts and invoices use VoucherNo.
+    // Parameterized the same way SalesRepository does for SalesOrder.OrderNumber - MAX(VoucherNo)
+    // against dbo.PurchaseOrder fails with SQL error 207 (invalid column name).
+    private const string OrderColumn = "OrderNumber";
+    private const string VoucherColumn = "VoucherNo";
+
     private readonly AppDbContext _dbContext;
 
     public PurchaseRepository(AppDbContext dbContext)
@@ -54,24 +61,25 @@ public sealed class PurchaseRepository : IPurchaseRepository
 
     public Task<string> NextOrderVoucherNumberAsync(
         Guid companyId, string prefix, int year, CancellationToken cancellationToken = default)
-        => NextVoucherNumberAsync(OrderTable, companyId, prefix, year, cancellationToken);
+        => NextVoucherNumberAsync(OrderTable, OrderColumn, companyId, prefix, year, cancellationToken);
 
     public Task<string> NextReceiptVoucherNumberAsync(
         Guid companyId, string prefix, int year, CancellationToken cancellationToken = default)
-        => NextVoucherNumberAsync(ReceiptTable, companyId, prefix, year, cancellationToken);
+        => NextVoucherNumberAsync(ReceiptTable, VoucherColumn, companyId, prefix, year, cancellationToken);
 
     public Task<string> NextInvoiceVoucherNumberAsync(
         Guid companyId, string prefix, int year, CancellationToken cancellationToken = default)
-        => NextVoucherNumberAsync(InvoiceTable, companyId, prefix, year, cancellationToken);
+        => NextVoucherNumberAsync(InvoiceTable, VoucherColumn, companyId, prefix, year, cancellationToken);
 
     /// <summary>
-    /// SELECT MAX(VoucherNo) WITH (UPDLOCK, HOLDLOCK) inside the AMBIENT posting transaction,
-    /// scoped to (TenantId, CompanyId, prefix-year). The range lock serializes concurrent
+    /// SELECT MAX(<paramref name="column"/>) WITH (UPDLOCK, HOLDLOCK) inside the AMBIENT posting
+    /// transaction, scoped to (TenantId, CompanyId, prefix-year). The range lock serializes concurrent
     /// sequences per company/year/document table, and because it lives inside the same
     /// transaction it is released by COMMIT or ROLLBACK - a rolled-back posting consumes NO number.
     /// </summary>
     private async Task<string> NextVoucherNumberAsync(
         string table,
+        string column,
         Guid companyId,
         string prefix,
         int year,
@@ -95,8 +103,8 @@ public sealed class PurchaseRepository : IPurchaseRepository
 
         await using var command = connection.CreateCommand();
         command.CommandText =
-            $"SELECT MAX(VoucherNo) FROM {table} WITH (UPDLOCK, HOLDLOCK) "
-            + "WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND VoucherNo LIKE @Pattern;";
+            $"SELECT MAX({column}) FROM {table} WITH (UPDLOCK, HOLDLOCK) "
+            + $"WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND {column} LIKE @Pattern;";
         command.Transaction = transaction.GetDbTransaction();
 
         AddParameter(command, "@TenantId", tenantId);
@@ -161,25 +169,24 @@ public sealed class PurchaseRepository : IPurchaseRepository
 
     public async Task AddInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            await _dbContext.PurchaseInvoices.AddAsync(invoice, cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
-        {
-            // The unique (TenantId, PurchaseReceiptId) index is the hard backstop of the
-            // ONE-invoice-per-receipt rule (Task 4.3): translate the race into a domain failure
-            // instead of leaking an EF/SQL exception to the API layer.
-            throw new PurchaseValidationException(
-                PurchaseErrorCodes.InvoiceAlreadyExists,
-                $"Receipt '{invoice.PurchaseReceiptId}' already has a purchase invoice "
-                + "(one invoice per receipt, full three-way match).");
-        }
+        await _dbContext.PurchaseInvoices.AddAsync(invoice, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private static bool IsUniqueConstraintViolation(DbUpdateException ex) =>
-        ex.InnerException is SqlException { Number: 2601 or 2627 };
+    public async Task UpdateInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Spec BY-05: another request cancelled/edited the invoice between our load and this
+            // save, so the RowVersion WHERE clause matched 0 rows. Surface it as the typed 409
+            // failure (mirrors UpdateOrderAsync).
+            throw new ConcurrencyConflictException(nameof(PurchaseInvoice), invoice.Id, ex);
+        }
+    }
 
     // ------------------------------------------------------------------------------------- reads
 
@@ -187,7 +194,7 @@ public sealed class PurchaseRepository : IPurchaseRepository
         Guid purchaseOrderId,
         CancellationToken cancellationToken = default)
         => await _dbContext.PurchaseOrders
-            .Include(o => o.Lines)
+            .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == purchaseOrderId, cancellationToken);
 
     public async Task<IReadOnlyList<PurchaseOrder>> GetRecentOrdersByCompanyAsync(
@@ -196,7 +203,7 @@ public sealed class PurchaseRepository : IPurchaseRepository
         CancellationToken cancellationToken = default)
         => await _dbContext.PurchaseOrders
             .Where(o => o.CompanyId == companyId)
-            .Include(o => o.Lines)
+            .Include(o => o.Items)
             .OrderByDescending(o => o.CreatedAt)
             .ThenByDescending(o => o.Id)
             .Take(limit)
@@ -222,12 +229,77 @@ public sealed class PurchaseRepository : IPurchaseRepository
             .Take(limit)
             .ToListAsync(cancellationToken);
 
-    public async Task<bool> ReceiptHasInvoiceAsync(
-        Guid purchaseReceiptId,
+    public async Task<IReadOnlyList<PurchaseReceiptLine>> GetReceiptLinesByIdsAsync(
+        IEnumerable<Guid> receiptLineIds,
         CancellationToken cancellationToken = default)
-        => await _dbContext.PurchaseInvoices.AnyAsync(
-            i => i.PurchaseReceiptId == purchaseReceiptId,
-            cancellationToken);
+    {
+        var ids = receiptLineIds.Distinct().ToList();
+
+        // Spec BY-06 row locking: take the range lock BEFORE the EF load, so the lock is held
+        // ahead of the billed-quantity SUMs that happen later in the posting transaction.
+        await LockReceiptLinesForBillingAsync(ids, cancellationToken);
+
+        return await _dbContext.Set<PurchaseReceiptLine>()
+            .Include(l => l.PurchaseReceipt)
+            .ThenInclude(r => r!.PurchaseOrder)
+            .Where(l => ids.Contains(l.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// SELECT ... WITH (UPDLOCK, HOLDLOCK) over the requested <c>dbo.PurchaseReceiptLine</c> rows
+    /// inside the AMBIENT posting transaction - the serializing half of spec BY-06. Two clerks
+    /// billing the SAME receipt line block here instead of racing: the loser waits until the winner
+    /// COMMITs, then re-reads the billed quantity with the lock already held and fails the
+    /// cumulative three-way match with <see cref="OverbillingNotAllowedException"/> (it can no
+    /// longer read a stale "nothing billed yet" snapshot - the voucher-number UPDLOCK that runs
+    /// afterwards would be too late to protect that read).
+    /// </summary>
+    /// <remarks>
+    /// The id list mirrors the invoice's own receipt lines (a handful per bill, each one its own
+    /// <c>@pN</c> parameter - parameters are never interpolated), so the IN list stays far below
+    /// SQL Server's 2100-parameter ceiling. Without an open transaction there is nothing to hold
+    /// the lock against, and the statement is skipped: the plain EF load below still applies the
+    /// read semantics the caller expects. <c>dbo.PurchaseReceiptLine</c> carries no TenantId column,
+    /// so - unlike the voucher statements - there is no tenant scope to write out explicitly.
+    /// </remarks>
+    private async Task LockReceiptLinesForBillingAsync(
+        IReadOnlyList<Guid> receiptLineIds,
+        CancellationToken cancellationToken)
+    {
+        var transaction = _dbContext.Database.CurrentTransaction;
+        if (transaction is null || receiptLineIds.Count == 0)
+        {
+            return;
+        }
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        var parameters = string.Join(", ", receiptLineIds.Select((_, index) => $"@p{index}"));
+
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            $"SELECT Id FROM dbo.PurchaseReceiptLine WITH (UPDLOCK, HOLDLOCK) WHERE Id IN ({parameters});";
+        command.Transaction = transaction.GetDbTransaction();
+
+        for (var index = 0; index < receiptLineIds.Count; index++)
+        {
+            AddParameter(command, $"@p{index}", receiptLineIds[index]);
+        }
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<decimal> GetBilledQuantityForReceiptLineAsync(
+        Guid purchaseReceiptLineId,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.Set<PurchaseInvoiceLine>()
+            .Where(l => l.PurchaseReceiptLineId == purchaseReceiptLineId)
+            .SumAsync(l => (decimal?)l.Qty, cancellationToken) ?? 0m;
 
     public async Task<IReadOnlyList<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(
         Guid companyId,
@@ -240,6 +312,13 @@ public sealed class PurchaseRepository : IPurchaseRepository
             .ThenByDescending(i => i.Id)
             .Take(limit)
             .ToListAsync(cancellationToken);
+
+    public async Task<PurchaseInvoice?> GetInvoiceByIdAsync(
+        Guid purchaseInvoiceId,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.PurchaseInvoices
+            .Include(i => i.Lines)
+            .FirstOrDefaultAsync(i => i.Id == purchaseInvoiceId, cancellationToken);
 
     private static void AddParameter(DbCommand command, string name, object value)
     {

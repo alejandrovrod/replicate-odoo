@@ -1,4 +1,5 @@
 using Erp.Domain.Common;
+using Erp.Domain.Exceptions;
 
 namespace Erp.Domain.Entities;
 
@@ -9,13 +10,17 @@ namespace Erp.Domain.Entities;
 /// <c>Input Tax Recoverable</c> for <see cref="TaxAmount"/> and credits <c>Accounts Payable</c>
 /// for the gross - e.g. BY-01: 10 @ $100 + $100 VAT =&gt; Dr 2120 $1,000 / Dr tax $100 / Cr 2110 $1,100.
 /// </summary>
-/// <remarks>
-/// THREE-WAY FULL MATCH (v1): exactly ONE invoice per PurchaseReceipt (unique index) and every
-/// invoice line bills its receipt line IN FULL (same quantity; the rate is the vendor's and may
-/// differ - the delta is expensed/credited through the price difference account). That makes the
-/// interim liability for the receipt zero out deterministically (tasks.md 4.3 acceptance).
-/// When the receipt fulfills an order, the order advances to <see cref="PurchaseOrderStatus.Billed"/>.
-/// </remarks>
+/// The supplier's bill (Task 4.4).
+/// </summary>
+public enum PurchaseInvoiceStatus
+{
+    Draft = 1,
+    Unpaid = 2,
+    PartiallyPaid = 3,
+    Paid = 4,
+    Cancelled = 5
+}
+
 public class PurchaseInvoice : ITenantEntity
 {
     public Guid Id { get; set; }
@@ -25,19 +30,27 @@ public class PurchaseInvoice : ITenantEntity
 
     public Guid CompanyId { get; set; }
 
-    /// <summary>Receipt being billed (required in v1 - the three-way match anchor).</summary>
-    public Guid PurchaseReceiptId { get; set; }
+    public string BillNumber { get; set; } = string.Empty;
 
-    public PurchaseReceipt? PurchaseReceipt { get; set; }
+    public Guid SupplierId { get; set; }
+    public Supplier? Supplier { get; set; }
 
     /// <summary>Accounting date of the accrual reversal and the payable (GL lines).</summary>
     public DateOnly PostingDate { get; set; }
 
-    /// <summary>
-    /// Total Input Tax Recoverable of the bill (decimal(18,4), >= 0). Zero books no tax line;
-    /// the amount is stated by the vendor (spec BY-01: "$100.00 VAT"), not computed from a rate.
-    /// </summary>
-    public decimal TaxAmount { get; set; }
+    public DateOnly DueDate { get; set; }
+    
+    public PurchaseInvoiceStatus Status { get; set; } = PurchaseInvoiceStatus.Draft;
+
+    public decimal NetTotal { get; set; }
+    
+    public decimal TaxTotal { get; set; }
+    
+    public decimal WithholdingTaxTotal { get; set; }
+    
+    public decimal GrandTotal { get; set; }
+    
+    public decimal OutstandingAmount { get; set; }
 
     /// <summary>
     /// Gapless voucher number (Constitution III.4): PINV-2026-00001.
@@ -45,9 +58,38 @@ public class PurchaseInvoice : ITenantEntity
     /// </summary>
     public string VoucherNo { get; set; } = string.Empty;
 
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public ICollection<PurchaseInvoiceLine> Lines { get; set; } = new List<PurchaseInvoiceLine>();
+
+    /// <summary>
+    /// Cancels the bill and applies the compensating status transition (spec BY-05):
+    /// <c>Unpaid</c>/<c>PartiallyPaid</c> =&gt; <c>Cancelled</c>. Ledger reversal is booked by
+    /// <c>CancelPurchaseInvoiceCommandHandler</c>.
+    /// </summary>
+    /// <exception cref="PurchaseValidationException">
+    /// <see cref="PurchaseErrorCodes.InvoiceAlreadyCancelled"/> when already cancelled, or
+    /// <see cref="PurchaseErrorCodes.InvalidStatusTransition"/> for <see cref="PurchaseInvoiceStatus.Draft"/>
+    /// and <see cref="PurchaseInvoiceStatus.Paid"/> (payments must be refunded first, BY-05).
+    /// </exception>
+    public void Cancel()
+    {
+        switch (Status)
+        {
+            case PurchaseInvoiceStatus.Cancelled:
+                throw new PurchaseValidationException(PurchaseErrorCodes.InvoiceAlreadyCancelled,
+                    $"Purchase invoice {VoucherNo} is already cancelled.");
+            case PurchaseInvoiceStatus.Unpaid:
+            case PurchaseInvoiceStatus.PartiallyPaid:
+                Status = PurchaseInvoiceStatus.Cancelled;
+                break;
+            default:
+                throw new PurchaseValidationException(PurchaseErrorCodes.InvalidStatusTransition,
+                    $"Purchase invoice {VoucherNo} cannot be cancelled from status {Status}.");
+        }
+    }
 }
 
 /// <summary>
@@ -76,6 +118,8 @@ public class PurchaseInvoiceLine
 
     /// <summary>Billed unit rate (decimal(18,6), >= 0): the vendor's price; may differ from the received rate.</summary>
     public decimal Rate { get; set; }
+
+    public decimal Amount { get; set; }
 
     /// <summary>1-based line number inside the invoice.</summary>
     public int LineNumber { get; set; }

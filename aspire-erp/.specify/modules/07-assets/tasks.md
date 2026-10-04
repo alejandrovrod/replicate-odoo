@@ -3,21 +3,21 @@
 **Module:** `07-assets`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** READY TO IMPLEMENT  
+**Status:** IN PROGRESS (Block A: 10.1, 10.2, 10.3 complete)  
 
 ---
 
 ## Phase 10: Fixed Assets & Automated Depreciation
 
-- [ ] **Task 10.1: Asset Category & GL Account Templates**
+- [x] **Task 10.1: Asset Category & GL Account Templates**
   - **Action:** Create `AssetCategory` entity linking Fixed Asset, Accumulated Depreciation, and Expense accounts.
   - **Acceptance:** Validates that linked accounts are leaf posting accounts (`IsGroup == false`).
 
-- [ ] **Task 10.2: Asset Master & Capitalization**
+- [x] **Task 10.2: Asset Master & Capitalization**
   - **Action:** Implement `Asset` entity with purchase value, salvage value, and capitalization lifecycle.
   - **Acceptance:** Submitting capitalization generates initial balance sheet records.
 
-- [ ] **Task 10.3: Depreciation Schedule Generator**
+- [x] **Task 10.3: Depreciation Schedule Generator**
   - **Action:** Implement `DepreciationScheduler` generating monthly straight-line schedule lines without rounding loss.
   - **Acceptance:** Invariant verified: $\sum \text{DepreciationSchedule.Amounts} == \text{GrossAmount} - \text{SalvageValue}$.
 

@@ -1,7 +1,7 @@
 # Functional Specification: Asset Management & Depreciation (ERPNext Parity)
 
 **Module:** `07-assets`  
-**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Status:** IN PROGRESS — Block A implemented (tasks 10.1, 10.2, 10.3); Block B/C pending  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Assets Documentation](https://docs.frappe.io/erpnext/assets)  

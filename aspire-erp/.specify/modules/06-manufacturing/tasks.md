@@ -3,17 +3,17 @@
 **Module:** `06-manufacturing`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** READY TO IMPLEMENT  
+**Status:** IN PROGRESS (Block A: 9.1, 9.2 complete)  
 
 ---
 
 ## Phase 9: Manufacturing, BOM & Shop Floor Execution
 
-- [ ] **Task 9.1: Workstation & Machine Center Entities**
+- [x] **Task 9.1: Workstation & Machine Center Entities**
   - **Action:** Create `Workstation` entity in `Erp.Domain.Manufacturing` with labor, electricity, and rent hourly rates.
   - **Acceptance:** Calculates composite hourly operating cost automatically.
 
-- [ ] **Task 9.2: Bill of Materials (BOM) Aggregate & Cost Roll-Up**
+- [x] **Task 9.2: Bill of Materials (BOM) Aggregate & Cost Roll-Up**
   - **Action:** Implement `BOM`, `BOMItem`, and `BOMOperation` with automated cost calculation (raw materials + operations - scrap).
   - **Acceptance:** Validates that finished item cannot be a component of itself (anti-cycle check).
 

@@ -1,7 +1,7 @@
 # Functional Specification: Manufacturing & Production (ERPNext Parity)
 
 **Module:** `06-manufacturing`  
-**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Status:** IN PROGRESS — Block A implemented (tasks 9.1, 9.2); Block B/C pending  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Manufacturing Documentation](https://docs.frappe.io/erpnext/manufacturing)  

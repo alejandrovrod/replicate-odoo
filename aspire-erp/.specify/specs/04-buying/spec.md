@@ -62,7 +62,7 @@ $$\text{BilledQuantity} \le \text{PurchaseReceiptItem.AcceptedQuantity} - \text{
 - **When** the accountant submits `PurchaseInvoice` `PINV-2026-0035` for 100 units @ $50.00 + $500.00 VAT
 - **Then** `GLEntry` records:
   - Debit: `2120 - Stock Received But Not Billed` ($5,000.00)
-  - Debit: `1350 - Input VAT Recoverable` ($500.00)
+  - Debit: `1130 - Input Tax Recoverable` ($500.00)
   - Credit: `2110 - Accounts Payable (Creditors)` ($5,500.00)
 - **And** the interim accrual is cleared ($0.00 balance).
 

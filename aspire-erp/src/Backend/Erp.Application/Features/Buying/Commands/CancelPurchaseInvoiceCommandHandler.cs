@@ -24,12 +24,32 @@ namespace Erp.Application.Features.Buying.Commands;
 /// <para><b>Order of writes.</b> The header is saved BEFORE the reversal rows, exactly like the
 /// posting path, so a failure inside the transaction never leaves reversal rows without their
 /// cancelled header.</para>
+/// <para><b>Stock unwind (spec BY-05 third clause).</b> Cancelling the bill also reverses the
+/// physical stock intake of every purchase receipt behind it, in the SAME transaction: one
+/// negated <c>StockLedgerEntry</c> per intake row (QtyChange/Amount negated, original FIFO
+/// rates preserved) plus the swapped mirror of the receipt's GL rows, both flagged
+/// <c>IsCancelled = true</c> on the REVERSAL rows only - every original row stays byte-identical
+/// (Constitution III.2). The reversal rows carry the RECEIPT's original posting date, so each
+/// distinct receipt gets its own <c>Company.EnsurePostingDateUnlocked</c> freeze gate: a frozen
+/// receipt period blocks the whole cancellation (all-or-nothing, checked before any write).
+/// </para>
+/// <para><b>DOCUMENTED BOUNDARY - unwind granularity is per-RECEIPT.</b> The skip-if-unwound gate
+/// looks at the receipt voucher as a whole: when ANY intake row of that voucher is already
+/// flagged <c>IsCancelled</c> the receipt is skipped entirely (idempotency) while the invoice
+/// itself still cancels and mirrors its own GL. Consequence: two invoices billing different
+/// lines of one SHARED receipt unwind the WHOLE receipt on the first cancel. The billing
+/// invariant (each invoice line bills its receipt line in full, and an invoice covers its
+/// receipts) makes the 1:1 case exact; the shared-receipt case is this recorded limitation,
+/// not silent behaviour.</para>
 /// </remarks>
 public sealed class CancelPurchaseInvoiceCommandHandler
     : ICommandHandler<CancelPurchaseInvoiceCommand, Result<PurchaseInvoiceDto>>
 {
     /// <summary>Voucher type stamped on purchase-invoice GL rows (shared with the posting service).</summary>
     private const string InvoiceVoucherType = "PurchaseInvoice";
+
+    /// <summary>Voucher type stamped on purchase-receipt intake SLE/GL rows (shared with the posting service).</summary>
+    private const string ReceiptVoucherType = "PurchaseReceipt";
 
     private readonly ICompanyRepository _companies;
     private readonly IPurchaseRepository _purchases;
@@ -99,16 +119,32 @@ public sealed class CancelPurchaseInvoiceCommandHandler
                         $"Purchase invoice '{invoice.VoucherNo}' has no General Ledger rows to reverse.");
                 }
 
-                var reversalRows = BuildReversalRows(invoice, originalRows);
+                var reversalRows = BuildReversalRows(originalRows);
 
-                // Constitution III.1 on the rows that are about to be written (a mirror of a
+                // spec BY-05 third clause: the bill's cancellation also unwinds the physical
+                // stock intake of every receipt behind it (planned here, written below - still
+                // zero writes so far, so any gate below leaves the ledgers untouched).
+                var unwind = await PlanReceiptUnwindAsync(invoice, company, token);
+
+                // One list, invoice mirror FIRST: the write below appends the invoice reversal,
+                // then the receipt mirrors, in voucher order.
+                var allGlReversals = new List<GLEntry>(reversalRows.Count + unwind.GlReversals.Count);
+                allGlReversals.AddRange(reversalRows);
+                allGlReversals.AddRange(unwind.GlReversals);
+
+                // Constitution III.1 on ALL rows that are about to be written (a mirror of a
                 // balanced voucher is balanced, but the guard proves it rather than assuming it).
-                DoubleEntryGuard.EnsureBalanced(reversalRows);
+                DoubleEntryGuard.EnsureBalanced(allGlReversals);
 
                 invoice.OutstandingAmount = 0m;
 
                 await _purchases.UpdateInvoiceAsync(invoice, token);
-                await _stock.AddGlEntriesAsync(reversalRows, token);
+                await _stock.AddGlEntriesAsync(allGlReversals, token);
+
+                if (unwind.SleReversals.Count > 0)
+                {
+                    await _stock.AddLedgerEntriesAsync(unwind.SleReversals, token);
+                }
 
                 var itemIds = invoice.Lines.Select(l => l.ItemId).Distinct().ToList();
                 var itemsById = itemIds.Count == 0
@@ -139,11 +175,10 @@ public sealed class CancelPurchaseInvoiceCommandHandler
     /// <summary>
     /// One mirror row per original GL line: every column copied verbatim except Debit/Credit (and
     /// their account-currency twins), which are SWAPPED, plus the cancellation marker. The
-    /// originals are never mutated or deleted (Constitution III.2).
+    /// originals are never mutated or deleted (Constitution III.2). Shared by the invoice mirror
+    /// and the per-receipt mirrors: the remarks name the voucher each row reverses.
     /// </summary>
-    private static List<GLEntry> BuildReversalRows(
-        PurchaseInvoice invoice,
-        IReadOnlyList<GLEntry> originalRows)
+    private static List<GLEntry> BuildReversalRows(IReadOnlyList<GLEntry> originalRows)
     {
         var reversalRows = new List<GLEntry>(originalRows.Count);
 
@@ -182,6 +217,133 @@ public sealed class CancelPurchaseInvoiceCommandHandler
         }
 
         return reversalRows;
+    }
+
+    /// <summary>
+    /// Plans the physical stock unwind for the receipts behind the invoice: resolves the distinct
+    /// receipt aggregates, freeze-gates each one against ITS posting date, then builds the negated
+    /// Kardex rows plus the swapped receipt-GL mirrors for every receipt that was not already
+    /// unwound. Pure planning - performs reads only, so every failure below is a zero-write
+    /// rejection and the invoice itself is left to the transaction rollback.
+    /// </summary>
+    /// <exception cref="PurchaseValidationException">
+    /// <see cref="PurchaseErrorCodes.PurchaseReceiptNotFound"/> when a billed receipt line (or its
+    /// receipt) does not exist in this tenant, or belongs to another company (reported as not
+    /// found: the id must not leak across companies).
+    /// </exception>
+    /// <exception cref="FiscalPeriodLockedException">
+    /// A receipt behind the bill is dated inside the frozen period.
+    /// </exception>
+    private async Task<ReceiptUnwindPlan> PlanReceiptUnwindAsync(
+        PurchaseInvoice invoice,
+        Company company,
+        CancellationToken token)
+    {
+        var plan = new ReceiptUnwindPlan();
+
+        var receiptLineIds = invoice.Lines.Select(l => l.PurchaseReceiptLineId).Distinct().ToList();
+        if (receiptLineIds.Count == 0)
+        {
+            // A bill with no receipt linkage (legacy shape): nothing physical to unwind, the
+            // invoice mirror above is the whole cancellation.
+            return plan;
+        }
+
+        var receiptLines = await _purchases.GetReceiptLinesByIdsAsync(receiptLineIds, token);
+        var linesById = receiptLines.ToDictionary(l => l.Id);
+
+        foreach (var id in receiptLineIds)
+        {
+            if (!linesById.ContainsKey(id))
+            {
+                throw new PurchaseValidationException(
+                    PurchaseErrorCodes.PurchaseReceiptNotFound,
+                    $"Purchase invoice '{invoice.VoucherNo}' bills receipt line '{id}', "
+                    + "which was not found in this tenant.");
+            }
+        }
+
+        var receipts = new List<PurchaseReceipt>();
+        foreach (var receiptId in receiptLines.Select(l => l.PurchaseReceiptId).Distinct())
+        {
+            var receipt = await _purchases.GetReceiptByIdAsync(receiptId, token)
+                ?? throw new PurchaseValidationException(
+                    PurchaseErrorCodes.PurchaseReceiptNotFound,
+                    $"Purchase receipt '{receiptId}' billed by invoice '{invoice.VoucherNo}' "
+                    + "was not found in this tenant.");
+
+            if (receipt.CompanyId != invoice.CompanyId)
+            {
+                throw new PurchaseValidationException(
+                    PurchaseErrorCodes.PurchaseReceiptNotFound,
+                    $"Purchase receipt '{receipt.VoucherNo}' does not belong to company "
+                    + $"'{invoice.CompanyId}'.");
+            }
+
+            receipts.Add(receipt);
+        }
+
+        // Freeze gate per receipt, BEFORE any mutation: the reversal rows carry the RECEIPT's
+        // original date, so a frozen receipt period blocks the whole cancellation.
+        foreach (var receipt in receipts)
+        {
+            company.EnsurePostingDateUnlocked(receipt.PostingDate);
+        }
+
+        foreach (var receipt in receipts)
+        {
+            var intakeRows = (await _stock.GetLedgerEntriesByVoucherAsync(receipt.VoucherNo, token))
+                .Where(s => s.VoucherType == ReceiptVoucherType)
+                .ToList();
+
+            // Skip-if-unwound: ANY cancelled row on the receipt voucher means the intake was
+            // already reversed (idempotency + the shared-receipt safety valve - see the class
+            // remarks). The invoice itself still cancels and mirrors its own GL below.
+            if (intakeRows.Any(s => s.IsCancelled))
+            {
+                continue;
+            }
+
+            var createdAt = DateTimeOffset.UtcNow;
+            foreach (var intake in intakeRows.Where(s => !s.IsCancelled))
+            {
+                plan.SleReversals.Add(new StockLedgerEntry
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = intake.TenantId,
+                    ItemId = intake.ItemId,
+                    WarehouseId = intake.WarehouseId,
+                    StockEntryId = intake.StockEntryId,
+                    VoucherType = intake.VoucherType,
+                    VoucherNo = intake.VoucherNo,
+                    PostingDate = intake.PostingDate,
+
+                    // Verbatim negation: the FIFO valuation rate is PRESERVED exactly, only the
+                    // signed movements flip - the same shape as CancelStockEntryCommandHandler.
+                    QtyChange = -intake.QtyChange,
+                    ValuationRate = intake.ValuationRate,
+                    Amount = -intake.Amount,
+                    CreatedAt = createdAt,
+                    IsCancelled = true,
+                });
+            }
+
+            var receiptGlRows = (await _stock.GetGlEntriesByVoucherIdAsync(receipt.Id, token))
+                .Where(r => r.VoucherType == ReceiptVoucherType)
+                .ToList();
+
+            plan.GlReversals.AddRange(BuildReversalRows(receiptGlRows));
+        }
+
+        return plan;
+    }
+
+    /// <summary>Buffered unwind output: receipt GL mirrors first-class with the invoice mirror, then the Kardex negations.</summary>
+    private sealed class ReceiptUnwindPlan
+    {
+        public List<GLEntry> GlReversals { get; } = new();
+
+        public List<StockLedgerEntry> SleReversals { get; } = new();
     }
 
     /// <summary>

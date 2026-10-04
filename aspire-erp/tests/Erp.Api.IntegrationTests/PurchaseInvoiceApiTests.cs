@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Data.SqlClient;
 using Xunit;
 
 namespace Erp.Api.IntegrationTests;
@@ -183,6 +184,58 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
             0m,
             rows.Where(row => row.AccountCode == PayableAccountCode)
                 .Sum(row => row.Debit - row.Credit));
+    }
+
+    /// <summary>
+    /// Spec BY-05 third clause (W1): cancelling the bill also unwinds the physical stock intake
+    /// of the receipt behind it. Receipt (10 IT-001 @ $100) -&gt; invoice -&gt; cancel restores the
+    /// WH-01 on-hand to its pre-receipt value (provisioning-neutral: receipt +10, unwind -10),
+    /// keeps the original intake Kardex row unflagged next to its negated reversal, and nets the
+    /// receipt's GL rows to zero per account - proven through the item-list and Kardex oracles,
+    /// not the cancel response body.
+    /// </summary>
+    [Fact]
+    public async Task Cancel_PostedInvoice_AlsoReversesReceiptStockIntakeAndGl()
+    {
+        using var client = CreateClient();
+        var onHandBefore = await ReadOnHandAsync(client);
+
+        var receipt = await PostStandaloneReceiptWithIdentityAsync(client);
+        Assert.Equal(onHandBefore + Qty, await ReadOnHandAsync(client));
+
+        var posted = await CreatePostedInvoiceAsync(client, BillNumber(), receiptLineId: receipt.ReceiptLineId);
+
+        using var cancelResponse = await PostRawAsync(
+            client,
+            $"/api/v1/purchaseinvoices/{posted.Id}/cancel?companyId={ErpApiFactory.DevCompanyId}",
+            "{}",
+            Guid.NewGuid().ToString("N"));
+        Assert.Equal(HttpStatusCode.OK, cancelResponse.StatusCode);
+
+        // The physical intake is undone: on-hand lands back on its pre-receipt value.
+        Assert.Equal(onHandBefore, await ReadOnHandAsync(client));
+
+        // ...without deleting history: the original intake row is still there, unflagged, and the
+        // negated compensating row was APPENDED next to it.
+        var kardex = await ReadKardexAsync(receipt.VoucherNo);
+        Assert.Equal(2, kardex.Count);
+        Assert.Contains(kardex, row => row.QtyChange == Qty && !row.IsCancelled);
+        Assert.Contains(kardex, row => row.QtyChange == -Qty && row.IsCancelled);
+        Assert.Equal(0m, kardex.Sum(row => row.QtyChange));
+
+        // The receipt's GL pair nets to zero per account: 2 originals + 2 swapped reversals.
+        var receiptRows = await ReadVoucherLedgerAsync(client, receipt.ReceiptId, "PurchaseReceipt");
+        Assert.Equal(4, receiptRows.Count);
+        Assert.Equal(2, receiptRows.Count(row => !row.IsCancelled));
+        Assert.Equal(2, receiptRows.Count(row => row.IsCancelled));
+        Assert.All(
+            receiptRows.GroupBy(row => row.AccountId),
+            group => Assert.Equal(
+                group.Sum(row => row.Debit),
+                group.Sum(row => row.Credit)));
+
+        // The invoice's own mirror is unaffected by the unwind: still its 3 + 3 rows.
+        Assert.Equal(6, (await ReadVoucherLedgerAsync(client, posted.Id)).Count);
     }
 
     /// <summary>
@@ -389,7 +442,15 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
     /// its first line - extracted so a test can build its OWN chain (e.g. a duplicate bill number
     /// attempt, verify W9) without asserting the invoice outcome.
     /// </summary>
-    private static async Task<Guid> PostStandaloneReceiptAsync(HttpClient client)
+    private static async Task<Guid> PostStandaloneReceiptAsync(HttpClient client) =>
+        (await PostStandaloneReceiptWithIdentityAsync(client)).ReceiptLineId;
+
+    /// <summary>
+    /// Posts one standalone receipt (no purchase order) and returns its database identity: the
+    /// receipt id (GL oracle input), its gapless voucher number (Kardex oracle input) and the id
+    /// of its first line (the three-way match anchor an invoice bills).
+    /// </summary>
+    private static async Task<PostedReceipt> PostStandaloneReceiptWithIdentityAsync(HttpClient client)
     {
         var payload = SerializePayload(new
         {
@@ -409,7 +470,11 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
             $"Receipt POST {(int)response.StatusCode}: {Encoding.UTF8.GetString(bytes)}");
 
         var posting = JsonNode.Parse(Encoding.UTF8.GetString(bytes))!;
-        return posting["receipt"]!["lines"]![0]!["id"]!.GetValue<Guid>();
+        var receipt = posting["receipt"]!;
+        return new PostedReceipt(
+            receipt["id"]!.GetValue<Guid>(),
+            receipt["voucherNo"]!.GetValue<string>(),
+            receipt["lines"]![0]!["id"]!.GetValue<Guid>());
     }
 
     /// <summary>
@@ -428,7 +493,8 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
     private async Task<PostedInvoice> CreatePostedInvoiceAsync(
         HttpClient client,
         string billNumber,
-        string? invoiceIdempotencyKey = null)
+        string? invoiceIdempotencyKey = null,
+        Guid? receiptLineId = null)
     {
         var postingDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -436,7 +502,9 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
         // supplies one (the replay scenario reuses the FIRST key on purpose).
         invoiceIdempotencyKey ??= Guid.NewGuid().ToString("N");
 
-        var receiptLineId = await PostStandaloneReceiptAsync(client);
+        // Most tests post their own receipt inline; the unwind test passes the line it already
+        // asserted the on-hand movement against, so both legs share ONE receipt.
+        receiptLineId ??= await PostStandaloneReceiptAsync(client);
 
         var invoicePayload = SerializePayload(new
         {
@@ -570,6 +638,59 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
         string RawRequestBody,
         byte[] ResponseBody,
         HttpStatusCode Status);
+
+    /// <summary>The posted receipt: GL oracle input, Kardex oracle input and the billed line.</summary>
+    private sealed record PostedReceipt(
+        Guid ReceiptId,
+        string VoucherNo,
+        Guid ReceiptLineId);
+
+    /// <summary>
+    /// Current IT-001 on-hand quantity in WH-01 through the item list oracle
+    /// (GET /api/v1/items: per-warehouse SUM of the Kardex rows).
+    /// </summary>
+    private static async Task<decimal> ReadOnHandAsync(HttpClient client)
+    {
+        using var response = await client.GetAsync(
+            $"/api/v1/items?companyId={ErpApiFactory.DevCompanyId}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var items = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsArray();
+        var item = items.Single(node => string.Equals(
+            node!["id"]!.GetValue<string>(),
+            ItemId.ToString(),
+            StringComparison.OrdinalIgnoreCase));
+
+        var stock = item!["stock"]!.AsArray().Single(node => string.Equals(
+            node!["warehouseId"]!.GetValue<string>(),
+            WarehouseId.ToString(),
+            StringComparison.OrdinalIgnoreCase));
+
+        return stock!["qty"]!.GetValue<decimal>();
+    }
+
+    private sealed record KardexRow(decimal QtyChange, bool IsCancelled);
+
+    /// <summary>Every Kardex row of the receipt voucher, originals and reversals alike (append-only view).</summary>
+    private static async Task<List<KardexRow>> ReadKardexAsync(string voucherNo)
+    {
+        using var connection = new SqlConnection(ErpApiFactory.DevConnectionString);
+        await connection.OpenAsync();
+
+        await using var command = new SqlCommand(
+            "SELECT [QtyChange], [IsCancelled] FROM [dbo].[StockLedgerEntry] " +
+            "WHERE [VoucherNo] = @VoucherNo;", connection);
+        command.Parameters.AddWithValue("@VoucherNo", voucherNo);
+
+        var rows = new List<KardexRow>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            rows.Add(new KardexRow(reader.GetDecimal(0), reader.GetBoolean(1)));
+        }
+
+        return rows;
+    }
 
     /// <summary>Projection of one general-ledger report entry.</summary>
     private sealed record LedgerRow(

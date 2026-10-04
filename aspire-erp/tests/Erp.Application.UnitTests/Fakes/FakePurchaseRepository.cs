@@ -36,12 +36,31 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
     /// <summary>Pre-loads an invoice (cancellation tests start from an already-posted bill).</summary>
     public void SeedInvoice(params PurchaseInvoice[] invoices) => _invoices.AddRange(invoices);
 
-    public Task<T> ExecuteInTransactionAsync<T>(
+    public async Task<T> ExecuteInTransactionAsync<T>(
         Func<CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken = default)
     {
         TransactionCount++;
-        return operation(cancellationToken);
+
+        // The real repository rolls the whole transaction back when the operation throws; the
+        // in-memory fake models that for the header mutations the cancel path performs BEFORE its
+        // gates (status + outstanding), so rejection tests can assert the bill is untouched.
+        var snapshot = _invoices.Select(i => (Invoice: i, i.Status, i.OutstandingAmount)).ToList();
+
+        try
+        {
+            return await operation(cancellationToken);
+        }
+        catch
+        {
+            foreach (var (invoice, status, outstanding) in snapshot)
+            {
+                invoice.Status = status;
+                invoice.OutstandingAmount = outstanding;
+            }
+
+            throw;
+        }
     }
 
     public Task<string> NextOrderVoucherNumberAsync(

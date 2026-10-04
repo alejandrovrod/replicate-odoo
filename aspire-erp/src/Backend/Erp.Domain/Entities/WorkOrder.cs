@@ -82,6 +82,16 @@ public class WorkOrder : ITenantEntity
 
     public DateOnly? ActualEndDate { get; set; }
 
+    /// <summary>
+    /// The MF-02 Stores -&gt; WIP transfer voucher (<c>StockEntry</c> id) posted for this order,
+    /// stamped by the transfer handler inside the same transaction (Task 9.6, decision: option
+    /// (a)). The cancellation handler reverses exactly this voucher with a compensating
+    /// WIP -&gt; Stores transfer; null means no transfer was ever posted (pure status cancel).
+    /// Single link by design: partial multi-voucher staging stays deferred, so one order holds
+    /// at most one transfer voucher.
+    /// </summary>
+    public Guid? TransferStockEntryId { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>

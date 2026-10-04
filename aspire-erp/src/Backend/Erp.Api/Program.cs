@@ -20,6 +20,7 @@ using Erp.Application.Features.Selling.Queries;
 using Erp.Application.Features.Stock.Commands;
 using Erp.Application.Features.Stock.Queries;
 using Erp.Application.Features.Manufacturing.Commands;
+using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
 using Erp.Application.Services;
@@ -172,9 +173,10 @@ builder.Services.AddScoped<ICommandHandler<CreateVoucherFromBankTransactionComma
 builder.Services.AddScoped<IQueryHandler<GetBankTransactionsQuery, IReadOnlyList<BankTransactionDto>>, GetBankTransactionsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBankTransactionRulesQuery, IReadOnlyList<BankTransactionRuleDto>>, GetBankTransactionRulesQueryHandler>();
 
-// Manufacturing (Block A masters + Block B work-order workflow and postings, tasks 9.1-9.4):
-// the master/workflow repository, the manufacture posting engine and the four commands behind
-// the work-orders controller. Same split as every other module: repository in
+// Manufacturing (Block A masters + Block B work-order workflow and postings, tasks 9.1-9.4,
+// plus the Block C cancel/reversal and UI reads, tasks 9.5-9.7):
+// the master/workflow repository, the manufacture posting engine and the commands/queries
+// behind the work-orders and BOMs controllers. Same split as every other module: repository in
 // Erp.Infrastructure, handlers and services in Erp.Application - only the composition root
 // knows both (decision C2).
 builder.Services.AddScoped<IManufacturingRepository, ManufacturingRepository>();
@@ -183,6 +185,10 @@ builder.Services.AddScoped<ICommandHandler<CreateWorkOrderCommand, Result<WorkOr
 builder.Services.AddScoped<ICommandHandler<SubmitWorkOrderCommand, Result<WorkOrderDto>>, SubmitWorkOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<TransferMaterialsToWipCommand, Result<StockEntryPostingDto>>, TransferMaterialsToWipCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CompleteManufactureCommand, Result<StockEntryPostingDto>>, CompleteManufactureCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelWorkOrderCommand, Result<WorkOrderDto>>, CancelWorkOrderCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBomsQuery, IReadOnlyList<BomDto>>, GetBomsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBomDetailQuery, BomDto?>, GetBomDetailQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetWorkOrdersQuery, IReadOnlyList<WorkOrderDto>>, GetWorkOrdersQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

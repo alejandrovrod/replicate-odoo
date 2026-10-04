@@ -61,6 +61,14 @@ public sealed class SubmitWorkOrderCommandHandler
                     $"BOM '{bom.BomNumber}' is not the default recipe and cannot authorize production of work order '{order.OrderNumber}'.");
             }
 
+            // Task 9.7 transitive closure: walk the WO BOM's components through THEIR default
+            // active BOMs (only recipes that could authorize production matter). A chain leading
+            // back to the finished item - or any repeat - closes a multi-level loop
+            // (circular_reference, zero writes: the transition below never runs). A diamond
+            // (shared sub-component, no loop) passes: the visited set is the CURRENT path, so a
+            // component reached twice through different branches is legal.
+            await EnsureNoTransitiveCycleAsync(order.ProductionItemId, bom, cancellationToken);
+
             order.Submit();
             await _manufacturing.UpdateWorkOrderAsync(order, cancellationToken);
 
@@ -74,6 +82,41 @@ public sealed class SubmitWorkOrderCommandHandler
         {
             // Spec MF-06: the order changed under our feet (RowVersion mismatch on save).
             return Result<WorkOrderDto>.Failure(ex.Code, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Depth-first walk over default active BOMs starting at the work order's recipe. Each frame
+    /// carries its own ancestor chain (root finished item first), and every component is checked
+    /// through <see cref="BomValidator.EnsureNoCycle"/> - the Task 9.2 plug-in point, same
+    /// ancestor-id-list shape as the Account/Warehouse tree walks. Iterative (explicit stack),
+    /// so a deep recipe ladder cannot overflow the call stack.
+    /// </summary>
+    private async Task EnsureNoTransitiveCycleAsync(
+        Guid rootFinishedItemId,
+        BillOfMaterials rootBom,
+        CancellationToken cancellationToken)
+    {
+        var stack = new Stack<(BillOfMaterials Bom, List<Guid> Ancestors)>();
+        stack.Push((rootBom, new List<Guid> { rootFinishedItemId }));
+
+        while (stack.Count > 0)
+        {
+            var (bom, ancestors) = stack.Pop();
+
+            foreach (var line in bom.Items)
+            {
+                BomValidator.EnsureNoCycle(line.ItemId, ancestors);
+
+                var child = await _manufacturing.GetDefaultActiveBomByItemIdAsync(line.ItemId, cancellationToken);
+                if (child is not null)
+                {
+                    var childAncestors = new List<Guid>(ancestors.Count + 1);
+                    childAncestors.AddRange(ancestors);
+                    childAncestors.Add(line.ItemId);
+                    stack.Push((child, childAncestors));
+                }
+            }
         }
     }
 }

@@ -109,6 +109,26 @@ public sealed class ManufacturingRepository : IManufacturingRepository
             .Include(e => e.Operations)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
+    public async Task<BillOfMaterials?> GetDefaultActiveBomByItemIdAsync(Guid itemId, CancellationToken cancellationToken = default)
+        => await _dbContext.BillsOfMaterials
+            .Include(e => e.Items)
+            .Include(e => e.Operations)
+            .FirstOrDefaultAsync(e => e.ItemId == itemId && e.IsActive && e.IsDefault, cancellationToken);
+
+    public async Task<IReadOnlyList<BillOfMaterials>> ListBomsAsync(Guid companyId, CancellationToken cancellationToken = default)
+        => await _dbContext.BillsOfMaterials
+            .Include(e => e.Items)
+            .Include(e => e.Operations)
+            .Where(e => e.CompanyId == companyId)
+            .OrderBy(e => e.BomNumber)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<WorkOrder>> ListWorkOrdersAsync(Guid companyId, CancellationToken cancellationToken = default)
+        => await _dbContext.WorkOrders
+            .Where(e => e.CompanyId == companyId)
+            .OrderByDescending(e => e.CreatedAt)
+            .ToListAsync(cancellationToken);
+
     public async Task<WorkOrder?> GetWorkOrderByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.WorkOrders.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 

@@ -54,6 +54,17 @@ public sealed class FakeManufacturingRepository : IManufacturingRepository
     public Task<BillOfMaterials?> GetBomByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(_boms.FirstOrDefault(b => b.Id == id));
 
+    public Task<BillOfMaterials?> GetDefaultActiveBomByItemIdAsync(Guid itemId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_boms.FirstOrDefault(b => b.ItemId == itemId && b.IsActive && b.IsDefault));
+
+    public Task<IReadOnlyList<BillOfMaterials>> ListBomsAsync(Guid companyId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<BillOfMaterials>>(
+            _boms.Where(b => b.CompanyId == companyId).OrderBy(b => b.BomNumber).ToList());
+
+    public Task<IReadOnlyList<WorkOrder>> ListWorkOrdersAsync(Guid companyId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<WorkOrder>>(
+            _workOrders.Where(o => o.CompanyId == companyId).OrderByDescending(o => o.CreatedAt).ToList());
+
     public Task<WorkOrder?> GetWorkOrderByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(_workOrders.FirstOrDefault(o => o.Id == id));
 

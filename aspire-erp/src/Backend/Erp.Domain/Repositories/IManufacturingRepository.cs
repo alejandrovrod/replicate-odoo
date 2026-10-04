@@ -35,6 +35,19 @@ public interface IManufacturingRepository
     /// <summary>Gets a BOM by its ID, including its items and operations.</summary>
     Task<BillOfMaterials?> GetBomByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The default active recipe producing <paramref name="itemId"/> (Task 9.7 transitive-cycle
+    /// walk at work-order submit). Null when the component is a purchased leaf with no recipe.
+    /// When several default active BOMs exist, the first one wins (uniqueness unenforced).
+    /// </summary>
+    Task<BillOfMaterials?> GetDefaultActiveBomByItemIdAsync(Guid itemId, CancellationToken cancellationToken = default);
+
+    /// <summary>Lists one company's BOM headers with their items and operations (Task 9.5 UI reads).</summary>
+    Task<IReadOnlyList<BillOfMaterials>> ListBomsAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>Lists one company's work-order headers (Task 9.5 execution board reads).</summary>
+    Task<IReadOnlyList<WorkOrder>> ListWorkOrdersAsync(Guid companyId, CancellationToken cancellationToken = default);
+
     /// <summary>Gets a work order by its ID (header only - the aggregate carries no lines).</summary>
     Task<WorkOrder?> GetWorkOrderByIdAsync(Guid id, CancellationToken cancellationToken = default);
 

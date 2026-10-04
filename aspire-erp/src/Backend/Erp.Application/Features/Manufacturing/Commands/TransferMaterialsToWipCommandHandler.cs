@@ -84,6 +84,11 @@ public sealed class TransferMaterialsToWipCommandHandler
 
                 order.StartProduction();
                 order.ActualStartDate = postingDate;
+
+                // Task 9.6 linkage (option (a)): remember the MF-02 voucher so the cancellation
+                // handler can reverse exactly it. Same ambient transaction - link and posting
+                // commit together or not at all.
+                order.TransferStockEntryId = result.Entry.Id;
                 await _manufacturing.UpdateWorkOrderAsync(order, token);
 
                 return result;

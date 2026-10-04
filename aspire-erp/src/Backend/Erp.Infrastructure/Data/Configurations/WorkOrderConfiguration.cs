@@ -43,6 +43,9 @@ public sealed class WorkOrderConfiguration : IEntityTypeConfiguration<WorkOrder>
         builder.Property(o => o.PlannedEndDate).HasColumnType("date").IsRequired();
         builder.Property(o => o.ActualStartDate).HasColumnType("date");
         builder.Property(o => o.ActualEndDate).HasColumnType("date");
+        // Task 9.6 linkage (option (a)): the MF-02 transfer voucher this order reverses on
+        // cancel. Nullable - a never-transferred order cancels as a pure status transition.
+        builder.Property(o => o.TransferStockEntryId);
         builder.Property(o => o.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(o => o.ProductionItem)

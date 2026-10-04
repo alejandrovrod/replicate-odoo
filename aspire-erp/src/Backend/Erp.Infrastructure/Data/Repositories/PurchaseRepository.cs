@@ -161,6 +161,40 @@ public sealed class PurchaseRepository : IPurchaseRepository
         }
     }
 
+    public async Task ReplaceOrderItemsAsync(
+        PurchaseOrder order,
+        IReadOnlyList<PurchaseOrderItem> newItems,
+        CancellationToken cancellationToken = default)
+    {
+        // Explicit states (see IPurchaseRepository.ReplaceOrderItemsAsync): a bare
+        // order.Items.Clear() + re-add would leave the new lines tracked as Modified - EF then
+        // issues UPDATE ... WHERE Id = <fresh Guid> against rows that do not exist yet, reads 0
+        // affected rows and raises DbUpdateConcurrencyException (a spurious 409). Marking the old
+        // lines Deleted and the new ones Added is the same explicit path AddOrderAsync takes at
+        // creation. The header edits stay tracked and commit in the same SaveChanges.
+        foreach (var line in order.Items.ToList())
+        {
+            _dbContext.Entry(line).State = EntityState.Deleted;
+        }
+
+        order.Items.Clear();
+
+        foreach (var line in newItems)
+        {
+            order.Items.Add(line);
+            _dbContext.Entry(line).State = EntityState.Added;
+        }
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(nameof(PurchaseOrder), order.Id, ex);
+        }
+    }
+
     public async Task AddReceiptAsync(PurchaseReceipt receipt, CancellationToken cancellationToken = default)
     {
         await _dbContext.PurchaseReceipts.AddAsync(receipt, cancellationToken);

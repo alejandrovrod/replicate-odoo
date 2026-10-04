@@ -75,14 +75,8 @@ public sealed class UpdatePurchaseOrderCommandHandler
             order.NetTotal = netTotal;
             order.GrandTotal = netTotal;
 
-            order.Items.Clear();
             var newItems = BuildItems(command.Items!, items);
-            foreach (var ni in newItems)
-            {
-                order.Items.Add(ni);
-            }
-
-            await _purchases.UpdateOrderAsync(order, cancellationToken);
+            await _purchases.ReplaceOrderItemsAsync(order, newItems, cancellationToken);
 
             return Result<PurchaseOrderDto>.Success(PurchaseOrderDto.Build(order, supplier, items));
         }

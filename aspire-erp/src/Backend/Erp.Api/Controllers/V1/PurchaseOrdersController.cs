@@ -132,21 +132,24 @@ public sealed class PurchaseOrdersController : ControllerBase
         var error = result.Error!;
         return error.Code switch
         {
-            PurchaseErrorCodes.PurchaseOrderNotFound or PurchaseErrorCodes.CompanyNotFound or PurchaseErrorCodes.SupplierNotFound => NotFound(
-                Problem(
-                    statusCode: StatusCodes.Status404NotFound,
-                    title: "Resource Not Found",
-                    detail: error.Message)),
-            PurchaseErrorCodes.InvalidStatusTransition or ConcurrencyErrorCodes.ConcurrencyConflict => Conflict(
-                Problem(
-                    statusCode: StatusCodes.Status409Conflict,
-                    title: "Conflict",
-                    detail: error.Message)),
-            _ => BadRequest(
-                Problem(
-                    statusCode: StatusCodes.Status400BadRequest,
-                    title: "Bad Request",
-                    detail: error.Message)),
+            // Return the ObjectResult as-is: wrapping it again (NotFound(Problem(...))) would
+            // serialize the inner result as a nested { value, formatters, ... } envelope instead
+            // of the RFC 7807 body the client's ProblemDetails handling expects.
+            PurchaseErrorCodes.PurchaseOrderNotFound or PurchaseErrorCodes.CompanyNotFound or PurchaseErrorCodes.SupplierNotFound => Problem(
+                StatusCodes.Status404NotFound,
+                "Resource Not Found",
+                error.Message,
+                error.Code),
+            PurchaseErrorCodes.InvalidStatusTransition or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                StatusCodes.Status409Conflict,
+                "Conflict",
+                error.Message,
+                error.Code),
+            _ => Problem(
+                StatusCodes.Status400BadRequest,
+                "Bad Request",
+                error.Message,
+                error.Code),
         };
     }
 

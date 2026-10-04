@@ -89,6 +89,25 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// In-memory line rewrite: the entity instance IS the store, so swapping the collection is the
+    /// equivalent of production's explicit Deleted/Added states (old lines out, new lines in) -
+    /// totals stay the handler's responsibility.
+    /// </summary>
+    public Task ReplaceOrderItemsAsync(
+        PurchaseOrder order,
+        IReadOnlyList<PurchaseOrderItem> newItems,
+        CancellationToken cancellationToken = default)
+    {
+        order.Items.Clear();
+        foreach (var item in newItems)
+        {
+            order.Items.Add(item);
+        }
+
+        return Task.CompletedTask;
+    }
+
     public Task AddReceiptAsync(PurchaseReceipt receipt, CancellationToken cancellationToken = default)
     {
         receipt.PurchaseOrder = _orders.FirstOrDefault(o => o.Id == receipt.PurchaseOrderId);

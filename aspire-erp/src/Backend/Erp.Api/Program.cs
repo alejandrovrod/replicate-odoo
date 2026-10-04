@@ -86,6 +86,7 @@ builder.Services.AddScoped<IPurchasePostingService, PurchasePostingService>();
 builder.Services.AddScoped<ICommandHandler<CreateSupplierCommand, Result<SupplierDto>>, CreateSupplierCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetSuppliersQuery, IReadOnlyList<SupplierDto>>, GetSuppliersQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreatePurchaseOrderCommand, Result<PurchaseOrderDto>>, CreatePurchaseOrderCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdatePurchaseOrderCommand, Result<PurchaseOrderDto>>, UpdatePurchaseOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitPurchaseOrderCommand, Result<PurchaseOrderDto>>, SubmitPurchaseOrderCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPurchaseOrdersQuery, IReadOnlyList<PurchaseOrderDto>>, GetPurchaseOrdersQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<PostPurchaseReceiptCommand, Result<PurchaseReceiptPostingDto>>, PostPurchaseReceiptCommandHandler>();

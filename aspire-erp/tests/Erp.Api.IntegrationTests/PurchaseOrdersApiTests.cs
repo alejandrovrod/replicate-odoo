@@ -12,7 +12,10 @@ namespace Erp.Api.IntegrationTests;
 /// <c>SELECT MAX(VoucherNo) FROM dbo.PurchaseOrder</c> while that table stores its gapless
 /// sequence in <c>OrderNumber</c> (SQL error 207, invalid column name). The column is now
 /// parameterized exactly like <c>SalesRepository.OrderColumn</c>, so creation must answer 201
-/// with sequential <c>PO-YYYY-NNNNN</c> numbers.
+/// with sequential <c>PO-YYYY-NNNNN</c> numbers. It also carries the Task 4.2 workflow evidence:
+/// the Draft-only PUT line rewrite and the 409 it must answer once the order is Submitted - the
+/// endpoint whose handler had no DI registration (Program.cs registers every handler explicitly,
+/// there is no assembly scanning), so PUT used to fail before reaching the domain at all.
 /// </summary>
 /// <remarks>
 /// The defect went unnoticed because no integration test ever created an order: unit tests run on
@@ -71,6 +74,70 @@ public class PurchaseOrdersApiTests : IClassFixture<ErpApiFactory>
         Assert.Equal(int.Parse(firstNumber[^5..]) + 1, int.Parse(secondNumber[^5..]));
     }
 
+    /// <summary>
+    /// A Draft order accepts a full line rewrite (Task 4.2): header totals are recalculated from
+    /// the new lines while the order number and the Draft birth state stay untouched. The 200
+    /// itself is the proof that <c>UpdatePurchaseOrderCommandHandler</c> resolves from DI.
+    /// </summary>
+    [Fact]
+    public async Task Update_DraftOrder_RewritesLinesAndRecalculatesTotals()
+    {
+        using var client = CreateClient();
+        var created = await CreateOrderAsync(client); // 10 x 5 = 50
+        var orderId = created["id"]!.GetValue<Guid>();
+
+        using var response = await PutOrderAsync(client, orderId, quantity: 7m, rate: 8m);
+
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(
+            response.StatusCode == HttpStatusCode.OK,
+            $"Order PUT {(int)response.StatusCode}: {body}");
+
+        var updated = (JsonObject)JsonNode.Parse(body)!;
+        Assert.Equal(created["orderNumber"]!.GetValue<string>(), updated["orderNumber"]!.GetValue<string>());
+        Assert.Equal("Draft", updated["status"]!.GetValue<string>());
+
+        Assert.Equal(56m, updated["netTotal"]!.GetValue<decimal>());
+        Assert.Equal(56m, updated["grandTotal"]!.GetValue<decimal>());
+
+        var line = Assert.Single(updated["items"]!.AsArray())!;
+        Assert.Equal(7m, line["quantity"]!.GetValue<decimal>());
+        Assert.Equal(8m, line["rate"]!.GetValue<decimal>());
+        Assert.Equal(56m, line["amount"]!.GetValue<decimal>());
+    }
+
+    /// <summary>
+    /// Task 4.2 acceptance: line items cannot be altered once submitted. After the
+    /// Draft -&gt; Submitted transition the very same PUT is a 409 (<c>invalid_status_transition</c>)
+    /// and the stored lines remain the ones the submit froze.
+    /// </summary>
+    [Fact]
+    public async Task Update_AfterSubmit_Returns409InvalidStatusTransition()
+    {
+        using var client = CreateClient();
+        var created = await CreateOrderAsync(client);
+        var orderId = created["id"]!.GetValue<Guid>();
+
+        using var submit = await client.PostAsync(
+            $"/api/v1/purchaseorders/{orderId}/submit?companyId={ErpApiFactory.DevCompanyId}",
+            new StringContent(string.Empty, Encoding.UTF8, "application/json"));
+
+        var submitBody = await submit.Content.ReadAsStringAsync();
+        Assert.True(
+            submit.StatusCode == HttpStatusCode.OK,
+            $"Order submit {(int)submit.StatusCode}: {submitBody}");
+        Assert.Equal("Submitted", JsonNode.Parse(submitBody)!["status"]!.GetValue<string>());
+
+        using var response = await PutOrderAsync(client, orderId, quantity: 99m, rate: 1m);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var problem = (JsonObject)JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
+        Assert.Equal(409, problem["status"]!.GetValue<int>());
+        Assert.Equal("Conflict", problem["title"]!.GetValue<string>());
+        Assert.Equal("invalid_status_transition", problem["code"]!.GetValue<string>());
+        Assert.False(string.IsNullOrWhiteSpace(problem["detail"]?.GetValue<string>()));
+    }
+
     // ------------------------------------------------------------------------------- helpers
 
     /// <summary>Tenant-scoped client (X-Tenant-ID only - see ErpApiFactory remarks on auth).</summary>
@@ -107,6 +174,32 @@ public class PurchaseOrdersApiTests : IClassFixture<ErpApiFactory>
             $"Order POST {(int)response.StatusCode}: {body}");
 
         return (JsonObject)JsonNode.Parse(body)!;
+    }
+
+    /// <summary>
+    /// PUTs one Draft rewrite for the given order: the route id and the companyId query parameter
+    /// must match the body, otherwise the endpoint answers 400 before the handler runs.
+    /// </summary>
+    private Task<HttpResponseMessage> PutOrderAsync(
+        HttpClient client,
+        Guid orderId,
+        decimal quantity,
+        decimal rate)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var payload = SerializePayload(new
+        {
+            companyId = ErpApiFactory.DevCompanyId,
+            purchaseOrderId = orderId,
+            supplierId = SupplierId,
+            transactionDate = Format(today),
+            scheduleDate = Format(today.AddDays(14)),
+            items = new[] { new { itemId = ItemId, quantity, rate } },
+        });
+
+        return client.PutAsync(
+            $"/api/v1/purchaseorders/{orderId}?companyId={ErpApiFactory.DevCompanyId}",
+            new StringContent(payload, Encoding.UTF8, "application/json"));
     }
 
     /// <summary>Serializes with the web defaults MVC uses, so the body matches what the API binds.</summary>

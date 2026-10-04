@@ -40,6 +40,16 @@ public interface IPurchaseRepository
     /// <summary>Saves workflow status transitions of an already-tracked order (inside the ambient transaction).</summary>
     Task UpdateOrderAsync(PurchaseOrder order, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Rewrites the lines of a tracked order in the same save as the header changes (Task 4.2
+    /// Draft update): the current lines are deleted and <paramref name="newItems"/> inserted with
+    /// explicit change-tracked states. Explicit states are mandatory - lines discovered only
+    /// through the collection navigation are tracked as Modified (the Id is store-generated and
+    /// set client-side), which turns the insert into an UPDATE that matches zero rows and would
+    /// surface as a spurious 409.
+    /// </summary>
+    Task ReplaceOrderItemsAsync(PurchaseOrder order, IReadOnlyList<PurchaseOrderItem> newItems, CancellationToken cancellationToken = default);
+
     /// <summary>Persists a posted purchase receipt with its lines (inside the ambient posting transaction).</summary>
     Task AddReceiptAsync(PurchaseReceipt receipt, CancellationToken cancellationToken = default);
 

@@ -153,7 +153,8 @@ public sealed class PurchaseInvoicesController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4) and answers 200 on a replay
-    /// (spec BY-04). The body is OPTIONAL - only an optimistic concurrency token.
+    /// (spec BY-04). The body is OPTIONAL - only an optimistic concurrency token, exposed as
+    /// <c>rowVersion</c> on the invoice DTO (GET/POST responses).
     /// </remarks>
     /// <param name="id">Purchase invoice id.</param>
     /// <param name="companyId">Company that owns the invoice.</param>

@@ -215,6 +215,44 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
     }
 
     /// <summary>
+    /// Verify W8: the cancel endpoint accepts an optional <c>rowVersion</c> optimistic token, so
+    /// the API must EXPOSE it. The token read from the create response cancels cleanly (200), while
+    /// a stale token is a 409 <c>concurrency_conflict</c> - never a silent accept.
+    /// </summary>
+    [Fact]
+    public async Task Cancel_WithRowVersionFromCreate_Succeeds_AndStaleTokenConflicts()
+    {
+        using var client = CreateClient();
+
+        var posted = await CreatePostedInvoiceAsync(client, BillNumber());
+        var rowVersion = posted.Body["rowVersion"]!.GetValue<string>();
+        Assert.False(string.IsNullOrEmpty(rowVersion), "PurchaseInvoiceDto must expose rowVersion.");
+
+        using var ok = await PostRawAsync(
+            client,
+            $"/api/v1/purchaseinvoices/{posted.Id}/cancel?companyId={ErpApiFactory.DevCompanyId}",
+            SerializePayload(new { rowVersion }),
+            Guid.NewGuid().ToString("N"));
+
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        var cancelled = JsonNode.Parse(await ok.Content.ReadAsStringAsync())!;
+        Assert.Equal("Cancelled", cancelled["status"]!.GetValue<string>());
+
+        // A stale token (bytes that are NOT the invoice's current rowversion) must conflict.
+        var other = await CreatePostedInvoiceAsync(client, BillNumber());
+        var stale = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+
+        using var conflict = await PostRawAsync(
+            client,
+            $"/api/v1/purchaseinvoices/{other.Id}/cancel?companyId={ErpApiFactory.DevCompanyId}",
+            SerializePayload(new { rowVersion = stale }),
+            Guid.NewGuid().ToString("N"));
+
+        var problem = await AssertProblemAsync(conflict, HttpStatusCode.Conflict);
+        Assert.Equal("concurrency_conflict", problem["code"]!.GetValue<string>());
+    }
+
+    /// <summary>
     /// The endpoint is a guarded mutation and hides unknown ids: no <c>Idempotency-Key</c> is 400,
     /// an id that does not exist in this tenant is 404 <c>purchase_invoice_not_found</c>.
     /// </summary>

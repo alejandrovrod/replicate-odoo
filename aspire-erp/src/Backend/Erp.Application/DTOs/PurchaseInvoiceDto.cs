@@ -27,6 +27,7 @@ public sealed record PurchaseInvoiceDto(
     decimal GrandTotal,
     decimal OutstandingAmount,
     string VoucherNo,
+    string RowVersion,
     DateTimeOffset CreatedAt,
     IReadOnlyList<PurchaseInvoiceLineDto> Lines)
 {
@@ -63,6 +64,12 @@ public sealed record PurchaseInvoiceDto(
             invoice.GrandTotal,
             invoice.OutstandingAmount,
             invoice.VoucherNo,
+
+            // Optimistic concurrency token (verify W8): the cancel endpoint accepts an optional
+            // rowVersion, so the API MUST expose it - base64, mirroring JournalEntryDto.
+            invoice.RowVersion is null || invoice.RowVersion.Length == 0
+                ? string.Empty
+                : Convert.ToBase64String(invoice.RowVersion),
             invoice.CreatedAt,
             lines);
     }

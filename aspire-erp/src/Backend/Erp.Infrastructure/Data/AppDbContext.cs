@@ -83,6 +83,14 @@ public class AppDbContext : DbContext
 
     public DbSet<BankReconciliation> BankReconciliations => Set<BankReconciliation>();
 
+    public DbSet<Workstation> Workstations => Set<Workstation>();
+
+    public DbSet<BillOfMaterials> BillsOfMaterials => Set<BillOfMaterials>();
+
+    public DbSet<BomItem> BomItems => Set<BomItem>();
+
+    public DbSet<BomOperation> BomOperations => Set<BomOperation>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

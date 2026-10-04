@@ -21,7 +21,7 @@ The **Buying Module** manages supplier relationships, purchase commitments, phys
 | **Stock Received But Not Billed** | Interim Accrual Account | Balance sheet current liability account that holds unbilled inventory intake value until the fiscal bill arrives. |
 | **3-Way Matching** | Three-Way Matching | Validation invariant ensuring agreement between: (1) Purchase Order terms, (2) Purchase Receipt quantities, and (3) Purchase Invoice amounts. |
 | **Debit Note / Purchase Return** | Debit Note | Reversal document reducing Accounts Payable and returning goods or adjusting billed variances. |
-| **Tax Withholding (Retentions)** | Tax Withholding Category | Statutory deduction withheld at payment source, creating a direct tax authority liability while reducing net payable to the supplier. |
+| **Tax Withholding (Retentions)** | Tax Withholding Category | Statutory deduction withheld at payment source, creating a direct tax authority liability while reducing net payable to the supplier. *DEFERRED — scope amendment 2026-10-04 (retro-verify W4): no withholding engine, rates, accounts or scenarios exist; see BY-02 note.* |
 
 ---
 
@@ -33,6 +33,7 @@ $$\text{Debit: Stock In Hand (Warehouse Account)} = \text{ReceivedQty} \times \t
 $$\text{Credit: Stock Received But Not Billed (Interim Liability)} = \text{ReceivedQty} \times \text{ValuationRate}$$
 
 ### Invariant BY-02: Interim Liability Clearance & Payable Recognition
+> **DEFERRED (withholding term only) — scope amendment 2026-10-04 (retro-verify W4):** no tax-withholding engine exists — no rates, no withholding account, no scenario exercises it. `WithholdingTaxTotal` is hard-coded `0` (`PurchasePostingService.cs:359`), so the equation below always balances with that term at zero; the A/R-clearance, input-tax and payable terms stay certified. Carry-forward flag: build the withholding engine (rates, accounts, per-line calculation) when a jurisdictional requirement exists, then re-certify this term.
 When the corresponding `PurchaseInvoice` is posted:
 $$\text{Debit: Stock Received But Not Billed} = \text{BilledQty} \times \text{ValuationRate}$$
 $$\text{Debit: Input Tax Recoverable} = \text{TaxTotal}$$
@@ -62,7 +63,7 @@ $$\text{BilledQuantity} \le \text{PurchaseReceiptItem.AcceptedQuantity} - \text{
 - **When** the accountant submits `PurchaseInvoice` `PINV-2026-0035` for 100 units @ $50.00 + $500.00 VAT
 - **Then** `GLEntry` records:
   - Debit: `2120 - Stock Received But Not Billed` ($5,000.00)
-  - Debit: `1350 - Input VAT Recoverable` ($500.00)
+  - Debit: `1130 - Input Tax Recoverable` ($500.00)
   - Credit: `2110 - Accounts Payable (Creditors)` ($5,500.00)
 - **And** the interim accrual is cleared ($0.00 balance).
 

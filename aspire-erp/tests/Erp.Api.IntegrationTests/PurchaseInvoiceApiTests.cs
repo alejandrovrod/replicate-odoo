@@ -252,6 +252,46 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
         Assert.Equal("concurrency_conflict", problem["code"]!.GetValue<string>());
     }
 
+    // ------------------------------------------------------------------------------ verify W9
+
+    /// <summary>
+    /// Verify W9: one vendor bill reference books ONCE per company. The duplicate travels on a
+    /// DIFFERENT idempotency key (so the replay layer cannot swallow it) with its own receipt,
+    /// reaches the three-way match cleanly and must surface as 409 invoice_already_exists - the
+    /// error path the controller always mapped but nothing ever threw.
+    /// </summary>
+    [Fact]
+    public async Task Create_DuplicateBillNumber_Returns409InvoiceAlreadyExists()
+    {
+        using var client = CreateClient();
+        var billNumber = BillNumber();
+
+        var first = await CreatePostedInvoiceAsync(client, billNumber);
+        Assert.Equal(HttpStatusCode.Created, first.Status);
+
+        var receiptLineId = await PostStandaloneReceiptAsync(client);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var duplicatePayload = SerializePayload(new
+        {
+            companyId = ErpApiFactory.DevCompanyId,
+            supplierId = SupplierId,
+            billNumber,
+            postingDate = Format(today),
+            dueDate = Format(today.AddDays(30)),
+            taxAmount = TaxAmount,
+            lines = new[]
+            {
+                new { purchaseReceiptLineId = receiptLineId, itemId = ItemId, qty = Qty, rate = Rate },
+            },
+        });
+
+        using var duplicate = await PostRawAsync(
+            client, "/api/v1/purchaseinvoices", duplicatePayload, Guid.NewGuid().ToString("N"));
+
+        var problem = await AssertProblemAsync(duplicate, HttpStatusCode.Conflict);
+        Assert.Equal("invoice_already_exists", problem["code"]!.GetValue<string>());
+    }
+
     /// <summary>
     /// The endpoint is a guarded mutation and hides unknown ids: no <c>Idempotency-Key</c> is 400,
     /// an id that does not exist in this tenant is 404 <c>purchase_invoice_not_found</c>.
@@ -299,6 +339,34 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
     private static string BillNumber() => $"B{Guid.NewGuid():N}";
 
     /// <summary>
+    /// Posts one standalone receipt (no purchase order) for an invoice chain and returns the id of
+    /// its first line - extracted so a test can build its OWN chain (e.g. a duplicate bill number
+    /// attempt, verify W9) without asserting the invoice outcome.
+    /// </summary>
+    private static async Task<Guid> PostStandaloneReceiptAsync(HttpClient client)
+    {
+        var payload = SerializePayload(new
+        {
+            companyId = ErpApiFactory.DevCompanyId,
+            warehouseId = WarehouseId,
+            supplierId = SupplierId,
+            postingDate = Format(DateOnly.FromDateTime(DateTime.UtcNow)),
+            lines = new[] { new { itemId = ItemId, qty = Qty, rate = Rate } },
+        });
+
+        using var response = await PostRawAsync(
+            client, "/api/v1/purchasereceipts", payload, Guid.NewGuid().ToString("N"));
+
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        Assert.True(
+            response.StatusCode == HttpStatusCode.Created,
+            $"Receipt POST {(int)response.StatusCode}: {Encoding.UTF8.GetString(bytes)}");
+
+        var posting = JsonNode.Parse(Encoding.UTF8.GetString(bytes))!;
+        return posting["receipt"]!["lines"]![0]!["id"]!.GetValue<Guid>();
+    }
+
+    /// <summary>
     /// Drives the posting chain the cancellation needs - receipt (201 + key, NO purchase order)
     /// -&gt; invoice (201 + key) - and returns the invoice payload together with the EXACT raw
     /// request body, which is what the idempotency filter hashes.
@@ -322,26 +390,7 @@ public class PurchaseInvoiceApiTests : IClassFixture<ErpApiFactory>
         // supplies one (the replay scenario reuses the FIRST key on purpose).
         invoiceIdempotencyKey ??= Guid.NewGuid().ToString("N");
 
-        var receiptPayload = SerializePayload(new
-        {
-            companyId = ErpApiFactory.DevCompanyId,
-            warehouseId = WarehouseId,
-            supplierId = SupplierId,
-            postingDate = Format(postingDate),
-            lines = new[] { new { itemId = ItemId, qty = Qty, rate = Rate } },
-        });
-
-        using var receiptResponse = await PostRawAsync(
-            client,
-            "/api/v1/purchasereceipts",
-            receiptPayload,
-            Guid.NewGuid().ToString("N"));
-        var receiptBytes = await receiptResponse.Content.ReadAsByteArrayAsync();
-        Assert.True(
-            receiptResponse.StatusCode == HttpStatusCode.Created,
-            $"Receipt POST {(int)receiptResponse.StatusCode}: {Encoding.UTF8.GetString(receiptBytes)}");
-        var receiptPosting = JsonNode.Parse(Encoding.UTF8.GetString(receiptBytes))!;
-        var receiptLineId = receiptPosting["receipt"]!["lines"]![0]!["id"]!.GetValue<Guid>();
+        var receiptLineId = await PostStandaloneReceiptAsync(client);
 
         var invoicePayload = SerializePayload(new
         {

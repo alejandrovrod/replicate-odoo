@@ -202,6 +202,11 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
         return Task.FromResult(billed);
     }
 
+    public Task<bool> InvoiceBillNumberExistsAsync(
+        Guid companyId, string billNumber, CancellationToken cancellationToken = default)
+        => Task.FromResult(_invoices.Any(
+            i => i.CompanyId == companyId && i.BillNumber == billNumber));
+
     /// <summary>Reproduces the .Include(r => r.PurchaseOrder) of the real repository.</summary>
     private PurchaseReceipt? AttachOrder(PurchaseReceipt? receipt)
     {

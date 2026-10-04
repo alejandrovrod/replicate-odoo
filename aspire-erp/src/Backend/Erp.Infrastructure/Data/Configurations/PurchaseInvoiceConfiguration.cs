@@ -58,5 +58,13 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
         // Gapless voucher lookup (Constitution III.4) - TenantId leads per Constitution IV.1.
         builder.HasIndex(i => new { i.TenantId, i.CompanyId, i.VoucherNo })
             .HasDatabaseName("IX_PurchaseInvoice_Tenant_Company_Voucher");
+
+        // Vendor bill reference books ONCE per company (verify W9): the posting pre-check is the
+        // friendly path, this index the race backstop. Filtered so blank references (legal) do
+        // not collide with each other.
+        builder.HasIndex(i => new { i.CompanyId, i.BillNumber })
+            .IsUnique()
+            .HasDatabaseName("IX_PurchaseInvoice_Company_BillNumber")
+            .HasFilter("[BillNumber] <> ''");
     }
 }

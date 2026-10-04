@@ -391,6 +391,27 @@ public sealed class PurchasePostingServiceTests
     }
 
     [Fact]
+    public async Task PostInvoiceAsync_DuplicateBillNumber_FailsWithInvoiceAlreadyExists()
+    {
+        // Verify W9: the vendor bill reference books once per company - the SECOND chain uses a
+        // fresh receipt (so the three-way match passes) but the SAME bill number, and must fail
+        // before any ledger row is written.
+        var receiptA = await PostStandardReceiptAsync();
+        await CreateService().PostInvoiceAsync(
+            NewInvoiceRequest(receiptA.Id, taxAmount: 0m, MatchLine(receiptA.Lines.Single(), rate: 100m)));
+
+        await CreateService().PostReceiptAsync(NewReceiptRequest());
+        var receiptB = _purchases.Receipts.Last();
+
+        var ex = await Assert.ThrowsAsync<PurchaseValidationException>(() =>
+            CreateService().PostInvoiceAsync(
+                NewInvoiceRequest(receiptB.Id, taxAmount: 0m, MatchLine(receiptB.Lines.Single(), rate: 100m))));
+
+        Assert.Equal(PurchaseErrorCodes.InvoiceAlreadyExists, ex.Code);
+        Assert.Single(_purchases.Invoices); // only the first bill booked
+    }
+
+    [Fact]
     public async Task PostInvoiceAsync_BilledAboveReceivedRate_DebitsPriceDifference()
     {
         var receipt = await PostStandardReceiptAsync();

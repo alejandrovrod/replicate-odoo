@@ -204,8 +204,32 @@ public sealed class PurchaseRepository : IPurchaseRepository
     public async Task AddInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default)
     {
         await _dbContext.PurchaseInvoices.AddAsync(invoice, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // IX_PurchaseInvoice_Company_BillNumber (verify W9) is the hard backstop of the
+            // duplicate-bill rule: the posting pre-check can be raced by a concurrent insert, so
+            // translate the race into the same domain failure instead of leaking an EF/SQL
+            // exception (mirrors CustomerRepository.AddAsync).
+            _dbContext.Entry(invoice).State = EntityState.Detached;
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.InvoiceAlreadyExists,
+                $"An invoice with bill number '{invoice.BillNumber}' already exists for this company.");
+        }
     }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex) =>
+        ex.InnerException is SqlException { Number: 2601 or 2627 };
+
+    public async Task<bool> InvoiceBillNumberExistsAsync(
+        Guid companyId, string billNumber, CancellationToken cancellationToken = default)
+        => await _dbContext.PurchaseInvoices.AnyAsync(
+            i => i.CompanyId == companyId && i.BillNumber == billNumber,
+            cancellationToken);
 
     public async Task UpdateInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default)
     {

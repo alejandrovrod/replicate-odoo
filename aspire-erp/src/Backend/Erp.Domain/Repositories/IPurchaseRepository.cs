@@ -76,6 +76,12 @@ public interface IPurchaseRepository
     /// <summary>Sum of all previously billed quantities for a given receipt line.</summary>
     Task<decimal> GetBilledQuantityForReceiptLineAsync(Guid purchaseReceiptLineId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// True when the company already books an invoice with this vendor bill reference (verify W9
+    /// pre-check; IX_PurchaseInvoice_Company_BillNumber remains the race backstop).
+    /// </summary>
+    Task<bool> InvoiceBillNumberExistsAsync(Guid companyId, string billNumber, CancellationToken cancellationToken = default);
+
     /// <summary>Most recent purchase invoices of a company (newest first) with lines.</summary>
     Task<IReadOnlyList<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
 

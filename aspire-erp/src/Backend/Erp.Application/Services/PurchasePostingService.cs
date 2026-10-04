@@ -275,6 +275,17 @@ public sealed class PurchasePostingService : IPurchasePostingService
                     "Invoice must cover all receipt lines exactly (full three-way match).");
             }
 
+            // Verify W9: one vendor bill reference books ONCE per company - the friendly path of
+            // the IX_PurchaseInvoice_Company_BillNumber rule (the index remains the race backstop).
+            // Blank references stay legal and do not collide (the index is filtered).
+            if (!string.IsNullOrWhiteSpace(request.BillNumber)
+                && await _purchases.InvoiceBillNumberExistsAsync(company.Id, request.BillNumber, token))
+            {
+                throw new PurchaseValidationException(
+                    PurchaseErrorCodes.InvoiceAlreadyExists,
+                    $"An invoice with bill number '{request.BillNumber}' already exists for this company.");
+            }
+
             // --- GL accounts (Constitution III.3 sanity BEFORE any write).
             var receivedAccount = await RequireAccountByCodeAsync(
                 company.Id, company.StockReceivedAccountCode, "Company.StockReceivedAccountCode", token);

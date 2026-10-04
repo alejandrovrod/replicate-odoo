@@ -21,6 +21,7 @@ using Erp.Application.Features.Stock.Commands;
 using Erp.Application.Features.Stock.Queries;
 using Erp.Application.Features.Manufacturing.Commands;
 using Erp.Application.Features.Manufacturing.Queries;
+using Erp.Application.Features.Assets.Commands;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
 using Erp.Application.Services;
@@ -189,6 +190,15 @@ builder.Services.AddScoped<ICommandHandler<CancelWorkOrderCommand, Result<WorkOr
 builder.Services.AddScoped<IQueryHandler<GetBomsQuery, IReadOnlyList<BomDto>>, GetBomsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBomDetailQuery, BomDto?>, GetBomDetailQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetWorkOrdersQuery, IReadOnlyList<WorkOrderDto>>, GetWorkOrdersQueryHandler>();
+
+// Fixed Assets (Block A masters + capitalization, tasks 10.1-10.3): the category/asset/schedule
+// repository and the commands behind the asset controllers. Same split as every other module:
+// repository in Erp.Infrastructure, handlers and DTOs in Erp.Application - only the composition
+// root knows both (decision C2). Registered from day one (banking precedent) so Block B
+// (depreciation runs, disposal) builds on the same composition.
+builder.Services.AddScoped<IAssetsRepository, AssetsRepository>();
+builder.Services.AddScoped<ICommandHandler<CreateAssetCategoryCommand, Result<AssetCategoryDto>>, CreateAssetCategoryCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CapitalizeAssetCommand, Result<AssetCapitalizationDto>>, CapitalizeAssetCommandHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

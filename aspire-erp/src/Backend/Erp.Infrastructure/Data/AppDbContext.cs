@@ -93,6 +93,12 @@ public class AppDbContext : DbContext
 
     public DbSet<WorkOrder> WorkOrders => Set<WorkOrder>();
 
+    public DbSet<AssetCategory> AssetCategories => Set<AssetCategory>();
+
+    public DbSet<Asset> Assets => Set<Asset>();
+
+    public DbSet<AssetDepreciationSchedule> AssetDepreciationSchedules => Set<AssetDepreciationSchedule>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

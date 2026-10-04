@@ -1,63 +1,101 @@
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import {
-  ArrowDownLeft,
-  ArrowUpRight,
   CheckCircle2,
   Landmark,
-  PlusCircle,
-  RefreshCw,
   Sparkles,
   UploadCloud,
 } from 'lucide-react'
+import { ApiError, apiClient } from '../../api/client'
+import { useErpAction } from '../../lib/useErpAction'
+import { useTenantStore } from '../../store/useTenantStore'
+import type { BankTransaction, RuleMatchSummary } from './types'
 
+const BankStatementImporter = lazy(() =>
+  import('./BankStatementImporter').then((m) => ({ default: m.BankStatementImporter })),
+)
+const BankReconciliation = lazy(() =>
+  import('./BankReconciliation').then((m) => ({ default: m.BankReconciliation })),
+)
+
+interface StatusCounts {
+  unreconciled: number
+  matched: number
+  reconciled: number
+}
+
+/**
+ * Banking workbench (task 6.6): live staging data behind the original layout - the banner
+ * actions import statements and run the heuristic rules engine, the cards show live status
+ * counts, and the dual-sided grid below reconciles lines one click at a time.
+ */
 export function BankingOverview() {
-  const bankAccounts = [
-    {
-      name: 'Main Operating Account (USD)',
-      bank: 'JPMorgan Chase',
-      accountNo: '•••• 4920',
-      glAccount: '1110 - Cash & Equivalents',
-      balance: '$62,450.00',
-      unreconciledCount: 8,
-      status: 'Action Needed',
-    },
-    {
-      name: 'Stripe Settlement Account',
-      bank: 'Stripe Gateway',
-      accountNo: 'ACCT-STRIPE-01',
-      glAccount: '1115 - Payment Gateway Clearing',
-      balance: '$21,870.50',
-      unreconciledCount: 0,
-      status: 'Reconciled',
-    },
-  ]
+  const companyId = useTenantStore((state) => state.companyId)
+  const [showImporter, setShowImporter] = useState(false)
+  const [refreshSignal, setRefreshSignal] = useState(0)
+  const [counts, setCounts] = useState<StatusCounts>({ unreconciled: 0, matched: 0, reconciled: 0 })
+  const [countsError, setCountsError] = useState<string | null>(null)
 
-  const stagingLines = [
+  const refresh = useCallback(() => setRefreshSignal((n) => n + 1), [])
+
+  useEffect(() => {
+    if (!companyId) return
+    let cancelled = false
+    apiClient
+      .get<BankTransaction[]>('/v1/bank-transactions', { params: { companyId } })
+      .then(
+        (response) => {
+          if (cancelled) return
+          setCounts({
+            unreconciled: response.data.filter((l) => l.status === 'Unreconciled').length,
+            matched: response.data.filter((l) => l.status === 'Matched').length,
+            reconciled: response.data.filter((l) => l.status === 'Reconciled').length,
+          })
+          setCountsError(null)
+        },
+        (cause: unknown) => {
+          if (!cancelled) {
+            setCountsError(
+              cause instanceof ApiError ? cause.message : 'Failed to load staging summary.',
+            )
+          }
+        },
+      )
+    return () => {
+      cancelled = true
+    }
+  }, [companyId, refreshSignal])
+
+  const { state: rulesState, dispatch: runRules, isPending: isRunningRules } = useErpAction<
+    RuleMatchSummary,
+    void
+  >(async () => {
+    const response = await apiClient.post<RuleMatchSummary>(
+      '/v1/bank-transactions/run-rules',
+      { companyId },
+      { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+    )
+    refresh()
+    return response.data
+  })
+
+  const cards = [
     {
-      id: 'tx-1',
-      date: '2026-10-01',
-      description: 'STRIPE PAYOUT REF #98234',
-      type: 'Deposit',
-      amount: '$5,400.00',
-      status: 'Matched',
-      ruleMatch: 'Auto-Matched: Rule #1 (Stripe)',
+      name: 'Unreconciled lines',
+      detail: 'Awaiting a rule match or a manual reconcile',
+      value: counts.unreconciled,
+      resolved: counts.unreconciled === 0,
     },
     {
-      id: 'tx-2',
-      date: '2026-09-30',
-      description: 'ACH DEBIT AWS CLOUD SERVICES',
-      type: 'Withdrawal',
-      amount: '$450.20',
-      status: 'Unreconciled',
-      ruleMatch: 'Requires Voucher Creation',
+      name: 'Matched suggestions',
+      detail: 'Rule engine proposals awaiting confirmation',
+      value: counts.matched,
+      resolved: counts.matched === 0,
     },
     {
-      id: 'tx-3',
-      date: '2026-09-29',
-      description: 'WIRE TRANSFER INVOICE #SINV-2026-0012',
-      type: 'Deposit',
-      amount: '$12,500.00',
-      status: 'Matched',
-      ruleMatch: 'Matched: Customer Acme Corp',
+      name: 'Reconciled lines',
+      detail: 'Cleared with a $0.00 difference',
+      value: counts.reconciled,
+      resolved: true,
     },
   ]
 
@@ -75,11 +113,22 @@ export function BankingOverview() {
           <p className="mt-1 text-xs text-slate-600">
             Import bank statements, run automated heuristic matching rules, and reconcile transactions with GL vouchers.
           </p>
+          {rulesState.isSuccess && rulesState.data && (
+            <p className="mt-1 text-xs font-semibold text-emerald-700">
+              Rules engine matched {rulesState.data.matchedCount} line(s).
+            </p>
+          )}
+          {rulesState.error && (
+            <p className="mt-1 text-xs font-semibold text-rose-700">
+              {rulesState.error}{rulesState.errorCode ? ` (${rulesState.errorCode})` : ''}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
+            onClick={() => setShowImporter((v) => !v)}
             className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
           >
             <UploadCloud className="h-4 w-4 text-sky-600" />
@@ -87,133 +136,70 @@ export function BankingOverview() {
           </button>
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-700"
+            disabled={isRunningRules}
+            onClick={() => runRules()}
+            className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-700 disabled:opacity-50"
           >
             <Sparkles className="h-4 w-4" />
-            Run Rules Engine
+            {isRunningRules ? 'Running…' : 'Run Rules Engine'}
           </button>
         </div>
       </div>
 
-      {/* Bank Account Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {bankAccounts.map((acc) => (
-          <div key={acc.name} className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-semibold text-slate-900">{acc.name}</h3>
-                <p className="text-xs text-slate-500">
-                  {acc.bank} · <span className="font-mono">{acc.accountNo}</span>
-                </p>
-                <p className="mt-1 text-[11px] font-medium text-slate-400">{acc.glAccount}</p>
-              </div>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                  acc.unreconciledCount === 0
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-amber-100 text-amber-800'
-                }`}
-              >
-                {acc.unreconciledCount === 0 ? 'Fully Reconciled' : `${acc.unreconciledCount} Unmatched`}
-              </span>
-            </div>
+      {showImporter && (
+        <Suspense fallback={<p className="text-xs text-slate-500">Loading importer…</p>}>
+          <BankStatementImporter
+            onImported={() => {
+              setShowImporter(false)
+              refresh()
+            }}
+          />
+        </Suspense>
+      )}
 
-            <div className="mt-5 flex items-baseline justify-between border-t border-slate-100 pt-4">
-              <div>
-                <span className="text-xs text-slate-400">Ledger Balance</span>
-                <p className="text-xl font-bold text-slate-900">{acc.balance}</p>
-              </div>
-              <button
-                type="button"
-                className="flex items-center gap-1 text-xs font-semibold text-sky-600 hover:text-sky-700"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Reconcile Now
-              </button>
-            </div>
+      {/* Live status cards */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {countsError ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-xs text-rose-700 md:col-span-3">
+            {countsError}
           </div>
-        ))}
+        ) : (
+          cards.map((card) => (
+            <div key={card.name} className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="font-semibold text-slate-900">{card.name}</h3>
+                  <p className="text-xs text-slate-500">{card.detail}</p>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    card.value === 0 && card.resolved
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}
+                >
+                  {card.value}
+                </span>
+              </div>
+
+              <div className="mt-5 flex items-baseline justify-between border-t border-slate-100 pt-4">
+                <div>
+                  <span className="text-xs text-slate-400">Staging lines</span>
+                  <p className="text-xl font-bold text-slate-900">{card.value}</p>
+                </div>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                  <CheckCircle2 className="h-4 w-4" /> Staging Isolation Active
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
-      {/* Staging Bank Transactions Table */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div>
-            <h3 className="text-base font-semibold text-slate-900">
-              Bank Transaction Staging (`BankTransaction`)
-            </h3>
-            <p className="text-xs text-slate-500">
-              Isolated staging area. Invariant: zero accounting entries are posted until reconciliation.
-            </p>
-          </div>
-          <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-            <CheckCircle2 className="h-4 w-4" /> Staging Isolation Active
-          </span>
-        </div>
-
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-400">
-                <th className="py-2.5 font-semibold">Date</th>
-                <th className="py-2.5 font-semibold">Statement Description</th>
-                <th className="py-2.5 font-semibold">Type</th>
-                <th className="py-2.5 font-semibold text-right">Amount</th>
-                <th className="py-2.5 font-semibold">Rule Evaluation</th>
-                <th className="py-2.5 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {stagingLines.map((line) => (
-                <tr key={line.id} className="hover:bg-slate-50">
-                  <td className="py-3 font-mono text-slate-600">{line.date}</td>
-                  <td className="py-3 font-medium text-slate-900">{line.description}</td>
-                  <td className="py-3">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        line.type === 'Deposit'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-rose-50 text-rose-700'
-                      }`}
-                    >
-                      {line.type === 'Deposit' ? (
-                        <ArrowDownLeft className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpRight className="h-3 w-3" />
-                      )}
-                      {line.type}
-                    </span>
-                  </td>
-                  <td className="py-3 text-right font-mono font-bold text-slate-900">{line.amount}</td>
-                  <td className="py-3">
-                    <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-                      {line.ruleMatch}
-                    </span>
-                  </td>
-                  <td className="py-3 text-right">
-                    {line.status === 'Matched' ? (
-                      <button
-                        type="button"
-                        className="rounded bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
-                      >
-                        Confirm Match
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="flex items-center gap-1 rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200 ml-auto"
-                      >
-                        <PlusCircle className="h-3 w-3" />
-                        Quick Voucher
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Dual-sided reconciliation workbench */}
+      <Suspense fallback={<p className="text-xs text-slate-500">Loading reconciliation workbench…</p>}>
+        <BankReconciliation refreshSignal={refreshSignal} />
+      </Suspense>
     </div>
   )
 }

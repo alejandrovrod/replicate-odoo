@@ -94,6 +94,13 @@ public class Asset : ITenantEntity
     public AssetStatus Status { get; set; } = AssetStatus.Draft;
 
     /// <summary>
+    /// Disposal date (Task 10.5): stamped when the asset reaches its terminal Sold/Scrapped state,
+    /// null until then. Additive column (the Block C migration adds it); the accounting date of
+    /// the disposal voucher.
+    /// </summary>
+    public DateOnly? DisposalDate { get; set; }
+
+    /// <summary>
     /// Optimistic concurrency token (SQL Server <c>rowversion</c> - spec AS-06): capitalization
     /// and the Block B disposal/depreciation race are read-modify-write, so EF puts the original
     /// value in the UPDATE ... WHERE clause and a concurrent transition throws
@@ -126,5 +133,49 @@ public class Asset : ITenantEntity
         }
 
         Status = AssetStatus.Capitalized;
+    }
+
+    /// <summary>
+    /// Capitalized -&gt; FullyDepreciated (Task 10.4): the periodic run calls this when no
+    /// Scheduled lines remain and the accumulated depreciation equals the depreciable base
+    /// (gross − salvage), so the NBV rests exactly on the salvage floor (AS-01).
+    /// </summary>
+    /// <exception cref="AssetValidationException">The asset is not depreciable (<c>invalid_status_transition</c>).</exception>
+    public void MarkFullyDepreciated()
+    {
+        if (Status is not AssetStatus.Capitalized)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.InvalidStatusTransition,
+                $"Only a Capitalized asset can become FullyDepreciated; asset '{AssetCode}' is '{Status}'.");
+        }
+
+        Status = AssetStatus.FullyDepreciated;
+    }
+
+    /// <summary>
+    /// Capitalized/FullyDepreciated -&gt; Sold (proceeds &gt; 0) or Scrapped (proceeds == 0)
+    /// (Task 10.5, scenarios AS-03/AS-05). Draft/Submitted/Sold/Scrapped holders fail with
+    /// <c>invalid_status_transition</c> - including the double-disposal replay.
+    /// </summary>
+    /// <exception cref="AssetValidationException">The asset is not disposable (<c>invalid_status_transition</c>).</exception>
+    public void Dispose(AssetStatus terminalStatus, DateOnly disposalDate)
+    {
+        if (Status is not (AssetStatus.Capitalized or AssetStatus.FullyDepreciated))
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.InvalidStatusTransition,
+                $"Only a Capitalized or FullyDepreciated asset can be disposed; asset '{AssetCode}' is '{Status}'.");
+        }
+
+        if (terminalStatus is not (AssetStatus.Sold or AssetStatus.Scrapped))
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.InvalidStatusTransition,
+                $"Disposal must land in Sold or Scrapped (received '{terminalStatus}').");
+        }
+
+        Status = terminalStatus;
+        DisposalDate = disposalDate;
     }
 }

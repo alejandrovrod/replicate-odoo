@@ -59,6 +59,7 @@ public sealed record AssetDto(
     int TotalNumberOfDepreciations,
     int FrequencyInMonths,
     AssetStatus Status,
+    DateOnly? DisposalDate,
     DateTimeOffset CreatedAt)
 {
     public static AssetDto Build(Asset asset) =>
@@ -79,6 +80,7 @@ public sealed record AssetDto(
             asset.TotalNumberOfDepreciations,
             asset.FrequencyInMonths,
             asset.Status,
+            asset.DisposalDate,
             asset.CreatedAt);
 }
 
@@ -91,3 +93,46 @@ public sealed record AssetCapitalizationDto(
     IReadOnlyList<AssetScheduleLineDto> Schedule,
     int ScheduleCount,
     decimal TotalScheduled);
+
+/// <summary>
+/// Asset detail payload (Block B reads): the master plus its schedule lines ordered by due date.
+/// </summary>
+public sealed record AssetDetailDto(
+    AssetDto Asset,
+    IReadOnlyList<AssetScheduleLineDto> Schedule);
+
+/// <summary>
+/// One skipped schedule line of a depreciation run (Task 10.4): the row identity travels with
+/// the reason so a live replay test can assert the exact rows that were left untouched.
+/// </summary>
+public sealed record DepreciationSkipDto(
+    Guid ScheduleLineId,
+    Guid AssetId,
+    string Reason);
+
+/// <summary>
+/// Periodic depreciation run result (Task 10.4 acceptance): how many lines booked into the
+/// single batch voucher, the booked total, and every skipped row with its reason.
+/// An empty due set succeeds with BookedCount 0, no voucher and no skips.
+/// </summary>
+public sealed record DepreciationRunDto(
+    string? VoucherNo,
+    int BookedCount,
+    decimal TotalBooked,
+    IReadOnlyList<DepreciationSkipDto> Skipped)
+{
+    public int SkippedCount => Skipped.Count;
+}
+
+/// <summary>
+/// Disposal result (Task 10.5 acceptance): the terminal asset, the balancing voucher and the
+/// economics of the exit. <see cref="NetGainLoss"/> is proceeds − NBV: positive is a gain
+/// (credited to the gain account), negative a loss (debited to the loss account), zero a
+/// break-even with neither line.
+/// </summary>
+public sealed record AssetDisposalDto(
+    AssetDto Asset,
+    string VoucherNo,
+    decimal ProceedsAmount,
+    decimal NetGainLoss,
+    int CancelledFutureLines);

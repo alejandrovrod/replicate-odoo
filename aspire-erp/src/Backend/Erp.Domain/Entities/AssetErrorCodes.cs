@@ -32,8 +32,16 @@ public static class AssetErrorCodes
     // Referenced masters missing from this tenant (mirrors the stock/manufacturing not-found codes).
     public const string CompanyNotFound = "company_not_found";
     public const string ItemNotFound = "item_not_found";
+    public const string BankAccountNotFound = "bank_account_not_found";
 
     // General Ledger configuration / invariants (Constitution Article III)
     public const string InvalidGlAccount = "invalid_gl_account";
     public const string MissingCwipAccount = "missing_cwip_account";
+
+    // Periodic depreciation run (Task 10.4, spec AS-02/AS-04)
+    public const string DepreciatedPastSalvage = "depreciated_past_salvage";
+
+    // Disposal (Task 10.5, spec AS-03/AS-05)
+    public const string MissingGainLossAccount = "missing_gain_loss_account";
+    public const string InvalidProceeds = "invalid_proceeds";
 }

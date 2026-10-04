@@ -103,11 +103,94 @@ public sealed class AssetsRepository : IAssetsRepository
         return $"{AssetCodePrefix}-{year}-{nextSequence:D5}";
     }
 
+    public async Task<string> NextVoucherNumberAsync(
+        Guid companyId,
+        string prefix,
+        int year,
+        CancellationToken cancellationToken = default)
+    {
+        var transaction = _dbContext.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "Voucher numbering must run inside the posting transaction (Constitution III.4): "
+                + "outside one the UPDLOCK/HOLDLOCK range lock cannot protect the sequence.");
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        var tenantId = _dbContext.CurrentTenantId;
+        var pattern = $"{prefix}-{year}-%";
+
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT MAX(VoucherNo) FROM dbo.GLEntry WITH (UPDLOCK, HOLDLOCK) "
+            + "WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND VoucherNo LIKE @Pattern;";
+        command.Transaction = transaction.GetDbTransaction();
+
+        AddParameter(command, "@TenantId", tenantId);
+        AddParameter(command, "@CompanyId", companyId);
+        AddParameter(command, "@Pattern", pattern);
+
+        var scalar = await command.ExecuteScalarAsync(cancellationToken);
+        var max = scalar as string;
+
+        var nextSequence = 1;
+        if (!string.IsNullOrEmpty(max))
+        {
+            var separator = max.LastIndexOf('-');
+            if (separator < 0 || !int.TryParse(max[(separator + 1)..], out var currentSequence))
+            {
+                throw new InvalidOperationException(
+                    $"Stored voucher number '{max}' does not follow the PREFIX-YYYY-NNNNN format.");
+            }
+
+            if (currentSequence >= 99999)
+            {
+                throw new InvalidOperationException(
+                    $"Voucher sequence for '{prefix}-{year}' is exhausted (max 99999).");
+            }
+
+            nextSequence = currentSequence + 1;
+        }
+
+        return $"{prefix}-{year}-{nextSequence:D5}";
+    }
+
     public async Task<AssetCategory?> GetCategoryByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.AssetCategories.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
     public async Task<Asset?> GetAssetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.Assets.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<Asset>> GetAssetsByCompanyAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.Assets
+            .Where(e => e.CompanyId == companyId)
+            .OrderBy(e => e.AssetCode)
+            .ThenBy(e => e.Id)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<AssetCategory>> GetCategoriesByCompanyAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.AssetCategories
+            .Where(e => e.CompanyId == companyId)
+            .OrderBy(e => e.CategoryName)
+            .ThenBy(e => e.Id)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<AssetDepreciationSchedule>> GetDueSchedulesAsync(
+        Guid companyId,
+        DateOnly asOfDate,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.AssetDepreciationSchedules
+            .Where(s => s.ScheduleDate <= asOfDate && s.Asset != null && s.Asset.CompanyId == companyId)
+            .OrderBy(s => s.ScheduleDate)
+            .ThenBy(s => s.Id)
+            .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<AssetDepreciationSchedule>> GetSchedulesByAssetAsync(
         Guid assetId,

@@ -30,6 +30,21 @@ public interface IAssetsRepository
     /// <summary>Gets an asset by its ID (header only - lines come from GetSchedulesByAssetAsync).</summary>
     Task<Asset?> GetAssetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <summary>Lists one company's asset headers, ordered by asset code (Block B reads).</summary>
+    Task<IReadOnlyList<Asset>> GetAssetsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>Lists one company's asset categories, ordered by name (Block B reads).</summary>
+    Task<IReadOnlyList<AssetCategory>> GetCategoriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every schedule line with ScheduleDate &lt;= <paramref name="asOfDate"/> on this company's
+    /// assets, ordered by (ScheduleDate, Id) - REGARDLESS of status (Task 10.4). Booked/Cancelled
+    /// rows travel with their identity so the run can skip-and-report them (spec AS-04
+    /// replay safety) instead of pretending they do not exist.
+    /// </summary>
+    Task<IReadOnlyList<AssetDepreciationSchedule>> GetDueSchedulesAsync(
+        Guid companyId, DateOnly asOfDate, CancellationToken cancellationToken = default);
+
     /// <summary>Gets the schedule lines of one asset, ordered by ScheduleDate.</summary>
     Task<IReadOnlyList<AssetDepreciationSchedule>> GetSchedulesByAssetAsync(Guid assetId, CancellationToken cancellationToken = default);
 
@@ -54,6 +69,17 @@ public interface IAssetsRepository
 
     /// <summary>Saves booking/cancellation mutations of an already-tracked schedule line (Block B).</summary>
     Task UpdateScheduleAsync(AssetDepreciationSchedule line, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Next gapless voucher number for a depreciation or disposal posting, e.g. 2026 -&gt;
+    /// "DEP-2026-00001". Constitution III.4: SELECT MAX(VoucherNo) WITH (UPDLOCK, HOLDLOCK) over
+    /// dbo.GLEntry inside the AMBIENT posting transaction (the lock is released only by
+    /// commit/rollback, and a rollback does not consume a number). DEP-/DSP- patterns never
+    /// collide with the AST- capitalization codes (which live on the Asset row, not in GLEntry)
+    /// or the JV- journal numbers sharing the same column.
+    /// </summary>
+    Task<string> NextVoucherNumberAsync(
+        Guid companyId, string prefix, int year, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Next gapless asset code for a company/year, e.g. 2026 -&gt; "AST-2026-00001".

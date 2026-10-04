@@ -22,6 +22,7 @@ using Erp.Application.Features.Stock.Queries;
 using Erp.Application.Features.Manufacturing.Commands;
 using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Application.Features.Assets.Commands;
+using Erp.Application.Features.Assets.Queries;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
 using Erp.Application.Services;
@@ -199,6 +200,11 @@ builder.Services.AddScoped<IQueryHandler<GetWorkOrdersQuery, IReadOnlyList<WorkO
 builder.Services.AddScoped<IAssetsRepository, AssetsRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateAssetCategoryCommand, Result<AssetCategoryDto>>, CreateAssetCategoryCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CapitalizeAssetCommand, Result<AssetCapitalizationDto>>, CapitalizeAssetCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<PostDueDepreciationsCommand, Result<DepreciationRunDto>>, PostDueDepreciationsCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DisposeAssetCommand, Result<AssetDisposalDto>>, DisposeAssetCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAssetCategoriesQuery, IReadOnlyList<AssetCategoryDto>>, GetAssetCategoriesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAssetsQuery, IReadOnlyList<AssetDto>>, GetAssetsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAssetDetailQuery, AssetDetailDto?>, GetAssetDetailQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

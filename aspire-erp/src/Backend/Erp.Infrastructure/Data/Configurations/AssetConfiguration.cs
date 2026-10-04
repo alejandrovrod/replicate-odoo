@@ -59,6 +59,10 @@ public sealed class AssetConfiguration : IEntityTypeConfiguration<Asset>
         builder.Property(a => a.FrequencyInMonths).IsRequired().HasDefaultValue(1);
         builder.Property(a => a.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
+        // Task 10.5 disposal stamp: NULL until the asset is Sold/Scrapped (the Block C migration
+        // adds the physical column; code-first mapping stays additive so no existing row changes).
+        builder.Property(a => a.DisposalDate).HasColumnType("date").IsRequired(false);
+
         // NetBookValue is a pure computed getter (Gross − Accumulated) - never mapped, so the
         // store carries no redundant column that could drift from its inputs.
         builder.Ignore(a => a.NetBookValue);

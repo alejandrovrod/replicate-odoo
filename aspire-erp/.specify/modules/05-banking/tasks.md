@@ -3,7 +3,7 @@
 **Module:** `05-banking`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IN PROGRESS (Block A: 6.1, 6.2 complete; Block B: 6.3, 6.4 complete)  
+**Status:** IMPLEMENTATION COMPLETE — all 7 tasks verified (pending Spec Kit verify + archive)  
 
 ---
 
@@ -25,15 +25,15 @@
   - **Action:** Implement `ReconcileBankTransactionCommand` matching staging transactions against existing `PaymentEntry` or `GLEntry` records.
   - **Acceptance:** Updates `BankTransaction.Status` to `Reconciled`, stamps `ClearanceDate`, and verifies that the Bank Reconciliation Statement difference equals $0.00.
 
-- [ ] **Task 6.5: On-The-Fly Voucher Dialog Backend (`DialogManager`)**
+- [x] **Task 6.5: On-The-Fly Voucher Dialog Backend (`DialogManager`)**
   - **Action:** Implement `CreateVoucherFromBankTransactionCommand` to allow instant creation of Journal Entries or expense payments directly from an unmatched bank transaction line.
   - **Acceptance:** Creates balanced `GLEntry` and reconciles the bank line atomically in a single transaction.
 
-- [ ] **Task 6.6: React Banking Subsystem UI (SPA Parity)**
+- [x] **Task 6.6: React Banking Subsystem UI (SPA Parity)**
   - **Action:** Build `banking/src/App.tsx`, `BankStatementImporter.tsx` (drag-and-drop file upload with column mapping preview), `BankReconciliation.tsx` (dual-sided split comparison grid), and `VoucherQuickCreateDialog.tsx`.
   - **Acceptance:** Users can import statements, view matched suggestions, filter unreconciled transactions, open the quick voucher dialog, and reconcile in one click.
 
-- [ ] **Task 6.7: Staging Isolation & Dual-Sided Matching Integration Tests**
+- [x] **Task 6.7: Staging Isolation & Dual-Sided Matching Integration Tests**
   - **Action:** Write integration tests asserting that importing 1,000 statement lines writes zero `GLEntry` records, test de-duplication idempotency, and verify concurrent matching conflicts.
   - **Acceptance:** 100% test pass asserting $\Delta \text{GLEntry}_{\text{Import}} == 0.0000$ and zero double-reconciliations under load.
 

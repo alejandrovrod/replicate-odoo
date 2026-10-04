@@ -41,7 +41,7 @@
   - **Action:** Implement ASP.NET Core idempotency middleware / behavior checking `Idempotency-Key` header with Redis / SQL cache.
   - **Acceptance:** Replaying an identical submission returns HTTP 200 with the cached response and creates zero duplicate SLEs or GLEntries.
 
-- [ ] **Task 3.9: Concurrency & Stress Integration Testing**
+- [x] **Task 3.9: Concurrency & Stress Integration Testing**
   - **Action:** Write adversarial multi-threaded integration test issuing concurrent stock requests against low inventory.
   - **Acceptance:** Database optimistic concurrency / row locks prevent overselling; exactly available units are issued, excess requests throw `InsufficientStockException`.
 

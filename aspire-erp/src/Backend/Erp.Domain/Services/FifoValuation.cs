@@ -76,15 +76,31 @@ public static class FifoValuation
             for (var i = 0; i < layers.Count && toConsume > 0; i++)
             {
                 var layer = layers[i];
+                if (layer.RemainingQty <= 0)
+                {
+                    // An existing shortfall layer holds no units - skip it (otherwise subtracting
+                    // a negative "taken" would grow toConsume instead of shrinking it).
+                    continue;
+                }
+
                 var taken = Math.Min(layer.RemainingQty, toConsume);
                 var left = layer.RemainingQty - taken;
                 toConsume -= taken;
                 layers[i] = layer with { RemainingQty = left };
             }
 
-            // A negative balance (allowed by policy) simply leaves no layer - it is represented
-            // by the absence of stock, not by a negative layer.
-            layers.RemoveAll(layer => layer.RemainingQty <= 0);
+            // The overdrawn remainder is kept as a NEGATIVE layer (the stock debt) instead of
+            // being dropped. Dropping it made sum(layers) exceed the Kardex net whenever the
+            // history contained an overdraw (a negative-stock period or the pre-Task-3.9
+            // concurrency bug), so Consume's AllowNegativeStock=false guard approved issues the
+            // books could not cover: Task 3.9 requires "exactly available units are issued",
+            // where available IS the Kardex net.
+            if (toConsume > 0)
+            {
+                layers.Add(new FifoLayer(-toConsume, entry.ValuationRate));
+            }
+
+            layers.RemoveAll(layer => layer.RemainingQty == 0);
         }
 
         return layers;
@@ -97,12 +113,15 @@ public static class FifoValuation
     /// <param name="requestedQty">Units to consume; must be strictly positive.</param>
     /// <param name="allowNegativeStock">
     /// Company policy (<c>Company.AllowNegativeStock</c>): when false, a request above the
-    /// available quantity throws <see cref="InsufficientStockException"/> (Task 3.3); when true,
-    /// the shortfall is valued at the most recent layer's rate (or 0.0000 when no layer exists).
+    /// available quantity (the Kardex net: open layers minus any debt layer) throws
+    /// <see cref="InsufficientStockException"/> (Task 3.3 / 3.9); when true, the shortfall is
+    /// valued at the most recent open layer's rate (or 0.0000 when no open layer exists).
     /// </param>
     /// <param name="itemCode">Item code for the exception message (context for operators).</param>
     /// <param name="warehouseCode">Warehouse code for the exception message.</param>
-    /// <exception cref="InsufficientStockException">Policy forbids negative stock and layers run dry.</exception>
+    /// <exception cref="InsufficientStockException">
+    /// Policy forbids negative stock and the request exceeds the available quantity.
+    /// </exception>
     public static FifoResult Consume(
         IReadOnlyList<FifoLayer> layers,
         decimal requestedQty,
@@ -123,6 +142,15 @@ public static class FifoValuation
         foreach (var layer in layers)
         {
             available += layer.RemainingQty;
+        }
+
+        // The guard is the Kardex net (open layers MINUS any debt layer), which is exactly what
+        // the API reports as on-hand: "exactly available units are issued" (Task 3.9). Checking
+        // only whether the open layers run dry would let a request consume past an existing
+        // debt and oversell the books.
+        if (!allowNegativeStock && requestedQty > available)
+        {
+            throw new InsufficientStockException(itemCode, warehouseCode, available, requestedQty);
         }
 
         var consumed = new List<FifoConsumedLayer>();
@@ -156,8 +184,9 @@ public static class FifoValuation
                 throw new InsufficientStockException(itemCode, warehouseCode, available, requestedQty);
             }
 
-            // Shortfall valuation: most recent layer's rate, or 0.0000 when there is no layer at all.
-            var shortfallRate = layers.Count > 0 ? layers[^1].Rate : 0m;
+            // Shortfall valuation: most recent OPEN layer's rate, or 0.0000 when no open layer
+            // exists (negative layers hold debt, not units, so they are not valuation sources).
+            var shortfallRate = layers.LastOrDefault(layer => layer.RemainingQty > 0)?.Rate ?? 0m;
             var amount = Math.Round(remaining * shortfallRate, 4, MidpointRounding.AwayFromZero);
             consumed.Add(new FifoConsumedLayer(remaining, shortfallRate, amount));
             totalCost += amount;

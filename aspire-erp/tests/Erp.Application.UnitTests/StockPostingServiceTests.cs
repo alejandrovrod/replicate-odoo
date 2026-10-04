@@ -370,6 +370,75 @@ public sealed class StockPostingServiceTests
         }
     }
 
+    // ------------------------------------------------------------------------- Task 3.9 locks
+
+    /// <summary>
+    /// Task 3.9: an ISSUE takes the Kardex range lock for its (item, source warehouse) BEFORE the
+    /// FIFO read - the call site whose UPDLOCK/HOLDLOCK the integration test's concurrency proof
+    /// relies on to serialize competing consumers.
+    /// </summary>
+    [Fact]
+    public async Task PostAsync_Issue_TakesStockRangeLockForSourceWarehouse()
+    {
+        SeedFifoLayers();
+        var request = Request(
+            StockEntryType.MaterialIssue,
+            new List<StockPostingLine> { new(_item.Id, 10m, null) });
+
+        await CreateService().PostAsync(request);
+
+        var rangeLock = Assert.Single(_stock.StockRangeLocks);
+        Assert.Equal(new[] { _item.Id }, rangeLock.ItemIds);
+        Assert.Equal(new[] { _warehouse.Id }, rangeLock.WarehouseIds);
+    }
+
+    /// <summary>
+    /// Task 3.9: a TRANSFER locks BOTH warehouses - it consumes from the source and inserts into
+    /// the target's Kardex range, so a competing consumer of either side must queue.
+    /// </summary>
+    [Fact]
+    public async Task PostAsync_Transfer_TakesStockRangeLockForBothWarehouses()
+    {
+        SeedFifoLayers();
+        var target = new Warehouse
+        {
+            Id = Guid.NewGuid(),
+            TenantId = _tenantId,
+            CompanyId = _companyId,
+            WarehouseCode = "WH-02",
+            WarehouseName = "Secondary Stores",
+            AccountId = _stockAccount.Id,
+        };
+        _warehouses.Seed(target);
+
+        var request = Request(
+            StockEntryType.MaterialTransfer,
+            new List<StockPostingLine> { new(_item.Id, 5m, null) },
+            targetWarehouseId: target.Id);
+
+        await CreateService().PostAsync(request);
+
+        var rangeLock = Assert.Single(_stock.StockRangeLocks);
+        Assert.Equal(new[] { _item.Id }, rangeLock.ItemIds);
+        Assert.Equal(new[] { _warehouse.Id, target.Id }, rangeLock.WarehouseIds);
+    }
+
+    /// <summary>
+    /// Task 3.9: a RECEIPT only APPENDS Kardex rows - it never consumes, so it must not take the
+    /// consumer lock (and therefore cannot block a legitimate concurrent issue).
+    /// </summary>
+    [Fact]
+    public async Task PostAsync_Receipt_DoesNotTakeStockRangeLock()
+    {
+        var request = Request(
+            StockEntryType.MaterialReceipt,
+            new List<StockPostingLine> { new(_item.Id, 60m, 10.00m) });
+
+        await CreateService().PostAsync(request);
+
+        Assert.Empty(_stock.StockRangeLocks);
+    }
+
     // ------------------------------------------------------------------ validation failures
 
     [Fact]

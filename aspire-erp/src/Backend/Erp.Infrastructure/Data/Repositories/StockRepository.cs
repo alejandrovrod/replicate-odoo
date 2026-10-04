@@ -57,6 +57,75 @@ public sealed class StockRepository : IStockRepository
             .ThenBy(e => e.Id)
             .ToListAsync(cancellationToken);
 
+    /// <summary>
+    /// Task 3.9: SELECT ... WITH (UPDLOCK, HOLDLOCK) over the Kardex rows of the given (item,
+    /// warehouse) pairs inside the AMBIENT posting transaction. UPDLOCK makes competing consumers
+    /// queue on this range instead of taking shared locks, and HOLDLOCK (serializable) keeps the
+    /// range locked - including the gaps of an empty result set - until COMMIT or ROLLBACK. The
+    /// statement therefore runs BEFORE any FIFO layer is read, and because it lives in the same
+    /// transaction as the posting, a rollback releases it without consuming anything.
+    /// </summary>
+    /// <remarks>
+    /// EF's global query filter does NOT apply to raw SQL, so the tenant scope is written out
+    /// explicitly (same contract as <see cref="NextVoucherNumberAsync"/>). The key-range locks
+    /// follow the IX_StockLedger_Tenant_Item_Warehouse_Date index seek in the SAME order for every
+    /// transaction, which makes the acquisition deadlock-free by construction.
+    /// </remarks>
+    public async Task LockStockRangeAsync(
+        IReadOnlyCollection<Guid> itemIds,
+        IReadOnlyCollection<Guid> warehouseIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (itemIds.Count == 0 || warehouseIds.Count == 0)
+        {
+            return;
+        }
+
+        var transaction = _dbContext.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "The stock range lock must run inside the posting transaction (Task 3.9): outside "
+                + "one the UPDLOCK/HOLDLOCK would release at statement end and protect nothing.");
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        var itemNames = new List<string>(itemIds.Count);
+        var warehouseNames = new List<string>(warehouseIds.Count);
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction.GetDbTransaction();
+
+        var index = 0;
+        foreach (var itemId in itemIds)
+        {
+            var name = $"@Item{index++}";
+            itemNames.Add(name);
+            AddParameter(command, name, itemId);
+        }
+
+        index = 0;
+        foreach (var warehouseId in warehouseIds)
+        {
+            var name = $"@Warehouse{index++}";
+            warehouseNames.Add(name);
+            AddParameter(command, name, warehouseId);
+        }
+
+        command.CommandText =
+            "SELECT Id FROM dbo.StockLedgerEntry WITH (UPDLOCK, HOLDLOCK) "
+            + "WHERE TenantId = @TenantId AND ItemId IN ("
+            + string.Join(", ", itemNames)
+            + ") AND WarehouseId IN ("
+            + string.Join(", ", warehouseNames)
+            + ");";
+        AddParameter(command, "@TenantId", _dbContext.CurrentTenantId);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<StockBalance>> GetStockBalancesByCompanyAsync(
         Guid companyId,
         CancellationToken cancellationToken = default)

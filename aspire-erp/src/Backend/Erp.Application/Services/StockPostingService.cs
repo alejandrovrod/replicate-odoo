@@ -71,6 +71,25 @@ public sealed class StockPostingService : IStockPostingService
             var (sourceWarehouse, targetWarehouse) = await ResolveWarehousesAsync(request, token);
             var items = await LoadItemsAsync(request, token);
 
+            // Task 3.9 (overselling prevention): BEFORE any FIFO layer is read, take the
+            // UPDLOCK/HOLDLOCK range lock over the Kardex rows this posting is about to consume
+            // (source warehouse, plus target for a transfer - it inserts into that range too).
+            // Concurrent consumers of the same (item, warehouse) queue HERE and re-read the
+            // committed layers afterwards instead of double-consuming them: a plain SELECT race
+            // lets every transaction see the same on-hand quantity and all of them win. Receipts
+            // only append rows, so they never take the lock.
+            if (request.EntryType != StockEntryType.MaterialReceipt)
+            {
+                var lockedWarehouses = targetWarehouse is null
+                    ? new[] { sourceWarehouse.Id }
+                    : new[] { sourceWarehouse.Id, targetWarehouse.Id };
+
+                await _stock.LockStockRangeAsync(
+                    request.Lines.Select(line => line.ItemId).Distinct().ToList(),
+                    lockedWarehouses,
+                    token);
+            }
+
             // Resolve + sanity-check the GL accounts BEFORE any write (Constitution III.3).
             var sourceStockAccount = await RequirePostableAccountAsync(
                 sourceWarehouse.AccountId ?? Guid.Empty, company.Id, $"warehouse '{sourceWarehouse.WarehouseCode}'", token);

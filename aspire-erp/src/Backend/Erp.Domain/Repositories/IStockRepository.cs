@@ -35,6 +35,25 @@ public interface IStockRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Task 3.9 (overselling prevention): takes <c>UPDLOCK, HOLDLOCK</c> key locks over the
+    /// EXISTING Kardex rows of every (item, warehouse) pair in the AMBIENT posting transaction,
+    /// BEFORE any FIFO layer is read. A second consumer of the same pairs blocks here until this
+    /// transaction commits or rolls back and then re-reads the committed layers, so two concurrent
+    /// issues can never consume the same units (a plain SELECT read cannot close that race).
+    /// WarehouseIds includes BOTH source and target for a transfer, because a transfer also
+    /// inserts into its target range.
+    /// </summary>
+    /// <remarks>
+    /// Locks are taken in the order dictated by the (TenantId, ItemId, WarehouseId, PostingDate)
+    /// index seek for every caller - a globally consistent acquisition order that cannot
+    /// deadlock. Receipts only append rows and never call this.
+    /// </remarks>
+    Task LockStockRangeAsync(
+        IReadOnlyCollection<Guid> itemIds,
+        IReadOnlyCollection<Guid> warehouseIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// On-hand quantity and value per (item, warehouse) for every warehouse of a company - the
     /// source of the ItemList stock levels (Task 3.4 consumes it through GetItemsQuery).
     /// </summary>

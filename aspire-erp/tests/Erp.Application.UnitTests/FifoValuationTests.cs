@@ -14,6 +14,7 @@ public sealed class FifoValuationTests
     private static readonly DateOnly Day1 = new(2026, 1, 1);
     private static readonly DateOnly Day2 = new(2026, 1, 2);
     private static readonly DateOnly Day3 = new(2026, 1, 3);
+    private static readonly DateOnly Day4 = new(2026, 1, 4);
 
     private static StockLedgerEntry Receipt(decimal qty, decimal rate, DateOnly postingDate, int minute) =>
         new()
@@ -25,6 +26,19 @@ public sealed class FifoValuationTests
             QtyChange = qty,
             ValuationRate = rate,
             Amount = qty * rate,
+            CreatedAt = new DateTimeOffset(postingDate, new TimeOnly(0, minute), TimeSpan.Zero),
+        };
+
+    private static StockLedgerEntry IssueOut(decimal qtyChange, decimal rate, DateOnly postingDate, int minute) =>
+        new()
+        {
+            Id = Guid.NewGuid(),
+            ItemId = Guid.NewGuid(),
+            WarehouseId = Guid.NewGuid(),
+            PostingDate = postingDate,
+            QtyChange = qtyChange,
+            ValuationRate = rate,
+            Amount = qtyChange * rate,
             CreatedAt = new DateTimeOffset(postingDate, new TimeOnly(0, minute), TimeSpan.Zero),
         };
 
@@ -73,6 +87,76 @@ public sealed class FifoValuationTests
 
         // 50 @ $10 gone, 10 @ $12 gone -> nothing left.
         Assert.Empty(layers);
+    }
+
+    /// <summary>
+    /// Task 3.9: an overdraw (a historical period of negative stock, or the pre-fix concurrency
+    /// bug) must NOT be dropped from the replay - it survives as a debt layer so that
+    /// sum(layers) always equals the Kardex net the API reports as on-hand.
+    /// </summary>
+    [Fact]
+    public void BuildLayers_OverdrawnIssue_KeepsTheShortfallAsADebtLayer()
+    {
+        var ledger = new[]
+        {
+            Receipt(50m, 10m, Day1, 0),
+            IssueOut(-70m, 11m, Day3, 0),
+        };
+
+        var layers = FifoValuation.BuildLayers(ledger);
+
+        var debt = Assert.Single(layers);
+        Assert.Equal(-20m, debt.RemainingQty);
+
+        // The invariant Task 3.9's guard relies on: layers reflect the books exactly (50 - 70).
+        Assert.Equal(-20m, layers.Sum(layer => layer.RemainingQty));
+    }
+
+    /// <summary>
+    /// Task 3.9: with a debt layer present, <see cref="FifoValuation.Consume"/> must compare the
+    /// request against the Kardex net (80), not against the sum of the open layers (100) -
+    /// otherwise AllowNegativeStock=false would approve issues the books cannot cover.
+    /// </summary>
+    [Fact]
+    public void Consume_WithDebtLayer_GuardsAgainstTheKardexNetNotTheOpenLayers()
+    {
+        var ledger = new[]
+        {
+            Receipt(50m, 10m, Day1, 0),
+            IssueOut(-70m, 11m, Day3, 0),
+            Receipt(100m, 12m, Day4, 0),
+        };
+
+        var layers = FifoValuation.BuildLayers(ledger);
+        Assert.Equal(80m, layers.Sum(layer => layer.RemainingQty)); // 50 - 70 + 100
+
+        // 90 requested against a net of 80 -> rejected with the TRUTHFUL available quantity.
+        var ex = Assert.Throws<InsufficientStockException>(
+            () => FifoValuation.Consume(layers, requestedQty: 90m, allowNegativeStock: false, "IT-001", "WH-01"));
+        Assert.Equal(StockErrorCodes.InsufficientStock, ex.Code);
+        Assert.Equal(80m, ex.Available);
+
+        // Exactly the net consumes only from the open layer, never from the debt.
+        var result = FifoValuation.Consume(layers, requestedQty: 80m, allowNegativeStock: false);
+        Assert.Equal(960.00m, result.TotalCost); // 80 @ $12
+        Assert.Equal(0m, result.ShortfallQty);
+    }
+
+    /// <summary>
+    /// Successive overdraws accumulate the debt instead of growing <c>toConsume</c> unbounded.
+    /// </summary>
+    [Fact]
+    public void BuildLayers_ConsecutiveOverdraws_AccumulateTheDebt()
+    {
+        var ledger = new[]
+        {
+            IssueOut(-20m, 10m, Day1, 0),
+            IssueOut(-10m, 10m, Day2, 0),
+        };
+
+        var layers = FifoValuation.BuildLayers(ledger);
+
+        Assert.Equal(-30m, layers.Sum(layer => layer.RemainingQty));
     }
 
     // ---------------------------------------------------------------------------- Consume

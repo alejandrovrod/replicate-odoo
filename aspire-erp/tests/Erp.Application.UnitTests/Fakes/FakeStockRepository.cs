@@ -48,6 +48,20 @@ public sealed class FakeStockRepository : IStockRepository
                 .ThenBy(e => e.CreatedAt)
                 .ToList());
 
+    /// <summary>Range-lock requests the posting service asked for, in order (Task 3.9 call-site assertions).</summary>
+    public List<(IReadOnlyCollection<Guid> ItemIds, IReadOnlyCollection<Guid> WarehouseIds)> StockRangeLocks { get; } = new();
+
+    public Task LockStockRangeAsync(
+        IReadOnlyCollection<Guid> itemIds,
+        IReadOnlyCollection<Guid> warehouseIds,
+        CancellationToken cancellationToken = default)
+    {
+        // The in-memory fake needs no real lock (there is no database to race on): capture the
+        // request so tests can assert the service takes it for consumers and skips it for receipts.
+        StockRangeLocks.Add((itemIds, warehouseIds));
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyList<StockBalance>> GetStockBalancesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<StockBalance>>(Array.Empty<StockBalance>());
 

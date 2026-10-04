@@ -49,11 +49,23 @@ public class AppDbContext : DbContext
 
     public DbSet<Supplier> Suppliers => Set<Supplier>();
 
+    public DbSet<Customer> Customers => Set<Customer>();
+
     public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
 
     public DbSet<PurchaseReceipt> PurchaseReceipts => Set<PurchaseReceipt>();
 
     public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
+
+    public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
+
+    public DbSet<DeliveryNote> DeliveryNotes => Set<DeliveryNote>();
+
+    public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
+    
+    public DbSet<SalesInvoiceItem> SalesInvoiceItems => Set<SalesInvoiceItem>();
+    
+    public DbSet<POSProfile> POSProfiles => Set<POSProfile>();
 
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
 

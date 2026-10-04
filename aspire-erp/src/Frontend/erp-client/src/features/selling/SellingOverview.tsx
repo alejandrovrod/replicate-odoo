@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { FileText, ShoppingCart } from 'lucide-react'
+import { PosCashierModal } from './PosCashierModal'
 
 export function SellingOverview() {
+  const [isPosOpen, setIsPosOpen] = useState(false)
   const invoices = [
     { id: 'SINV-2026-0042', customer: 'Acme Corporation', date: '2026-10-01', grandTotal: '$4,500.00', outstanding: '$0.00', status: 'Paid' },
     { id: 'SINV-2026-0043', customer: 'Globex Logistics', date: '2026-10-01', grandTotal: '$1,200.00', outstanding: '$1,200.00', status: 'Unpaid' },
@@ -26,6 +29,7 @@ export function SellingOverview() {
           </button>
           <button
             type="button"
+            onClick={() => setIsPosOpen(true)}
             className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
           >
             <ShoppingCart className="h-4 w-4" />
@@ -33,6 +37,8 @@ export function SellingOverview() {
           </button>
         </div>
       </div>
+
+      {isPosOpen && <PosCashierModal onClose={() => setIsPosOpen(false)} />}
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
         <h3 className="text-base font-semibold text-slate-900">Recent Sales Invoices (`SalesInvoice`)</h3>

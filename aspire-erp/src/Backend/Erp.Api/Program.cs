@@ -12,6 +12,8 @@ using Erp.Application.Features.GeneralLedger.Commands;
 using Erp.Application.Features.GeneralLedger.Queries;
 using Erp.Application.Features.Items.Commands;
 using Erp.Application.Features.Items.Queries;
+using Erp.Application.Features.Selling.Commands;
+using Erp.Application.Features.Selling.Queries;
 using Erp.Application.Features.Stock.Commands;
 using Erp.Application.Features.Stock.Queries;
 using Erp.Application.Features.Warehouses.Commands;
@@ -90,6 +92,36 @@ builder.Services.AddScoped<ICommandHandler<PostPurchaseReceiptCommand, Result<Pu
 builder.Services.AddScoped<IQueryHandler<GetPurchaseReceiptsQuery, IReadOnlyList<PurchaseReceiptDto>>, GetPurchaseReceiptsQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<PostPurchaseInvoiceCommand, Result<PurchaseInvoicePostingDto>>, PostPurchaseInvoiceCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPurchaseInvoicesQuery, IReadOnlyList<PurchaseInvoiceDto>>, GetPurchaseInvoicesQueryHandler>();
+
+// Selling (Task 5.1): customer master, the plan.md §2 credit-limit gate's owner. Same split as
+// the other modules: repository in Erp.Infrastructure, handlers in Erp.Application - only the
+// composition root knows both (decision C2).
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICommandHandler<CreateCustomerCommand, Result<CustomerDto>>, CreateCustomerCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCustomersQuery, IReadOnlyList<CustomerDto>>, GetCustomersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCustomerByIdQuery, CustomerDto?>, GetCustomerByIdQueryHandler>();
+
+// Selling cycle (Tasks 5.2/5.2b): the sales order workflow, the delivery-note posting engine and
+// the reads behind both documents. One EF class (SalesRepository) implements the two contracts -
+// both write through the SAME scoped AppDbContext, so the posting transaction opened by either
+// interface is ambient for the other.
+builder.Services.AddScoped<ISalesOrderRepository, SalesRepository>();
+builder.Services.AddScoped<IDeliveryNoteRepository, SalesRepository>();
+builder.Services.AddScoped<ISalesInvoiceRepository, SalesInvoiceRepository>();
+builder.Services.AddScoped<IPOSProfileRepository, POSProfileRepository>();
+builder.Services.AddScoped<ISalesPostingService, SalesPostingService>();
+
+builder.Services.AddScoped<ICommandHandler<SubmitPOSInvoiceCommand, Result<SalesInvoiceDto>>, SubmitPOSInvoiceCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateSalesInvoiceCommand, Result<SalesInvoiceDto>>, CreateSalesInvoiceCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitSalesInvoiceCommand, Result<SalesInvoiceDto>>, SubmitSalesInvoiceCommandHandler>();
+
+builder.Services.AddScoped<ICommandHandler<CreateSalesOrderCommand, Result<SalesOrderDto>>, CreateSalesOrderCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitSalesOrderCommand, Result<SalesOrderDto>>, SubmitSalesOrderCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalesOrdersQuery, IReadOnlyList<SalesOrderDto>>, GetSalesOrdersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalesOrderByIdQuery, SalesOrderDto?>, GetSalesOrderByIdQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<PostDeliveryNoteCommand, Result<DeliveryNotePostingDto>>, PostDeliveryNoteCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetDeliveryNotesQuery, IReadOnlyList<DeliveryNoteDto>>, GetDeliveryNotesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetDeliveryNoteByIdQuery, DeliveryNoteDto?>, GetDeliveryNoteByIdQueryHandler>();
 
 // Journal Entry pipeline (tasks.md 2.3/2.4): the manual-voucher aggregate, the gapless JV number
 // and the ATOMIC submit/cancel ledger appends. Same split as every other module: repository in

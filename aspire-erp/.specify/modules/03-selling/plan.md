@@ -2,7 +2,7 @@
 
 **Module:** `03-selling`  
 **Status:** APPROVED  
-**Version:** 1.0.0  
+**Version:** 1.2.0 (Amendment A1 — §1.6 Delivery Note, task 5.2b; Amendment A2 — §1.7 Sales Invoice Line + Company selling GL defaults, task 5.3)  
 **Stack:** .NET Aspire (.NET 9/10), Microsoft SQL Server 2025, Entity Framework Core 9, React 19 + TypeScript  
 **Architectural Standard:** Clean Architecture, Credit Management, Atomic POS Transactions  
 
@@ -112,6 +112,77 @@ CREATE TABLE POSProfile (
     IsActive BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_POSProfile_Warehouse FOREIGN KEY (WarehouseId) REFERENCES Warehouse(Id)
 );
+
+-- 6. Delivery Note (Amendment A1, 2026-10-03, approved — task 5.2b): the physical shipment
+-- document of spec SL-01/SL-04. Relieves inventory through the FIFO engine and books COGS at
+-- posting time. Stock value comes from the cost layers, NOT from the order rate — hence no money
+-- columns here (contrast PurchaseReceiptLine, whose Rate values the receipt-time inventory).
+-- Shape mirrors the PurchaseReceipt entity: WarehouseId + VoucherNo (gapless, Constitution III.4).
+CREATE TABLE DeliveryNote (
+    Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+    TenantId UNIQUEIDENTIFIER NOT NULL,
+    CompanyId UNIQUEIDENTIFIER NOT NULL,
+    VoucherNo NVARCHAR(50) NOT NULL,
+    SalesOrderId UNIQUEIDENTIFIER NOT NULL,
+    WarehouseId UNIQUEIDENTIFIER NOT NULL,
+    PostingDate DATE NOT NULL,
+    RowVersion ROWVERSION NOT NULL,
+    CreatedAt DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET(),
+    CONSTRAINT FK_DeliveryNote_SalesOrder FOREIGN KEY (SalesOrderId) REFERENCES SalesOrder(Id),
+    CONSTRAINT FK_DeliveryNote_Warehouse FOREIGN KEY (WarehouseId) REFERENCES Warehouse(Id)
+);
+
+CREATE UNIQUE NONCLUSTERED INDEX UQ_DeliveryNote_Tenant_Company_VoucherNo
+ON DeliveryNote (TenantId, CompanyId, VoucherNo);
+
+CREATE TABLE DeliveryNoteLine (
+    Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+    DeliveryNoteId UNIQUEIDENTIFIER NOT NULL,
+    SalesOrderItemId UNIQUEIDENTIFIER NOT NULL,
+    ItemId UNIQUEIDENTIFIER NOT NULL,
+    Qty DECIMAL(18,4) NOT NULL,
+    CONSTRAINT CK_DeliveryNoteLine_Qty CHECK (Qty > 0.0000),
+    CONSTRAINT FK_DeliveryNoteLine_Header FOREIGN KEY (DeliveryNoteId) REFERENCES DeliveryNote(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_DeliveryNoteLine_OrderLine FOREIGN KEY (SalesOrderItemId) REFERENCES SalesOrderItem(Id),
+    CONSTRAINT FK_DeliveryNoteLine_Item FOREIGN KEY (ItemId) REFERENCES Item(Id)
+);
+
+-- 7. Sales Invoice Line (Amendment A2, 2026-10-03 - announced at the Task 5.3 kickoff): the
+-- original plan defined only the SalesInvoice header; NetTotal/TaxTotal/GrandTotal need line
+-- detail, and spec SL-01's tax split needs a per-line rate. Tax model (minimal, the spec is
+-- silent beyond SL-01/SL-03 amounts): the client PROPOSES TaxRate (percent) per line; the SERVER
+-- recomputes TaxAmount and derives every header total authoritatively - the same doctrine as
+-- SalesOrder's server-computed totals. Discounts are NOT modelled (spec-silent; revisit with the
+-- 5.5 frontend if required).
+CREATE TABLE SalesInvoiceLine (
+    Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+    SalesInvoiceId UNIQUEIDENTIFIER NOT NULL,
+    ItemId UNIQUEIDENTIFIER NOT NULL,
+    Qty DECIMAL(18,4) NOT NULL,
+    Rate DECIMAL(18,4) NOT NULL,
+    Amount DECIMAL(18,4) NOT NULL,
+    TaxRate DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    TaxAmount DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
+    CONSTRAINT CK_SalesInvoiceLine_Qty CHECK (Qty > 0.0000),
+    CONSTRAINT CK_SalesInvoiceLine_Rate CHECK (Rate >= 0.0000),
+    CONSTRAINT CK_SalesInvoiceLine_Amount CHECK (Amount >= 0.0000),
+    CONSTRAINT CK_SalesInvoiceLine_TaxRate CHECK (TaxRate >= 0.0000 AND TaxRate <= 100.00),
+    CONSTRAINT CK_SalesInvoiceLine_TaxAmount CHECK (TaxAmount >= 0.0000),
+    CONSTRAINT FK_SalesInvoiceLine_Header FOREIGN KEY (SalesInvoiceId) REFERENCES SalesInvoice(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_SalesInvoiceLine_Item FOREIGN KEY (ItemId) REFERENCES Item(Id)
+);
+
+-- Company selling-side GL defaults (Amendment A2): the mirror of the buying trio added by
+-- 04-buying Task 4.3 (decision D3 - code, not FK). The Company table itself lives in the core
+-- schema, so this module only ALTERs it:
+--   ALTER TABLE Company ADD ReceivableAccountCode NVARCHAR(50) NULL;
+--     -- Dr on SalesInvoice (spec SL-01 "Accounts Receivable"); per-customer override is
+--     -- Customer.DefaultReceivableAccountId (nullable FK, resolves first when set).
+--   ALTER TABLE Company ADD SalesRevenueAccountCode NVARCHAR(50) NULL;
+--     -- Cr NetTotal (spec SL-01 "Sales Revenue"). No item-level income account exists (the
+--     -- Item.IncomeAccountId column was dropped in 02-stock), so the default is company-wide.
+--   ALTER TABLE Company ADD OutputTaxPayableAccountCode NVARCHAR(50) NULL;
+--     -- Cr TaxTotal (spec SL-01 "Tax Payable"); twin of Company.InputTaxRecoverableAccountCode.
 ```
 
 ---

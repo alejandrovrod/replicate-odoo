@@ -44,6 +44,11 @@ apiClient.interceptors.request.use((config) => {
   if (tenantId) {
     config.headers['X-Tenant-ID'] = tenantId
   }
+  
+  if ((config.method === 'post' || config.method === 'put') && !config.headers['Idempotency-Key']) {
+    config.headers['Idempotency-Key'] = crypto.randomUUID()
+  }
+  
   return config
 })
 

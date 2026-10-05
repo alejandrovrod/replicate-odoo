@@ -73,7 +73,7 @@ public class FinancialReportsApiTests : IClassFixture<ErpApiFactory>
         using var client = CreateClient();
 
         using var response = await client.GetAsync(
-            $"/api/v1/FinancialReports/general-ledger?companyId={ErpApiFactory.DevCompanyId}&take=1");
+            $"/api/v1/FinancialReports/general-ledger?companyId={ErpApiFactory.DevCompanyId}&take=1&to={EverythingCutoff:yyyy-MM-dd}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -126,6 +126,9 @@ public class FinancialReportsApiTests : IClassFixture<ErpApiFactory>
             entry["postingDate"]!.GetValue<string>());
 
         // THE pinned behaviour: totals cover the FULL filtered set while the page is truncated.
+        // The explicit to=cutoff keeps report and oracle on the identical date scope: without it,
+        // any row dated past the cutoff (e.g. multi-month test postings, which are permanent under
+        // the append-only ledger) would rightfully appear in the report but not in the oracle.
         var oracle = await ReadTotalsAsync(EverythingCutoff);
         Assert.Equal(oracle.TotalDebit, report["totalDebit"]!.GetValue<decimal>());
         Assert.Equal(oracle.TotalCredit, report["totalCredit"]!.GetValue<decimal>());

@@ -1,5 +1,4 @@
-import React from 'react';
-import { OpportunityDto } from '../types/crm';
+import type { OpportunityDto } from '../types/crm';
 
 interface Props {
   opportunity: OpportunityDto;

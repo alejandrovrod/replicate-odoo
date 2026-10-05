@@ -49,5 +49,15 @@ public sealed class LeadConfiguration : IEntityTypeConfiguration<Lead>
 
         builder.HasIndex(l => new { l.TenantId, l.CompanyId, l.Status })
             .HasDatabaseName("IX_Lead_Tenant_Status");
+
+        // Fix-pass W1: the (CompanyId, Source, ExternalReference) triple is the spec CRM-04
+        // replay identity, so it gets a UNIQUE backstop for the handler's check-then-insert
+        // (the UQ_Customer_Tenant_Company_Code precedent). FILTERED on non-null: a null key
+        // means "no dedup requested" (manual entry) and must never collide. CompanyId is a
+        // globally unique company key, so the literal triple needs no TenantId prefix.
+        builder.HasIndex(l => new { l.CompanyId, l.Source, l.ExternalReference })
+            .IsUnique()
+            .HasDatabaseName("UQ_Lead_Company_Source_ExternalRef")
+            .HasFilter("[ExternalReference] IS NOT NULL");
     }
 }

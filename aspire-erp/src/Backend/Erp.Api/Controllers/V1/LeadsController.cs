@@ -15,7 +15,7 @@ public sealed record ConvertLeadRequest(
     string? DefaultCurrency = "USD",
     int PaymentTermsDays = 30,
     decimal OpportunityAmount = 0m,
-    decimal OpportunityProbability = 10m,
+    decimal OpportunityProbability = 25m,
     DateOnly? ExpectedClosingDate = null,
     Guid? ConvertedByUserId = null);
 

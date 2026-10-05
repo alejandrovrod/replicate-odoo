@@ -40,6 +40,13 @@ public sealed class ReopenOpportunityCommandHandler : ICommandHandler<ReopenOppo
                     "Only closed lost opportunities can be re-opened.");
             }
 
+            if (command.NewProbability < 0 || command.NewProbability > 100)
+            {
+                throw new CRMValidationException(
+                    CRMErrorCodes.InvalidProbabilityRange,
+                    $"Probability must be between 0 and 100. Received {command.NewProbability}.");
+            }
+
             opportunity.Reopen(command.NewProbability);
             
             await _crmRepository.UpdateOpportunityAsync(opportunity, cancellationToken);

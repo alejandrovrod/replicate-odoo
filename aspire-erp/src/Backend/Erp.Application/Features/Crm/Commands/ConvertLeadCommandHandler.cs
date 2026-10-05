@@ -98,7 +98,7 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
                     OpportunityFrom = "Lead",
                     PartyId = lead.Id,
                     PartyName = customer.CustomerName,
-                    Stage = OpportunityStage.Prospecting,
+                    Stage = OpportunityStage.Qualification,
                     OpportunityAmount = command.OpportunityAmount,
                     Probability = command.OpportunityProbability,
                     Currency = command.DefaultCurrency ?? "USD",

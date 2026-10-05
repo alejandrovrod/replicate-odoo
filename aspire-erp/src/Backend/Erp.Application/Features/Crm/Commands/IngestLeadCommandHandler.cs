@@ -80,6 +80,27 @@ public sealed class IngestLeadCommandHandler : ICommandHandler<IngestLeadCommand
             return Result<IngestLeadResultDto>.Success(
                 new IngestLeadResultDto(LeadDto.Build(lead), Duplicate: false));
         }
+        catch (DuplicateLeadException ex)
+        {
+            // Fix-pass W1: the filtered unique index UQ_Lead_Company_Source_ExternalRef
+            // rejected our insert because a concurrent ingest won the race (the
+            // CustomerRepository duplicate-code translation precedent). Re-read the winner
+            // and answer Duplicate=true with zero new rows; a missing winner means the
+            // index fired for another reason, so let it surface loudly.
+            var winner = await _crmRepository.GetLeadByDedupKeyAsync(
+                ex.CompanyId,
+                ex.LeadSource,
+                ex.ExternalReference,
+                cancellationToken);
+
+            if (winner is not null)
+            {
+                return Result<IngestLeadResultDto>.Success(
+                    new IngestLeadResultDto(LeadDto.Build(winner), Duplicate: true));
+            }
+
+            throw;
+        }
         catch (CRMValidationException ex)
         {
             return Result<IngestLeadResultDto>.Failure(ex.Code, ex.Message);

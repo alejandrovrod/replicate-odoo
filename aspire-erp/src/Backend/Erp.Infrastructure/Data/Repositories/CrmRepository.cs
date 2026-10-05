@@ -3,6 +3,7 @@ using System.Data.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -75,7 +76,21 @@ public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
     public async Task AddLeadAsync(Lead lead, CancellationToken cancellationToken = default)
     {
         await _dbContext.Leads.AddAsync(lead, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // Fix-pass W1: UQ_Lead_Company_Source_ExternalRef is the hard backstop of the
+            // CRM-04 replay rule - the handler's GetLeadByDedupKeyAsync pre-check can be raced
+            // by a concurrent ingest, so translate the race into a typed domain failure instead
+            // of leaking an EF/SQL exception (the CustomerRepository.AddAsync precedent). The
+            // handler re-reads the winner and answers Duplicate=true.
+            _dbContext.Entry(lead).State = EntityState.Detached;
+            throw new DuplicateLeadException(lead.CompanyId, lead.Source, lead.ExternalReference!, ex);
+        }
     }
 
     public async Task UpdateLeadAsync(Lead lead, CancellationToken cancellationToken = default)
@@ -207,6 +222,9 @@ public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
 
         return $"OPP-{year}-{nextSequence:D5}";
     }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex) =>
+        ex.InnerException is SqlException { Number: 2601 or 2627 };
 
     private static void AddParameter(DbCommand command, string name, object value)
     {

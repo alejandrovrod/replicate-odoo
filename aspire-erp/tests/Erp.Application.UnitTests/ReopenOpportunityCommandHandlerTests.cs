@@ -74,6 +74,78 @@ public class ReopenOpportunityCommandHandlerTests
         Assert.Equal("crm_opportunity_not_lost", result.Error.Code);
     }
 
+    [Theory]
+    [InlineData(-5)]
+    [InlineData(-0.5)]
+    [InlineData(100.5)]
+    [InlineData(150)]
+    public async Task HandleAsync_ShouldRejectOutOfRangeProbability_WithZeroWrites(double probabilityRaw)
+    {
+        // Arrange (fix-pass S3): the same 0-100 guard the advance handler carries - a
+        // reopen must not smuggle an impossible probability onto the deal.
+        var companyId = Guid.NewGuid();
+        var oppId = Guid.NewGuid();
+
+        var opp = new Opportunity
+        {
+            Id = oppId,
+            CompanyId = companyId,
+            Status = OpportunityStatus.Lost,
+            Stage = OpportunityStage.ClosedLost,
+            LossReason = "Budget frozen",
+            Probability = 0m,
+        };
+
+        var repo = new FakeCrmRepository { OpportunityToReturn = opp };
+
+        var handler = new ReopenOpportunityCommandHandler(repo);
+        var cmd = new ReopenOpportunityCommand(companyId, oppId, (decimal)probabilityRaw);
+
+        // Act
+        var result = await handler.HandleAsync(cmd);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(CRMErrorCodes.InvalidProbabilityRange, result.Error!.Code);
+        Assert.False(repo.UpdateOpportunityCalled);
+        Assert.Equal(OpportunityStage.ClosedLost, opp.Stage);
+        Assert.Equal(OpportunityStatus.Lost, opp.Status);
+        Assert.Equal("Budget frozen", opp.LossReason);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(100)]
+    public async Task HandleAsync_ShouldAcceptBoundaryProbabilities(decimal probability)
+    {
+        // Arrange
+        var companyId = Guid.NewGuid();
+        var oppId = Guid.NewGuid();
+
+        var opp = new Opportunity
+        {
+            Id = oppId,
+            CompanyId = companyId,
+            Status = OpportunityStatus.Lost,
+            Stage = OpportunityStage.ClosedLost,
+            LossReason = "Budget frozen",
+            Probability = 0m,
+        };
+
+        var repo = new FakeCrmRepository { OpportunityToReturn = opp };
+
+        var handler = new ReopenOpportunityCommandHandler(repo);
+        var cmd = new ReopenOpportunityCommand(companyId, oppId, probability);
+
+        // Act
+        var result = await handler.HandleAsync(cmd);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(probability, opp.Probability);
+        Assert.True(repo.UpdateOpportunityCalled);
+    }
+
     private class FakeCrmRepository : ICrmRepository
     {
         public Opportunity OpportunityToReturn { get; set; }

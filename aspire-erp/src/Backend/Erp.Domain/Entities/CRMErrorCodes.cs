@@ -19,4 +19,6 @@ public static class CRMErrorCodes
     public const string InvalidProbabilityRange = "crm_invalid_probability_range";
     public const string InvalidStatusTransition = "invalid_status_transition";
     public const string InvalidOpportunityStage = "crm_invalid_opportunity_stage";
+    public const string OpportunityNotWon = "crm_opportunity_not_won";
+    public const string OpportunityNoCustomer = "crm_opportunity_no_customer";
 }

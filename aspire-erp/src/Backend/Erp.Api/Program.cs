@@ -242,6 +242,7 @@ builder.Services.AddScoped<ICommandHandler<IngestLeadCommand, Result<IngestLeadR
 builder.Services.AddScoped<ICommandHandler<ConvertLeadCommand, Result<ConvertLeadResultDto>>, ConvertLeadCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<ReopenOpportunityCommand, Result<Guid>>, ReopenOpportunityCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<AdvanceOpportunityStageCommand, Result<OpportunityDto>>, AdvanceOpportunityStageCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateOpportunitySalesOrderCommand, Result<SalesOrderDto>>, CreateOpportunitySalesOrderCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetLeadsQuery, IReadOnlyList<LeadDto>>, GetLeadsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetOpportunitiesQuery, IReadOnlyList<OpportunityDto>>, GetOpportunitiesQueryHandler>();
 

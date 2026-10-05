@@ -85,6 +85,31 @@ public class ConvertLeadCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_ShouldOpenAtQualificationMilestone_WhenNoTermsGiven()
+    {
+        // Arrange (fix-pass W2): spec CRM-01 opens the deal at Qualification/25% - the
+        // command and controller defaults carry 25m, the handler carries Qualification.
+        var companyId = Guid.NewGuid();
+        var leadId = Guid.NewGuid();
+
+        var companyRepo = new FakeCompanyRepository { CompanyToReturn = new Company { Id = companyId } };
+        var lead = new Lead { Id = leadId, CompanyId = companyId, Status = LeadStatus.Open, LeadCode = "L-01", LeadName = "Test Lead" };
+        var crmRepo = new FakeCrmRepository { LeadToReturn = lead };
+
+        var handler = new ConvertLeadCommandHandler(crmRepo, new FakeActivityRepository(), new FakeCustomerRepository(), companyRepo);
+        var cmd = new ConvertLeadCommand(companyId, leadId, "C-01");
+
+        // Act
+        var result = await handler.HandleAsync(cmd);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(crmRepo.OpportunityCreated);
+        Assert.Equal(OpportunityStage.Qualification, crmRepo.OpportunityCreated.Stage);
+        Assert.Equal(25m, crmRepo.OpportunityCreated.Probability);
+    }
+
+    [Fact]
     public async Task HandleAsync_ShouldPreferCallerAuthor_OverAssignee()
     {
         // Arrange
@@ -128,6 +153,7 @@ public class ConvertLeadCommandHandlerTests
     private class FakeCrmRepository : ICrmRepository
     {
         public Lead LeadToReturn { get; set; }
+        public Opportunity? OpportunityCreated { get; private set; }
         public bool AddOpportunityCalled { get; set; }
         public bool UpdateLeadCalled { get; set; }
 
@@ -135,7 +161,7 @@ public class ConvertLeadCommandHandlerTests
         public Task<Opportunity?> GetOpportunityByIdAsync(Guid opportunityId, CancellationToken cancellationToken = default) => Task.FromResult<Opportunity?>(null);
         public Task AddLeadAsync(Lead lead, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task UpdateLeadAsync(Lead lead, CancellationToken cancellationToken = default) { UpdateLeadCalled = true; return Task.CompletedTask; }
-        public Task AddOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default) { AddOpportunityCalled = true; return Task.CompletedTask; }
+        public Task AddOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default) { AddOpportunityCalled = true; OpportunityCreated = opportunity; return Task.CompletedTask; }
         public Task UpdateOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<string> NextOpportunityNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default) => Task.FromResult("OPP-001");
         public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) => operation(cancellationToken);

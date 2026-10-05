@@ -1,5 +1,6 @@
 using Erp.Api.Filters;
 using Erp.Application.Common;
+using Erp.Application.DTOs;
 using Erp.Application.Features.Crm.Commands;
 using Erp.Application.Features.Crm.DTOs;
 using Erp.Application.Features.Crm.Queries;
@@ -8,6 +9,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Erp.Api.Controllers.V1;
+
+/// <summary>Sales-order creation body: the single order line plus optional dates/author.</summary>
+public sealed record CreateSalesOrderRequest(
+    Guid ItemId,
+    decimal Quantity,
+    decimal Rate,
+    DateOnly? TransactionDate = null,
+    DateOnly? DeliveryDate = null,
+    Guid? CreatedByUserId = null);
 
 /// <summary>Stage-advance body: target stage plus optional probability, loss reason.</summary>
 public sealed record AdvanceStageRequest(
@@ -159,6 +169,76 @@ public sealed class OpportunitiesController : ControllerBase
     }
 
     /// <summary>
+    /// Creates a formal sales order from a ClosedWon opportunity (spec CRM-02 1-click
+    /// creation), delegating money and numbering to the existing selling creation path.
+    /// </summary>
+    /// <remarks>Requires the <c>Idempotency-Key</c> header (Constitution VI.4) - the route
+    /// creates sales-order rows.</remarks>
+    /// <param name="id">ClosedWon opportunity id.</param>
+    /// <param name="companyId">Company that owns the opportunity.</param>
+    /// <param name="request">Single order line (item/qty/rate) plus optional dates/author.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:guid}/create-sales-order")]
+    [IdempotencyKeyRequired]
+    [ProducesResponseType(typeof(SalesOrderDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateSalesOrder(
+        Guid id,
+        [FromQuery] Guid companyId,
+        [FromBody] CreateSalesOrderRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                "Invalid Opportunity",
+                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                "crm_opportunity_not_found");
+        }
+
+        var result = await _sender.SendAsync(
+            new CreateOpportunitySalesOrderCommand(
+                companyId,
+                id,
+                request.ItemId,
+                request.Quantity,
+                request.Rate,
+                request.TransactionDate,
+                request.DeliveryDate,
+                request.CreatedByUserId),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+            return error.Code switch
+            {
+                SellingErrorCodes.SalesOrderNotFound => Problem(
+                    StatusCodes.Status404NotFound,
+                    "Sales Order Not Found",
+                    error.Message,
+                    error.Code),
+                SellingErrorCodes.InvalidStatusTransition
+                    or SellingErrorCodes.CreditLimitExceeded
+                    or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                    StatusCodes.Status409Conflict,
+                    "Sales Order Conflict",
+                    error.Message,
+                    error.Code),
+                _ => OpportunityProblem(error),
+            };
+        }
+
+        var order = result.Value!;
+        return Created(
+            $"/api/v1/sales-orders/{order.Id}?companyId={order.CompanyId}",
+            order);
+    }
+
+    /// <summary>
     /// RFC 7807 mapping for the opportunity routes: missing opportunities/companies are 404,
     /// state conflicts (terminal transition, concurrency race) are 409, every other domain
     /// failure - including the CRM-02 missing-loss-reason rejection - is a 400 carrying the
@@ -176,6 +256,7 @@ public sealed class OpportunitiesController : ControllerBase
                     error.Code),
             CRMErrorCodes.InvalidStatusTransition
                 or CRMErrorCodes.OpportunityAlreadyClosed
+                or CRMErrorCodes.OpportunityNotWon
                 or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
                     "Opportunity Conflict",

@@ -9,6 +9,7 @@ export type NavRoute =
   | 'manufacturing'
   | 'selling'
   | 'buying'
+  | 'hr-payroll'
 
 interface NavigationState {
   currentRoute: NavRoute
@@ -29,6 +30,7 @@ const parseHash = (): NavRoute => {
     'manufacturing',
     'selling',
     'buying',
+    'hr-payroll',
   ]
   return validRoutes.includes(hash as NavRoute) ? (hash as NavRoute) : 'accounting-coa'
 }

@@ -10,6 +10,7 @@ import {
   ListTree,
   Receipt,
   Truck,
+  Users,
 } from 'lucide-react'
 import type { ElementType } from 'react'
 import { type NavRoute, useNavigationStore } from '../../store/useNavigationStore'
@@ -48,6 +49,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'manufacturing', label: 'Manufacturing', icon: Factory, badge: 'ERPNext' },
       { id: 'selling', label: 'Selling & POS', icon: Receipt },
       { id: 'buying', label: 'Buying & Vendors', icon: Truck },
+      { id: 'hr-payroll', label: 'HR & Payroll', icon: Users, badge: 'ERPNext' },
     ],
   },
 ]

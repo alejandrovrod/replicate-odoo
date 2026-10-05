@@ -4,6 +4,7 @@ import { GeneralLedgerOverview } from './features/accounting/GeneralLedgerOvervi
 import { BankingOverview } from './features/banking/BankingOverview'
 import { BuyingOverview } from './features/buying/BuyingOverview'
 import { DashboardOverview } from './features/dashboard/DashboardOverview'
+import { HrPayrollOverview } from './features/hr-payroll/HrPayrollOverview'
 import { ManufacturingOverview } from './features/manufacturing/ManufacturingOverview'
 import { SellingOverview } from './features/selling/SellingOverview'
 import { StockOverview } from './features/stock/StockOverview'
@@ -43,6 +44,8 @@ function App() {
       {currentRoute === 'selling' && <SellingOverview />}
 
       {currentRoute === 'buying' && <BuyingOverview />}
+
+      {currentRoute === 'hr-payroll' && <HrPayrollOverview />}
     </AppShell>
   )
 }

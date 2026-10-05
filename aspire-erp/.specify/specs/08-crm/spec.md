@@ -1,7 +1,8 @@
 # Functional Specification: CRM & Sales Pipeline (ERPNext Parity)
 
 **Module:** `08-crm`  
-**Status:** IN PROGRESS — Block A (adopt + verify) implemented; Block B/C pending  
+**Status:** IMPLEMENTED & VERIFIED - 7/7 tasks,
+PASS WITH WARNINGS (0 CRITICAL, 0 UNTESTED)  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext CRM Documentation](https://docs.frappe.io/erpnext/CRM)  
@@ -35,7 +36,7 @@ $$\text{WeightedAmount}_{\text{ClosedWon}} = \text{OpportunityAmount} \times 1.0
 
 ### Invariant CRM-02: Mandatory Loss Reason Requirement
 An `Opportunity` cannot transition to `ClosedLost` without providing a non-empty `LossReason`.
-- Violations throw `DomainValidationException("LossReasonIsRequired")`.
+- Violations throw `CRMValidationException("crm_loss_reason_required")`.
 
 ### Invariant CRM-03: Seamless Conversion Traceability
 When converting a `Lead` into a `Customer` or `Opportunity`:
@@ -64,7 +65,7 @@ When converting a `Lead` into a `Customer` or `Opportunity`:
 ### Scenario CRM-03: Enforce Loss Reason on Lost Deal
 - **Given** an active Opportunity with proposal submitted
 - **When** the salesperson marks the deal as `ClosedLost` without specifying a reason
-- **Then** the operation is rejected with `DomainValidationException`
+- **Then** the operation is rejected with `CRMValidationException` (`crm_loss_reason_required`, HTTP 400)
 - **When** the user provides `LossReason = "Competitor priced 15% lower"`
 - **Then** status becomes `ClosedLost` with `Probability = 0%`.
 

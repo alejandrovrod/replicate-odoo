@@ -3,7 +3,7 @@
 **Module:** `08-crm`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IMPLEMENTATION COMPLETE — all 7 tasks verified (pending Spec Kit verify + archive)  
+**Status:** IMPLEMENTED & VERIFIED — 7/7 tasks, re-verified PASS WITH WARNINGS (0 CRITICAL, 0 UNTESTED) — archived  
 
 ---
 
@@ -28,6 +28,7 @@
   - **Acceptance:** Audit logs remain attached across the conversion boundary.
 
 - [x] **Task 11.5: React Sales Funnel & Pipeline Board UI**
+  > **Closed fix-pass (post-FAIL C1/C2):** board reachable (`crm` route + Sidebar + `App.tsx` render, Kanban chunk emitted); `POST /opportunities/{id}/create-sales-order` live (delegates to existing selling handler, 201 Draft + linkage Note; non-Won → 409, zero writes) with `CreateSalesOrderForm` under Won cards.
   - **Action:** Build Kanban opportunity pipeline board in `erp-client` with drag-and-drop stage updates.
   - **Acceptance:** Dragging opportunity across stages automatically recalculates weighted forecast banner.
 
@@ -40,6 +41,7 @@
 - [x] **Task 11.7: CRM Forecasting & Conversion Unit & Integration Tests**
   > **Re-verification 2026-10-04 (adoptive Block A):** unit side green; integration file does not exist yet. Re-tick on Block C.
   > **Closed Block C:** CrmLifecycleApiTests live (conversion + replay + race + reopen, 5/5 green).
+  > **Closed fix-pass:** 9/9 live green (sales-order creation, dedup race, temporal-history assertion, reopen range guard).
   - **Action:** Write automated unit tests for weighted pipeline calculation and integration tests for lead-to-customer conversion.
   - **Acceptance:** 100% test pass on probability bounds, loss reason enforcement, and optimistic concurrency locks.
 

@@ -17,7 +17,7 @@
 | **05. Banking & Reconciliation Subsystem** | `100% CERTIFIED` | [spec.md](./modules/archive/2026-10-04-05-banking/spec.md) | [plan.md](./modules/archive/2026-10-04-05-banking/plan.md) | [tasks.md](./modules/archive/2026-10-04-05-banking/tasks.md) |
 | **06. Manufacturing & Production (BOM)** | `100% CERTIFIED` | [spec.md](./modules/archive/2026-10-04-06-manufacturing/spec.md) | [plan.md](./modules/archive/2026-10-04-06-manufacturing/plan.md) | [tasks.md](./modules/archive/2026-10-04-06-manufacturing/tasks.md) |
 | **07. Asset Management & Depreciation** | `100% CERTIFIED` | [spec.md](./modules/archive/2026-10-04-07-assets/spec.md) | [plan.md](./modules/archive/2026-10-04-07-assets/plan.md) | [tasks.md](./modules/archive/2026-10-04-07-assets/tasks.md) |
-| **08. CRM & Sales Pipeline** | `100% CERTIFIED` | [spec.md](./modules/08-crm/spec.md) | [plan.md](./modules/08-crm/plan.md) | [tasks.md](./modules/08-crm/tasks.md) |
+| **08. CRM & Sales Pipeline** | `CERTIFIED — with warnings` | [spec.md](./modules/archive/2026-10-05-08-crm/spec.md) | [plan.md](./modules/archive/2026-10-05-08-crm/plan.md) | [tasks.md](./modules/archive/2026-10-05-08-crm/tasks.md) |
 | **09. Human Resources & Payroll** | `CERTIFIED — with warnings` | [spec.md](./modules/archive/2026-10-04-09-hr-payroll/spec.md) | [plan.md](./modules/archive/2026-10-04-09-hr-payroll/plan.md) | [tasks.md](./modules/archive/2026-10-04-09-hr-payroll/tasks.md) |
 
 ---

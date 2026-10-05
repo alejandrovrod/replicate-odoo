@@ -1,0 +1,118 @@
+{
+  "module": {
+    "title": "Inventario y almacenes (Kardex)",
+    "subtitle": "Gestiona artículos, almacenes, comprobantes de stock y el kardex."
+  },
+  "overview": {
+    "title": "Stock e inventario",
+    "subtitle": "Inventario perpetuo: registrar un comprobante escribe sus renglones de Kardex y sus líneas equilibradas del libro mayor en la misma transacción.",
+    "newEntry": "Nuevo comprobante de stock",
+    "loading": "Cargando el inventario…",
+    "loadFailed": "No se pudo cargar el inventario",
+    "retry": "Reintentar",
+    "missingTenant": "Sin organización/empresa seleccionada. Definí VITE_TENANT_ID y VITE_COMPANY_ID en .env.development."
+  },
+  "posted": {
+    "summary": "Registrado {{voucherNo}} — Debe {{debit}} = Haber {{credit}} ({{glLines}} líneas contables, {{kardexRows}} renglones de Kardex). Los niveles de stock se actualizaron.",
+    "dismiss": "Descartar"
+  },
+  "stats": {
+    "warehouses": "Almacenes",
+    "locations_one": "{{count}} ubicación",
+    "locations_other": "{{count}} ubicaciones",
+    "locationsHint": "Nodos hoja del árbol de almacenes",
+    "activeSkus": "SKUs activos",
+    "activeItems_one": "{{count}} artículo activo",
+    "activeItems_other": "{{count}} artículos activos",
+    "uniqueSkuHint": "SKU único por organización",
+    "valuation": "Valuación de stock",
+    "fifoHint": "Capas FIFO en Mercadería (1310)"
+  },
+  "warehouses": {
+    "title": "Almacenes",
+    "subtitle": "Saldo de stock y valuación perpetua por ubicación hoja.",
+    "empty": "Todavía no hay almacenes para esta empresa.",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "statusLine": "{{status}} · cuenta de stock {{account}}",
+    "stockedSkus_one": "{{count}} SKU en existencia",
+    "stockedSkus_other": "{{count}} SKUs en existencia"
+  },
+  "items": {
+    "title": "Artículos y niveles de stock",
+    "subtitle": "Suma viva del Kardex por almacén. Registrar un comprobante recarga esta tabla.",
+    "empty": "Todavía no hay artículos para esta empresa.",
+    "loading": "Cargando niveles de stock…",
+    "loadFailed": "No se pudo cargar la lista de artículos",
+    "retry": "Reintentar",
+    "status": "Estado",
+    "code": "Código",
+    "item": "Artículo",
+    "valuation": "Valuación",
+    "onHand": "Existencias",
+    "value": "Valor",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "noMovement": "Sin movimientos en este almacén",
+    "fifo": "FIFO",
+    "newEntry": "Nuevo comprobante"
+  },
+  "movements": {
+    "title": "Movimientos recientes",
+    "subtitle": "Comprobantes registrados, los más nuevos primero.",
+    "date": "Fecha",
+    "voucher": "Comprobante",
+    "type": "Tipo",
+    "item": "Artículo",
+    "qty": "Cantidad movida",
+    "rate": "Precio unitario",
+    "empty": "Todavía no hay movimientos de stock — registrá una recepción de mercadería para abrir el libro.",
+    "fifo": "FIFO"
+  },
+  "entry": {
+    "title": "Nuevo comprobante de stock",
+    "close": "Cerrar",
+    "type": "Tipo",
+    "warehouse": "Almacén",
+    "fromWarehouse": "Almacén de origen",
+    "toWarehouse": "Almacén de destino",
+    "selectWarehouse": "Seleccionar…",
+    "postingDate": "Fecha de registro",
+    "lines": "Renglones",
+    "addLine": "Agregar renglón",
+    "selectItem": "Seleccionar artículo…",
+    "item": "Artículo",
+    "qty": "Cant.",
+    "rate": "Precio",
+    "fifoValued": "Valuado por FIFO",
+    "removeLine": "Quitar renglón",
+    "cancel": "Cancelar",
+    "post": "Registrar {{type}}",
+    "posting": "Registrando…",
+    "atomicHint": "Registra de forma atómica: renglones de Kardex + líneas equilibradas del libro mayor.",
+    "rejected": "Registro rechazado",
+    "unexpectedTitle": "Error inesperado"
+  },
+  "entryType": {
+    "MaterialReceipt": "Recepción de mercadería",
+    "MaterialIssue": "Consumo de mercadería",
+    "MaterialTransfer": "Transferencia entre almacenes"
+  },
+  "entryTypeHint": {
+    "MaterialReceipt": "Recepción de mercadería: Debe Mercadería (1310) / Haber Mercadería recibida no facturada (2120), capa FIFO valuada al precio unitario que ingreses.",
+    "MaterialIssue": "Consumo de mercadería: las capas FIFO van al costo (Debe 5210 / Haber 1310). Se rechaza cuando el almacén no cubre la cantidad.",
+    "MaterialTransfer": "Movimiento entre almacenes: solo renglones de Kardex, sin impacto contable."
+  },
+  "validation": {
+    "incomplete": "El comprobante de stock está incompleto",
+    "noWarehouses": "Esta empresa no tiene almacenes donde registrar.",
+    "noActiveItems": "Esta empresa no tiene artículos activos para registrar.",
+    "selectWarehouse": "Seleccioná un almacén.",
+    "selectTarget": "Seleccioná un almacén de destino para la transferencia.",
+    "targetDiffers": "El almacén de destino debe ser distinto del origen.",
+    "addLine": "Agregá al menos un renglón.",
+    "lineNeedsItem": "Cada renglón necesita un artículo.",
+    "qtyPositive": "Las cantidades deben ser mayores que cero.",
+    "rateRequired": "Las recepciones necesitan un precio unitario: abre la capa FIFO que luego consumen los egresos."
+  }
+}

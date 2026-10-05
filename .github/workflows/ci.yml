@@ -1,0 +1,107 @@
+# CI for aspire-erp (spec 00-i18n F-23: this workflow IS the PR check — `tsc -b` fails on
+# a `t()` key missing from English, and `i18n:check` fails on en/es catalog drift).
+#
+# Backend integration tests run against a live SQL Server service seeded exactly like the
+# documented local dev flow: `dotnet ef database update` + `scripts/seed-dev-*.sql` in
+# dependency order (coa first — Tenant/Company/COA are every other script's FK root).
+# The sa password mirrors the dev container contract in
+# tests/Erp.Api.IntegrationTests/ErpApiFactory.cs (dev-only credential, also in-repo there).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '24'
+  SQL_SA_PASSWORD: Erp_Dev_P@ssw0rd!2026
+  SQL_CONNECTION_STRING: Server=127.0.0.1,1433;Database=erp-db;User Id=sa;Password=Erp_Dev_P@ssw0rd!2026;TrustServerCertificate=True
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: ${{ env.SQL_SA_PASSWORD }}
+        ports:
+          - 1433:1433
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install sqlcmd
+        run: |
+          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+            | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+          curl -fsSL https://packages.microsoft.com/config/ubuntu/22.04/prod.list \
+            | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update -qq
+          sudo ACCEPT_EULA=Y apt-get install -y -qq mssql-tools18
+
+      - name: Wait for SQL Server
+        run: |
+          for i in $(seq 1 30); do
+            if /opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1,1433 -U sa -P "$SQL_SA_PASSWORD" -C -Q "SELECT 1"; then
+              break
+            fi
+            sleep 5
+          done
+
+      - name: Apply EF migrations
+        working-directory: aspire-erp
+        run: |
+          dotnet tool restore
+          dotnet ef database update \
+            --project src/Backend/Erp.Infrastructure \
+            --startup-project src/Backend/Erp.Api
+        env:
+          ConnectionStrings__erp-db: ${{ env.SQL_CONNECTION_STRING }}
+
+      - name: Run dev seeds (dependency order)
+        working-directory: aspire-erp
+        run: |
+          for script in coa stock buying manufacturing banking hr-payroll crm assets; do
+            echo "--- seed-dev-$script.sql"
+            /opt/mssql-tools18/bin/sqlcmd -S 127.0.0.1,1433 -U sa -P "$SQL_SA_PASSWORD" -C \
+              -i "scripts/seed-dev-$script.sql"
+          done
+
+      - name: Backend tests
+        working-directory: aspire-erp
+        run: dotnet test Erp.sln --nologo
+        env:
+          ConnectionStrings__erp-db: ${{ env.SQL_CONNECTION_STRING }}
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aspire-erp/src/Frontend/erp-client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: aspire-erp/src/Frontend/erp-client/package-lock.json
+
+      - run: npm ci
+
+      - name: i18n catalog parity (resx <-> JSON <-> generated types)
+        run: npm run i18n:check
+
+      - run: npm run lint
+
+      # tsc -b includes the strictKeyChecks augmentation: a t() key missing from
+      # English fails here, before vite even starts.
+      - run: npm run build
+
+      - run: npm test

@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { Handshake } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../api/client'
 import { crmApi } from './api/crmApi'
 import type { LeadDto } from './types/crm'
@@ -16,8 +17,12 @@ const OpportunityKanbanBoard = lazy(() =>
  * precedent, which is what emits the dedicated CRM chunk).
  */
 export function CrmOverview() {
+  const { t } = useTranslation('crm')
   const [leads, setLeads] = useState<LeadDto[]>([])
-  const [leadsError, setLeadsError] = useState<string | null>(null)
+  // Kept as the raw error, not a string: the ApiError branch is already localized by the
+  // backend (Accept-Language) while the generic branch must re-render when the user switches
+  // language - a pre-rendered string would stay frozen in the old language.
+  const [leadsError, setLeadsError] = useState<unknown>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -28,11 +33,7 @@ export function CrmOverview() {
         setLeadsError(null)
       },
       (cause: unknown) => {
-        if (!cancelled) {
-          setLeadsError(
-            cause instanceof ApiError ? cause.message : 'Failed to load leads.',
-          )
-        }
+        if (!cancelled) setLeadsError(cause)
       },
     )
     return () => {
@@ -48,25 +49,23 @@ export function CrmOverview() {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
               <Handshake className="h-4 w-4" />
             </span>
-            <h2 className="text-lg font-bold text-slate-900">CRM & Sales Pipeline (ERPNext Parity)</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
           </div>
-          <p className="mt-1 text-xs text-slate-600">
-            Leads in, qualification, pipeline drag-drop, 1-click sales orders on ClosedWon deals.
-          </p>
+          <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs font-medium text-slate-500">Open leads</p>
+          <p className="text-xs font-medium text-slate-500">{t('overview.openLeads')}</p>
           <p className="text-2xl font-bold text-emerald-700">{leads.length}</p>
         </div>
       </div>
 
       {leadsError ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-xs text-rose-700">
-          {leadsError}
+          {leadsError instanceof ApiError ? leadsError.message : t('overview.loadLeadsFailed')}
         </div>
       ) : null}
 
-      <Suspense fallback={<p className="text-xs text-slate-500">Loading pipeline board…</p>}>
+      <Suspense fallback={<p className="text-xs text-slate-500">{t('overview.loadingBoard')}</p>}>
         <OpportunityKanbanBoard />
       </Suspense>
     </div>

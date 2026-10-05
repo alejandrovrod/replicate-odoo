@@ -1,0 +1,37 @@
+{
+  "module": {
+    "title": "Resumen ejecutivo",
+    "subtitle": "KPIs multi-módulo y accesos directos."
+  },
+  "kpi": {
+    "revenue": "Ingresos totales (mes en curso)",
+    "cash": "Caja y equivalentes",
+    "receivables": "Cuentas por cobrar pendientes",
+    "stockValuation": "Valuación de stock (FIFO)"
+  },
+  "modules": {
+    "title": "Módulos del sistema y paridad",
+    "badge": "ERPNext Spec Kit Parity",
+    "coa": "Plan de cuentas",
+    "coaDesc": "Explorá cuentas jerárquicas y grupos de activo, pasivo y patrimonio. Actualmente en vivo.",
+    "coaCta": "Abrir tabla de árbol →",
+    "banking": "Banco y conciliación",
+    "bankingDesc": "Importación de extractos (CSV/OFX), motor de reglas heurísticas y herramienta de conciliación bilateral.",
+    "bankingCta": "Explorar banco →",
+    "stock": "Stock y Kardex FIFO",
+    "stockDesc": "Inventario multi-almacén, valuación FIFO perpetua y comprobantes de recepción.",
+    "stockCta": "Explorar stock →",
+    "selling": "Facturas de venta y PDV",
+    "sellingDesc": "Facturación a clientes, controles automáticos de límite de crédito y caja PDV atómica.",
+    "sellingCta": "Explorar ventas →"
+  },
+  "specs": {
+    "title": "Especificación y estado DDD",
+    "architecture": "Arquitectura:",
+    "architectureDesc": "Aspire AppHost orquestando .NET 9 Web API + SQL Server 2025 + Redis.",
+    "tenancy": "Multi-organización:",
+    "tenancyDesc": "Resuelta por request HTTP vía TenantResolutionMiddleware y filtros de EF Core.",
+    "rules": "Reglas contables:",
+    "rulesDesc": "Invariante estricto de partida doble (ΣD = ΣH) y asientos de solo incorporación."
+  }
+}

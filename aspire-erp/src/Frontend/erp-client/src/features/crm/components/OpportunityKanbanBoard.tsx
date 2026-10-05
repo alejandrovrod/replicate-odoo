@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AdvanceStagePayload, OpportunityDto, OpportunityStage } from '../types/crm';
 import { OpportunityCard } from './OpportunityCard';
 import { CreateSalesOrderForm } from './CreateSalesOrderForm';
 import { ApiError } from '../../../api/client';
 import { useErpAction } from '../../../lib/useErpAction';
+import { translateErrorCode } from '../../../lib/translateErrorCode';
 import { crmApi } from '../api/crmApi';
 
 const STAGES: OpportunityStage[] = ['Prospecting', 'Qualification', 'Proposal', 'Negotiation', 'ClosedWon', 'ClosedLost'];
 
 export function OpportunityKanbanBoard() {
+  const { t, i18n } = useTranslation('crm');
   const [opportunities, setOpportunities] = useState<OpportunityDto[]>([]);
 
   const reload = useCallback(() => {
@@ -47,7 +50,7 @@ export function OpportunityKanbanBoard() {
     if (!opp || opp.stage === newStage) return;
 
     if (newStage === 'ClosedLost') {
-      const reason = window.prompt("Please provide a loss reason (Mandatory for ClosedLost):");
+      const reason = window.prompt(t('lossReason.prompt'));
       if (!reason) return; // Invariant CRM-02 guard at UI level
       dispatch({ id, toStage: newStage, lossReason: reason, rowVersion: opp.rowVersion });
     } else {
@@ -68,11 +71,11 @@ export function OpportunityKanbanBoard() {
     <div className="p-6 h-full flex flex-col">
       <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Sales Pipeline</h2>
-          <p className="text-gray-500">Drag and drop opportunities across stages</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('pipeline.title')}</h2>
+          <p className="text-gray-500">{t('pipeline.dragHint')}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm font-medium text-gray-500">Total Weighted Forecast</p>
+          <p className="text-sm font-medium text-gray-500">{t('pipeline.weightedForecast')}</p>
           <p className="text-3xl font-bold text-emerald-600">
             ${totalWeighted.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
@@ -109,8 +112,8 @@ export function OpportunityKanbanBoard() {
 
       {state.error && (
         <div className="fixed bottom-4 right-4 bg-red-100 text-red-700 p-4 rounded-lg shadow-lg border border-red-200">
-          <p className="font-bold">Error updating stage</p>
-          <p className="text-sm">{state.error}</p>
+          <p className="font-bold">{t('action.errorUpdatingStage')}</p>
+          <p className="text-sm">{translateErrorCode(i18n, state.errorCode, state.error)}</p>
         </div>
       )}
     </div>

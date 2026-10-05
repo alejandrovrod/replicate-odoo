@@ -1,11 +1,15 @@
+using Erp.Api.Common;
+using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
-using Erp.Api.Filters;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -24,10 +28,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class PurchaseReceiptsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public PurchaseReceiptsController(ISender sender)
+    public PurchaseReceiptsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent purchase receipts with their lines.</summary>
@@ -46,8 +57,8 @@ public sealed class PurchaseReceiptsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(PurchaseErrorCodes.CompanyNotFound),
                 PurchaseErrorCodes.CompanyNotFound);
         }
 
@@ -87,25 +98,27 @@ public sealed class PurchaseReceiptsController : ControllerBase
             // request carrying the stable machine code.
             return error.Code switch
             {
+                // The status belongs to the linked purchase order, hence its title.
                 PurchaseErrorCodes.InvalidStatusTransition => Problem(
                     StatusCodes.Status409Conflict,
-                    "Purchase Order Conflict",
-                    error.Message,
+                    _common.Text("PurchaseOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Concurrent Update Conflict",
-                    error.Message,
+                    _common.Text("ConcurrentUpdateConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 AccountingErrorCodes.FiscalPeriodLocked => Problem(
                     StatusCodes.Status409Conflict,
-                    "Fiscal Period Locked",
+                    _common.Text("FiscalPeriodLocked"),
+                    // Instance-valued detail (period dates): passthrough (Phase 2 convention).
                     error.Message,
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Purchase Receipt Rejected",
-                    error.Message,
+                    _common.Text("PurchaseReceiptRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

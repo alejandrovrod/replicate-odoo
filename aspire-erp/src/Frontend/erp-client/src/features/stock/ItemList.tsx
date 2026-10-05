@@ -1,4 +1,5 @@
 import { Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { ApiError } from '../../api/client'
 import { formatMoney, formatQty } from './format'
 import { flattenWarehouses, type Item, type WarehouseNode } from './types'
@@ -22,13 +23,15 @@ interface ItemListProps {
  * real time" acceptance case.
  */
 export function ItemList({ items, warehouses, status, error, onReload, onNewEntry }: ItemListProps) {
+  const { t } = useTranslation('stock')
   const leafWarehouses = flattenWarehouses(warehouses, true)
 
   if (status === 'error') {
     return (
       <div className="rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
         <p className="font-medium">
-          Could not load the item list{error?.status ? ` (HTTP ${error.status})` : ''}.
+          {t('items.loadFailed')}
+          {error?.status ? ` (HTTP ${error.status})` : ''}.
         </p>
         {error?.message ? <p className="mt-1">{error.message}</p> : null}
         <button
@@ -38,14 +41,14 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
           }}
           className="mt-2 rounded border border-rose-400 px-2 py-1 text-rose-900 hover:bg-rose-100"
         >
-          Retry
+          {t('items.retry')}
         </button>
       </div>
     )
   }
 
   if (status === 'loading') {
-    return <p className="px-1 py-3 text-sm text-slate-500">Loading stock levels…</p>
+    return <p className="px-1 py-3 text-sm text-slate-500">{t('items.loading')}</p>
   }
 
   return (
@@ -53,10 +56,10 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
       <table className="w-full min-w-[720px] text-left text-xs">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-            <th className="px-3 py-2 font-semibold">Status</th>
-            <th className="px-3 py-2 font-semibold">Code</th>
-            <th className="px-3 py-2 font-semibold">Item</th>
-            <th className="px-3 py-2 font-semibold">Valuation</th>
+            <th className="px-3 py-2 font-semibold">{t('items.status')}</th>
+            <th className="px-3 py-2 font-semibold">{t('items.code')}</th>
+            <th className="px-3 py-2 font-semibold">{t('items.item')}</th>
+            <th className="px-3 py-2 font-semibold">{t('items.valuation')}</th>
             {leafWarehouses.map((warehouse) => (
               <th
                 key={warehouse.id}
@@ -66,8 +69,8 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
                 {warehouse.code}
               </th>
             ))}
-            <th className="px-3 py-2 text-right font-semibold">On Hand</th>
-            <th className="px-3 py-2 text-right font-semibold">Value</th>
+            <th className="px-3 py-2 text-right font-semibold">{t('items.onHand')}</th>
+            <th className="px-3 py-2 text-right font-semibold">{t('items.value')}</th>
             <th className="px-3 py-2" />
           </tr>
         </thead>
@@ -78,7 +81,7 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
                 colSpan={7 + leafWarehouses.length}
                 className="px-4 text-center text-slate-500"
               >
-                No items yet for this company.
+                {t('items.empty')}
               </td>
             </tr>
           ) : (
@@ -104,7 +107,7 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
                         }`}
                         aria-hidden="true"
                       />
-                      {item.isActive ? 'Active' : 'Inactive'}
+                      {item.isActive ? t('items.active') : t('items.inactive')}
                     </span>
                   </td>
                   <td className="px-3 font-mono text-slate-700">{item.code}</td>
@@ -112,9 +115,9 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
                     {item.name}
                   </td>
                   <td className="px-3">
-                    <span className="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                      {item.valuationMethod === 'Fifo' ? 'FIFO' : item.valuationMethod}
-                    </span>
+                      <span className="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                        {item.valuationMethod === 'Fifo' ? t('items.fifo') : item.valuationMethod}
+                      </span>
                   </td>
                   {leafWarehouses.map((warehouse) => {
                     const row = byWarehouse.get(warehouse.id)
@@ -123,7 +126,7 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
                         <td
                           key={warehouse.id}
                           className="px-3 text-right font-mono text-slate-300"
-                          title="No movement in this warehouse"
+                          title={t('items.noMovement')}
                         >
                           —
                         </td>
@@ -154,7 +157,7 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
                       className="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
                     >
                       <Plus className="size-3" aria-hidden="true" />
-                      New entry
+                      {t('items.newEntry')}
                     </button>
                   </td>
                 </tr>

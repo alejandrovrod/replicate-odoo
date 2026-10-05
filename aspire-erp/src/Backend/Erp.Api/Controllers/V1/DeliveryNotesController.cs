@@ -1,11 +1,15 @@
+using Erp.Api.Common;
+using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Selling.Commands;
 using Erp.Application.Features.Selling.Queries;
-using Erp.Api.Filters;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -38,10 +42,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class DeliveryNotesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public DeliveryNotesController(ISender sender)
+    public DeliveryNotesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent delivery notes with their lines.</summary>
@@ -60,8 +71,8 @@ public sealed class DeliveryNotesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(SellingErrorCodes.CompanyRequired),
                 SellingErrorCodes.CompanyRequired);
         }
 
@@ -86,8 +97,8 @@ public sealed class DeliveryNotesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Delivery Note",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidDeliveryNote"),
+                _errors.Text(SellingErrorCodes.DeliveryNoteNotFound),
                 SellingErrorCodes.DeliveryNoteNotFound);
         }
 
@@ -136,28 +147,28 @@ public sealed class DeliveryNotesController : ControllerBase
             {
                 SellingErrorCodes.SalesOrderNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Sales Order Not Found",
-                    error.Message,
+                    _common.Text("SalesOrderNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 SellingErrorCodes.SalesOrderNotDeliverable => Problem(
                     StatusCodes.Status409Conflict,
-                    "Sales Order Conflict",
-                    error.Message,
+                    _common.Text("SalesOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Concurrent Update Conflict",
-                    error.Message,
+                    _common.Text("ConcurrentUpdateConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 AccountingErrorCodes.FiscalPeriodLocked => Problem(
                     StatusCodes.Status409Conflict,
-                    "Fiscal Period Locked",
-                    error.Message,
+                    _common.Text("FiscalPeriodLocked"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Delivery Note Rejected",
-                    error.Message,
+                    _common.Text("DeliveryNoteRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -170,8 +181,8 @@ public sealed class DeliveryNotesController : ControllerBase
     private ObjectResult NotFoundProblem(Guid id) =>
         Problem(
             StatusCodes.Status404NotFound,
-            "Delivery Note Not Found",
-            $"Delivery note '{id}' was not found in this tenant/company.",
+            _common.Text("DeliveryNoteNotFound"),
+            _errors.Text(SellingErrorCodes.DeliveryNoteNotFound),
             SellingErrorCodes.DeliveryNoteNotFound);
 
     private ObjectResult Problem(int status, string title, string detail, string? code)

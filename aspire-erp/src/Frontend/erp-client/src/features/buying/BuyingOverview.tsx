@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { FileText, Truck, AlertCircle } from 'lucide-react'
-import { apiClient } from '../../api/client'
+import { useTranslation } from 'react-i18next'
+import { ApiError, apiClient } from '../../api/client'
+import { formatMoney } from '../../lib/format'
 import { useTenantStore } from '../../store/useTenantStore'
 import { PurchaseReceiptModal } from './PurchaseReceiptModal'
 
@@ -24,10 +26,13 @@ interface PurchaseOrder {
 }
 
 export function BuyingOverview() {
+  const { t } = useTranslation('buying')
   const companyId = useTenantStore((state) => state.companyId)
   const [orders, setOrders] = useState<PurchaseOrder[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
+  // re-translates on language switches (same decision as CrmOverview).
+  const [error, setError] = useState<unknown>(null)
 
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
   
@@ -38,8 +43,8 @@ export function BuyingOverview() {
     try {
       const response = await apiClient.get(`/v1/purchaseorders?companyId=${companyId}`)
       setOrders(response.data)
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch purchase orders')
+    } catch (cause: unknown) {
+      setError(cause)
     } finally {
       setIsLoading(false)
     }
@@ -48,13 +53,6 @@ export function BuyingOverview() {
   useEffect(() => {
     fetchOrders()
   }, [companyId])
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount)
-  }
 
   // Calculate some simple vendor aging mock metrics from actual orders
   const unbilledAmount = orders
@@ -65,10 +63,8 @@ export function BuyingOverview() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Buying & Procurement Subsystem</h2>
-          <p className="mt-1 text-xs text-slate-600">
-            Purchase orders, material receipts, and 3-way matching with interim accruals.
-          </p>
+          <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
+          <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -76,56 +72,56 @@ export function BuyingOverview() {
             className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
           >
             <Truck className="h-4 w-4 text-indigo-600" />
-            Purchase Receipt
+            {t('overview.newReceipt')}
           </button>
           <button
             type="button"
             className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
           >
             <FileText className="h-4 w-4" />
-            New Purchase Order
+            {t('overview.newOrder')}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-          <h3 className="text-sm font-medium text-slate-500">Unbilled Receipts (Accrued)</h3>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{formatCurrency(unbilledAmount)}</p>
+          <h3 className="text-sm font-medium text-slate-500">{t('stats.unbilled')}</h3>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{formatMoney(unbilledAmount)}</p>
         </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h3 className="text-base font-semibold text-slate-900">Procurement Orders (`PurchaseOrder`)</h3>
-        <p className="text-xs text-slate-500 mb-4">Vendor commitments and interim accrual status.</p>
+        <h3 className="text-base font-semibold text-slate-900">{t('orders.title')}</h3>
+        <p className="text-xs text-slate-500 mb-4">{t('orders.subtitle')}</p>
 
-        {error && (
+        {error ? (
           <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
             <AlertCircle className="h-4 w-4" />
-            {error}
+            {error instanceof ApiError ? error.message : t('orders.loadFailed')}
           </div>
-        )}
+        ) : null}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-400">
-                <th className="py-2.5 font-semibold">PO Number</th>
-                <th className="py-2.5 font-semibold">Vendor</th>
-                <th className="py-2.5 font-semibold">Order Date</th>
-                <th className="py-2.5 font-semibold text-right">Amount</th>
-                <th className="py-2.5 font-semibold text-right">Status</th>
-                <th className="py-2.5 font-semibold text-right">Actions</th>
+                <th className="py-2.5 font-semibold">{t('orders.colNumber')}</th>
+                <th className="py-2.5 font-semibold">{t('orders.colVendor')}</th>
+                <th className="py-2.5 font-semibold">{t('orders.colDate')}</th>
+                <th className="py-2.5 font-semibold text-right">{t('orders.colAmount')}</th>
+                <th className="py-2.5 font-semibold text-right">{t('orders.colStatus')}</th>
+                <th className="py-2.5 font-semibold text-right">{t('orders.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">Loading orders...</td>
+                  <td colSpan={6} className="py-8 text-center text-slate-500">{t('orders.loading')}</td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500">No purchase orders found.</td>
+                  <td colSpan={6} className="py-8 text-center text-slate-500">{t('orders.empty')}</td>
                 </tr>
               ) : (
                 orders.map((po) => (
@@ -134,7 +130,7 @@ export function BuyingOverview() {
                     <td className="py-3 text-slate-800">{po.supplierName}</td>
                     <td className="py-3 font-mono text-slate-500">{po.transactionDate}</td>
                     <td className="py-3 text-right font-mono font-bold text-slate-900">
-                      {formatCurrency(po.grandTotal)}
+                      {formatMoney(po.grandTotal)}
                     </td>
                     <td className="py-3 text-right">
                       <span
@@ -157,7 +153,7 @@ export function BuyingOverview() {
                           onClick={() => setSelectedOrder(po)}
                           className="rounded text-indigo-600 hover:text-indigo-800 font-semibold"
                         >
-                          Receive
+                          {t('orders.receive')}
                         </button>
                       ) : null}
                     </td>

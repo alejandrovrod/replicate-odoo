@@ -1,6 +1,9 @@
 import { ArrowRight, CheckCircle2, ClipboardList, PackageCheck, Truck } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useErpAction } from '../../lib/useErpAction'
+import { translateErrorCode } from '../../lib/translateErrorCode'
+import { formatMoney } from '../../lib/format'
 import type { ManufacturingPosting, WorkOrder, WorkOrderStatus } from './types'
 import {
   postCancelWorkOrder,
@@ -25,6 +28,7 @@ const STATUS_BADGE: Record<WorkOrderStatus, string> = {
  * which is what makes the new status appear in real time.
  */
 export function WorkOrdersBoard({ companyId }: { companyId: string }) {
+  const { t, i18n } = useTranslation('manufacturing')
   const ordersQuery = useWorkOrders(companyId)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [producedQty, setProducedQty] = useState('')
@@ -84,7 +88,8 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
     return (
       <div className="rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
         <p className="font-medium">
-          Could not load work orders{ordersQuery.error?.status ? ` (HTTP ${ordersQuery.error.status})` : ''}.
+          {t('board.loadFailed')}
+          {ordersQuery.error?.status ? ` (HTTP ${ordersQuery.error.status})` : ''}.
         </p>
         {ordersQuery.error?.message ? <p className="mt-1">{ordersQuery.error.message}</p> : null}
         <button
@@ -92,14 +97,14 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
           onClick={() => ordersQuery.reload()}
           className="mt-2 rounded border border-rose-400 px-2 py-1 text-rose-900 hover:bg-rose-100"
         >
-          Retry
+          {t('board.retry')}
         </button>
       </div>
     )
   }
 
   if (ordersQuery.status !== 'success') {
-    return <p className="px-1 py-3 text-sm text-slate-500">Loading work orders…</p>
+    return <p className="px-1 py-3 text-sm text-slate-500">{t('board.loading')}</p>
   }
 
   return (
@@ -108,11 +113,9 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
         <div>
           <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
             <ClipboardList className="h-4 w-4 text-indigo-600" />
-            Work Orders
+            {t('board.title')}
           </h3>
-          <p className="text-xs text-slate-500">
-            Shop floor execution: Draft → Submitted → InProcess → Completed (or Cancelled).
-          </p>
+          <p className="text-xs text-slate-500">{t('board.subtitle')}</p>
         </div>
       </div>
 
@@ -120,32 +123,33 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
         <p className="mb-3 flex items-start gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-900">
           <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <span>
-            Posted <span className="font-mono font-semibold">{lastPosting.entry.voucherNo}</span> —
-            Dr {lastPosting.totalDebit} = Cr {lastPosting.totalCredit}. List refreshed.
+            {t('board.posted', {
+              voucherNo: lastPosting.entry.voucherNo,
+              debit: formatMoney(lastPosting.totalDebit),
+              credit: formatMoney(lastPosting.totalCredit),
+            })}
           </span>
         </p>
       ) : null}
 
       {lastError ? (
         <p className="mb-3 rounded-md border border-rose-300 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
-          {lastError}{lastErrorCode ? ` (${lastErrorCode})` : ''}
+          {translateErrorCode(i18n, lastErrorCode, lastError)}
         </p>
       ) : null}
 
       {ordersQuery.data.length === 0 ? (
-        <p className="py-4 text-center text-sm text-slate-500">
-          No work orders yet for this company.
-        </p>
+        <p className="py-4 text-center text-sm text-slate-500">{t('board.empty')}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-400">
-                <th className="py-2.5 font-semibold">Order</th>
-                <th className="py-2.5 font-semibold">Qty</th>
-                <th className="py-2.5 font-semibold">Produced</th>
-                <th className="py-2.5 font-semibold">Status</th>
-                <th className="py-2.5 text-right font-semibold">Actions</th>
+                <th className="py-2.5 font-semibold">{t('board.colOrder')}</th>
+                <th className="py-2.5 font-semibold">{t('board.colQty')}</th>
+                <th className="py-2.5 font-semibold">{t('board.colProduced')}</th>
+                <th className="py-2.5 font-semibold">{t('board.colStatus')}</th>
+                <th className="py-2.5 text-right font-semibold">{t('board.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -173,24 +177,24 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
                     <div className="flex justify-end gap-1.5">
                       {order.status === 'Draft' ? (
                         <ActionButton
-                          label="Submit"
-                          title="Submit for production"
+                          label={t('actions.submit')}
+                          title={t('actions.submitTitle')}
                           pending={isSubmitting}
                           onClick={() => submit(order.id)}
                         />
                       ) : null}
                       {order.status === 'Submitted' ? (
                         <ActionButton
-                          label="Transfer"
-                          title="Transfer materials to WIP (MF-02)"
+                          label={t('actions.transfer')}
+                          title={t('actions.transferTitle')}
                           pending={isTransferring}
                           onClick={() => transfer(order.id)}
                         />
                       ) : null}
                       {order.status === 'InProcess' ? (
                         <ActionButton
-                          label="Complete"
-                          title="Complete manufacture (MF-03)"
+                          label={t('actions.complete')}
+                          title={t('actions.completeTitle')}
                           pending={isCompleting}
                           onClick={() => {
                             setSelectedId(order.id)
@@ -199,8 +203,8 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
                       ) : null}
                       {order.status === 'Submitted' || order.status === 'InProcess' ? (
                         <ActionButton
-                          label="Cancel"
-                          title="Cancel work order (MF-05 reversal when issued)"
+                          label={t('actions.cancel')}
+                          title={t('actions.cancelTitle')}
                           pending={isCancelling}
                           danger
                           onClick={() => cancel(order.id)}
@@ -219,7 +223,7 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
             <PackageCheck className="h-4 w-4" />
-            Complete {selected.orderNumber} — produced quantity (max {selected.quantityToProduce})
+            {t('complete.prompt', { order: selected.orderNumber, max: selected.quantityToProduce })}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <input
@@ -241,12 +245,11 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
               className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
             >
               <Truck className="h-3.5 w-3.5" />
-              {isCompleting ? 'Posting…' : 'Post manufacture'}
+              {isCompleting ? t('complete.posting') : t('complete.post')}
             </button>
             {completeState.error ? (
               <span className="text-xs text-rose-700">
-                {completeState.error}
-                {completeState.errorCode ? ` (${completeState.errorCode})` : ''}
+                {translateErrorCode(i18n, completeState.errorCode, completeState.error)}
               </span>
             ) : null}
           </div>
@@ -256,9 +259,13 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
       {selected && selected.status !== 'InProcess' ? (
         <p className="mt-4 flex items-center gap-1.5 text-xs text-slate-500">
           <ArrowRight className="h-3.5 w-3.5" />
-          {selected.orderNumber}: {selected.producedQuantity} of {selected.quantityToProduce} produced
-          {selected.actualStartDate ? ` · started ${selected.actualStartDate}` : ''}
-          {selected.actualEndDate ? ` · ended ${selected.actualEndDate}` : ''}.
+          {t('board.progress', {
+            order: selected.orderNumber,
+            produced: selected.producedQuantity,
+            qty: selected.quantityToProduce,
+          })}
+          {selected.actualStartDate ? t('board.started', { date: selected.actualStartDate }) : ''}
+          {selected.actualEndDate ? t('board.ended', { date: selected.actualEndDate }) : ''}.
         </p>
       ) : null}
     </div>

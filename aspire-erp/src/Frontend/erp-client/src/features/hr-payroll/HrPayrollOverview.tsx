@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { CheckCircle2, Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { ApiError, apiClient } from '../../api/client'
 import { useTenantStore } from '../../store/useTenantStore'
 import type { PayrollRun } from './types'
@@ -25,11 +26,14 @@ interface StatusCounts {
  * flow with slip-level detail.
  */
 export function HrPayrollOverview() {
+  const { t } = useTranslation('hr-payroll')
   const companyId = useTenantStore((state) => state.companyId)
   const [refreshSignal, setRefreshSignal] = useState(0)
   const [period, setPeriod] = useState(payrollPeriodDefaults)
   const [counts, setCounts] = useState<StatusCounts>({ submitted: 0, paid: 0, cancelled: 0 })
-  const [countsError, setCountsError] = useState<string | null>(null)
+  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
+  // re-translates on language switches (same decision as CrmOverview).
+  const [countsError, setCountsError] = useState<unknown>(null)
 
   const refresh = useCallback(() => setRefreshSignal((n) => n + 1), [])
   const onPeriodChange = useCallback((start: string, end: string) => {
@@ -51,9 +55,7 @@ export function HrPayrollOverview() {
       },
       (cause: unknown) => {
         if (!cancelled) {
-          setCountsError(
-            cause instanceof ApiError ? cause.message : 'Failed to load payroll summary.',
-          )
+          setCountsError(cause)
         }
       },
     )
@@ -64,20 +66,20 @@ export function HrPayrollOverview() {
 
   const cards = [
     {
-      name: 'Submitted runs',
-      detail: 'Accrued — awaiting bank disbursement (HR-02 Phase 2)',
+      name: t('cards.submittedName'),
+      detail: t('cards.submittedDetail'),
       value: counts.submitted,
       resolved: counts.submitted === 0,
     },
     {
-      name: 'Paid runs',
-      detail: 'Disbursed — payable cleared back to zero',
+      name: t('cards.paidName'),
+      detail: t('cards.paidDetail'),
       value: counts.paid,
       resolved: true,
     },
     {
-      name: 'Cancelled runs',
-      detail: 'Accrual mirrored — period released for re-run',
+      name: t('cards.cancelledName'),
+      detail: t('cards.cancelledDetail'),
       value: counts.cancelled,
       resolved: true,
     },
@@ -92,17 +94,15 @@ export function HrPayrollOverview() {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
               <Users className="h-4 w-4" />
             </span>
-            <h2 className="text-lg font-bold text-slate-900">HR & Payroll (ERPNext Parity)</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
           </div>
-          <p className="mt-1 text-xs text-slate-600">
-            Monthly payroll batches from submission through disbursement, with per-employee pay stubs.
-          </p>
+          <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
           <button
             type="button"
             onClick={refresh}
             className="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
           >
-            Refresh boards
+            {t('overview.refresh')}
           </button>
         </div>
       </div>
@@ -111,7 +111,7 @@ export function HrPayrollOverview() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {countsError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-xs text-rose-700 md:col-span-3">
-            {countsError}
+            {countsError instanceof ApiError ? countsError.message : t('overview.loadFailed')}
           </div>
         ) : (
           cards.map((card) => (
@@ -134,11 +134,11 @@ export function HrPayrollOverview() {
 
               <div className="mt-5 flex items-baseline justify-between border-t border-slate-100 pt-4">
                 <div>
-                  <span className="text-xs text-slate-400">Payroll runs</span>
+                  <span className="text-xs text-slate-400">{t('cards.runs')}</span>
                   <p className="text-xl font-bold text-slate-900">{card.value}</p>
                 </div>
                 <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" /> Live
+                  <CheckCircle2 className="h-4 w-4" /> {t('cards.live')}
                 </span>
               </div>
             </div>
@@ -147,7 +147,7 @@ export function HrPayrollOverview() {
       </div>
 
       {/* Payroll workbench (keyed by the banner refresh: a refresh remounts both panels). */}
-      <Suspense fallback={<p className="text-xs text-slate-500">Loading payroll workbench…</p>}>
+      <Suspense fallback={<p className="text-xs text-slate-500">{t('overview.loadingWorkbench')}</p>}>
         <PayrollWorkbench
           key={`pay-${refreshSignal}`}
           companyId={companyId}
@@ -158,7 +158,7 @@ export function HrPayrollOverview() {
       </Suspense>
 
       {/* Employee directory (eligibility badges follow the workbench period). */}
-      <Suspense fallback={<p className="text-xs text-slate-500">Loading employee directory…</p>}>
+      <Suspense fallback={<p className="text-xs text-slate-500">{t('overview.loadingDirectory')}</p>}>
         <EmployeeDirectory
           key={`emp-${refreshSignal}`}
           companyId={companyId}

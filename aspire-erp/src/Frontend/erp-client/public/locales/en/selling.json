@@ -1,0 +1,43 @@
+{
+  "module": {
+    "title": "Sales Invoices & POS",
+    "subtitle": "Customers, quotations, sales orders, deliveries and invoices."
+  },
+  "overview": {
+    "title": "Selling & Point of Sale (POS)",
+    "subtitle": "Customer invoicing, credit limit validation, and high-speed cashier POS registers.",
+    "newInvoice": "New Sales Invoice",
+    "launchPos": "Launch POS Cashier"
+  },
+  "invoices": {
+    "title": "Recent Sales Invoices",
+    "subtitle": "Direct integration with General Ledger and Accounts Receivable.",
+    "colNumber": "Invoice No",
+    "colCustomer": "Customer",
+    "colDate": "Date",
+    "colTotal": "Total",
+    "colOutstanding": "Outstanding",
+    "colStatus": "Status"
+  },
+  "pos": {
+    "title": "Products",
+    "close": "Close",
+    "successTitle": "Payment Successful!",
+    "created": "Invoice {{number}} has been created.",
+    "done": "Done"
+  },
+  "cart": {
+    "title": "Current Order",
+    "empty": "Cart is empty",
+    "perUnit": "/ ea"
+  },
+  "totals": {
+    "subtotal": "Subtotal",
+    "tax": "Tax (10%)",
+    "total": "Total"
+  },
+  "pay": {
+    "cash": "Cash",
+    "card": "Card"
+  }
+}

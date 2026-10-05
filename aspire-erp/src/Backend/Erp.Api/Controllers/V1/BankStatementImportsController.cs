@@ -1,10 +1,14 @@
+using Erp.Api.Common;
 using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Banking.Commands;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -23,10 +27,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class BankStatementImportsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public BankStatementImportsController(ISender sender)
+    public BankStatementImportsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Import request: the statement file travels as inline text content.</summary>
@@ -76,13 +87,13 @@ public sealed class BankStatementImportsController : ControllerBase
             {
                 BankingErrorCodes.BankAccountNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Bank Account Not Found",
-                    error.Message,
+                    _common.Text("BankAccountNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Statement Import Rejected",
-                    error.Message,
+                    _common.Text("StatementImportRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

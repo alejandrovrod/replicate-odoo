@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { ReceiptText, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { apiClient } from '../../api/client'
 import { useErpAction } from '../../lib/useErpAction'
+import { translateErrorCode } from '../../lib/translateErrorCode'
+import { formatQty } from '../../lib/format'
 import { useTenantStore } from '../../store/useTenantStore'
 import type { BankTransaction, JournalEntry } from './types'
 import { netAmount } from './types'
@@ -30,6 +33,7 @@ export function VoucherQuickCreateDialog({
   onCreated,
 }: VoucherQuickCreateDialogProps) {
   const companyId = useTenantStore((state) => state.companyId)
+  const { t, i18n } = useTranslation('banking')
   const expected = netAmount(transaction)
   const [expenseAccountCode, setExpenseAccountCode] = useState('')
   const [amount, setAmount] = useState(expected.toFixed(2))
@@ -64,14 +68,14 @@ export function VoucherQuickCreateDialog({
           <div className="flex items-start justify-between">
             <div>
               <Dialog.Title className="text-base font-bold text-slate-900">
-                Quick voucher
+                {t('voucher.title')}
               </Dialog.Title>
               <Dialog.Description className="mt-1 font-mono text-xs text-slate-500">
-                {transaction.description} · {expected.toFixed(2)} {transaction.currency}
+                {transaction.description} · {formatQty(expected)} {transaction.currency}
               </Dialog.Description>
             </div>
             <Dialog.Close
-              aria-label="Close"
+              aria-label={t('voucher.close')}
               className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             >
               <X className="h-5 w-5" />
@@ -84,11 +88,13 @@ export function VoucherQuickCreateDialog({
                 <ReceiptText className="h-7 w-7 text-emerald-600" />
               </div>
               <h3 className="mt-3 text-sm font-bold text-slate-900">
-                Voucher {voucherState.data.voucherNo} posted and reconciled
+                {t('voucher.posted', { no: voucherState.data.voucherNo })}
               </h3>
               <p className="mt-1 font-mono text-xs text-slate-500">
-                Dr {voucherState.data.lines.find((l) => l.debit > 0)?.accountCode} / Cr{' '}
-                {voucherState.data.lines.find((l) => l.credit > 0)?.accountCode} · difference $0.00
+                {t('voucher.postedDetail', {
+                  dr: voucherState.data.lines.find((l) => l.debit > 0)?.accountCode,
+                  cr: voucherState.data.lines.find((l) => l.credit > 0)?.accountCode,
+                })}
               </p>
               <button
                 type="button"
@@ -98,22 +104,22 @@ export function VoucherQuickCreateDialog({
                 }}
                 className="mt-5 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
               >
-                Done
+                {t('voucher.done')}
               </button>
             </div>
           ) : (
             <div className="mt-4 space-y-3">
               <label className="block text-xs font-semibold text-slate-700">
-                Expense account code
+                {t('voucher.expenseAccount')}
                 <input
                   value={expenseAccountCode}
                   onChange={(e) => setExpenseAccountCode(e.target.value)}
-                  placeholder="e.g. 5150"
+                  placeholder={t('voucher.expensePlaceholder')}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs font-normal"
                 />
               </label>
               <label className="block text-xs font-semibold text-slate-700">
-                Amount (must equal {expected.toFixed(2)})
+                {t('voucher.amount', { amount: formatQty(expected) })}
                 <input
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -122,19 +128,18 @@ export function VoucherQuickCreateDialog({
                 />
               </label>
               <label className="block text-xs font-semibold text-slate-700">
-                Memo (optional)
+                {t('voucher.memo')}
                 <input
                   value={memo}
                   onChange={(e) => setMemo(e.target.value)}
-                  placeholder="Bank fee October"
+                  placeholder={t('voucher.memoPlaceholder')}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-normal"
                 />
               </label>
 
               {voucherState.error && (
                 <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                  {voucherState.error}
-                  {voucherState.errorCode ? ` (${voucherState.errorCode})` : ''}
+                  {translateErrorCode(i18n, voucherState.errorCode, voucherState.error)}
                 </div>
               )}
 
@@ -150,7 +155,7 @@ export function VoucherQuickCreateDialog({
                 }
                 className="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
               >
-                {isPending ? 'Posting…' : 'Post voucher and reconcile'}
+                {isPending ? t('voucher.posting') : t('voucher.post')}
               </button>
             </div>
           )}

@@ -1,0 +1,43 @@
+{
+  "module": {
+    "title": "Órdenes de compra y facturas de proveedor",
+    "subtitle": "Proveedores, órdenes de compra, recepciones y facturas."
+  },
+  "overview": {
+    "title": "Subsistema de compras y abastecimiento",
+    "subtitle": "Órdenes de compra, remitos de recepción y cotejo de 3 vías con devengamientos intermedios.",
+    "newReceipt": "Remito de recepción",
+    "newOrder": "Nueva orden de compra"
+  },
+  "stats": {
+    "unbilled": "Remitos no facturados (devengados)"
+  },
+  "orders": {
+    "title": "Órdenes de compra",
+    "subtitle": "Compromisos con proveedores y estado de devengamientos intermedios.",
+    "loading": "Cargando órdenes…",
+    "empty": "No se encontraron órdenes de compra.",
+    "loadFailed": "No se pudieron cargar las órdenes de compra",
+    "colNumber": "N.º OC",
+    "colVendor": "Proveedor",
+    "colDate": "Fecha de orden",
+    "colAmount": "Importe",
+    "colStatus": "Estado",
+    "colActions": "Acciones",
+    "receive": "Recibir"
+  },
+  "receipt": {
+    "title": "Registrar remito de recepción",
+    "forOrder": "Para la orden {{id}}",
+    "close": "Cerrar",
+    "pendingItems": "Artículos pendientes de recepción",
+    "qty": "Cant.: {{qty}}",
+    "noPending": "Sin artículos pendientes.",
+    "cancel": "Cancelar",
+    "post": "Registrar remito",
+    "posting": "Registrando…",
+    "posted": "¡Remito registrado!",
+    "created": "El remito {{number}} fue registrado con éxito.",
+    "done": "Listo"
+  }
+}

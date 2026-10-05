@@ -223,6 +223,30 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         Assert.Equal(("ClosedLost", "Lost", 0m), (deal.Stage, deal.Status, deal.Probability));
     }
 
+    /// <summary>
+    /// Spec 00-i18n F-17: the same close-rule rejection under <c>Accept-Language: es</c> carries
+    /// the Spanish title and detail while the machine code stays invariant. Lives here (not in
+    /// <c>ErrorLocalizationApiTests</c>) because reaching the rule requires a real converted deal.
+    /// </summary>
+    [Fact]
+    public async Task CloseRules_LostWithoutReason_WithEsHeader_ReturnsSpanishProblemDetails()
+    {
+        using var client = CreateClient();
+        client.DefaultRequestHeaders.Add("Accept-Language", "es");
+        var tag = Guid.NewGuid().ToString("N")[..8];
+        var (leadId, opportunityId, customerId) = await SetupConvertedDealAsync(client, tag, 50000m, 80m);
+        _leadIds.Add(leadId);
+        _opportunityIds.Add(opportunityId);
+        _customerIds.Add(customerId);
+
+        using var noReason = await PostAdvanceAsync(client, opportunityId, "ClosedLost");
+        var problem = await AssertProblemAsync(
+            noReason, HttpStatusCode.BadRequest, "Oportunidad rechazada", "crm_loss_reason_required");
+        Assert.Equal(
+            "Se requiere un motivo de pérdida al cerrar una oportunidad como perdida.",
+            problem["detail"]!.GetValue<string>());
+    }
+
     // ------------------------------------------------------- CRM-05 re-open live
 
     /// <summary>

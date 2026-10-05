@@ -1,11 +1,15 @@
+using Erp.Api.Common;
+using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Stock.Commands;
 using Erp.Application.Features.Stock.Queries;
-using Erp.Api.Filters;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -28,10 +32,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class StockEntriesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public StockEntriesController(ISender sender)
+    public StockEntriesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent stock vouchers with their lines.</summary>
@@ -50,8 +61,8 @@ public sealed class StockEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(StockErrorCodes.CompanyNotFound),
                 StockErrorCodes.CompanyNotFound);
         }
 
@@ -94,18 +105,21 @@ public sealed class StockEntriesController : ControllerBase
                 StockErrorCodes.DuplicateItemCode
                     or StockErrorCodes.DuplicateWarehouseCode => Problem(
                         StatusCodes.Status409Conflict,
-                        "Duplicate Stock Master",
-                        error.Message,
+                        _common.Text("StockEntryConflict"),
+                        _errors.Text(error.Code, error.Message),
                         error.Code),
                 AccountingErrorCodes.FiscalPeriodLocked => Problem(
                     StatusCodes.Status409Conflict,
-                    "Fiscal Period Locked",
+                    _common.Text("FiscalPeriodLocked"),
+                    // Instance-valued detail (posting date + period boundary, pinned by
+                    // FiscalPeriodLockApiTests): it passes through untranslated while the
+                    // title still localizes. See the Phase 2 convention in tasks.md.
                     error.Message,
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Stock Entry Rejected",
-                    error.Message,
+                    _common.Text("StockEntryRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -138,18 +152,24 @@ public sealed class StockEntriesController : ControllerBase
             {
                 StockErrorCodes.VoucherNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Stock Entry Not Found",
-                    error.Message,
+                    _common.Text("StockEntryNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
-                StockErrorCodes.InvalidStatusTransition or AccountingErrorCodes.FiscalPeriodLocked => Problem(
+                StockErrorCodes.InvalidStatusTransition => Problem(
                     StatusCodes.Status409Conflict,
-                    "Conflict",
+                    _common.Text("Conflict"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                AccountingErrorCodes.FiscalPeriodLocked => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("FiscalPeriodLocked"),
+                    // Same instance-valued passthrough as the Create arm above.
                     error.Message,
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Cancellation Rejected",
-                    error.Message,
+                    _common.Text("StockEntryRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

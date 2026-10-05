@@ -1,4 +1,7 @@
+using Erp.Api.Common;
 using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Crm.Commands;
@@ -7,6 +10,7 @@ using Erp.Application.Features.Crm.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -41,10 +45,17 @@ public sealed record AdvanceStageRequest(
 public sealed class OpportunitiesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public OpportunitiesController(ISender sender)
+    public OpportunitiesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's opportunities (the pipeline board source), newest first.</summary>
@@ -65,8 +76,8 @@ public sealed class OpportunitiesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(CRMErrorCodes.CompanyRequired),
                 CRMErrorCodes.CompanyRequired);
         }
 
@@ -103,8 +114,8 @@ public sealed class OpportunitiesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Opportunity",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidOpportunity"),
+                _errors.Text("crm_opportunity_not_found"),
                 "crm_opportunity_not_found");
         }
 
@@ -151,8 +162,8 @@ public sealed class OpportunitiesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Opportunity",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidOpportunity"),
+                _errors.Text("crm_opportunity_not_found"),
                 "crm_opportunity_not_found");
         }
 
@@ -194,8 +205,8 @@ public sealed class OpportunitiesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Opportunity",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidOpportunity"),
+                _errors.Text("crm_opportunity_not_found"),
                 "crm_opportunity_not_found");
         }
 
@@ -218,15 +229,15 @@ public sealed class OpportunitiesController : ControllerBase
             {
                 SellingErrorCodes.SalesOrderNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Sales Order Not Found",
-                    error.Message,
+                    _common.Text("SalesOrderNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 SellingErrorCodes.InvalidStatusTransition
                     or SellingErrorCodes.CreditLimitExceeded
                     or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Sales Order Conflict",
-                    error.Message,
+                    _common.Text("SalesOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => OpportunityProblem(error),
             };
@@ -251,21 +262,21 @@ public sealed class OpportunitiesController : ControllerBase
                 or "crm_opportunity_company_mismatch"
                 or CRMErrorCodes.CompanyRequired => Problem(
                     StatusCodes.Status404NotFound,
-                    "Opportunity Not Found",
-                    error.Message,
+                    _common.Text("OpportunityNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             CRMErrorCodes.InvalidStatusTransition
                 or CRMErrorCodes.OpportunityAlreadyClosed
                 or CRMErrorCodes.OpportunityNotWon
                 or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Opportunity Conflict",
-                    error.Message,
+                    _common.Text("OpportunityConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             _ => Problem(
                 StatusCodes.Status400BadRequest,
-                "Opportunity Rejected",
-                error.Message,
+                _common.Text("OpportunityRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
         };
 

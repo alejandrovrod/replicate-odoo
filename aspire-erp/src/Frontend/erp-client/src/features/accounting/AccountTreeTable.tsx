@@ -1,6 +1,8 @@
 import { ChevronDown, ChevronRight, Folder, MinusCircle, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useTenantStore } from '../../store/useTenantStore'
+import { translateErrorCode } from '../../lib/translateErrorCode'
 import type { AccountRootType, AccountTreeNode } from './types'
 import { useAccountTree } from './useAccountTree'
 
@@ -101,6 +103,7 @@ interface AccountTreeTableProps {
  * state when cleared. Toggling still works while a filter is active.
  */
 export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
+  const { t, i18n } = useTranslation('accounting')
   const { nodes, status, error, reload } = useAccountTree(companyId)
   const tenantId = useTenantStore((state) => state.tenantId)
   const [query, setQuery] = useState('')
@@ -154,30 +157,29 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
   if (!companyId || !tenantId) {
     return (
       <p className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        No tenant/company selected. Set <code>VITE_TENANT_ID</code> and{' '}
-        <code>VITE_COMPANY_ID</code> in <code>.env.development</code>.
+        {t('missingTenant')}
       </p>
     )
   }
 
   if (status === 'loading') {
-    return <p className="px-1 py-3 text-sm text-slate-500">Loading chart of accounts…</p>
+    return <p className="px-1 py-3 text-sm text-slate-500">{t('tree.loading')}</p>
   }
 
   if (status === 'error') {
     return (
       <div className="rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
         <p className="font-medium">
-          Could not load the chart of accounts
+          {t('tree.loadFailed')}
           {error?.status ? ` (HTTP ${error.status})` : ''}.
         </p>
         {error?.code ? (
           <p className="mt-1">
-            Error code:{' '}
+            {t('tree.errorCode')}{' '}
             <code className="rounded bg-rose-100 px-1 py-0.5 font-mono text-xs">{error.code}</code>
           </p>
         ) : null}
-        {error?.message ? <p className="mt-1">{error.message}</p> : null}
+        {error?.message ? <p className="mt-1">{translateErrorCode(i18n, error.code, error.message)}</p> : null}
         <button
           type="button"
           onClick={() => {
@@ -185,7 +187,7 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
           }}
           className="mt-2 rounded border border-rose-400 px-2 py-1 text-rose-900 hover:bg-rose-100"
         >
-          Retry
+          {t('tree.retry')}
         </button>
       </div>
     )
@@ -199,15 +201,15 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
           type="text"
           value={query}
           onChange={(event) => changeQuery(event.target.value)}
-          placeholder="Filter accounts by code or name"
-          aria-label="Filter accounts by code or name"
+          placeholder={t('tree.filterPlaceholder')}
+          aria-label={t('tree.filterPlaceholder')}
           className="h-8 min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline focus:outline-2 focus:outline-indigo-600"
         />
         {query.length > 0 ? (
           <button
             type="button"
             onClick={() => changeQuery('')}
-            aria-label="Clear filter"
+            aria-label={t('tree.clearFilter')}
             className="inline-flex size-7 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-slate-200 hover:text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600"
           >
             <X className="size-4" aria-hidden="true" />
@@ -226,12 +228,12 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
           </colgroup>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-2 py-2" aria-label="Expand" />
-              <th className="px-2 py-2 font-semibold">Code</th>
-              <th className="px-2 py-2 font-semibold">Name</th>
-              <th className="px-2 py-2 font-semibold">Root Type</th>
-              <th className="px-2 py-2 font-semibold">Kind</th>
-              <th className="px-2 py-2 font-semibold">Status</th>
+              <th className="px-2 py-2" aria-label={t('tree.expandColumn')} />
+              <th className="px-2 py-2 font-semibold">{t('tree.colCode')}</th>
+              <th className="px-2 py-2 font-semibold">{t('tree.colName')}</th>
+              <th className="px-2 py-2 font-semibold">{t('tree.colRootType')}</th>
+              <th className="px-2 py-2 font-semibold">{t('tree.colKind')}</th>
+              <th className="px-2 py-2 font-semibold">{t('tree.colStatus')}</th>
             </tr>
           </thead>
           <tbody>
@@ -239,8 +241,8 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
               <tr className={ROW_HEIGHT_CLASS}>
                 <td colSpan={6} className="px-4 text-center text-slate-500">
                   {filtered
-                    ? `No accounts match \u201C${query.trim()}\u201D.`
-                    : 'No accounts yet for this company.'}
+                    ? t('tree.emptyFiltered', { query: query.trim() })
+                    : t('tree.empty')}
                 </td>
               </tr>
             ) : (
@@ -257,7 +259,7 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
                           type="button"
                           onClick={() => toggle(node.id)}
                           aria-expanded={isExpanded}
-                          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${node.code}`}
+                          aria-label={`${isExpanded ? t('tree.collapse') : t('tree.expand')} ${node.code}`}
                           className="inline-flex size-7 items-center justify-center rounded text-slate-500 hover:bg-slate-200 hover:text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600"
                         >
                           {isExpanded ? (
@@ -291,10 +293,10 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
                       {node.isGroup ? (
                         <span className="inline-flex items-center gap-1 text-xs">
                           <Folder className="size-3.5" aria-hidden="true" />
-                          Group
+                          {t('tree.group')}
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-500">Account</span>
+                        <span className="text-xs text-slate-500">{t('tree.account')}</span>
                       )}
                     </td>
                     <td className="px-2">
@@ -309,7 +311,7 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
                           }`}
                           aria-hidden="true"
                         />
-                        {node.isActive ? 'Active' : 'Inactive'}
+                        {node.isActive ? t('tree.active') : t('tree.inactive')}
                       </span>
                     </td>
                   </tr>

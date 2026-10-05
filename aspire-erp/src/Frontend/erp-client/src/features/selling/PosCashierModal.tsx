@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { X, Plus, Minus, CreditCard, Banknote, ShoppingBag, ShoppingCart } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { apiClient } from '../../api/client'
 import { useErpAction } from '../../lib/useErpAction'
+import { translateErrorCode } from '../../lib/translateErrorCode'
+import { formatMoney } from '../../lib/format'
 import { useTenantStore } from '../../store/useTenantStore'
 
 interface PosCashierModalProps {
@@ -24,6 +27,7 @@ const DUMMY_PRODUCTS = [
 ]
 
 export function PosCashierModal({ onClose }: PosCashierModalProps) {
+  const { t, i18n } = useTranslation('selling')
   const companyId = useTenantStore((state) => state.companyId)
   const [cart, setCart] = useState<CartItem[]>([])
 
@@ -87,15 +91,15 @@ export function PosCashierModal({ onClose }: PosCashierModalProps) {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
               <ShoppingBag className="h-8 w-8 text-emerald-600" />
             </div>
-            <h2 className="mt-4 text-xl font-bold text-slate-900">Payment Successful!</h2>
+            <h2 className="mt-4 text-xl font-bold text-slate-900">{t('pos.successTitle')}</h2>
             <p className="mt-2 text-sm text-slate-600">
-              Invoice <span className="font-mono font-medium">{submitState.data?.invoiceNumber}</span> has been created.
+              {t('pos.created', { number: submitState.data?.invoiceNumber })}
             </p>
             <button
               onClick={onClose}
               className="mt-6 w-full rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white hover:bg-slate-800"
             >
-              Done
+              {t('pos.done')}
             </button>
           </div>
         </div>
@@ -109,8 +113,8 @@ export function PosCashierModal({ onClose }: PosCashierModalProps) {
         {/* Products Grid */}
         <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Products</h2>
-            <button onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600">
+            <h2 className="text-xl font-bold text-slate-900">{t('pos.title')}</h2>
+            <button onClick={onClose} aria-label={t('pos.close')} className="rounded-full p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -126,7 +130,7 @@ export function PosCashierModal({ onClose }: PosCashierModalProps) {
                   <ShoppingBag className="h-8 w-8 text-slate-400" />
                 </div>
                 <span className="text-sm font-semibold text-slate-900 text-center">{product.name}</span>
-                <span className="mt-1 text-sm font-mono text-emerald-600">${product.rate.toFixed(2)}</span>
+                <span className="mt-1 text-sm font-mono text-emerald-600">{formatMoney(product.rate)}</span>
               </button>
             ))}
           </div>
@@ -135,21 +139,21 @@ export function PosCashierModal({ onClose }: PosCashierModalProps) {
         {/* Cart Sidebar */}
         <div className="flex w-96 flex-col border-l border-slate-200 bg-white">
           <div className="border-b border-slate-200 p-4">
-            <h2 className="text-lg font-bold text-slate-900">Current Order</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('cart.title')}</h2>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {cart.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-slate-400">
                 <ShoppingCart className="h-12 w-12 mb-4 opacity-50" />
-                <p>Cart is empty</p>
+                <p>{t('cart.empty')}</p>
               </div>
             ) : (
               cart.map((item) => (
                 <div key={item.itemId} className="flex items-center justify-between">
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-slate-900">{item.name}</p>
-                    <p className="text-xs font-mono text-slate-500">${item.rate.toFixed(2)} / ea</p>
+                    <p className="text-xs font-mono text-slate-500">{formatMoney(item.rate)} {t('cart.perUnit')}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50">
@@ -162,7 +166,7 @@ export function PosCashierModal({ onClose }: PosCashierModalProps) {
                       </button>
                     </div>
                     <span className="w-16 text-right font-mono font-semibold text-slate-900">
-                      ${(item.rate * item.quantity).toFixed(2)}
+                      {formatMoney(item.rate * item.quantity)}
                     </span>
                   </div>
                 </div>
@@ -173,22 +177,22 @@ export function PosCashierModal({ onClose }: PosCashierModalProps) {
           <div className="border-t border-slate-200 bg-slate-50 p-6">
             <div className="space-y-2 mb-6 text-sm">
               <div className="flex justify-between text-slate-600">
-                <span>Subtotal</span>
-                <span className="font-mono">${subtotal.toFixed(2)}</span>
+                <span>{t('totals.subtotal')}</span>
+                <span className="font-mono">{formatMoney(subtotal)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>Tax (10%)</span>
-                <span className="font-mono">${tax.toFixed(2)}</span>
+                <span>{t('totals.tax')}</span>
+                <span className="font-mono">{formatMoney(tax)}</span>
               </div>
               <div className="flex justify-between border-t border-slate-200 pt-2 text-lg font-bold text-slate-900">
-                <span>Total</span>
-                <span className="font-mono">${grandTotal.toFixed(2)}</span>
+                <span>{t('totals.total')}</span>
+                <span className="font-mono">{formatMoney(grandTotal)}</span>
               </div>
             </div>
 
             {submitState.error && (
               <div className="mb-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-600 border border-rose-200">
-                {submitState.error}
+                {translateErrorCode(i18n, submitState.errorCode, submitState.error)}
               </div>
             )}
 
@@ -199,7 +203,7 @@ export function PosCashierModal({ onClose }: PosCashierModalProps) {
                 className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 p-4 font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
               >
                 <Banknote className="h-5 w-5" />
-                Cash
+                {t('pay.cash')}
               </button>
               <button
                 disabled={cart.length === 0 || isPending}
@@ -207,7 +211,7 @@ export function PosCashierModal({ onClose }: PosCashierModalProps) {
                 className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 p-4 font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
               >
                 <CreditCard className="h-5 w-5" />
-                Card
+                {t('pay.card')}
               </button>
             </div>
           </div>

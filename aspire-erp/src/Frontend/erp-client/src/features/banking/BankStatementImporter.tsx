@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { FileUp, UploadCloud } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { apiClient } from '../../api/client'
 import { useErpAction } from '../../lib/useErpAction'
+import { translateErrorCode } from '../../lib/translateErrorCode'
 import { useTenantStore } from '../../store/useTenantStore'
 import type { BankStatementImportSummary } from './types'
 
@@ -20,13 +22,16 @@ interface ImportPayload {
  * panel shows the BN-05 summary (total / imported / duplicates).
  */
 export function BankStatementImporter({ onImported }: { onImported: () => void }) {
+  const { t, i18n } = useTranslation('banking')
   const companyId = useTenantStore((state) => state.companyId)
   const [bankAccountId, setBankAccountId] = useState('')
   const [fileName, setFileName] = useState('')
   const [format, setFormat] = useState<StatementFormat>('CSV')
   const [content, setContent] = useState('')
   const [isDragging, setIsDragging] = useState(false)
-  const [fileError, setFileError] = useState<string | null>(null)
+  // Client-side file-read failure is transient (clears on the next file); server rejections
+  // keep the raw state and translate at render through `translateErrorCode`.
+  const [fileError, setFileError] = useState(false)
 
   const { state: importState, dispatch: runImport, isPending } = useErpAction<
     BankStatementImportSummary,
@@ -47,7 +52,7 @@ export function BankStatementImporter({ onImported }: { onImported: () => void }
   })
 
   const readFile = (file: File) => {
-    setFileError(null)
+    setFileError(false)
     const lower = file.name.toLowerCase()
     if (lower.endsWith('.ofx') || lower.endsWith('.qfx')) setFormat('OFX')
     else if (lower.endsWith('.csv')) setFormat('CSV')
@@ -56,7 +61,7 @@ export function BankStatementImporter({ onImported }: { onImported: () => void }
       setContent(typeof reader.result === 'string' ? reader.result : '')
       setFileName(file.name)
     }
-    reader.onerror = () => setFileError('Could not read the file as text.')
+    reader.onerror = () => setFileError(true)
     reader.readAsText(file)
   }
 
@@ -73,20 +78,20 @@ export function BankStatementImporter({ onImported }: { onImported: () => void }
     return (
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
         <h3 className="text-sm font-bold text-emerald-900">
-          Import complete: {summary.fileName}
+          {t('importer.complete', { file: summary.fileName })}
         </h3>
         <div className="mt-3 grid grid-cols-3 gap-3 text-center">
           <div className="rounded-lg bg-white p-3">
             <p className="text-xl font-bold text-slate-900">{summary.totalTransactions}</p>
-            <p className="text-[11px] text-slate-500">Total rows</p>
+            <p className="text-[11px] text-slate-500">{t('importer.totalRows')}</p>
           </div>
           <div className="rounded-lg bg-white p-3">
             <p className="text-xl font-bold text-emerald-700">{summary.importedCount}</p>
-            <p className="text-[11px] text-slate-500">Imported</p>
+            <p className="text-[11px] text-slate-500">{t('importer.imported')}</p>
           </div>
           <div className="rounded-lg bg-white p-3">
             <p className="text-xl font-bold text-amber-700">{summary.duplicateCount}</p>
-            <p className="text-[11px] text-slate-500">Duplicates (FITID)</p>
+            <p className="text-[11px] text-slate-500">{t('importer.duplicates')}</p>
           </div>
         </div>
         <button
@@ -94,7 +99,7 @@ export function BankStatementImporter({ onImported }: { onImported: () => void }
           onClick={onImported}
           className="mt-4 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
         >
-          Back to workbench
+          {t('importer.back')}
         </button>
       </div>
     )
@@ -102,23 +107,21 @@ export function BankStatementImporter({ onImported }: { onImported: () => void }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-      <h3 className="text-sm font-bold text-slate-900">Import bank statement</h3>
-      <p className="mt-1 text-xs text-slate-500">
-        Staged only: zero accounting entries are posted until reconciliation (BN-01).
-      </p>
+      <h3 className="text-sm font-bold text-slate-900">{t('importer.title')}</h3>
+      <p className="mt-1 text-xs text-slate-500">{t('importer.subtitle')}</p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block text-xs font-semibold text-slate-700">
-          Bank account id
+          {t('importer.accountId')}
           <input
             value={bankAccountId}
             onChange={(e) => setBankAccountId(e.target.value)}
-            placeholder="BankAccount GUID"
+            placeholder={t('importer.accountPlaceholder')}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs font-normal"
           />
         </label>
         <label className="block text-xs font-semibold text-slate-700">
-          Format
+          {t('importer.format')}
           <select
             value={format}
             onChange={(e) => setFormat(e.target.value === 'OFX' ? 'OFX' : 'CSV')}
@@ -148,11 +151,11 @@ export function BankStatementImporter({ onImported }: { onImported: () => void }
       >
         <UploadCloud className="h-8 w-8 text-sky-600" />
         <p className="mt-2 text-sm font-semibold text-slate-700">
-          {fileName ? <span className="font-mono">{fileName}</span> : 'Drop a CSV / OFX file here'}
+          {fileName ? <span className="font-mono">{fileName}</span> : t('importer.drop')}
         </p>
-        <p className="mt-1 text-xs text-slate-500">or</p>
+        <p className="mt-1 text-xs text-slate-500">{t('importer.or')}</p>
         <label className="mt-2 cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-          Browse files
+          {t('importer.browse')}
           <input
             type="file"
             accept=".csv,.ofx,.qfx"
@@ -165,14 +168,16 @@ export function BankStatementImporter({ onImported }: { onImported: () => void }
         </label>
         {content !== '' && (
           <p className="mt-2 font-mono text-[11px] text-slate-500">
-            {(content.length / 1024).toFixed(1)} KB ready
+            {t('importer.readyKb', { kb: (content.length / 1024).toFixed(1) })}
           </p>
         )}
       </div>
 
-      {(fileError ?? importState.error) && (
+      {(fileError || importState.error) && (
         <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-          {fileError ?? `${importState.error}${importState.errorCode ? ` (${importState.errorCode})` : ''}`}
+          {fileError
+            ? t('importer.readFailed')
+            : translateErrorCode(i18n, importState.errorCode, importState.error)}
         </div>
       )}
 
@@ -183,7 +188,7 @@ export function BankStatementImporter({ onImported }: { onImported: () => void }
         className="mt-4 flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
       >
         <FileUp className="h-4 w-4" />
-        {isPending ? 'Importing…' : 'Import statement'}
+        {isPending ? t('importer.importing') : t('importer.import')}
       </button>
     </div>
   )

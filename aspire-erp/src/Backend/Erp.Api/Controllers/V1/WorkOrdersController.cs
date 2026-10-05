@@ -1,4 +1,7 @@
+using Erp.Api.Common;
 using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Manufacturing.Commands;
@@ -6,6 +9,7 @@ using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -29,10 +33,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class WorkOrdersController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public WorkOrdersController(ISender sender)
+    public WorkOrdersController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Creates one work order in Draft with its gapless WO voucher (no stock/GL impact).</summary>
@@ -53,8 +64,8 @@ public sealed class WorkOrdersController : ControllerBase
             var error = result.Error!;
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Work Order Rejected",
-                error.Message,
+                _common.Text("WorkOrderRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code);
         }
 
@@ -84,8 +95,8 @@ public sealed class WorkOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Work Order",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidWorkOrder"),
+                _errors.Text(ManufacturingErrorCodes.WorkOrderNotFound),
                 ManufacturingErrorCodes.WorkOrderNotFound);
         }
 
@@ -99,18 +110,18 @@ public sealed class WorkOrdersController : ControllerBase
             {
                 ManufacturingErrorCodes.WorkOrderNotFound or ManufacturingErrorCodes.BomNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Work Order Not Found",
-                    error.Message,
+                    _common.Text("WorkOrderNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 ManufacturingErrorCodes.InvalidStatusTransition or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Work Order Conflict",
-                    error.Message,
+                    _common.Text("WorkOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Work Order Rejected",
-                    error.Message,
+                    _common.Text("WorkOrderRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -135,8 +146,8 @@ public sealed class WorkOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(ManufacturingErrorCodes.WorkOrderNotFound),
                 ManufacturingErrorCodes.WorkOrderNotFound);
         }
 
@@ -174,8 +185,8 @@ public sealed class WorkOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Work Order",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidWorkOrder"),
+                _errors.Text(ManufacturingErrorCodes.WorkOrderNotFound),
                 ManufacturingErrorCodes.WorkOrderNotFound);
         }
 
@@ -223,8 +234,8 @@ public sealed class WorkOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Work Order",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidWorkOrder"),
+                _errors.Text(ManufacturingErrorCodes.WorkOrderNotFound),
                 ManufacturingErrorCodes.WorkOrderNotFound);
         }
 
@@ -270,8 +281,8 @@ public sealed class WorkOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Work Order",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidWorkOrder"),
+                _errors.Text(ManufacturingErrorCodes.WorkOrderNotFound),
                 ManufacturingErrorCodes.WorkOrderNotFound);
         }
 
@@ -285,18 +296,18 @@ public sealed class WorkOrdersController : ControllerBase
             {
                 ManufacturingErrorCodes.WorkOrderNotFound or ManufacturingErrorCodes.BomNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Work Order Not Found",
-                    error.Message,
+                    _common.Text("WorkOrderNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 ManufacturingErrorCodes.InvalidStatusTransition or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Work Order Conflict",
-                    error.Message,
+                    _common.Text("WorkOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Work Order Rejected",
-                    error.Message,
+                    _common.Text("WorkOrderRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -320,20 +331,25 @@ public sealed class WorkOrdersController : ControllerBase
                 or StockErrorCodes.WarehouseNotFound
                 or StockErrorCodes.ItemNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Manufacturing Resource Not Found",
-                    error.Message,
+                    _common.Text("ManufacturingResourceNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             ManufacturingErrorCodes.InvalidStatusTransition
                 or ConcurrencyErrorCodes.ConcurrencyConflict
                 or AccountingErrorCodes.FiscalPeriodLocked => Problem(
                     StatusCodes.Status409Conflict,
-                    "Manufacturing Conflict",
-                    error.Message,
+                    _common.Text("ManufacturingConflict"),
+                    error.Code switch
+                    {
+                        // Instance-valued detail (period dates) passes through (Phase 2 convention).
+                        AccountingErrorCodes.FiscalPeriodLocked => error.Message,
+                        _ => _errors.Text(error.Code, error.Message),
+                    },
                     error.Code),
             _ => Problem(
                 StatusCodes.Status400BadRequest,
-                "Manufacturing Rejected",
-                error.Message,
+                _common.Text("ManufacturingRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
         };
 

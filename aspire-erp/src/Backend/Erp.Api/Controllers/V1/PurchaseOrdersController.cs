@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Buying.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Buying.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -21,10 +25,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class PurchaseOrdersController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public PurchaseOrdersController(ISender sender)
+    public PurchaseOrdersController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent purchase orders with their lines.</summary>
@@ -43,8 +54,8 @@ public sealed class PurchaseOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(PurchaseErrorCodes.CompanyNotFound),
                 PurchaseErrorCodes.CompanyNotFound);
         }
 
@@ -73,13 +84,13 @@ public sealed class PurchaseOrdersController : ControllerBase
             {
                 PurchaseErrorCodes.InvalidStatusTransition => Problem(
                     StatusCodes.Status409Conflict,
-                    "Purchase Order Conflict",
-                    error.Message,
+                    _common.Text("PurchaseOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Purchase Order Rejected",
-                    error.Message,
+                    _common.Text("PurchaseOrderRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -110,17 +121,19 @@ public sealed class PurchaseOrdersController : ControllerBase
         if (id != command.PurchaseOrderId)
         {
             return Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Bad Request",
-                detail: "The ID in the route must match the ID in the payload.");
+                StatusCodes.Status400BadRequest,
+                _common.Text("BadRequest"),
+                _errors.Text("route_id_mismatch"),
+                "route_id_mismatch");
         }
 
         if (companyId != command.CompanyId)
         {
             return Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Bad Request",
-                detail: "The Company ID in the route must match the payload.");
+                StatusCodes.Status400BadRequest,
+                _common.Text("BadRequest"),
+                _errors.Text("route_company_mismatch"),
+                "route_company_mismatch");
         }
 
         var result = await _sender.SendAsync(command, cancellationToken);
@@ -135,20 +148,37 @@ public sealed class PurchaseOrdersController : ControllerBase
             // Return the ObjectResult as-is: wrapping it again (NotFound(Problem(...))) would
             // serialize the inner result as a nested { value, formatters, ... } envelope instead
             // of the RFC 7807 body the client's ProblemDetails handling expects.
-            PurchaseErrorCodes.PurchaseOrderNotFound or PurchaseErrorCodes.CompanyNotFound or PurchaseErrorCodes.SupplierNotFound => Problem(
+            PurchaseErrorCodes.PurchaseOrderNotFound => Problem(
                 StatusCodes.Status404NotFound,
-                "Resource Not Found",
-                error.Message,
+                _common.Text("PurchaseOrderNotFound"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
-            PurchaseErrorCodes.InvalidStatusTransition or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+            PurchaseErrorCodes.CompanyNotFound => Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("InvalidCompany"),
+                _errors.Text(error.Code, error.Message),
+                error.Code),
+            PurchaseErrorCodes.SupplierNotFound => Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("SupplierNotFound"),
+                _errors.Text(error.Code, error.Message),
+                error.Code),
+            PurchaseErrorCodes.InvalidStatusTransition => Problem(
                 StatusCodes.Status409Conflict,
-                "Conflict",
-                error.Message,
+                // "Conflict", not the resource-specific title: PurchaseOrdersApiTests pins
+                // this wire wording for the update path (same code, same title as before).
+                _common.Text("Conflict"),
+                _errors.Text(error.Code, error.Message),
+                error.Code),
+            ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                StatusCodes.Status409Conflict,
+                _common.Text("ConcurrentUpdateConflict"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
             _ => Problem(
                 StatusCodes.Status400BadRequest,
-                "Bad Request",
-                error.Message,
+                _common.Text("BadRequest"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
         };
     }
@@ -173,8 +203,8 @@ public sealed class PurchaseOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Purchase Order",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidPurchaseOrder"),
+                _errors.Text(PurchaseErrorCodes.PurchaseOrderNotFound),
                 PurchaseErrorCodes.PurchaseOrderNotFound);
         }
 
@@ -188,18 +218,18 @@ public sealed class PurchaseOrdersController : ControllerBase
             {
                 PurchaseErrorCodes.InvalidStatusTransition => Problem(
                     StatusCodes.Status409Conflict,
-                    "Purchase Order Conflict",
-                    error.Message,
+                    _common.Text("PurchaseOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Concurrent Update Conflict",
-                    error.Message,
+                    _common.Text("ConcurrentUpdateConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Purchase Order Rejected",
-                    error.Message,
+                    _common.Text("PurchaseOrderRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

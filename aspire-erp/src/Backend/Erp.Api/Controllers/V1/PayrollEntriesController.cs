@@ -1,4 +1,7 @@
+using Erp.Api.Common;
 using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.HrPayroll.Commands;
@@ -6,6 +9,7 @@ using Erp.Application.Features.HrPayroll.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -41,10 +45,17 @@ public sealed record SubmitPayrollRunRequest(
 public sealed class PayrollEntriesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public PayrollEntriesController(ISender sender)
+    public PayrollEntriesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>
@@ -74,8 +85,8 @@ public sealed class PayrollEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(HrPayrollErrorCodes.CompanyNotFound),
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
@@ -127,8 +138,8 @@ public sealed class PayrollEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Payroll Disbursement",
-                "The route id, companyId and bankAccountId must all be non-empty GUIDs.",
+                _common.Text("InvalidPayrollDisbursement"),
+                _errors.Text(HrPayrollErrorCodes.PayrollEntryNotFound),
                 HrPayrollErrorCodes.PayrollEntryNotFound);
         }
 
@@ -171,8 +182,8 @@ public sealed class PayrollEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Payroll Entry",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidPayrollEntry"),
+                _errors.Text(HrPayrollErrorCodes.PayrollEntryNotFound),
                 HrPayrollErrorCodes.PayrollEntryNotFound);
         }
 
@@ -202,8 +213,8 @@ public sealed class PayrollEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(HrPayrollErrorCodes.CompanyNotFound),
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
@@ -228,8 +239,8 @@ public sealed class PayrollEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Payroll Entry",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidPayrollEntry"),
+                _errors.Text(HrPayrollErrorCodes.PayrollEntryNotFound),
                 HrPayrollErrorCodes.PayrollEntryNotFound);
         }
 
@@ -238,7 +249,9 @@ public sealed class PayrollEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status404NotFound,
-                "Payroll Entry Not Found",
+                _common.Text("PayrollEntryNotFound"),
+                // Instance-valued detail (entry + company ids): passes through untranslated
+                // while the title still localizes (Phase 2 convention).
                 $"Payroll entry '{id}' was not found in company '{companyId}'.",
                 HrPayrollErrorCodes.PayrollEntryNotFound);
         }
@@ -261,8 +274,8 @@ public sealed class PayrollEntriesController : ControllerBase
                 or HrPayrollErrorCodes.EmployeeNotFound
                 or HrPayrollErrorCodes.BankAccountNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Payroll Resource Not Found",
-                    error.Message,
+                    _common.Text("PayrollResourceNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             HrPayrollErrorCodes.InvalidStatusTransition
                 or HrPayrollErrorCodes.DuplicateSalarySlip
@@ -270,13 +283,21 @@ public sealed class PayrollEntriesController : ControllerBase
                 or AccountingErrorCodes.FiscalPeriodLocked
                 or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Payroll Conflict",
-                    error.Message,
+                    _common.Text("PayrollConflict"),
+                    error.Code switch
+                    {
+                        // Instance-valued details (overlap period, slip ids, fiscal dates) pass
+                        // through untranslated while the title still localizes (Phase 2 convention).
+                        HrPayrollErrorCodes.PayrollPeriodOverlap
+                            or HrPayrollErrorCodes.DuplicateSalarySlip
+                            or AccountingErrorCodes.FiscalPeriodLocked => error.Message,
+                        _ => _errors.Text(error.Code, error.Message),
+                    },
                     error.Code),
             _ => Problem(
                 StatusCodes.Status400BadRequest,
-                "Payroll Rejected",
-                error.Message,
+                _common.Text("PayrollRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
         };
 

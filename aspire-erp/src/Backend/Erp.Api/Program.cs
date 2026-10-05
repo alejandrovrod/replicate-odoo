@@ -35,6 +35,7 @@ using Erp.Domain.Repositories;
 using Erp.Infrastructure.Data;
 using Erp.Infrastructure.Data.Repositories;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +53,20 @@ builder.Services
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// i18n (spec 00-i18n): en/es with English as default AND fallback. Resources live under
+// Resources/{Shared,Common,Controllers}/... (manifest {RootNamespace}.Resources.{path}); the
+// neutral (culture-less) .resx holds the English text because the resource fallback chain for
+// "es" is es -> neutral and never es -> "en" satellites. The provider order is the ASP.NET
+// default which already matches the spec: QueryString (?culture=es, tests) -> Cookie (future
+// user preference) -> Accept-Language -> default "en".
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.SetDefaultCulture("en")
+        .AddSupportedCultures("en", "es")
+        .AddSupportedUICultures("en", "es");
+});
 
 // Multi-tenancy composition root (Constitution Article II.2): the scoped tenant provider is
 // injected into AppDbContext, which is wired to the Aspire-injected ConnectionStrings:erp-db.
@@ -263,6 +278,11 @@ builder.Services.AddScoped<IAuthorizationHandler, TenantMemberHandler>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+// i18n: resolve the request culture (QueryString -> Cookie -> Accept-Language -> "en") before
+// any middleware or controller reads CultureInfo.CurrentUICulture (spec 00-i18n resolution order).
+app.UseRequestLocalization();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

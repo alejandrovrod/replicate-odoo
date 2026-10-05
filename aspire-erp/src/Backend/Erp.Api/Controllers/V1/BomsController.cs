@@ -1,9 +1,13 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -20,10 +24,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class BomsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public BomsController(ISender sender)
+    public BomsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Lists the company's BOMs with their lines and operations.</summary>
@@ -40,8 +51,8 @@ public sealed class BomsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(ManufacturingErrorCodes.BomNotFound),
                 ManufacturingErrorCodes.BomNotFound);
         }
 
@@ -66,8 +77,8 @@ public sealed class BomsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid BOM",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidBom"),
+                _errors.Text(ManufacturingErrorCodes.BomNotFound),
                 ManufacturingErrorCodes.BomNotFound);
         }
 
@@ -76,8 +87,8 @@ public sealed class BomsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status404NotFound,
-                "BOM Not Found",
-                $"BOM '{id}' was not found in this company.",
+                _common.Text("BomNotFound"),
+                _errors.Text(ManufacturingErrorCodes.BomNotFound),
                 ManufacturingErrorCodes.BomNotFound);
         }
 

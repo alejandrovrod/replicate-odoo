@@ -1,0 +1,87 @@
+{
+  "module": {
+    "title": "Work Orders & BOM Studio",
+    "subtitle": "Bills of materials, work orders, workstations and capacity."
+  },
+  "overview": {
+    "title": "Manufacturing & Shop Floor (ERPNext Parity)",
+    "subtitle": "Run work orders from submission through WIP transfer to completion, with BOM cost roll-ups.",
+    "refresh": "Refresh boards",
+    "loadingBoard": "Loading execution board…",
+    "loadingBom": "Loading BOM Studio…",
+    "loadFailed": "Failed to load production summary."
+  },
+  "cards": {
+    "draftName": "Draft orders",
+    "draftDetail": "Awaiting submission against an active default BOM",
+    "submittedName": "Submitted orders",
+    "submittedDetail": "Authorized - materials ready for WIP issue (MF-02)",
+    "inProcessName": "In process",
+    "inProcessDetail": "Materials in WIP - awaiting completion (MF-03)",
+    "completedName": "Completed",
+    "completedDetail": "Finished goods capitalized into inventory",
+    "workOrders": "Work orders",
+    "live": "Live"
+  },
+  "board": {
+    "title": "Work Orders",
+    "subtitle": "Shop floor execution: Draft → Submitted → InProcess → Completed (or Cancelled).",
+    "loading": "Loading work orders…",
+    "empty": "No work orders yet for this company.",
+    "loadFailed": "Could not load work orders",
+    "retry": "Retry",
+    "colOrder": "Order",
+    "colQty": "Qty",
+    "colProduced": "Produced",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "posted": "Posted {{voucherNo}} — Dr {{debit}} = Cr {{credit}}. List refreshed.",
+    "progress": "{{order}}: {{produced}} of {{qty}} produced",
+    "started": " · started {{date}}",
+    "ended": " · ended {{date}}"
+  },
+  "actions": {
+    "submit": "Submit",
+    "submitTitle": "Submit for production",
+    "transfer": "Transfer",
+    "transferTitle": "Transfer materials to WIP (MF-02)",
+    "complete": "Complete",
+    "completeTitle": "Complete manufacture (MF-03)",
+    "cancel": "Cancel",
+    "cancelTitle": "Cancel work order (MF-05 reversal when issued)"
+  },
+  "complete": {
+    "prompt": "Complete {{order}} — produced quantity (max {{max}})",
+    "posting": "Posting…",
+    "post": "Post manufacture"
+  },
+  "bom": {
+    "title": "BOM Studio",
+    "subtitle": "Recipe tree: components, operations and the persisted cost roll-up (read-only).",
+    "recipe": "Recipe",
+    "empty": "No bills of materials yet for this company. Recipes are engineering masters (no create endpoint exists) — seed one per the manufacturing seed script.",
+    "loading": "Loading recipes…",
+    "loadFailed": "Could not load recipes",
+    "retry": "Retry",
+    "yields": "yields {{qty}} × {{code}} {{name}}",
+    "active": "Active",
+    "inactive": "Inactive",
+    "default": "Default",
+    "materials": "Materials",
+    "operations": "Operations",
+    "scrap": "Scrap",
+    "total": "Total",
+    "components": "Components",
+    "colItem": "Item",
+    "colQty": "Qty",
+    "colRate": "Rate",
+    "colAmount": "Amount",
+    "colScrap": "Scrap %",
+    "colStep": "Step",
+    "colWorkstation": "Workstation",
+    "colMinutes": "Minutes",
+    "colRatePerHour": "Rate/h",
+    "colCost": "Cost",
+    "noOperations": "No workstation steps on this recipe."
+  }
+}

@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Buying.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Buying.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -21,10 +25,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class SuppliersController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public SuppliersController(ISender sender)
+    public SuppliersController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the tenant's most recent suppliers.</summary>
@@ -63,13 +74,15 @@ public sealed class SuppliersController : ControllerBase
             {
                 PurchaseErrorCodes.DuplicateSupplierCode => Problem(
                     StatusCodes.Status409Conflict,
-                    "Duplicate Supplier Code",
+                    _common.Text("DuplicateSupplierCode"),
+                    // Instance-valued detail (the colliding code): passes through
+                    // untranslated, the title still localizes (Phase 2 convention).
                     error.Message,
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Supplier Rejected",
-                    error.Message,
+                    _common.Text("SupplierRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

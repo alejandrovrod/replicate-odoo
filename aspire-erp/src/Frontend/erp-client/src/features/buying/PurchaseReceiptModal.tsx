@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { CheckCircle2, PackagePlus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { apiClient } from '../../api/client'
 import { useErpAction } from '../../lib/useErpAction'
+import { translateErrorCode } from '../../lib/translateErrorCode'
 import { useTenantStore } from '../../store/useTenantStore'
 
 interface PurchaseOrder {
@@ -24,6 +26,7 @@ interface PurchaseReceiptModalProps {
 }
 
 export function PurchaseReceiptModal({ order, onClose, onSuccess }: PurchaseReceiptModalProps) {
+  const { t, i18n } = useTranslation('buying')
   const companyId = useTenantStore((state) => state.companyId)
   // Hardcoded default warehouse for demo
   const [warehouseId] = useState('11111111-1111-1111-1111-111111111111')
@@ -63,9 +66,9 @@ export function PurchaseReceiptModal({ order, onClose, onSuccess }: PurchaseRece
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
               <CheckCircle2 className="h-8 w-8 text-indigo-600" />
             </div>
-            <h2 className="mt-4 text-xl font-bold text-slate-900">Receipt Posted!</h2>
+            <h2 className="mt-4 text-xl font-bold text-slate-900">{t('receipt.posted')}</h2>
             <p className="mt-2 text-sm text-slate-600">
-              Receipt <span className="font-mono font-medium">{submitState.data?.receiptNumber}</span> has been successfully posted.
+              {t('receipt.created', { number: submitState.data?.receiptNumber })}
             </p>
             <button
               onClick={() => {
@@ -74,7 +77,7 @@ export function PurchaseReceiptModal({ order, onClose, onSuccess }: PurchaseRece
               }}
               className="mt-6 w-full rounded-lg bg-slate-900 px-4 py-2.5 font-semibold text-white hover:bg-slate-800"
             >
-              Done
+              {t('receipt.done')}
             </button>
           </div>
         </div>
@@ -93,32 +96,32 @@ export function PurchaseReceiptModal({ order, onClose, onSuccess }: PurchaseRece
               <PackagePlus className="h-5 w-5 text-indigo-600" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Post Purchase Receipt</h2>
-              <p className="text-xs text-slate-500">For Order {order.id}</p>
+              <h2 className="text-lg font-bold text-slate-900">{t('receipt.title')}</h2>
+              <p className="text-xs text-slate-500">{t('receipt.forOrder', { id: order.id })}</p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-50">
+          <button onClick={onClose} aria-label={t('receipt.close')} className="rounded-full p-2 text-slate-400 hover:bg-slate-50">
             x
           </button>
         </div>
 
         <div className="py-4">
-          <h3 className="mb-2 text-sm font-semibold text-slate-700">Pending Items to Receive</h3>
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">{t('receipt.pendingItems')}</h3>
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100">
             {pendingItems.map(item => (
               <li key={item.itemId} className="flex justify-between px-4 py-3 text-sm">
                 <span className="font-medium text-slate-900">{item.itemName}</span>
-                <span className="text-slate-600">Qty: {item.quantity - item.receivedQuantity}</span>
+                <span className="text-slate-600">{t('receipt.qty', { qty: item.quantity - item.receivedQuantity })}</span>
               </li>
             ))}
             {pendingItems.length === 0 && (
-              <li className="px-4 py-3 text-sm text-slate-500">No pending items.</li>
+              <li className="px-4 py-3 text-sm text-slate-500">{t('receipt.noPending')}</li>
             )}
           </ul>
 
           {submitState.error && (
             <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              {submitState.error}
+              {translateErrorCode(i18n, submitState.errorCode, submitState.error)}
             </div>
           )}
         </div>
@@ -128,14 +131,14 @@ export function PurchaseReceiptModal({ order, onClose, onSuccess }: PurchaseRece
             onClick={onClose}
             className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
           >
-            Cancel
+            {t('receipt.cancel')}
           </button>
           <button
             onClick={() => submitReceipt(undefined)}
             disabled={isPending || pendingItems.length === 0}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-50"
           >
-            {isPending ? 'Posting...' : 'Post Receipt'}
+            {isPending ? t('receipt.posting') : t('receipt.post')}
           </button>
         </div>
       </div>

@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "Aspire ERP",
+    "tagline": "Operaciones de negocio unificadas"
+  },
+  "action": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "retry": "Reintentar",
+    "refresh": "Actualizar",
+    "export": "Exportar",
+    "import": "Importar",
+    "apply": "Aplicar",
+    "reset": "Restablecer",
+    "copy": "Copiar"
+  },
+  "field": {
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "all": "Todos",
+    "none": "Ninguno",
+    "yes": "Sí",
+    "no": "No",
+    "optional": "Opcional",
+    "required": "Obligatorio",
+    "from": "Desde",
+    "to": "Hasta",
+    "date": "Fecha",
+    "amount": "Importe",
+    "currency": "Moneda",
+    "notes": "Notas",
+    "description": "Descripción",
+    "status": "Estado",
+    "company": "Empresa"
+  },
+  "state": {
+    "loading": "Cargando...",
+    "saving": "Guardando...",
+    "empty": "No se encontraron registros",
+    "error": "Algo salió mal",
+    "success": "Listo",
+    "offline": "Estás sin conexión",
+    "connected": "Conectado",
+    "unsavedChanges": "Tienes cambios sin guardar"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "page": "Página {{page}} de {{total}}",
+    "showing": "Mostrando {{from}}-{{to}} de {{count}}"
+  },
+  "nav": {
+    "route": {
+      "dashboard": "Resumen ejecutivo",
+      "accounting-coa": "Plan de cuentas",
+      "accounting-journal": "Asientos del libro mayor",
+      "banking": "Conciliación y conexiones bancarias",
+      "stock": "Inventario y almacenes (Kardex)",
+      "manufacturing": "Órdenes de producción y editor de LDM",
+      "selling": "Facturas de venta y PDV",
+      "buying": "Órdenes de compra y facturas de proveedor",
+      "hr-payroll": "Nóminas y directorio",
+      "crm": "Canal de ventas y leads"
+    },
+    "category": {
+      "dashboard": "Panel",
+      "accounting": "Contabilidad",
+      "treasury": "Tesorería",
+      "stock": "Inventario",
+      "manufacturing": "Fabricación",
+      "selling": "Ventas",
+      "buying": "Compras",
+      "hr": "Recursos Humanos",
+      "crm": "CRM"
+    },
+    "fallbackTitle": "Módulo",
+    "fallbackCategory": "ERP",
+    "group": {
+      "overview": "Resumen",
+      "accounting": "Contabilidad y finanzas",
+      "operations": "Operaciones"
+    },
+    "item": {
+      "dashboard": "Panel",
+      "accountingCoa": "Plan de cuentas",
+      "accountingJournal": "Libro mayor",
+      "banking": "Banco y concil.",
+      "stock": "Stock y Kardex",
+      "manufacturing": "Fabricación",
+      "selling": "Ventas y PDV",
+      "buying": "Compras y prov.",
+      "hrPayroll": "RRHH y nómina",
+      "crm": "CRM y pipeline"
+    },
+    "expandSidebar": "Expandir barra lateral",
+    "collapseSidebar": "Contraer barra lateral"
+  },
+  "header": {
+    "searchPlaceholder": "Buscar asientos, cuentas, artículos...",
+    "notifications": "Notificaciones",
+    "company": "Empresa",
+    "tenant": "Organización",
+    "language": "Idioma",
+    "default": "Predeterminado"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "invalid": "Valor no válido",
+    "tooLong": "El valor es demasiado largo",
+    "min": "Debe ser al menos {{min}}",
+    "max": "Debe ser como máximo {{max}}"
+  },
+  "error": {
+    "network": "No se pudo conectar con el servidor",
+    "unexpected": "Respuesta inesperada del servidor",
+    "forbidden": "No tienes acceso a este recurso"
+  },
+  "units": {
+    "percent": "%",
+    "pieces": "uds"
+  }
+}

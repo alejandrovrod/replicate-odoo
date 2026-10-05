@@ -1,0 +1,43 @@
+{
+  "module": {
+    "title": "Facturas de venta y PDV",
+    "subtitle": "Clientes, presupuestos, órdenes de venta, entregas y facturas."
+  },
+  "overview": {
+    "title": "Ventas y punto de venta (POS)",
+    "subtitle": "Facturación a clientes, validación de límite de crédito y cajas registradoras de alta velocidad.",
+    "newInvoice": "Nueva factura de venta",
+    "launchPos": "Abrir caja POS"
+  },
+  "invoices": {
+    "title": "Facturas de venta recientes",
+    "subtitle": "Integración directa con el libro mayor y las cuentas por cobrar.",
+    "colNumber": "N.º factura",
+    "colCustomer": "Cliente",
+    "colDate": "Fecha",
+    "colTotal": "Total",
+    "colOutstanding": "Pendiente",
+    "colStatus": "Estado"
+  },
+  "pos": {
+    "title": "Productos",
+    "close": "Cerrar",
+    "successTitle": "¡Pago exitoso!",
+    "created": "La factura {{number}} fue creada.",
+    "done": "Listo"
+  },
+  "cart": {
+    "title": "Orden actual",
+    "empty": "El carrito está vacío",
+    "perUnit": "/ u."
+  },
+  "totals": {
+    "subtotal": "Subtotal",
+    "tax": "Impuestos (10%)",
+    "total": "Total"
+  },
+  "pay": {
+    "cash": "Efectivo",
+    "card": "Tarjeta"
+  }
+}

@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Assets.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Assets.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -21,10 +25,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class AssetCategoriesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public AssetCategoriesController(ISender sender)
+    public AssetCategoriesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Creates one asset category with its GL account template links (no ledger impact).</summary>
@@ -45,8 +56,8 @@ public sealed class AssetCategoriesController : ControllerBase
             var error = result.Error!;
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Asset Category Rejected",
-                error.Message,
+                _common.Text("AssetCategoryRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code);
         }
 
@@ -68,8 +79,8 @@ public sealed class AssetCategoriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(AssetErrorCodes.CompanyNotFound),
                 AssetErrorCodes.CompanyNotFound);
         }
 

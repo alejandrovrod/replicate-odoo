@@ -1,10 +1,6 @@
-/** Quantity display: thousands separators, at most two decimals, no trailing zeros. */
-export const formatQty = (qty: number): string =>
-  qty.toLocaleString('en-US', { maximumFractionDigits: 2 })
-
-/** Money display for stock valuations (USD in the dev seed). */
-export const formatMoney = (value: number): string =>
-  value.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+// Re-exported from the shared formatter so existing stock imports keep working;
+// `localISODate` stays here because it is a wire format (`DateOnly`), not a display format.
+export { displayLocale, formatMoney, formatQty } from '../../lib/format'
 
 /**
  * Local `yyyy-mm-dd`, the `DateOnly` format the API expects for `postingDate`.

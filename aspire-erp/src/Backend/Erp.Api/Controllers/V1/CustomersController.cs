@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Selling.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Selling.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -29,10 +33,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class CustomersController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public CustomersController(ISender sender)
+    public CustomersController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent customers.</summary>
@@ -51,8 +62,8 @@ public sealed class CustomersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(SellingErrorCodes.CompanyRequired),
                 SellingErrorCodes.CompanyRequired);
         }
 
@@ -77,8 +88,8 @@ public sealed class CustomersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Customer",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidCustomer"),
+                _errors.Text(SellingErrorCodes.CustomerNotFound),
                 SellingErrorCodes.CustomerNotFound);
         }
 
@@ -87,8 +98,8 @@ public sealed class CustomersController : ControllerBase
         return customer is null
             ? Problem(
                 StatusCodes.Status404NotFound,
-                "Customer Not Found",
-                $"Customer '{id}' was not found in this company.",
+                _common.Text("CustomerNotFound"),
+                _errors.Text(SellingErrorCodes.CustomerNotFound),
                 SellingErrorCodes.CustomerNotFound)
             : Ok(customer);
     }
@@ -116,13 +127,16 @@ public sealed class CustomersController : ControllerBase
             {
                 SellingErrorCodes.DuplicateCustomerCode => Problem(
                     StatusCodes.Status409Conflict,
-                    "Duplicate Customer Code",
+                    _common.Text("DuplicateCustomerCode"),
+                    // Instance-valued detail (the colliding code, pinned by
+                    // CustomersApiTests): passes through untranslated, the title still
+                    // localizes. See the Phase 2 convention in tasks.md.
                     error.Message,
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Customer Rejected",
-                    error.Message,
+                    _common.Text("CustomerRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

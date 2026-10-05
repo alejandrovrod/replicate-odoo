@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { CheckCircle2, Factory } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { ApiError, apiClient } from '../../api/client'
 import { useTenantStore } from '../../store/useTenantStore'
 import type { WorkOrder } from './types'
@@ -22,10 +23,13 @@ interface StatusCounts {
  * (submit / transfer / complete / cancel), and the BOM Studio shows the recipe tree.
  */
 export function ManufacturingOverview() {
+  const { t } = useTranslation('manufacturing')
   const companyId = useTenantStore((state) => state.companyId)
   const [refreshSignal, setRefreshSignal] = useState(0)
   const [counts, setCounts] = useState<StatusCounts>({ draft: 0, submitted: 0, inProcess: 0, completed: 0 })
-  const [countsError, setCountsError] = useState<string | null>(null)
+  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
+  // re-translates on language switches (same decision as CrmOverview).
+  const [countsError, setCountsError] = useState<unknown>(null)
 
   const refresh = useCallback(() => setRefreshSignal((n) => n + 1), [])
 
@@ -45,9 +49,7 @@ export function ManufacturingOverview() {
       },
       (cause: unknown) => {
         if (!cancelled) {
-          setCountsError(
-            cause instanceof ApiError ? cause.message : 'Failed to load production summary.',
-          )
+          setCountsError(cause)
         }
       },
     )
@@ -58,26 +60,26 @@ export function ManufacturingOverview() {
 
   const cards = [
     {
-      name: 'Draft orders',
-      detail: 'Awaiting submission against an active default BOM',
+      name: t('cards.draftName'),
+      detail: t('cards.draftDetail'),
       value: counts.draft,
       resolved: counts.draft === 0,
     },
     {
-      name: 'Submitted orders',
-      detail: 'Authorized - materials ready for WIP issue (MF-02)',
+      name: t('cards.submittedName'),
+      detail: t('cards.submittedDetail'),
       value: counts.submitted,
       resolved: counts.submitted === 0,
     },
     {
-      name: 'In process',
-      detail: 'Materials in WIP - awaiting completion (MF-03)',
+      name: t('cards.inProcessName'),
+      detail: t('cards.inProcessDetail'),
       value: counts.inProcess,
       resolved: false,
     },
     {
-      name: 'Completed',
-      detail: 'Finished goods capitalized into inventory',
+      name: t('cards.completedName'),
+      detail: t('cards.completedDetail'),
       value: counts.completed,
       resolved: true,
     },
@@ -92,17 +94,15 @@ export function ManufacturingOverview() {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
               <Factory className="h-4 w-4" />
             </span>
-            <h2 className="text-lg font-bold text-slate-900">Manufacturing & Shop Floor (ERPNext Parity)</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
           </div>
-          <p className="mt-1 text-xs text-slate-600">
-            Run work orders from submission through WIP transfer to completion, with BOM cost roll-ups.
-          </p>
+          <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
           <button
             type="button"
             onClick={refresh}
             className="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
           >
-            Refresh boards
+            {t('overview.refresh')}
           </button>
         </div>
       </div>
@@ -111,7 +111,7 @@ export function ManufacturingOverview() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         {countsError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-xs text-rose-700 md:col-span-4">
-            {countsError}
+            {countsError instanceof ApiError ? countsError.message : t('overview.loadFailed')}
           </div>
         ) : (
           cards.map((card) => (
@@ -134,11 +134,11 @@ export function ManufacturingOverview() {
 
               <div className="mt-5 flex items-baseline justify-between border-t border-slate-100 pt-4">
                 <div>
-                  <span className="text-xs text-slate-400">Work orders</span>
+                  <span className="text-xs text-slate-400">{t('cards.workOrders')}</span>
                   <p className="text-xl font-bold text-slate-900">{card.value}</p>
                 </div>
                 <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" /> Live
+                  <CheckCircle2 className="h-4 w-4" /> {t('cards.live')}
                 </span>
               </div>
             </div>
@@ -147,12 +147,12 @@ export function ManufacturingOverview() {
       </div>
 
       {/* Execution board (keyed by the banner refresh: a refresh remounts both panels). */}
-      <Suspense fallback={<p className="text-xs text-slate-500">Loading execution board…</p>}>
+      <Suspense fallback={<p className="text-xs text-slate-500">{t('overview.loadingBoard')}</p>}>
         <WorkOrdersBoard key={`wo-${refreshSignal}`} companyId={companyId} />
       </Suspense>
 
       {/* BOM Studio */}
-      <Suspense fallback={<p className="text-xs text-slate-500">Loading BOM Studio…</p>}>
+      <Suspense fallback={<p className="text-xs text-slate-500">{t('overview.loadingBom')}</p>}>
         <BomEditor key={`bom-${refreshSignal}`} companyId={companyId} />
       </Suspense>
     </div>

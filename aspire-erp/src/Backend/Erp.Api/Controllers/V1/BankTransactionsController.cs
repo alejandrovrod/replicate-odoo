@@ -1,4 +1,7 @@
+using Erp.Api.Common;
 using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Banking.Commands;
@@ -6,6 +9,7 @@ using Erp.Application.Features.Banking.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -29,10 +33,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class BankTransactionsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public BankTransactionsController(ISender sender)
+    public BankTransactionsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Rule-run request: every unreconciled line of the scope is evaluated.</summary>
@@ -79,8 +90,8 @@ public sealed class BankTransactionsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(BankingErrorCodes.CompanyNotFound),
                 BankingErrorCodes.CompanyNotFound);
         }
 
@@ -117,13 +128,13 @@ public sealed class BankTransactionsController : ControllerBase
             {
                 ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Concurrent Update Conflict",
-                    error.Message,
+                    _common.Text("ConcurrentUpdateConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Rule Run Rejected",
-                    error.Message,
+                    _common.Text("RuleRunRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -192,19 +203,19 @@ public sealed class BankTransactionsController : ControllerBase
             {
                 BankingErrorCodes.BankTransactionNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Bank Transaction Not Found",
-                    error.Message,
+                    _common.Text("BankTransactionNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 BankingErrorCodes.InvalidStatusTransition
                     or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
-                        StatusCodes.Status409Conflict,
-                        "Conflict",
-                        error.Message,
-                        error.Code),
+                    StatusCodes.Status409Conflict,
+                    _common.Text("Conflict"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Un-reconcile Rejected",
-                    error.Message,
+                    _common.Text("UnreconcileRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -249,21 +260,26 @@ public sealed class BankTransactionsController : ControllerBase
                 BankingErrorCodes.BankTransactionNotFound
                     or BankingErrorCodes.BankAccountNotFound
                     or BankingErrorCodes.CompanyNotFound => Problem(
-                        StatusCodes.Status404NotFound,
-                        "Quick Voucher Counterpart Not Found",
-                        error.Message,
-                        error.Code),
+                    StatusCodes.Status404NotFound,
+                    _common.Text("QuickVoucherCounterpartNotFound"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
                 BankingErrorCodes.InvalidStatusTransition
                     or ConcurrencyErrorCodes.ConcurrencyConflict
                     or AccountingErrorCodes.FiscalPeriodLocked => Problem(
-                        StatusCodes.Status409Conflict,
-                        "Conflict",
-                        error.Message,
-                        error.Code),
+                    StatusCodes.Status409Conflict,
+                    _common.Text("Conflict"),
+                    error.Code switch
+                    {
+                        // Instance-valued detail (period dates) passes through (Phase 2 convention).
+                        AccountingErrorCodes.FiscalPeriodLocked => error.Message,
+                        _ => _errors.Text(error.Code, error.Message),
+                    },
+                    error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Quick Voucher Rejected",
-                    error.Message,
+                    _common.Text("QuickVoucherRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -285,20 +301,20 @@ public sealed class BankTransactionsController : ControllerBase
             BankingErrorCodes.BankTransactionNotFound
                 or BankingErrorCodes.PaymentEntryNotFound
                 or BankingErrorCodes.GlVoucherNotFound => Problem(
-                    StatusCodes.Status404NotFound,
-                    "Reconciliation Counterpart Not Found",
-                    error.Message,
-                    error.Code),
+                StatusCodes.Status404NotFound,
+                _common.Text("ReconciliationCounterpartNotFound"),
+                _errors.Text(error.Code, error.Message),
+                error.Code),
             BankingErrorCodes.InvalidStatusTransition
                 or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
-                    StatusCodes.Status409Conflict,
-                    "Conflict",
-                    error.Message,
-                    error.Code),
+                StatusCodes.Status409Conflict,
+                _common.Text("Conflict"),
+                _errors.Text(error.Code, error.Message),
+                error.Code),
             _ => Problem(
                 StatusCodes.Status400BadRequest,
-                "Reconciliation Rejected",
-                error.Message,
+                _common.Text("ReconciliationRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
         };
     }

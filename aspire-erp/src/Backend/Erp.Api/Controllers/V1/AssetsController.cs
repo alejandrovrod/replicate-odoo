@@ -1,4 +1,7 @@
+using Erp.Api.Common;
 using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Assets.Commands;
@@ -6,6 +9,7 @@ using Erp.Application.Features.Assets.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -29,10 +33,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class AssetsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public AssetsController(ISender sender)
+    public AssetsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Lists the company's asset headers. Read-only: no idempotency guard.</summary>
@@ -49,8 +60,8 @@ public sealed class AssetsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(AssetErrorCodes.CompanyNotFound),
                 AssetErrorCodes.CompanyNotFound);
         }
 
@@ -75,8 +86,8 @@ public sealed class AssetsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Asset",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidAsset"),
+                _errors.Text(AssetErrorCodes.AssetNotFound),
                 AssetErrorCodes.AssetNotFound);
         }
 
@@ -85,7 +96,9 @@ public sealed class AssetsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status404NotFound,
-                "Asset Not Found",
+                _common.Text("AssetNotFound"),
+                // Instance-valued detail (asset id): passes through untranslated while the title
+                // still localizes (Phase 2 convention).
                 $"Asset '{id}' was not found in this company.",
                 AssetErrorCodes.AssetNotFound);
         }
@@ -119,8 +132,8 @@ public sealed class AssetsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Asset",
-                "Both the route id and the request companyId must be non-empty GUIDs.",
+                _common.Text("InvalidAsset"),
+                _errors.Text(AssetErrorCodes.AssetNotFound),
                 AssetErrorCodes.AssetNotFound);
         }
 
@@ -206,8 +219,8 @@ public sealed class AssetsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Asset",
-                "Both the route id and the request companyId must be non-empty GUIDs.",
+                _common.Text("InvalidAsset"),
+                _errors.Text(AssetErrorCodes.AssetNotFound),
                 AssetErrorCodes.AssetNotFound);
         }
 
@@ -253,8 +266,8 @@ public sealed class AssetsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Asset",
-                "Both the route id and the request companyId must be non-empty GUIDs.",
+                _common.Text("InvalidAsset"),
+                _errors.Text(AssetErrorCodes.AssetNotFound),
                 AssetErrorCodes.AssetNotFound);
         }
 
@@ -286,8 +299,8 @@ public sealed class AssetsController : ControllerBase
                 or AssetErrorCodes.ItemNotFound
                 or AssetErrorCodes.BankAccountNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Asset Resource Not Found",
-                    error.Message,
+                    _common.Text("AssetResourceNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             AssetErrorCodes.InvalidStatusTransition
                 or AssetErrorCodes.AssetNotDisposed
@@ -295,13 +308,18 @@ public sealed class AssetsController : ControllerBase
                 or ConcurrencyErrorCodes.ConcurrencyConflict
                 or AccountingErrorCodes.FiscalPeriodLocked => Problem(
                     StatusCodes.Status409Conflict,
-                    "Asset Conflict",
-                    error.Message,
+                    _common.Text("AssetConflict"),
+                    error.Code switch
+                    {
+                        // Instance-valued detail (period dates) passes through (Phase 2 convention).
+                        AccountingErrorCodes.FiscalPeriodLocked => error.Message,
+                        _ => _errors.Text(error.Code, error.Message),
+                    },
                     error.Code),
             _ => Problem(
                 StatusCodes.Status400BadRequest,
-                "Asset Rejected",
-                error.Message,
+                _common.Text("AssetRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
         };
 

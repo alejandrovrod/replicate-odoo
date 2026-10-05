@@ -1,9 +1,13 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.HrPayroll.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -25,10 +29,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class HrPayrollMastersController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public HrPayrollMastersController(ISender sender)
+    public HrPayrollMastersController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Lists the company's employees, ordered by employee number. Read-only.</summary>
@@ -45,8 +56,8 @@ public sealed class HrPayrollMastersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(HrPayrollErrorCodes.CompanyNotFound),
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
@@ -68,8 +79,8 @@ public sealed class HrPayrollMastersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(HrPayrollErrorCodes.CompanyNotFound),
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
@@ -91,8 +102,8 @@ public sealed class HrPayrollMastersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(HrPayrollErrorCodes.CompanyNotFound),
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
@@ -114,8 +125,8 @@ public sealed class HrPayrollMastersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(HrPayrollErrorCodes.CompanyNotFound),
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 

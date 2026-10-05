@@ -5,8 +5,10 @@ import {
   Sparkles,
   UploadCloud,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { ApiError, apiClient } from '../../api/client'
 import { useErpAction } from '../../lib/useErpAction'
+import { translateErrorCode } from '../../lib/translateErrorCode'
 import { useTenantStore } from '../../store/useTenantStore'
 import type { BankTransaction, RuleMatchSummary } from './types'
 
@@ -29,11 +31,14 @@ interface StatusCounts {
  * counts, and the dual-sided grid below reconciles lines one click at a time.
  */
 export function BankingOverview() {
+  const { t, i18n } = useTranslation('banking')
   const companyId = useTenantStore((state) => state.companyId)
   const [showImporter, setShowImporter] = useState(false)
   const [refreshSignal, setRefreshSignal] = useState(0)
   const [counts, setCounts] = useState<StatusCounts>({ unreconciled: 0, matched: 0, reconciled: 0 })
-  const [countsError, setCountsError] = useState<string | null>(null)
+  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
+  // re-translates on language switches (same decision as CrmOverview).
+  const [countsError, setCountsError] = useState<unknown>(null)
 
   const refresh = useCallback(() => setRefreshSignal((n) => n + 1), [])
 
@@ -54,9 +59,7 @@ export function BankingOverview() {
         },
         (cause: unknown) => {
           if (!cancelled) {
-            setCountsError(
-              cause instanceof ApiError ? cause.message : 'Failed to load staging summary.',
-            )
+            setCountsError(cause)
           }
         },
       )
@@ -80,20 +83,20 @@ export function BankingOverview() {
 
   const cards = [
     {
-      name: 'Unreconciled lines',
-      detail: 'Awaiting a rule match or a manual reconcile',
+      name: t('cards.unreconciledName'),
+      detail: t('cards.unreconciledDetail'),
       value: counts.unreconciled,
       resolved: counts.unreconciled === 0,
     },
     {
-      name: 'Matched suggestions',
-      detail: 'Rule engine proposals awaiting confirmation',
+      name: t('cards.matchedName'),
+      detail: t('cards.matchedDetail'),
       value: counts.matched,
       resolved: counts.matched === 0,
     },
     {
-      name: 'Reconciled lines',
-      detail: 'Cleared with a $0.00 difference',
+      name: t('cards.reconciledName'),
+      detail: t('cards.reconciledDetail'),
       value: counts.reconciled,
       resolved: true,
     },
@@ -108,19 +111,17 @@ export function BankingOverview() {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-600 text-white shadow-xs">
               <Landmark className="h-4 w-4" />
             </span>
-            <h2 className="text-lg font-bold text-slate-900">Banking Subsystem (ERPNext Parity)</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
           </div>
-          <p className="mt-1 text-xs text-slate-600">
-            Import bank statements, run automated heuristic matching rules, and reconcile transactions with GL vouchers.
-          </p>
+          <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
           {rulesState.isSuccess && rulesState.data && (
             <p className="mt-1 text-xs font-semibold text-emerald-700">
-              Rules engine matched {rulesState.data.matchedCount} line(s).
+              {t('overview.rulesMatched', { count: rulesState.data.matchedCount })}
             </p>
           )}
           {rulesState.error && (
             <p className="mt-1 text-xs font-semibold text-rose-700">
-              {rulesState.error}{rulesState.errorCode ? ` (${rulesState.errorCode})` : ''}
+              {translateErrorCode(i18n, rulesState.errorCode, rulesState.error)}
             </p>
           )}
         </div>
@@ -132,7 +133,7 @@ export function BankingOverview() {
             className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
           >
             <UploadCloud className="h-4 w-4 text-sky-600" />
-            Import Statement (CSV/OFX)
+            {t('overview.importStatement')}
           </button>
           <button
             type="button"
@@ -141,13 +142,13 @@ export function BankingOverview() {
             className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-700 disabled:opacity-50"
           >
             <Sparkles className="h-4 w-4" />
-            {isRunningRules ? 'Running…' : 'Run Rules Engine'}
+            {isRunningRules ? t('overview.running') : t('overview.runRules')}
           </button>
         </div>
       </div>
 
       {showImporter && (
-        <Suspense fallback={<p className="text-xs text-slate-500">Loading importer…</p>}>
+        <Suspense fallback={<p className="text-xs text-slate-500">{t('overview.loadingImporter')}</p>}>
           <BankStatementImporter
             onImported={() => {
               setShowImporter(false)
@@ -161,7 +162,7 @@ export function BankingOverview() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {countsError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-xs text-rose-700 md:col-span-3">
-            {countsError}
+            {countsError instanceof ApiError ? countsError.message : t('overview.loadFailed')}
           </div>
         ) : (
           cards.map((card) => (
@@ -184,11 +185,11 @@ export function BankingOverview() {
 
               <div className="mt-5 flex items-baseline justify-between border-t border-slate-100 pt-4">
                 <div>
-                  <span className="text-xs text-slate-400">Staging lines</span>
+                  <span className="text-xs text-slate-400">{t('cards.stagingLines')}</span>
                   <p className="text-xl font-bold text-slate-900">{card.value}</p>
                 </div>
                 <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" /> Staging Isolation Active
+                  <CheckCircle2 className="h-4 w-4" /> {t('cards.isolationActive')}
                 </span>
               </div>
             </div>
@@ -197,7 +198,7 @@ export function BankingOverview() {
       </div>
 
       {/* Dual-sided reconciliation workbench */}
-      <Suspense fallback={<p className="text-xs text-slate-500">Loading reconciliation workbench…</p>}>
+      <Suspense fallback={<p className="text-xs text-slate-500">{t('overview.loadingWorkbench')}</p>}>
         <BankReconciliation refreshSignal={refreshSignal} />
       </Suspense>
     </div>

@@ -1,0 +1,61 @@
+{
+  "overview": {
+    "title": "CRM & Sales Pipeline (ERPNext Parity)",
+    "subtitle": "Leads in, qualification, pipeline drag-drop, 1-click sales orders on ClosedWon deals.",
+    "openLeads": "Open leads",
+    "loadingBoard": "Loading pipeline board…",
+    "loadLeadsFailed": "Failed to load leads."
+  },
+  "pipeline": {
+    "title": "Sales Pipeline",
+    "dragHint": "Drag and drop opportunities across stages",
+    "weightedForecast": "Total Weighted Forecast",
+    "empty": "No opportunities in this stage"
+  },
+  "lead": {
+    "singular": "Lead",
+    "plural": "Leads",
+    "loadFailed": "Failed to load leads."
+  },
+  "opportunity": {
+    "singular": "Opportunity",
+    "plural": "Opportunities",
+    "number": "Opportunity number",
+    "party": "Party",
+    "amount": "Amount"
+  },
+  "probability": {
+    "label": "Probability",
+    "unit": "{{value}}%"
+  },
+  "lossReason": {
+    "label": "Loss Reason",
+    "prompt": "Please provide a loss reason (Mandatory for ClosedLost):",
+    "required": "A loss reason is required to mark a deal as Closed Lost."
+  },
+  "card": {
+    "value": "Value",
+    "weighted": "Weighted"
+  },
+  "action": {
+    "advance": "Advance stage",
+    "reopen": "Re-open",
+    "convert": "Convert lead",
+    "createSalesOrder": "Create Sales Order",
+    "errorUpdatingStage": "Error updating stage"
+  },
+  "salesOrder": {
+    "create": "Create Sales Order",
+    "createOrder": "Create order",
+    "creating": "Creating…",
+    "created": "Order {{orderNumber}} created.",
+    "item": "Item",
+    "qty": "Qty",
+    "rate": "Rate",
+    "cancel": "Cancel",
+    "loadItemsFailed": "Failed to load catalog items."
+  },
+  "stage": {
+    "hint": "Stage names are pipeline contract values and stay untranslated."
+  }
+}

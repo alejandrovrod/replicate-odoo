@@ -1,10 +1,9 @@
 import { Boxes, Cog, GitBranch } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { formatMoney } from '../../lib/format'
 import type { Bom } from './types'
 import { useBoms } from './useManufacturingData'
-
-const money = (value: number): string =>
-  value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
 
 /**
  * BOM Studio tree (Task 9.5): a read-only recipe viewer over GET /api/v1/boms - the
@@ -16,6 +15,7 @@ const money = (value: number): string =>
  * path is out of scope.
  */
 export function BomEditor({ companyId }: { companyId: string }) {
+  const { t } = useTranslation('manufacturing')
   const bomsQuery = useBoms(companyId)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -28,7 +28,8 @@ export function BomEditor({ companyId }: { companyId: string }) {
     return (
       <div className="rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
         <p className="font-medium">
-          Could not load recipes{bomsQuery.error?.status ? ` (HTTP ${bomsQuery.error.status})` : ''}.
+          {t('bom.loadFailed')}
+          {bomsQuery.error?.status ? ` (HTTP ${bomsQuery.error.status})` : ''}.
         </p>
         {bomsQuery.error?.message ? <p className="mt-1">{bomsQuery.error.message}</p> : null}
         <button
@@ -36,21 +37,20 @@ export function BomEditor({ companyId }: { companyId: string }) {
           onClick={() => bomsQuery.reload()}
           className="mt-2 rounded border border-rose-400 px-2 py-1 text-rose-900 hover:bg-rose-100"
         >
-          Retry
+          {t('bom.retry')}
         </button>
       </div>
     )
   }
 
   if (bomsQuery.status !== 'success') {
-    return <p className="px-1 py-3 text-sm text-slate-500">Loading recipes…</p>
+    return <p className="px-1 py-3 text-sm text-slate-500">{t('bom.loading')}</p>
   }
 
   if (bomsQuery.data.length === 0) {
     return (
       <p className="rounded-md border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
-        No bills of materials yet for this company. Recipes are engineering masters (no
-        create endpoint exists) — seed one per the manufacturing seed script.
+        {t('bom.empty')}
       </p>
     )
   }
@@ -61,14 +61,12 @@ export function BomEditor({ companyId }: { companyId: string }) {
         <div>
           <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
             <GitBranch className="h-4 w-4 text-indigo-600" />
-            BOM Studio
+            {t('bom.title')}
           </h3>
-          <p className="text-xs text-slate-500">
-            Recipe tree: components, operations and the persisted cost roll-up (read-only).
-          </p>
+          <p className="text-xs text-slate-500">{t('bom.subtitle')}</p>
         </div>
         <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
-          Recipe
+          {t('bom.recipe')}
           <select
             value={selected?.id ?? ''}
             onChange={(e) => setSelectedId(e.target.value)}
@@ -89,35 +87,35 @@ export function BomEditor({ companyId }: { companyId: string }) {
           <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-4">
             <span className="font-mono text-sm font-bold text-slate-900">{selected.bomNumber}</span>
             <span className="text-xs text-slate-500">
-              yields {selected.quantity} × {selected.itemCode} {selected.itemName}
+              {t('bom.yields', { qty: selected.quantity, code: selected.itemCode, name: selected.itemName })}
             </span>
             <span
               className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                 selected.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
               }`}
             >
-              {selected.isActive ? 'Active' : 'Inactive'}
+              {selected.isActive ? t('bom.active') : t('bom.inactive')}
             </span>
             {selected.isDefault ? (
               <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-800">
-                Default
+                {t('bom.default')}
               </span>
             ) : null}
             <span className="ml-auto font-mono text-sm font-bold text-slate-900">
-              ${money(selected.totalCost)}
+              {formatMoney(selected.totalCost)}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
             {[
-              ['Materials', selected.rawMaterialCost],
-              ['Operations', selected.operatingCost],
-              ['Scrap', selected.scrapCost],
-              ['Total', selected.totalCost],
+              [t('bom.materials'), selected.rawMaterialCost],
+              [t('bom.operations'), selected.operatingCost],
+              [t('bom.scrap'), selected.scrapCost],
+              [t('bom.total'), selected.totalCost],
             ].map(([label, value]) => (
               <div key={label as string} className="rounded-lg border border-slate-100 bg-white p-3">
                 <p className="text-slate-400">{label}</p>
-                <p className="mt-1 font-mono text-sm font-bold text-slate-900">${money(value as number)}</p>
+                <p className="mt-1 font-mono text-sm font-bold text-slate-900">{formatMoney(value as number)}</p>
               </div>
             ))}
           </div>
@@ -125,17 +123,17 @@ export function BomEditor({ companyId }: { companyId: string }) {
           {/* Component lines */}
           <div>
             <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-700 uppercase tracking-wide">
-              <Boxes className="h-3.5 w-3.5 text-slate-400" /> Components
+              <Boxes className="h-3.5 w-3.5 text-slate-400" /> {t('bom.components')}
             </h4>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400">
-                    <th className="py-2 font-semibold">Item</th>
-                    <th className="py-2 text-right font-semibold">Qty</th>
-                    <th className="py-2 text-right font-semibold">Rate</th>
-                    <th className="py-2 text-right font-semibold">Amount</th>
-                    <th className="py-2 text-right font-semibold">Scrap %</th>
+                    <th className="py-2 font-semibold">{t('bom.colItem')}</th>
+                    <th className="py-2 text-right font-semibold">{t('bom.colQty')}</th>
+                    <th className="py-2 text-right font-semibold">{t('bom.colRate')}</th>
+                    <th className="py-2 text-right font-semibold">{t('bom.colAmount')}</th>
+                    <th className="py-2 text-right font-semibold">{t('bom.colScrap')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -146,8 +144,8 @@ export function BomEditor({ companyId }: { companyId: string }) {
                         {line.itemName}
                       </td>
                       <td className="py-2 text-right font-mono">{line.quantity}</td>
-                      <td className="py-2 text-right font-mono">${money(line.valuationRate)}</td>
-                      <td className="py-2 text-right font-mono font-bold">${money(line.amount)}</td>
+                      <td className="py-2 text-right font-mono">{formatMoney(line.valuationRate)}</td>
+                      <td className="py-2 text-right font-mono font-bold">{formatMoney(line.amount)}</td>
                       <td className="py-2 text-right font-mono text-slate-500">{line.scrapPercentage}%</td>
                     </tr>
                   ))}
@@ -159,20 +157,20 @@ export function BomEditor({ companyId }: { companyId: string }) {
           {/* Operations */}
           <div>
             <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-700 uppercase tracking-wide">
-              <Cog className="h-3.5 w-3.5 text-slate-400" /> Operations
+              <Cog className="h-3.5 w-3.5 text-slate-400" /> {t('bom.operations')}
             </h4>
             {selected.operations.length === 0 ? (
-              <p className="text-xs text-slate-500">No workstation steps on this recipe.</p>
+              <p className="text-xs text-slate-500">{t('bom.noOperations')}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-400">
-                      <th className="py-2 font-semibold">Step</th>
-                      <th className="py-2 font-semibold">Workstation</th>
-                      <th className="py-2 text-right font-semibold">Minutes</th>
-                      <th className="py-2 text-right font-semibold">Rate/h</th>
-                      <th className="py-2 text-right font-semibold">Cost</th>
+                      <th className="py-2 font-semibold">{t('bom.colStep')}</th>
+                      <th className="py-2 font-semibold">{t('bom.colWorkstation')}</th>
+                      <th className="py-2 text-right font-semibold">{t('bom.colMinutes')}</th>
+                      <th className="py-2 text-right font-semibold">{t('bom.colRatePerHour')}</th>
+                      <th className="py-2 text-right font-semibold">{t('bom.colCost')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -181,8 +179,8 @@ export function BomEditor({ companyId }: { companyId: string }) {
                         <td className="py-2 text-slate-700">{op.description ?? '—'}</td>
                         <td className="py-2 font-medium text-slate-900">{op.workstationName}</td>
                         <td className="py-2 text-right font-mono">{op.durationMinutes}</td>
-                        <td className="py-2 text-right font-mono">${money(op.hourRateTotal)}</td>
-                        <td className="py-2 text-right font-mono font-bold">${money(op.operationCost)}</td>
+                        <td className="py-2 text-right font-mono">{formatMoney(op.hourRateTotal)}</td>
+                        <td className="py-2 text-right font-mono font-bold">{formatMoney(op.operationCost)}</td>
                       </tr>
                     ))}
                   </tbody>

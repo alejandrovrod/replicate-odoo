@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- Generic RFC 7807 titles. -->
+  <data name="BadRequest" xml:space="preserve">
+    <value>Bad Request</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>Not Found</value>
+  </data>
+  <data name="Conflict" xml:space="preserve">
+    <value>Conflict</value>
+  </data>
+  <!-- CRM. -->
+  <data name="InvalidCompany" xml:space="preserve">
+    <value>Invalid Company</value>
+  </data>
+  <data name="InvalidOpportunity" xml:space="preserve">
+    <value>Invalid Opportunity</value>
+  </data>
+  <data name="OpportunityNotFound" xml:space="preserve">
+    <value>Opportunity Not Found</value>
+  </data>
+  <data name="OpportunityConflict" xml:space="preserve">
+    <value>Opportunity Conflict</value>
+  </data>
+  <data name="OpportunityRejected" xml:space="preserve">
+    <value>Opportunity Rejected</value>
+  </data>
+  <data name="InvalidLead" xml:space="preserve">
+    <value>Invalid Lead</value>
+  </data>
+  <data name="LeadResourceNotFound" xml:space="preserve">
+    <value>Lead Resource Not Found</value>
+  </data>
+  <data name="LeadConflict" xml:space="preserve">
+    <value>Lead Conflict</value>
+  </data>
+  <data name="LeadRejected" xml:space="preserve">
+    <value>Lead Rejected</value>
+  </data>
+  <!-- Selling. -->
+  <data name="SalesOrderNotFound" xml:space="preserve">
+    <value>Sales Order Not Found</value>
+  </data>
+  <data name="SalesOrderConflict" xml:space="preserve">
+    <value>Sales Order Conflict</value>
+  </data>
+  <data name="SalesOrderRejected" xml:space="preserve">
+    <value>Sales Order Rejected</value>
+  </data>
+  <data name="InvalidSalesOrder" xml:space="preserve">
+    <value>Invalid Sales Order</value>
+  </data>
+  <data name="InvalidCustomer" xml:space="preserve">
+    <value>Invalid Customer</value>
+  </data>
+  <data name="CustomerNotFound" xml:space="preserve">
+    <value>Customer Not Found</value>
+  </data>
+  <data name="CustomerConflict" xml:space="preserve">
+    <value>Customer Conflict</value>
+  </data>
+  <data name="CustomerRejected" xml:space="preserve">
+    <value>Customer Rejected</value>
+  </data>
+  <!-- The 409 title keeps the wire wording pinned by CustomersApiTests. -->
+  <data name="DuplicateCustomerCode" xml:space="preserve">
+    <value>Duplicate Customer Code</value>
+  </data>
+  <data name="CreditLimitExceeded" xml:space="preserve">
+    <value>Credit Limit Exceeded</value>
+  </data>
+  <data name="InvalidDeliveryNote" xml:space="preserve">
+    <value>Invalid Delivery Note</value>
+  </data>
+  <data name="DeliveryNoteNotFound" xml:space="preserve">
+    <value>Delivery Note Not Found</value>
+  </data>
+  <data name="DeliveryNoteRejected" xml:space="preserve">
+    <value>Delivery Note Rejected</value>
+  </data>
+  <data name="SalesInvoiceRejected" xml:space="preserve">
+    <value>Sales Invoice Rejected</value>
+  </data>
+  <!-- Shared: optimistic-concurrency races surface from many modules. -->
+  <data name="ConcurrentUpdateConflict" xml:space="preserve">
+    <value>Concurrent Update Conflict</value>
+  </data>
+  <!-- Buying. -->
+  <data name="InvalidPurchaseOrder" xml:space="preserve">
+    <value>Invalid Purchase Order</value>
+  </data>
+  <data name="PurchaseOrderNotFound" xml:space="preserve">
+    <value>Purchase Order Not Found</value>
+  </data>
+  <data name="PurchaseOrderConflict" xml:space="preserve">
+    <value>Purchase Order Conflict</value>
+  </data>
+  <data name="PurchaseOrderRejected" xml:space="preserve">
+    <value>Purchase Order Rejected</value>
+  </data>
+  <data name="SupplierNotFound" xml:space="preserve">
+    <value>Supplier Not Found</value>
+  </data>
+  <data name="SupplierConflict" xml:space="preserve">
+    <value>Supplier Conflict</value>
+  </data>
+  <data name="SupplierRejected" xml:space="preserve">
+    <value>Supplier Rejected</value>
+  </data>
+  <data name="DuplicateSupplierCode" xml:space="preserve">
+    <value>Duplicate Supplier Code</value>
+  </data>
+  <data name="InvalidPurchaseInvoice" xml:space="preserve">
+    <value>Invalid Purchase Invoice</value>
+  </data>
+  <data name="PurchaseInvoiceNotFound" xml:space="preserve">
+    <value>Purchase Invoice Not Found</value>
+  </data>
+  <data name="PurchaseInvoiceConflict" xml:space="preserve">
+    <value>Purchase Invoice Conflict</value>
+  </data>
+  <data name="PurchaseInvoiceRejected" xml:space="preserve">
+    <value>Purchase Invoice Rejected</value>
+  </data>
+  <data name="DuplicatePurchaseInvoice" xml:space="preserve">
+    <value>Duplicate Purchase Invoice</value>
+  </data>
+  <data name="OverbillingNotAllowed" xml:space="preserve">
+    <value>Overbilling Not Allowed</value>
+  </data>
+  <data name="PurchaseReceiptConflict" xml:space="preserve">
+    <value>Purchase Receipt Conflict</value>
+  </data>
+  <data name="PurchaseReceiptRejected" xml:space="preserve">
+    <value>Purchase Receipt Rejected</value>
+  </data>
+  <!-- Stock. -->
+  <data name="StockEntryNotFound" xml:space="preserve">
+    <value>Stock Entry Not Found</value>
+  </data>
+  <data name="StockEntryConflict" xml:space="preserve">
+    <value>Stock Entry Conflict</value>
+  </data>
+  <data name="StockEntryRejected" xml:space="preserve">
+    <value>Stock Entry Rejected</value>
+  </data>
+  <data name="WarehouseConflict" xml:space="preserve">
+    <value>Warehouse Conflict</value>
+  </data>
+  <data name="WarehouseRejected" xml:space="preserve">
+    <value>Warehouse Rejected</value>
+  </data>
+  <data name="ItemConflict" xml:space="preserve">
+    <value>Item Conflict</value>
+  </data>
+  <data name="ItemRejected" xml:space="preserve">
+    <value>Item Rejected</value>
+  </data>
+  <!-- Shared: fiscal-period locks surface from many modules (spec AC-04). -->
+  <data name="FiscalPeriodLocked" xml:space="preserve">
+    <value>Fiscal Period Locked</value>
+  </data>
+  <!-- Manufacturing. -->
+  <data name="InvalidBom" xml:space="preserve">
+    <value>Invalid BOM</value>
+  </data>
+  <data name="BomNotFound" xml:space="preserve">
+    <value>BOM Not Found</value>
+  </data>
+  <data name="InvalidWorkOrder" xml:space="preserve">
+    <value>Invalid Work Order</value>
+  </data>
+  <data name="WorkOrderNotFound" xml:space="preserve">
+    <value>Work Order Not Found</value>
+  </data>
+  <data name="WorkOrderConflict" xml:space="preserve">
+    <value>Work Order Conflict</value>
+  </data>
+  <data name="WorkOrderRejected" xml:space="preserve">
+    <value>Work Order Rejected</value>
+  </data>
+  <data name="ManufacturingResourceNotFound" xml:space="preserve">
+    <value>Manufacturing Resource Not Found</value>
+  </data>
+  <data name="ManufacturingConflict" xml:space="preserve">
+    <value>Manufacturing Conflict</value>
+  </data>
+  <data name="ManufacturingRejected" xml:space="preserve">
+    <value>Manufacturing Rejected</value>
+  </data>
+  <!-- Banking. -->
+  <data name="BankTransactionNotFound" xml:space="preserve">
+    <value>Bank Transaction Not Found</value>
+  </data>
+  <data name="RuleRunRejected" xml:space="preserve">
+    <value>Rule Run Rejected</value>
+  </data>
+  <data name="UnreconcileRejected" xml:space="preserve">
+    <value>Un-reconcile Rejected</value>
+  </data>
+  <data name="QuickVoucherCounterpartNotFound" xml:space="preserve">
+    <value>Quick Voucher Counterpart Not Found</value>
+  </data>
+  <data name="QuickVoucherRejected" xml:space="preserve">
+    <value>Quick Voucher Rejected</value>
+  </data>
+  <data name="ReconciliationCounterpartNotFound" xml:space="preserve">
+    <value>Reconciliation Counterpart Not Found</value>
+  </data>
+  <data name="ReconciliationRejected" xml:space="preserve">
+    <value>Reconciliation Rejected</value>
+  </data>
+  <data name="BankAccountNotFound" xml:space="preserve">
+    <value>Bank Account Not Found</value>
+  </data>
+  <data name="StatementImportRejected" xml:space="preserve">
+    <value>Statement Import Rejected</value>
+  </data>
+  <data name="RuleRejected" xml:space="preserve">
+    <value>Rule Rejected</value>
+  </data>
+  <!-- Accounting. -->
+  <data name="DuplicateAccountCode" xml:space="preserve">
+    <value>Duplicate Account Code</value>
+  </data>
+  <data name="AccountValidationFailed" xml:space="preserve">
+    <value>Account Validation Failed</value>
+  </data>
+  <data name="InvalidJournalEntry" xml:space="preserve">
+    <value>Invalid Journal Entry</value>
+  </data>
+  <data name="JournalEntryNotFound" xml:space="preserve">
+    <value>Journal Entry Not Found</value>
+  </data>
+  <data name="JournalEntryConflict" xml:space="preserve">
+    <value>Journal Entry Conflict</value>
+  </data>
+  <data name="JournalEntryRejected" xml:space="preserve">
+    <value>Journal Entry Rejected</value>
+  </data>
+  <data name="InvalidDateRange" xml:space="preserve">
+    <value>Invalid Date Range</value>
+  </data>
+  <data name="MissingPeriod" xml:space="preserve">
+    <value>Missing Period</value>
+  </data>
+  <data name="InvalidPeriod" xml:space="preserve">
+    <value>Invalid Period</value>
+  </data>
+  <data name="MissingDate" xml:space="preserve">
+    <value>Missing Date</value>
+  </data>
+  <data name="InvalidDate" xml:space="preserve">
+    <value>Invalid Date</value>
+  </data>
+  <!-- HR/Payroll. -->
+  <data name="InvalidPayrollDisbursement" xml:space="preserve">
+    <value>Invalid Payroll Disbursement</value>
+  </data>
+  <data name="InvalidPayrollEntry" xml:space="preserve">
+    <value>Invalid Payroll Entry</value>
+  </data>
+  <data name="PayrollEntryNotFound" xml:space="preserve">
+    <value>Payroll Entry Not Found</value>
+  </data>
+  <data name="PayrollResourceNotFound" xml:space="preserve">
+    <value>Payroll Resource Not Found</value>
+  </data>
+  <data name="PayrollConflict" xml:space="preserve">
+    <value>Payroll Conflict</value>
+  </data>
+  <data name="PayrollRejected" xml:space="preserve">
+    <value>Payroll Rejected</value>
+  </data>
+  <!-- Assets. -->
+  <data name="InvalidAsset" xml:space="preserve">
+    <value>Invalid Asset</value>
+  </data>
+  <data name="AssetNotFound" xml:space="preserve">
+    <value>Asset Not Found</value>
+  </data>
+  <data name="AssetResourceNotFound" xml:space="preserve">
+    <value>Asset Resource Not Found</value>
+  </data>
+  <data name="AssetConflict" xml:space="preserve">
+    <value>Asset Conflict</value>
+  </data>
+  <data name="AssetRejected" xml:space="preserve">
+    <value>Asset Rejected</value>
+  </data>
+  <data name="AssetCategoryRejected" xml:space="preserve">
+    <value>Asset Category Rejected</value>
+  </data>
+</root>

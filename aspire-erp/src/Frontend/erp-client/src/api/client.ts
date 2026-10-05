@@ -1,5 +1,6 @@
 import axios, { type AxiosError } from 'axios'
 import { getTenantId } from '../store/useTenantStore'
+import { LANGUAGE_STORAGE_KEY, normalizeLanguage } from '../lib/i18n'
 
 /**
  * Single entry point for every network call (Constitution Article VII.3).
@@ -44,11 +45,22 @@ apiClient.interceptors.request.use((config) => {
   if (tenantId) {
     config.headers['X-Tenant-ID'] = tenantId
   }
-  
+
+  // Spec 00-i18n F-07: the backend localizes ProblemDetails title/detail per Accept-Language.
+  // Read the detector's cache directly rather than i18n.language so a request issued before
+  // i18next finishes booting still carries the persisted choice.
+  let language: string | null = null
+  try {
+    language = localStorage.getItem(LANGUAGE_STORAGE_KEY)
+  } catch {
+    // Storage disabled (private mode / hardened browser): navigator detection on the server.
+  }
+  config.headers['Accept-Language'] = normalizeLanguage(language)
+
   if ((config.method === 'post' || config.method === 'put') && !config.headers['Idempotency-Key']) {
     config.headers['Idempotency-Key'] = crypto.randomUUID()
   }
-  
+
   return config
 })
 

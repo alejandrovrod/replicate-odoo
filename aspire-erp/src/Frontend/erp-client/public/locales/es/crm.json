@@ -1,0 +1,61 @@
+{
+  "overview": {
+    "title": "CRM y canal de ventas (paridad con ERPNext)",
+    "subtitle": "Leads entrantes, calificación, arrastrar y soltar en el pipeline y órdenes de venta en un clic para ClosedWon.",
+    "openLeads": "Leads abiertos",
+    "loadingBoard": "Cargando el tablero del pipeline…",
+    "loadLeadsFailed": "No se pudieron cargar los leads."
+  },
+  "pipeline": {
+    "title": "Canal de ventas",
+    "dragHint": "Arrastra las oportunidades entre etapas",
+    "weightedForecast": "Pronóstico ponderado total",
+    "empty": "No hay oportunidades en esta etapa"
+  },
+  "lead": {
+    "singular": "Lead",
+    "plural": "Leads",
+    "loadFailed": "No se pudieron cargar los leads."
+  },
+  "opportunity": {
+    "singular": "Oportunidad",
+    "plural": "Oportunidades",
+    "number": "Número de oportunidad",
+    "party": "Parte",
+    "amount": "Importe"
+  },
+  "probability": {
+    "label": "Probabilidad",
+    "unit": "{{value}}%"
+  },
+  "lossReason": {
+    "label": "Motivo de pérdida",
+    "prompt": "Indicá un motivo de pérdida (obligatorio para ClosedLost):",
+    "required": "Se requiere un motivo de pérdida para marcar el trato como perdido."
+  },
+  "card": {
+    "value": "Valor",
+    "weighted": "Ponderado"
+  },
+  "action": {
+    "advance": "Avanzar de etapa",
+    "reopen": "Reabrir",
+    "convert": "Convertir lead",
+    "createSalesOrder": "Crear orden de venta",
+    "errorUpdatingStage": "Error al actualizar la etapa"
+  },
+  "salesOrder": {
+    "create": "Crear orden de venta",
+    "createOrder": "Crear orden",
+    "creating": "Creando…",
+    "created": "Orden {{orderNumber}} creada.",
+    "item": "Artículo",
+    "qty": "Cant.",
+    "rate": "Precio",
+    "cancel": "Cancelar",
+    "loadItemsFailed": "No se pudieron cargar los artículos del catálogo."
+  },
+  "stage": {
+    "hint": "Los nombres de etapa son valores del contrato del pipeline y no se traducen."
+  }
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { OpportunityDto } from '../types/crm';
 
 interface Props {
@@ -5,6 +6,7 @@ interface Props {
 }
 
 export function OpportunityCard({ opportunity }: Props) {
+  const { t } = useTranslation('crm')
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-2">
@@ -16,11 +18,11 @@ export function OpportunityCard({ opportunity }: Props) {
       <h4 className="font-medium text-gray-900 mb-1">{opportunity.partyName}</h4>
       <div className="flex justify-between items-end mt-4">
         <div>
-          <p className="text-xs text-gray-500">Value</p>
+          <p className="text-xs text-gray-500">{t('card.value')}</p>
           <p className="font-medium text-gray-900">${opportunity.opportunityAmount.toLocaleString()}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-gray-500">Weighted</p>
+          <p className="text-xs text-gray-500">{t('card.weighted')}</p>
           <p className="font-medium text-emerald-600">${opportunity.weightedAmount.toLocaleString()}</p>
         </div>
       </div>

@@ -1,10 +1,14 @@
 using System.Globalization;
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.GeneralLedger.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -35,10 +39,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class FinancialReportsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public FinancialReportsController(ISender sender)
+    public FinancialReportsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>
@@ -73,24 +84,24 @@ public sealed class FinancialReportsController : ControllerBase
         if (companyId == Guid.Empty)
         {
             return Problem400(
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(FinancialReportErrorCodes.CompanyRequired),
                 FinancialReportErrorCodes.CompanyRequired);
         }
 
         if (!TryParseDate(from, out var fromDate))
         {
             return Problem400(
-                "Invalid Date Range",
-                "The from query parameter must be a valid calendar date in yyyy-MM-dd format.",
+                _common.Text("InvalidDateRange"),
+                _errors.Text(FinancialReportErrorCodes.InvalidDate),
                 FinancialReportErrorCodes.InvalidDate);
         }
 
         if (!TryParseDate(to, out var toDate))
         {
             return Problem400(
-                "Invalid Date Range",
-                "The to query parameter must be a valid calendar date in yyyy-MM-dd format.",
+                _common.Text("InvalidDateRange"),
+                _errors.Text(FinancialReportErrorCodes.InvalidDate),
                 FinancialReportErrorCodes.InvalidDate);
         }
 
@@ -117,7 +128,7 @@ public sealed class FinancialReportsController : ControllerBase
         [FromQuery] string? asOfDate = null,
         CancellationToken cancellationToken = default)
     {
-        var invalidPeriod = ValidatePeriod(companyId, asOfDate, "asOfDate", out var cutoff);
+        var invalidPeriod = ValidatePeriod(companyId, asOfDate, out var cutoff);
         if (invalidPeriod is not null)
         {
             return invalidPeriod;
@@ -147,7 +158,7 @@ public sealed class FinancialReportsController : ControllerBase
         [FromQuery] string? asOfDate = null,
         CancellationToken cancellationToken = default)
     {
-        var invalidPeriod = ValidatePeriod(companyId, asOfDate, "asOfDate", out var cutoff);
+        var invalidPeriod = ValidatePeriod(companyId, asOfDate, out var cutoff);
         if (invalidPeriod is not null)
         {
             return invalidPeriod;
@@ -182,16 +193,16 @@ public sealed class FinancialReportsController : ControllerBase
         if (companyId == Guid.Empty)
         {
             return Problem400(
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(FinancialReportErrorCodes.CompanyRequired),
                 FinancialReportErrorCodes.CompanyRequired);
         }
 
         if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
         {
             return Problem400(
-                "Missing Period",
-                "The from and to query parameters are both required for a profit and loss statement.",
+                _common.Text("MissingPeriod"),
+                _errors.Text(FinancialReportErrorCodes.DateRequired),
                 FinancialReportErrorCodes.DateRequired);
         }
 
@@ -203,8 +214,8 @@ public sealed class FinancialReportsController : ControllerBase
                 to, CultureInfo.InvariantCulture, DateTimeStyles.None, out var toDate))
         {
             return Problem400(
-                "Invalid Period",
-                "The from and to query parameters must be valid calendar dates in yyyy-MM-dd format.",
+                _common.Text("InvalidPeriod"),
+                _errors.Text(FinancialReportErrorCodes.InvalidDate),
                 FinancialReportErrorCodes.InvalidDate);
         }
 
@@ -220,10 +231,13 @@ public sealed class FinancialReportsController : ControllerBase
     /// must be sent AND parseable. Returns null when the request is well-formed and hands the
     /// parsed cutoff back through <paramref name="cutoff"/>.
     /// </summary>
+    /// <remarks>
+    /// Details come from the catalog, so the specific parameter name is no longer interpolated:
+    /// it already travels in the request URL, and the title names the failure mode.
+    /// </remarks>
     private ObjectResult? ValidatePeriod(
         Guid companyId,
         string? asOfDate,
-        string parameterName,
         out DateOnly cutoff)
     {
         cutoff = default;
@@ -231,16 +245,16 @@ public sealed class FinancialReportsController : ControllerBase
         if (companyId == Guid.Empty)
         {
             return Problem400(
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(FinancialReportErrorCodes.CompanyRequired),
                 FinancialReportErrorCodes.CompanyRequired);
         }
 
         if (string.IsNullOrWhiteSpace(asOfDate))
         {
             return Problem400(
-                "Missing Date",
-                $"The {parameterName} query parameter is required (yyyy-MM-dd).",
+                _common.Text("MissingDate"),
+                _errors.Text(FinancialReportErrorCodes.DateRequired),
                 FinancialReportErrorCodes.DateRequired);
         }
 
@@ -251,8 +265,8 @@ public sealed class FinancialReportsController : ControllerBase
                 asOfDate, CultureInfo.InvariantCulture, DateTimeStyles.None, out cutoff))
         {
             return Problem400(
-                "Invalid Date",
-                $"The {parameterName} query parameter must be a valid calendar date in yyyy-MM-dd format.",
+                _common.Text("InvalidDate"),
+                _errors.Text(FinancialReportErrorCodes.InvalidDate),
                 FinancialReportErrorCodes.InvalidDate);
         }
 

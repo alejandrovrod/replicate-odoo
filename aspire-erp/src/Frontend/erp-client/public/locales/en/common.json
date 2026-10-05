@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "Aspire ERP",
+    "tagline": "Unified business operations"
+  },
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import",
+    "apply": "Apply",
+    "reset": "Reset",
+    "copy": "Copy"
+  },
+  "field": {
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional",
+    "required": "Required",
+    "from": "From",
+    "to": "To",
+    "date": "Date",
+    "amount": "Amount",
+    "currency": "Currency",
+    "notes": "Notes",
+    "description": "Description",
+    "status": "Status",
+    "company": "Company"
+  },
+  "state": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "empty": "No records found",
+    "error": "Something went wrong",
+    "success": "Done",
+    "offline": "You are offline",
+    "connected": "Connected",
+    "unsavedChanges": "You have unsaved changes"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}} of {{total}}",
+    "showing": "Showing {{from}}-{{to}} of {{count}}"
+  },
+  "nav": {
+    "route": {
+      "dashboard": "Executive Overview",
+      "accounting-coa": "Chart of Accounts",
+      "accounting-journal": "General Ledger Entries",
+      "banking": "Bank Reconciliation & Feeds",
+      "stock": "Inventory & Warehouses (Kardex)",
+      "manufacturing": "Work Orders & BOM Studio",
+      "selling": "Sales Invoices & POS",
+      "buying": "Purchase Orders & Vendor Bills",
+      "hr-payroll": "Payroll Runs & Directory",
+      "crm": "Sales Pipeline & Leads"
+    },
+    "category": {
+      "dashboard": "Dashboard",
+      "accounting": "Accounting",
+      "treasury": "Treasury",
+      "stock": "Stock",
+      "manufacturing": "Manufacturing",
+      "selling": "Selling",
+      "buying": "Buying",
+      "hr": "Human Resources",
+      "crm": "CRM"
+    },
+    "fallbackTitle": "Module",
+    "fallbackCategory": "ERP",
+    "group": {
+      "overview": "Overview",
+      "accounting": "Accounting & Finance",
+      "operations": "Operations"
+    },
+    "item": {
+      "dashboard": "Dashboard",
+      "accountingCoa": "Chart of Accounts",
+      "accountingJournal": "General Ledger",
+      "banking": "Banking & Rec",
+      "stock": "Stock & Kardex",
+      "manufacturing": "Manufacturing",
+      "selling": "Selling & POS",
+      "buying": "Buying & Vendors",
+      "hrPayroll": "HR & Payroll",
+      "crm": "CRM & Pipeline"
+    },
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
+  },
+  "header": {
+    "searchPlaceholder": "Search vouchers, accounts, items...",
+    "notifications": "Notifications",
+    "company": "Company",
+    "tenant": "Tenant",
+    "language": "Language",
+    "default": "Default"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalid": "Invalid value",
+    "tooLong": "Value is too long",
+    "min": "Must be at least {{min}}",
+    "max": "Must be at most {{max}}"
+  },
+  "error": {
+    "network": "Could not reach the server",
+    "unexpected": "Unexpected server response",
+    "forbidden": "You do not have access to this resource"
+  },
+  "units": {
+    "percent": "%",
+    "pieces": "pcs"
+  }
+}

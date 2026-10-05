@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Warehouses.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Warehouses.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -25,10 +29,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class WarehousesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public WarehousesController(ISender sender)
+    public WarehousesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's warehouse tree (roots at the top).</summary>
@@ -43,8 +54,8 @@ public sealed class WarehousesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(StockErrorCodes.WarehouseCompanyRequired),
                 StockErrorCodes.WarehouseCompanyRequired);
         }
 
@@ -72,13 +83,13 @@ public sealed class WarehousesController : ControllerBase
             {
                 StockErrorCodes.DuplicateWarehouseCode => Problem(
                     StatusCodes.Status409Conflict,
-                    "Duplicate Warehouse Code",
-                    error.Message,
+                    _common.Text("WarehouseConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Warehouse Validation Failed",
-                    error.Message,
+                    _common.Text("WarehouseRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

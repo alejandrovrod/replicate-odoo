@@ -1,3 +1,7 @@
+using Erp.Api.Common;
+using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.GeneralLedger.Commands;
@@ -6,7 +10,7 @@ using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Erp.Api.Filters;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -47,10 +51,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class JournalEntriesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public JournalEntriesController(ISender sender)
+    public JournalEntriesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent journal entries with their lines.</summary>
@@ -69,8 +80,8 @@ public sealed class JournalEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(JournalErrorCodes.CompanyNotFound),
                 JournalErrorCodes.CompanyNotFound);
         }
 
@@ -96,8 +107,8 @@ public sealed class JournalEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Journal Entry",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidJournalEntry"),
+                _errors.Text(JournalErrorCodes.JournalEntryNotFound),
                 JournalErrorCodes.JournalEntryNotFound);
         }
 
@@ -132,13 +143,13 @@ public sealed class JournalEntriesController : ControllerBase
             {
                 JournalErrorCodes.JournalEntryNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Journal Entry Not Found",
-                    error.Message,
+                    _common.Text("JournalEntryNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Journal Entry Rejected",
-                    error.Message,
+                    _common.Text("JournalEntryRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -179,15 +190,15 @@ public sealed class JournalEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Journal Entry",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidJournalEntry"),
+                _errors.Text(JournalErrorCodes.JournalEntryNotFound),
                 JournalErrorCodes.JournalEntryNotFound);
         }
 
         var result = await _sender.SendAsync(
             new SubmitJournalEntryCommand(companyId, id, request?.RowVersion), cancellationToken);
 
-        return ToActionResult(result, nameof(Submit));
+        return ToActionResult(result);
     }
 
     /// <summary>
@@ -216,19 +227,19 @@ public sealed class JournalEntriesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Journal Entry",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidJournalEntry"),
+                _errors.Text(JournalErrorCodes.JournalEntryNotFound),
                 JournalErrorCodes.JournalEntryNotFound);
         }
 
         var result = await _sender.SendAsync(
             new CancelJournalEntryCommand(companyId, id, request?.RowVersion), cancellationToken);
 
-        return ToActionResult(result, nameof(Cancel));
+        return ToActionResult(result);
     }
 
     /// <summary>Maps one transition outcome to RFC 7807 (see the class remarks for the matrix).</summary>
-    private ObjectResult ToActionResult(Result<JournalEntryDto> result, string actionName)
+    private ObjectResult ToActionResult(Result<JournalEntryDto> result)
     {
         if (!result.IsSuccess)
         {
@@ -237,8 +248,8 @@ public sealed class JournalEntriesController : ControllerBase
             {
                 JournalErrorCodes.JournalEntryNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Journal Entry Not Found",
-                    error.Message,
+                    _common.Text("JournalEntryNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 JournalErrorCodes.InvalidStatusTransition
                     or AccountingErrorCodes.FiscalPeriodLocked
@@ -246,16 +257,22 @@ public sealed class JournalEntriesController : ControllerBase
                     StatusCodes.Status409Conflict,
                     error.Code switch
                     {
-                        AccountingErrorCodes.FiscalPeriodLocked => "Fiscal Period Locked",
-                        ConcurrencyErrorCodes.ConcurrencyConflict => "Concurrent Update Conflict",
-                        _ => "Journal Entry Conflict",
+                        AccountingErrorCodes.FiscalPeriodLocked => _common.Text("FiscalPeriodLocked"),
+                        ConcurrencyErrorCodes.ConcurrencyConflict => _common.Text("ConcurrentUpdateConflict"),
+                        _ => _common.Text("JournalEntryConflict"),
                     },
-                    error.Message,
+                    error.Code switch
+                    {
+                        // Instance-valued detail (period dates, pinned by JournalEntriesApiTests
+                        // and FiscalPeriodLockApiTests): passes through (Phase 2 convention).
+                        AccountingErrorCodes.FiscalPeriodLocked => error.Message,
+                        _ => _errors.Text(error.Code, error.Message),
+                    },
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Journal Entry Rejected",
-                    error.Message,
+                    _common.Text("JournalEntryRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -267,8 +284,8 @@ public sealed class JournalEntriesController : ControllerBase
     private ObjectResult NotFoundProblem(Guid id) =>
         Problem(
             StatusCodes.Status404NotFound,
-            "Journal Entry Not Found",
-            $"Journal entry '{id}' was not found in this tenant/company.",
+            _common.Text("JournalEntryNotFound"),
+            _errors.Text(JournalErrorCodes.JournalEntryNotFound),
             JournalErrorCodes.JournalEntryNotFound);
 
     private ObjectResult Problem(int status, string title, string detail, string? code)

@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Items.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Items.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -26,10 +30,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class ItemsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public ItemsController(ISender sender)
+    public ItemsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>
@@ -46,8 +57,8 @@ public sealed class ItemsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text("company_required"),
                 "company_required");
         }
 
@@ -75,13 +86,13 @@ public sealed class ItemsController : ControllerBase
             {
                 StockErrorCodes.DuplicateItemCode => Problem(
                     StatusCodes.Status409Conflict,
-                    "Duplicate Item Code",
-                    error.Message,
+                    _common.Text("ItemConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Item Validation Failed",
-                    error.Message,
+                    _common.Text("ItemRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

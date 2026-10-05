@@ -1,4 +1,7 @@
+using Erp.Api.Common;
 using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.Features.Crm.Commands;
 using Erp.Application.Features.Crm.DTOs;
@@ -6,6 +9,7 @@ using Erp.Application.Features.Crm.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -34,10 +38,17 @@ public sealed record ConvertLeadRequest(
 public sealed class LeadsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public LeadsController(ISender sender)
+    public LeadsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent leads.</summary>
@@ -56,8 +67,8 @@ public sealed class LeadsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(CRMErrorCodes.CompanyRequired),
                 CRMErrorCodes.CompanyRequired);
         }
 
@@ -94,8 +105,8 @@ public sealed class LeadsController : ControllerBase
             var error = result.Error!;
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Lead Rejected",
-                error.Message,
+                _common.Text("LeadRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code);
         }
 
@@ -130,8 +141,8 @@ public sealed class LeadsController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Lead",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidLead"),
+                _errors.Text("crm_lead_not_found"),
                 "crm_lead_not_found");
         }
 
@@ -170,19 +181,19 @@ public sealed class LeadsController : ControllerBase
                 or "crm_opportunity_company_mismatch"
                 or CRMErrorCodes.CompanyRequired => Problem(
                     StatusCodes.Status404NotFound,
-                    "Lead Resource Not Found",
-                    error.Message,
+                    _common.Text("LeadResourceNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             CRMErrorCodes.LeadAlreadyConverted
                 or "crm_customer_code_exists" => Problem(
                     StatusCodes.Status409Conflict,
-                    "Lead Conflict",
-                    error.Message,
+                    _common.Text("LeadConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             _ => Problem(
                 StatusCodes.Status400BadRequest,
-                "Lead Rejected",
-                error.Message,
+                _common.Text("LeadRejected"),
+                _errors.Text(error.Code, error.Message),
                 error.Code),
         };
 

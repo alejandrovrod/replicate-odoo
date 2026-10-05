@@ -1,0 +1,43 @@
+{
+  "module": {
+    "title": "Purchase Orders & Vendor Bills",
+    "subtitle": "Suppliers, purchase orders, receipts and vendor bills."
+  },
+  "overview": {
+    "title": "Buying & Procurement Subsystem",
+    "subtitle": "Purchase orders, material receipts, and 3-way matching with interim accruals.",
+    "newReceipt": "Purchase Receipt",
+    "newOrder": "New Purchase Order"
+  },
+  "stats": {
+    "unbilled": "Unbilled Receipts (Accrued)"
+  },
+  "orders": {
+    "title": "Procurement Orders",
+    "subtitle": "Vendor commitments and interim accrual status.",
+    "loading": "Loading orders...",
+    "empty": "No purchase orders found.",
+    "loadFailed": "Failed to fetch purchase orders",
+    "colNumber": "PO Number",
+    "colVendor": "Vendor",
+    "colDate": "Order Date",
+    "colAmount": "Amount",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "receive": "Receive"
+  },
+  "receipt": {
+    "title": "Post Purchase Receipt",
+    "forOrder": "For Order {{id}}",
+    "close": "Close",
+    "pendingItems": "Pending Items to Receive",
+    "qty": "Qty: {{qty}}",
+    "noPending": "No pending items.",
+    "cancel": "Cancel",
+    "post": "Post Receipt",
+    "posting": "Posting...",
+    "posted": "Receipt Posted!",
+    "created": "Receipt {{number}} has been successfully posted.",
+    "done": "Done"
+  }
+}

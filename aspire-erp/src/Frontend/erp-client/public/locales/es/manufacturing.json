@@ -1,0 +1,87 @@
+{
+  "module": {
+    "title": "Órdenes de producción y editor de LDM",
+    "subtitle": "Listas de materiales, órdenes de producción, puestos y capacidad."
+  },
+  "overview": {
+    "title": "Fabricación y planta (paridad con ERPNext)",
+    "subtitle": "Llevá las órdenes de producción desde la autorización hasta la transferencia a PEP y la terminación, con costeo de LDM.",
+    "refresh": "Actualizar tableros",
+    "loadingBoard": "Cargando el tablero de ejecución…",
+    "loadingBom": "Cargando el estudio de LDM…",
+    "loadFailed": "No se pudo cargar el resumen de producción."
+  },
+  "cards": {
+    "draftName": "Órdenes en borrador",
+    "draftDetail": "A la espera de autorización contra una LDM predeterminada activa",
+    "submittedName": "Órdenes autorizadas",
+    "submittedDetail": "Autorizada - materiales listos para salida a PEP (MF-02)",
+    "inProcessName": "En proceso",
+    "inProcessDetail": "Materiales en PEP - a la espera de terminación (MF-03)",
+    "completedName": "Terminadas",
+    "completedDetail": "Productos terminados capitalizados al inventario",
+    "workOrders": "Órdenes de producción",
+    "live": "En vivo"
+  },
+  "board": {
+    "title": "Órdenes de producción",
+    "subtitle": "Ejecución de planta: Draft → Submitted → InProcess → Completed (o Cancelled).",
+    "loading": "Cargando órdenes de producción…",
+    "empty": "Todavía no hay órdenes de producción para esta empresa.",
+    "loadFailed": "No se pudieron cargar las órdenes de producción",
+    "retry": "Reintentar",
+    "colOrder": "Orden",
+    "colQty": "Cant.",
+    "colProduced": "Producido",
+    "colStatus": "Estado",
+    "colActions": "Acciones",
+    "posted": "Registrado {{voucherNo}} — Debe {{debit}} = Haber {{credit}}. Lista actualizada.",
+    "progress": "{{order}}: {{produced}} de {{qty}} producidas",
+    "started": " · iniciada {{date}}",
+    "ended": " · finalizada {{date}}"
+  },
+  "actions": {
+    "submit": "Autorizar",
+    "submitTitle": "Autorizar para producción",
+    "transfer": "Transferir",
+    "transferTitle": "Transferir materiales a PEP (MF-02)",
+    "complete": "Terminar",
+    "completeTitle": "Terminar fabricación (MF-03)",
+    "cancel": "Anular",
+    "cancelTitle": "Anular orden de producción (MF-05 reversa lo emitido)"
+  },
+  "complete": {
+    "prompt": "Terminar {{order}} — cantidad producida (máx. {{max}})",
+    "posting": "Registrando…",
+    "post": "Registrar fabricación"
+  },
+  "bom": {
+    "title": "Estudio de LDM",
+    "subtitle": "Árbol de receta: componentes, operaciones y costeo persistido (solo lectura).",
+    "recipe": "Receta",
+    "empty": "Todavía no hay listas de materiales para esta empresa. Las recetas son maestras de ingeniería (no hay endpoint de creación) — cargá una con el script de datos de fabricación.",
+    "loading": "Cargando recetas…",
+    "loadFailed": "No se pudieron cargar las recetas",
+    "retry": "Reintentar",
+    "yields": "rinde {{qty}} × {{code}} {{name}}",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "default": "Predeterminada",
+    "materials": "Materiales",
+    "operations": "Operaciones",
+    "scrap": "Desperdicio",
+    "total": "Total",
+    "components": "Componentes",
+    "colItem": "Artículo",
+    "colQty": "Cant.",
+    "colRate": "Precio",
+    "colAmount": "Importe",
+    "colScrap": "Desperdicio %",
+    "colStep": "Paso",
+    "colWorkstation": "Puesto",
+    "colMinutes": "Minutos",
+    "colRatePerHour": "Tarifa/h",
+    "colCost": "Costo",
+    "noOperations": "Sin pasos de puesto en esta receta."
+  }
+}

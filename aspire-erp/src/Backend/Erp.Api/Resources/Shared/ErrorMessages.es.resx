@@ -1,0 +1,731 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- Vocabulario compartido (multi-módulo): un concepto, un valor en el contrato, un mensaje. -->
+  <data name="company_required" xml:space="preserve">
+    <value>Se requiere una empresa.</value>
+  </data>
+  <data name="company_not_found" xml:space="preserve">
+    <value>Empresa no encontrada.</value>
+  </data>
+  <data name="invalid_status_transition" xml:space="preserve">
+    <value>La transición de estado solicitada no está permitida.</value>
+  </data>
+  <data name="concurrency_conflict" xml:space="preserve">
+    <value>El registro fue modificado por otra operación. Recargue e intente de nuevo.</value>
+  </data>
+  <data name="no_lines" xml:space="preserve">
+    <value>El documento no tiene líneas.</value>
+  </data>
+  <data name="invalid_quantity" xml:space="preserve">
+    <value>La cantidad debe ser mayor que cero.</value>
+  </data>
+  <data name="invalid_rate" xml:space="preserve">
+    <value>La tarifa no es válida.</value>
+  </data>
+  <data name="invalid_amount" xml:space="preserve">
+    <value>El importe no es válido.</value>
+  </data>
+  <data name="invalid_gl_account" xml:space="preserve">
+    <value>La cuenta contable es inválida, inactiva o pertenece a otra empresa.</value>
+  </data>
+  <!-- Guards de forma de la request emitidos por controllers (consistencia ruta vs cuerpo). -->
+  <data name="route_id_mismatch" xml:space="preserve">
+    <value>El ID de la ruta debe coincidir con el del cuerpo.</value>
+  </data>
+  <data name="route_company_mismatch" xml:space="preserve">
+    <value>El ID de empresa de la ruta debe coincidir con el cuerpo.</value>
+  </data>
+  <!-- Contabilidad (01-accounting). -->
+  <data name="fiscal_period_locked" xml:space="preserve">
+    <value>El período fiscal está cerrado para esta fecha de registro.</value>
+  </data>
+  <data name="posting_to_group_account_prohibited" xml:space="preserve">
+    <value>Las cuentas de grupo no pueden recibir asientos contables.</value>
+  </data>
+  <data name="double_entry_imbalance" xml:space="preserve">
+    <value>El asiento no cuadra: el total de débitos debe igualar al de créditos.</value>
+  </data>
+  <data name="gl_entry_append_only" xml:space="preserve">
+    <value>Los asientos del libro mayor son de solo incorporación y no pueden modificarse.</value>
+  </data>
+  <data name="account_not_found" xml:space="preserve">
+    <value>Cuenta no encontrada.</value>
+  </data>
+  <data name="date_required" xml:space="preserve">
+    <value>Falta un parámetro de fecha obligatorio.</value>
+  </data>
+  <data name="invalid_date" xml:space="preserve">
+    <value>Un parámetro de fecha no es una fecha válida (se espera aaaa-mm-dd).</value>
+  </data>
+  <!-- Dominio de cuentas. -->
+  <data name="account_code_required" xml:space="preserve">
+    <value>El código de cuenta es obligatorio.</value>
+  </data>
+  <data name="account_code_too_long" xml:space="preserve">
+    <value>El código de cuenta supera la longitud máxima.</value>
+  </data>
+  <data name="account_name_required" xml:space="preserve">
+    <value>El nombre de cuenta es obligatorio.</value>
+  </data>
+  <data name="account_name_too_long" xml:space="preserve">
+    <value>El nombre de cuenta supera la longitud máxima.</value>
+  </data>
+  <data name="invalid_root_type" xml:space="preserve">
+    <value>Tipo raíz inválido para esta cuenta.</value>
+  </data>
+  <data name="invalid_account_type" xml:space="preserve">
+    <value>Tipo de cuenta inválido.</value>
+  </data>
+  <data name="currency_invalid" xml:space="preserve">
+    <value>Moneda inválida.</value>
+  </data>
+  <data name="parent_not_found" xml:space="preserve">
+    <value>Cuenta padre no encontrada.</value>
+  </data>
+  <data name="parent_is_self" xml:space="preserve">
+    <value>Una cuenta no puede ser padre de sí misma.</value>
+  </data>
+  <data name="parent_not_in_same_company" xml:space="preserve">
+    <value>La cuenta padre debe pertenecer a la misma empresa.</value>
+  </data>
+  <data name="parent_is_not_group" xml:space="preserve">
+    <value>El padre debe ser una cuenta de grupo.</value>
+  </data>
+  <data name="root_type_mismatch" xml:space="preserve">
+    <value>El tipo raíz no coincide con la jerarquía del padre.</value>
+  </data>
+  <data name="cycle_detected" xml:space="preserve">
+    <value>Se detectó un ciclo en la jerarquía.</value>
+  </data>
+  <data name="duplicate_account_code" xml:space="preserve">
+    <value>Ya existe una cuenta con este código.</value>
+  </data>
+  <!-- CRM (08-crm), incluidos los códigos que los controllers emiten como literales. -->
+  <data name="crm_company_required" xml:space="preserve">
+    <value>Se requiere una empresa.</value>
+  </data>
+  <data name="crm_lead_code_required" xml:space="preserve">
+    <value>El código del lead es obligatorio.</value>
+  </data>
+  <data name="crm_lead_code_too_long" xml:space="preserve">
+    <value>El código del lead supera la longitud máxima.</value>
+  </data>
+  <data name="crm_lead_name_required" xml:space="preserve">
+    <value>El nombre del lead es obligatorio.</value>
+  </data>
+  <data name="crm_lead_name_too_long" xml:space="preserve">
+    <value>El nombre del lead supera la longitud máxima.</value>
+  </data>
+  <data name="crm_invalid_email" xml:space="preserve">
+    <value>Correo electrónico inválido.</value>
+  </data>
+  <data name="crm_invalid_phone" xml:space="preserve">
+    <value>Número de teléfono inválido.</value>
+  </data>
+  <data name="crm_invalid_source" xml:space="preserve">
+    <value>Origen del lead inválido.</value>
+  </data>
+  <data name="crm_loss_reason_required" xml:space="preserve">
+    <value>Se requiere un motivo de pérdida al cerrar una oportunidad como perdida.</value>
+  </data>
+  <data name="crm_opportunity_already_closed" xml:space="preserve">
+    <value>La oportunidad ya está cerrada.</value>
+  </data>
+  <data name="crm_lead_already_converted" xml:space="preserve">
+    <value>El lead ya fue convertido.</value>
+  </data>
+  <data name="crm_invalid_probability_range" xml:space="preserve">
+    <value>La probabilidad debe estar entre 0 y 100.</value>
+  </data>
+  <data name="crm_invalid_opportunity_stage" xml:space="preserve">
+    <value>Etapa de oportunidad inválida.</value>
+  </data>
+  <data name="crm_opportunity_not_won" xml:space="preserve">
+    <value>La oportunidad no está en la etapa ClosedWon.</value>
+  </data>
+  <data name="crm_opportunity_no_customer" xml:space="preserve">
+    <value>La oportunidad no tiene cliente asignado.</value>
+  </data>
+  <data name="crm_opportunity_not_found" xml:space="preserve">
+    <value>Oportunidad no encontrada.</value>
+  </data>
+  <data name="crm_opportunity_company_mismatch" xml:space="preserve">
+    <value>La oportunidad no pertenece a la empresa indicada.</value>
+  </data>
+  <data name="crm_lead_not_found" xml:space="preserve">
+    <value>Lead no encontrado.</value>
+  </data>
+  <data name="crm_lead_company_mismatch" xml:space="preserve">
+    <value>El lead no pertenece a la empresa indicada.</value>
+  </data>
+  <data name="crm_customer_code_exists" xml:space="preserve">
+    <value>Ya existe un cliente con este código.</value>
+  </data>
+  <!-- Emitidos como literales por OpportunityValidator / CRMActivityValidator / handlers. -->
+  <data name="crm_opportunity_number_invalid" xml:space="preserve">
+    <value>El número de oportunidad es obligatorio y no puede superar los 50 caracteres.</value>
+  </data>
+  <data name="crm_opportunity_from_invalid" xml:space="preserve">
+    <value>El campo "Opportunity From" debe ser 'Lead' o 'Customer' y no puede superar los 20 caracteres.</value>
+  </data>
+  <data name="crm_party_id_required" xml:space="preserve">
+    <value>Se requiere un PartyId (LeadId o CustomerId).</value>
+  </data>
+  <data name="crm_party_name_invalid" xml:space="preserve">
+    <value>El nombre de la parte es obligatorio y no puede superar los 150 caracteres.</value>
+  </data>
+  <data name="crm_invalid_opportunity_amount" xml:space="preserve">
+    <value>El importe de la oportunidad no puede ser negativo.</value>
+  </data>
+  <data name="crm_invalid_currency" xml:space="preserve">
+    <value>La moneda debe ser un código ISO 4217 no vacío de hasta 3 caracteres.</value>
+  </data>
+  <data name="crm_opportunity_not_lost" xml:space="preserve">
+    <value>Solo se pueden reabrir las oportunidades cerradas como perdidas.</value>
+  </data>
+  <data name="crm_activity_opportunity_required" xml:space="preserve">
+    <value>Una actividad debe pertenecer a una oportunidad.</value>
+  </data>
+  <data name="crm_activity_subject_invalid" xml:space="preserve">
+    <value>El asunto es obligatorio y no puede superar los 200 caracteres.</value>
+  </data>
+  <data name="crm_activity_author_required" xml:space="preserve">
+    <value>Una actividad debe registrar a su autor (CreatedByUserId es obligatorio).</value>
+  </data>
+  <!-- Comercialización (03-selling). -->
+  <data name="customer_code_required" xml:space="preserve">
+    <value>El código de cliente es obligatorio.</value>
+  </data>
+  <data name="customer_code_too_long" xml:space="preserve">
+    <value>El código de cliente supera la longitud máxima.</value>
+  </data>
+  <data name="customer_name_required" xml:space="preserve">
+    <value>El nombre de cliente es obligatorio.</value>
+  </data>
+  <data name="customer_name_too_long" xml:space="preserve">
+    <value>El nombre de cliente supera la longitud máxima.</value>
+  </data>
+  <data name="customer_tax_id_too_long" xml:space="preserve">
+    <value>El identificador fiscal del cliente supera la longitud máxima.</value>
+  </data>
+  <data name="billing_currency_invalid" xml:space="preserve">
+    <value>Moneda de facturación inválida.</value>
+  </data>
+  <data name="invalid_credit_limit" xml:space="preserve">
+    <value>Límite de crédito inválido.</value>
+  </data>
+  <data name="invalid_payment_terms_days" xml:space="preserve">
+    <value>Plazo de pago inválido.</value>
+  </data>
+  <data name="invalid_receivable_account" xml:space="preserve">
+    <value>Cuenta por cobrar inválida.</value>
+  </data>
+  <data name="duplicate_customer_code" xml:space="preserve">
+    <value>Ya existe un cliente con este código.</value>
+  </data>
+  <data name="customer_not_found" xml:space="preserve">
+    <value>Cliente no encontrado.</value>
+  </data>
+  <data name="credit_limit_exceeded" xml:space="preserve">
+    <value>Se ha superado el límite de crédito de este cliente.</value>
+  </data>
+  <data name="sales_order_not_found" xml:space="preserve">
+    <value>Orden de venta no encontrada.</value>
+  </data>
+  <data name="sales_order_not_deliverable" xml:space="preserve">
+    <value>La orden de venta no es entregable en su estado actual.</value>
+  </data>
+  <data name="customer_required" xml:space="preserve">
+    <value>Se requiere un cliente.</value>
+  </data>
+  <data name="customer_inactive" xml:space="preserve">
+    <value>El cliente está inactivo.</value>
+  </data>
+  <data name="transaction_date_required" xml:space="preserve">
+    <value>Se requiere una fecha de transacción.</value>
+  </data>
+  <data name="delivery_date_required" xml:space="preserve">
+    <value>Se requiere una fecha de entrega.</value>
+  </data>
+  <data name="order_number_required" xml:space="preserve">
+    <value>Se requiere un número de orden.</value>
+  </data>
+  <data name="invalid_totals" xml:space="preserve">
+    <value>Los totales del documento son inconsistentes.</value>
+  </data>
+  <data name="sales_order_line_mismatch" xml:space="preserve">
+    <value>Las líneas de la orden de venta no coinciden con los totales enviados.</value>
+  </data>
+  <data name="delivery_note_not_found" xml:space="preserve">
+    <value>Remito de entrega no encontrado.</value>
+  </data>
+  <data name="overdelivery_not_allowed" xml:space="preserve">
+    <value>La sobrerecepción no está permitida en esta línea.</value>
+  </data>
+  <data name="pos_profile_not_found" xml:space="preserve">
+    <value>Perfil de PDV no encontrado.</value>
+  </data>
+  <data name="item_not_found" xml:space="preserve">
+    <value>Artículo no encontrado.</value>
+  </data>
+  <data name="validation_failed" xml:space="preserve">
+    <value>La validación falló.</value>
+  </data>
+  <!-- Compras (04-buying). -->
+  <data name="supplier_code_required" xml:space="preserve">
+    <value>El código de proveedor es obligatorio.</value>
+  </data>
+  <data name="supplier_code_too_long" xml:space="preserve">
+    <value>El código de proveedor supera la longitud máxima.</value>
+  </data>
+  <data name="supplier_name_required" xml:space="preserve">
+    <value>El nombre de proveedor es obligatorio.</value>
+  </data>
+  <data name="supplier_name_too_long" xml:space="preserve">
+    <value>El nombre de proveedor supera la longitud máxima.</value>
+  </data>
+  <data name="duplicate_supplier_code" xml:space="preserve">
+    <value>Ya existe un proveedor con este código.</value>
+  </data>
+  <data name="supplier_not_found" xml:space="preserve">
+    <value>Proveedor no encontrado.</value>
+  </data>
+  <data name="supplier_inactive" xml:space="preserve">
+    <value>El proveedor está inactivo.</value>
+  </data>
+  <data name="invalid_currency" xml:space="preserve">
+    <value>Moneda inválida.</value>
+  </data>
+  <data name="invalid_payment_terms" xml:space="preserve">
+    <value>Condiciones de pago inválidas.</value>
+  </data>
+  <data name="purchase_order_not_found" xml:space="preserve">
+    <value>Orden de compra no encontrada.</value>
+  </data>
+  <data name="purchase_receipt_not_found" xml:space="preserve">
+    <value>Remito de recepción no encontrado.</value>
+  </data>
+  <data name="invoice_already_exists" xml:space="preserve">
+    <value>Ya existe una factura para este remito.</value>
+  </data>
+  <data name="receipt_line_mismatch" xml:space="preserve">
+    <value>Las líneas del remito no coinciden con la factura.</value>
+  </data>
+  <data name="quantity_mismatch" xml:space="preserve">
+    <value>La cantidad facturada supera la cantidad recibida.</value>
+  </data>
+  <data name="invalid_tax_amount" xml:space="preserve">
+    <value>Importe de impuesto inválido.</value>
+  </data>
+  <data name="overbilling_not_allowed" xml:space="preserve">
+    <value>No se permite facturar más de la cantidad recibida.</value>
+  </data>
+  <data name="purchase_invoice_not_found" xml:space="preserve">
+    <value>Factura de compra no encontrada.</value>
+  </data>
+  <data name="invoice_already_cancelled" xml:space="preserve">
+    <value>La factura ya fue anulada.</value>
+  </data>
+  <data name="invoice_not_posted" xml:space="preserve">
+    <value>La factura no está contabilizada.</value>
+  </data>
+  <!-- Inventario (02-stock). -->
+  <data name="item_code_required" xml:space="preserve">
+    <value>El código de artículo es obligatorio.</value>
+  </data>
+  <data name="item_code_too_long" xml:space="preserve">
+    <value>El código de artículo supera la longitud máxima.</value>
+  </data>
+  <data name="item_name_required" xml:space="preserve">
+    <value>El nombre de artículo es obligatorio.</value>
+  </data>
+  <data name="item_name_too_long" xml:space="preserve">
+    <value>El nombre de artículo supera la longitud máxima.</value>
+  </data>
+  <data name="invalid_valuation_method" xml:space="preserve">
+    <value>Método de valoración inválido.</value>
+  </data>
+  <data name="base_uom_required" xml:space="preserve">
+    <value>Se requiere una unidad de medida base.</value>
+  </data>
+  <data name="duplicate_item_code" xml:space="preserve">
+    <value>Ya existe un artículo con este código.</value>
+  </data>
+  <data name="uom_code_required" xml:space="preserve">
+    <value>El código de unidad de medida es obligatorio.</value>
+  </data>
+  <data name="uom_code_too_long" xml:space="preserve">
+    <value>El código de unidad de medida supera la longitud máxima.</value>
+  </data>
+  <data name="uom_name_required" xml:space="preserve">
+    <value>El nombre de unidad de medida es obligatorio.</value>
+  </data>
+  <data name="uom_name_too_long" xml:space="preserve">
+    <value>El nombre de unidad de medida supera la longitud máxima.</value>
+  </data>
+  <data name="invalid_to_base_factor" xml:space="preserve">
+    <value>El factor de conversión a la unidad base es inválido.</value>
+  </data>
+  <data name="warehouse_code_required" xml:space="preserve">
+    <value>El código de almacén es obligatorio.</value>
+  </data>
+  <data name="warehouse_code_too_long" xml:space="preserve">
+    <value>El código de almacén supera la longitud máxima.</value>
+  </data>
+  <data name="warehouse_name_required" xml:space="preserve">
+    <value>El nombre de almacén es obligatorio.</value>
+  </data>
+  <data name="warehouse_name_too_long" xml:space="preserve">
+    <value>El nombre de almacén supera la longitud máxima.</value>
+  </data>
+  <data name="duplicate_warehouse_code" xml:space="preserve">
+    <value>Ya existe un almacén con este código.</value>
+  </data>
+  <data name="warehouse_company_required" xml:space="preserve">
+    <value>El almacén debe pertenecer a una empresa.</value>
+  </data>
+  <data name="warehouse_not_found" xml:space="preserve">
+    <value>Almacén no encontrado.</value>
+  </data>
+  <data name="parent_warehouse_not_found" xml:space="preserve">
+    <value>Almacén padre no encontrado.</value>
+  </data>
+  <data name="invalid_target_warehouse" xml:space="preserve">
+    <value>Almacén de destino inválido.</value>
+  </data>
+  <data name="insufficient_stock" xml:space="preserve">
+    <value>Stock insuficiente para este movimiento.</value>
+  </data>
+  <data name="voucher_not_found" xml:space="preserve">
+    <value>Comprobante no encontrado.</value>
+  </data>
+  <data name="missing_expense_account" xml:space="preserve">
+    <value>La categoría de artículo no tiene cuenta de gasto configurada.</value>
+  </data>
+  <data name="missing_stock_account" xml:space="preserve">
+    <value>La categoría de artículo no tiene cuenta de stock configurada.</value>
+  </data>
+  <data name="stock_received_account_not_configured" xml:space="preserve">
+    <value>La empresa no tiene cuenta de recepción de mercadería configurada.</value>
+  </data>
+  <data name="ambiguous_account_code" xml:space="preserve">
+    <value>El código de cuenta es ambiguo.</value>
+  </data>
+  <!-- Manufactura (09-manufacturing). -->
+  <data name="workstation_name_required" xml:space="preserve">
+    <value>El nombre del puesto de trabajo es obligatorio.</value>
+  </data>
+  <data name="workstation_name_too_long" xml:space="preserve">
+    <value>El nombre del puesto de trabajo supera la longitud máxima.</value>
+  </data>
+  <data name="negative_hour_rate" xml:space="preserve">
+    <value>La tarifa por hora no puede ser negativa.</value>
+  </data>
+  <data name="invalid_bom_quantity" xml:space="preserve">
+    <value>La cantidad de la lista de materiales debe ser mayor que cero.</value>
+  </data>
+  <data name="empty_bom" xml:space="preserve">
+    <value>La lista de materiales no tiene líneas.</value>
+  </data>
+  <data name="circular_reference" xml:space="preserve">
+    <value>Se detectó una referencia circular.</value>
+  </data>
+  <data name="invalid_bom_item_quantity" xml:space="preserve">
+    <value>La cantidad del componente debe ser mayor que cero.</value>
+  </data>
+  <data name="negative_valuation_rate" xml:space="preserve">
+    <value>La tarifa de valoración no puede ser negativa.</value>
+  </data>
+  <data name="negative_bom_amount" xml:space="preserve">
+    <value>El importe de la lista de materiales no puede ser negativo.</value>
+  </data>
+  <data name="negative_scrap_percentage" xml:space="preserve">
+    <value>El porcentaje de merma no puede ser negativo.</value>
+  </data>
+  <data name="invalid_operation_duration" xml:space="preserve">
+    <value>La duración de la operación debe ser mayor que cero.</value>
+  </data>
+  <data name="inactive_bom" xml:space="preserve">
+    <value>La lista de materiales está inactiva.</value>
+  </data>
+  <data name="non_default_bom" xml:space="preserve">
+    <value>La lista de materiales debe ser la receta predeterminada del artículo terminado.</value>
+  </data>
+  <data name="work_order_not_found" xml:space="preserve">
+    <value>Orden de producción no encontrada.</value>
+  </data>
+  <data name="bom_not_found" xml:space="preserve">
+    <value>Lista de materiales no encontrada.</value>
+  </data>
+  <data name="workstation_not_found" xml:space="preserve">
+    <value>Puesto de trabajo no encontrado.</value>
+  </data>
+  <data name="invalid_work_order_quantity" xml:space="preserve">
+    <value>Cantidad de orden de producción inválida.</value>
+  </data>
+  <data name="invalid_work_order_dates" xml:space="preserve">
+    <value>Fechas de orden de producción inválidas.</value>
+  </data>
+  <data name="invalid_work_order_warehouses" xml:space="preserve">
+    <value>Almacenes de orden de producción inválidos.</value>
+  </data>
+  <data name="scrap_valuation_not_supported" xml:space="preserve">
+    <value>La valoración de merma no está admitida: configure una cuenta contable de merma.</value>
+  </data>
+  <!-- Pipeline de asientos (tasks.md 2.3/2.4). -->
+  <data name="journal_entry_not_found" xml:space="preserve">
+    <value>Asiento contable no encontrado.</value>
+  </data>
+  <!-- Recursos Humanos y Nómina (12-hr-payroll). -->
+  <data name="department_company_required" xml:space="preserve">
+    <value>El departamento debe pertenecer a una empresa.</value>
+  </data>
+  <data name="department_name_required" xml:space="preserve">
+    <value>El nombre del departamento es obligatorio.</value>
+  </data>
+  <data name="department_name_too_long" xml:space="preserve">
+    <value>El nombre del departamento supera la longitud máxima.</value>
+  </data>
+  <data name="parent_department_not_found" xml:space="preserve">
+    <value>Departamento padre no encontrado.</value>
+  </data>
+  <data name="designation_company_required" xml:space="preserve">
+    <value>El cargo debe pertenecer a una empresa.</value>
+  </data>
+  <data name="designation_name_required" xml:space="preserve">
+    <value>El nombre del cargo es obligatorio.</value>
+  </data>
+  <data name="designation_name_too_long" xml:space="preserve">
+    <value>El nombre del cargo supera la longitud máxima.</value>
+  </data>
+  <data name="employee_number_required" xml:space="preserve">
+    <value>El número de empleado es obligatorio.</value>
+  </data>
+  <data name="employee_number_too_long" xml:space="preserve">
+    <value>El número de empleado supera la longitud máxima.</value>
+  </data>
+  <data name="duplicate_employee_number" xml:space="preserve">
+    <value>Ya existe un empleado con este número.</value>
+  </data>
+  <data name="employee_first_name_required" xml:space="preserve">
+    <value>El nombre es obligatorio.</value>
+  </data>
+  <data name="employee_first_name_too_long" xml:space="preserve">
+    <value>El nombre supera la longitud máxima.</value>
+  </data>
+  <data name="employee_last_name_required" xml:space="preserve">
+    <value>El apellido es obligatorio.</value>
+  </data>
+  <data name="employee_last_name_too_long" xml:space="preserve">
+    <value>El apellido supera la longitud máxima.</value>
+  </data>
+  <data name="employee_email_required" xml:space="preserve">
+    <value>El correo del empleado es obligatorio.</value>
+  </data>
+  <data name="invalid_employee_email" xml:space="preserve">
+    <value>Correo de empleado inválido.</value>
+  </data>
+  <data name="bank_name_required" xml:space="preserve">
+    <value>El nombre del banco es obligatorio.</value>
+  </data>
+  <data name="bank_account_number_required" xml:space="preserve">
+    <value>El número de cuenta bancaria es obligatorio.</value>
+  </data>
+  <data name="relieving_before_joining" xml:space="preserve">
+    <value>La fecha de baja no puede ser anterior a la fecha de ingreso.</value>
+  </data>
+  <data name="employee_not_found" xml:space="preserve">
+    <value>Empleado no encontrado.</value>
+  </data>
+  <data name="inactive_employee" xml:space="preserve">
+    <value>El empleado está inactivo.</value>
+  </data>
+  <data name="department_not_found" xml:space="preserve">
+    <value>Departamento no encontrado.</value>
+  </data>
+  <data name="designation_not_found" xml:space="preserve">
+    <value>Cargo no encontrado.</value>
+  </data>
+  <data name="component_name_required" xml:space="preserve">
+    <value>El nombre del componente es obligatorio.</value>
+  </data>
+  <data name="component_name_too_long" xml:space="preserve">
+    <value>El nombre del componente supera la longitud máxima.</value>
+  </data>
+  <data name="component_not_found" xml:space="preserve">
+    <value>Componente de salario no encontrado.</value>
+  </data>
+  <data name="inactive_component" xml:space="preserve">
+    <value>El componente de salario está inactivo.</value>
+  </data>
+  <data name="structure_name_required" xml:space="preserve">
+    <value>El nombre de la estructura es obligatorio.</value>
+  </data>
+  <data name="structure_name_too_long" xml:space="preserve">
+    <value>El nombre de la estructura supera la longitud máxima.</value>
+  </data>
+  <data name="structure_not_found" xml:space="preserve">
+    <value>Estructura salarial no encontrada.</value>
+  </data>
+  <data name="inactive_structure" xml:space="preserve">
+    <value>La estructura salarial está inactiva.</value>
+  </data>
+  <data name="no_structure_lines" xml:space="preserve">
+    <value>La estructura salarial no tiene líneas.</value>
+  </data>
+  <data name="invalid_line_amount" xml:space="preserve">
+    <value>Importe de línea inválido.</value>
+  </data>
+  <data name="invalid_line_percentage" xml:space="preserve">
+    <value>Porcentaje de línea inválido.</value>
+  </data>
+  <data name="overlapping_assignment" xml:space="preserve">
+    <value>Ya existe una asignación superpuesta para este período.</value>
+  </data>
+  <data name="invalid_effective_dates" xml:space="preserve">
+    <value>Fechas de vigencia inválidas.</value>
+  </data>
+  <data name="payroll_entry_not_found" xml:space="preserve">
+    <value>Registro de nómina no encontrado.</value>
+  </data>
+  <data name="invalid_payroll_period" xml:space="preserve">
+    <value>Período de nómina inválido.</value>
+  </data>
+  <data name="invalid_payment_days" xml:space="preserve">
+    <value>Días de pago inválidos.</value>
+  </data>
+  <data name="no_eligible_employees" xml:space="preserve">
+    <value>No hay empleados elegibles para esta nómina.</value>
+  </data>
+  <data name="duplicate_salary_slip" xml:space="preserve">
+    <value>Ya existe un recibo de sueldo para este empleado y período.</value>
+  </data>
+  <data name="bank_account_not_found" xml:space="preserve">
+    <value>Cuenta bancaria no encontrada.</value>
+  </data>
+  <data name="accrual_voucher_not_found" xml:space="preserve">
+    <value>Comprobante de devengado no encontrado.</value>
+  </data>
+  <data name="payroll_period_overlap" xml:space="preserve">
+    <value>Otro registro de nómina se superpone a este período.</value>
+  </data>
+  <!-- Banca y Conciliación (05-banking). -->
+  <data name="invalid_allocation_amount" xml:space="preserve">
+    <value>Importe de aplicación inválido.</value>
+  </data>
+  <data name="over_allocation" xml:space="preserve">
+    <value>La aplicación supera el importe disponible.</value>
+  </data>
+  <data name="invalid_statement_format" xml:space="preserve">
+    <value>Formato de extracto no admitido.</value>
+  </data>
+  <data name="empty_statement" xml:space="preserve">
+    <value>El extracto no contiene transacciones.</value>
+  </data>
+  <data name="malformed_csv_row" xml:space="preserve">
+    <value>Fila CSV mal formada.</value>
+  </data>
+  <data name="malformed_ofx_block" xml:space="preserve">
+    <value>Bloque OFX mal formado.</value>
+  </data>
+  <data name="both_sides_posted" xml:space="preserve">
+    <value>Una transacción no puede registrar simultáneamente un depósito y un retiro.</value>
+  </data>
+  <data name="negative_transaction_amount" xml:space="preserve">
+    <value>El importe de la transacción no puede ser negativo.</value>
+  </data>
+  <data name="bank_transaction_rule_not_found" xml:space="preserve">
+    <value>Regla de transacción bancaria no encontrada.</value>
+  </data>
+  <data name="invalid_rule_pattern" xml:space="preserve">
+    <value>Patrón de regla inválido.</value>
+  </data>
+  <data name="bank_transaction_not_found" xml:space="preserve">
+    <value>Transacción bancaria no encontrada.</value>
+  </data>
+  <data name="payment_entry_not_found" xml:space="preserve">
+    <value>Registro de pago no encontrado.</value>
+  </data>
+  <data name="gl_voucher_not_found" xml:space="preserve">
+    <value>Comprobante contable no encontrado.</value>
+  </data>
+  <data name="reconciliation_amount_mismatch" xml:space="preserve">
+    <value>Los importes de conciliación no coinciden.</value>
+  </data>
+  <data name="gl_amount_mismatch" xml:space="preserve">
+    <value>El importe contable no coincide con la transacción.</value>
+  </data>
+  <data name="invalid_reconciliation_amount" xml:space="preserve">
+    <value>Importe de conciliación inválido.</value>
+  </data>
+  <data name="expense_account_not_found" xml:space="preserve">
+    <value>Cuenta de gastos no encontrada.</value>
+  </data>
+  <data name="bank_gl_account_not_found" xml:space="preserve">
+    <value>Cuenta contable bancaria no encontrada.</value>
+  </data>
+  <!-- Activos fijos (10-assets). -->
+  <data name="category_name_required" xml:space="preserve">
+    <value>El nombre de la categoría es obligatorio.</value>
+  </data>
+  <data name="category_name_too_long" xml:space="preserve">
+    <value>El nombre de la categoría supera la longitud máxima.</value>
+  </data>
+  <data name="category_not_found" xml:space="preserve">
+    <value>Categoría de activo no encontrada.</value>
+  </data>
+  <data name="inactive_category" xml:space="preserve">
+    <value>La categoría de activo está inactiva.</value>
+  </data>
+  <data name="asset_not_found" xml:space="preserve">
+    <value>Activo no encontrado.</value>
+  </data>
+  <data name="asset_company_mismatch" xml:space="preserve">
+    <value>El activo no pertenece a la empresa indicada.</value>
+  </data>
+  <data name="asset_name_required" xml:space="preserve">
+    <value>El nombre del activo es obligatorio.</value>
+  </data>
+  <data name="invalid_gross_amount" xml:space="preserve">
+    <value>Importe bruto inválido.</value>
+  </data>
+  <data name="invalid_salvage_value" xml:space="preserve">
+    <value>Valor residual inválido.</value>
+  </data>
+  <data name="salvage_exceeds_cost" xml:space="preserve">
+    <value>El valor residual no puede superar el importe bruto.</value>
+  </data>
+  <data name="invalid_depreciation_periods" xml:space="preserve">
+    <value>Períodos de depreciación inválidos.</value>
+  </data>
+  <data name="missing_cwip_account" xml:space="preserve">
+    <value>La empresa no tiene cuenta CWIP configurada.</value>
+  </data>
+  <data name="depreciated_past_salvage" xml:space="preserve">
+    <value>Una depreciación adicional dejaría el activo por debajo del valor residual.</value>
+  </data>
+  <data name="missing_gain_loss_account" xml:space="preserve">
+    <value>La baja no tiene cuenta de ganancias y pérdidas configurada.</value>
+  </data>
+  <data name="invalid_proceeds" xml:space="preserve">
+    <value>Importe de baja inválido.</value>
+  </data>
+  <data name="asset_not_disposed" xml:space="preserve">
+    <value>El activo no fue dado de baja.</value>
+  </data>
+  <data name="already_reversed" xml:space="preserve">
+    <value>La baja ya fue revertida.</value>
+  </data>
+</root>

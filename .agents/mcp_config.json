@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "erpnext-docs": {
+      "serverUrl": "https://gitmcp.io/frappe/erpnext"
+    }
+  }
+}

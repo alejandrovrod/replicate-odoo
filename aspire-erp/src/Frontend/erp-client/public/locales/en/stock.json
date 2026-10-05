@@ -1,0 +1,118 @@
+{
+  "module": {
+    "title": "Inventory & Warehouses (Kardex)",
+    "subtitle": "Manage items, warehouses, stock entries and the kardex ledger."
+  },
+  "overview": {
+    "title": "Stock & Inventory",
+    "subtitle": "Perpetual inventory: posting a voucher writes its Kardex rows and balanced General Ledger lines in the same transaction.",
+    "newEntry": "New stock entry",
+    "loading": "Loading inventory…",
+    "loadFailed": "Could not load the inventory",
+    "retry": "Retry",
+    "missingTenant": "No tenant/company selected. Set VITE_TENANT_ID and VITE_COMPANY_ID in .env.development."
+  },
+  "posted": {
+    "summary": "Posted {{voucherNo}} — Dr {{debit}} = Cr {{credit}} ({{glLines}} GL lines, {{kardexRows}} Kardex rows). Stock levels below were refreshed.",
+    "dismiss": "Dismiss"
+  },
+  "stats": {
+    "warehouses": "Warehouses",
+    "locations_one": "{{count}} Location",
+    "locations_other": "{{count}} Locations",
+    "locationsHint": "Leaf nodes of the warehouse tree",
+    "activeSkus": "Active SKUs",
+    "activeItems_one": "{{count}} Active Item",
+    "activeItems_other": "{{count}} Active Items",
+    "uniqueSkuHint": "Unique SKU per tenant",
+    "valuation": "Stock Valuation",
+    "fifoHint": "FIFO layers in Stock In Hand (1310)"
+  },
+  "warehouses": {
+    "title": "Warehouses",
+    "subtitle": "Stock balance and perpetual valuation per leaf location.",
+    "empty": "No warehouses yet for this company.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "statusLine": "{{status}} · stock account {{account}}",
+    "stockedSkus_one": "{{count}} SKU on hand",
+    "stockedSkus_other": "{{count}} SKUs on hand"
+  },
+  "items": {
+    "title": "Items & Stock Levels",
+    "subtitle": "Live SUM of the Kardex per warehouse. Posting an entry reloads this table.",
+    "empty": "No items yet for this company.",
+    "loading": "Loading stock levels…",
+    "loadFailed": "Could not load the item list",
+    "retry": "Retry",
+    "status": "Status",
+    "code": "Code",
+    "item": "Item",
+    "valuation": "Valuation",
+    "onHand": "On Hand",
+    "value": "Value",
+    "active": "Active",
+    "inactive": "Inactive",
+    "noMovement": "No movement in this warehouse",
+    "fifo": "FIFO",
+    "newEntry": "New entry"
+  },
+  "movements": {
+    "title": "Recent Movements",
+    "subtitle": "Posted vouchers, newest first.",
+    "date": "Date",
+    "voucher": "Voucher",
+    "type": "Type",
+    "item": "Item",
+    "qty": "Movement Qty",
+    "rate": "Unit Rate",
+    "empty": "No stock movements yet — post a Material Receipt to open the ledger.",
+    "fifo": "FIFO"
+  },
+  "entry": {
+    "title": "New stock entry",
+    "close": "Close",
+    "type": "Type",
+    "warehouse": "Warehouse",
+    "fromWarehouse": "From warehouse",
+    "toWarehouse": "To warehouse",
+    "selectWarehouse": "Select…",
+    "postingDate": "Posting date",
+    "lines": "Lines",
+    "addLine": "Add line",
+    "selectItem": "Select item…",
+    "item": "Item",
+    "qty": "Qty",
+    "rate": "Rate",
+    "fifoValued": "FIFO valued",
+    "removeLine": "Remove line",
+    "cancel": "Cancel",
+    "post": "Post {{type}}",
+    "posting": "Posting…",
+    "atomicHint": "Posts atomically: Kardex rows + balanced General Ledger lines.",
+    "rejected": "Posting rejected",
+    "unexpectedTitle": "Unexpected Error"
+  },
+  "entryType": {
+    "MaterialReceipt": "Material Receipt",
+    "MaterialIssue": "Material Issue",
+    "MaterialTransfer": "Material Transfer"
+  },
+  "entryTypeHint": {
+    "MaterialReceipt": "Receiving goods: Dr Stock In Hand (1310) / Cr Stock Received But Not Billed (2120), FIFO layer valued at the unit rate you enter.",
+    "MaterialIssue": "Consuming goods: FIFO layers flow to COGS (Dr 5210 / Cr 1310). Rejected when the warehouse cannot cover the quantity.",
+    "MaterialTransfer": "Moving between warehouses: Kardex rows only, no General Ledger impact."
+  },
+  "validation": {
+    "incomplete": "Stock entry is incomplete",
+    "noWarehouses": "This company has no warehouses to post into.",
+    "noActiveItems": "This company has no active items to post.",
+    "selectWarehouse": "Select a warehouse.",
+    "selectTarget": "Select a target warehouse for the transfer.",
+    "targetDiffers": "Target warehouse must differ from the source.",
+    "addLine": "Add at least one line.",
+    "lineNeedsItem": "Every line needs an item.",
+    "qtyPositive": "Quantities must be greater than zero.",
+    "rateRequired": "Receipts need a unit rate: it opens the FIFO layer that later issues consume."
+  }
+}

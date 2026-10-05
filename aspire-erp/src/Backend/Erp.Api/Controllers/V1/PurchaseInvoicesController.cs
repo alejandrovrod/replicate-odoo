@@ -1,12 +1,16 @@
+using Erp.Api.Common;
+using Erp.Api.Filters;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
-using Erp.Api.Filters;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -40,10 +44,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class PurchaseInvoicesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public PurchaseInvoicesController(ISender sender)
+    public PurchaseInvoicesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent purchase invoices with their lines.</summary>
@@ -62,8 +73,8 @@ public sealed class PurchaseInvoicesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(PurchaseErrorCodes.CompanyNotFound),
                 PurchaseErrorCodes.CompanyNotFound);
         }
 
@@ -110,33 +121,37 @@ public sealed class PurchaseInvoicesController : ControllerBase
             {
                 PurchaseErrorCodes.InvoiceAlreadyExists => Problem(
                     StatusCodes.Status409Conflict,
-                    "Duplicate Purchase Invoice",
+                    _common.Text("DuplicatePurchaseInvoice"),
+                    // Instance-valued detail (the bill number): passthrough (Phase 2 convention).
                     error.Message,
                     error.Code),
                 PurchaseErrorCodes.InvalidStatusTransition => Problem(
                     StatusCodes.Status409Conflict,
-                    "Purchase Order Conflict",
-                    error.Message,
+                    _common.Text("PurchaseOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
-                    "Concurrent Update Conflict",
-                    error.Message,
+                    _common.Text("ConcurrentUpdateConflict"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 AccountingErrorCodes.FiscalPeriodLocked => Problem(
                     StatusCodes.Status409Conflict,
-                    "Fiscal Period Locked",
+                    _common.Text("FiscalPeriodLocked"),
+                    // Instance-valued detail (period dates): passthrough (Phase 2 convention).
                     error.Message,
                     error.Code),
                 PurchaseErrorCodes.OverbillingNotAllowed => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Overbilling Not Allowed",
+                    _common.Text("OverbillingNotAllowed"),
+                    // Instance-valued detail (quantities, pinned by
+                    // PurchaseInvoiceOverbillingApiTests): passthrough.
                     error.Message,
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Purchase Invoice Rejected",
-                    error.Message,
+                    _common.Text("PurchaseInvoiceRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -176,8 +191,8 @@ public sealed class PurchaseInvoicesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Purchase Invoice",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidPurchaseInvoice"),
+                _errors.Text(PurchaseErrorCodes.InvoiceNotFound),
                 PurchaseErrorCodes.InvoiceNotFound);
         }
 
@@ -197,8 +212,8 @@ public sealed class PurchaseInvoicesController : ControllerBase
             {
                 PurchaseErrorCodes.InvoiceNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Purchase Invoice Not Found",
-                    error.Message,
+                    _common.Text("PurchaseInvoiceNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 PurchaseErrorCodes.InvoiceAlreadyCancelled
                     or PurchaseErrorCodes.InvalidStatusTransition
@@ -208,16 +223,21 @@ public sealed class PurchaseInvoicesController : ControllerBase
                     StatusCodes.Status409Conflict,
                     error.Code switch
                     {
-                        ConcurrencyErrorCodes.ConcurrencyConflict => "Concurrent Update Conflict",
-                        AccountingErrorCodes.FiscalPeriodLocked => "Fiscal Period Locked",
-                        _ => "Purchase Invoice Conflict",
+                        ConcurrencyErrorCodes.ConcurrencyConflict => _common.Text("ConcurrentUpdateConflict"),
+                        AccountingErrorCodes.FiscalPeriodLocked => _common.Text("FiscalPeriodLocked"),
+                        _ => _common.Text("PurchaseInvoiceConflict"),
                     },
-                    error.Message,
+                    error.Code switch
+                    {
+                        // Instance-valued details (period dates) pass through (Phase 2 convention).
+                        AccountingErrorCodes.FiscalPeriodLocked => error.Message,
+                        _ => _errors.Text(error.Code, error.Message),
+                    },
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Purchase Invoice Cancellation Rejected",
-                    error.Message,
+                    _common.Text("PurchaseInvoiceRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

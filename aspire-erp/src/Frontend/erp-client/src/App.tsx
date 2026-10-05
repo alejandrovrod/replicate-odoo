@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { AppShell } from './components/layout/AppShell'
 import { AccountTreeTable } from './features/accounting/AccountTreeTable'
 import { GeneralLedgerOverview } from './features/accounting/GeneralLedgerOverview'
@@ -13,6 +14,7 @@ import { useNavigationStore } from './store/useNavigationStore'
 import { useTenantStore } from './store/useTenantStore'
 
 function App() {
+  const { t } = useTranslation('accounting')
   const companyId = useTenantStore((state) => state.companyId)
   const currentRoute = useNavigationStore((state) => state.currentRoute)
 
@@ -24,10 +26,8 @@ function App() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold tracking-tight text-slate-900">Chart of Accounts</h2>
-              <p className="text-xs text-slate-500">
-                Hierarchical ledger taxonomy (Assets, Liabilities, Equity, Income, Expenses).
-              </p>
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">{t('page.title')}</h2>
+              <p className="text-xs text-slate-500">{t('page.subtitle')}</p>
             </div>
           </div>
           <AccountTreeTable companyId={companyId} />

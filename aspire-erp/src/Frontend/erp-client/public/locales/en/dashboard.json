@@ -1,0 +1,37 @@
+{
+  "module": {
+    "title": "Executive Overview",
+    "subtitle": "Cross-module KPIs and module shortcuts."
+  },
+  "kpi": {
+    "revenue": "Total Revenue (MTD)",
+    "cash": "Cash & Equivalents",
+    "receivables": "Outstanding Receivables",
+    "stockValuation": "Stock Valuation (FIFO)"
+  },
+  "modules": {
+    "title": "System Modules & Parity",
+    "badge": "ERPNext Spec Kit Parity",
+    "coa": "Chart of Accounts",
+    "coaDesc": "Explore hierarchical accounts, asset, liability, and equity groups. Currently live.",
+    "coaCta": "Open Tree Table →",
+    "banking": "Banking & Reconciliation",
+    "bankingDesc": "Import statements (CSV/OFX), heuristic rules engine, and dual-sided reconciliation tool.",
+    "bankingCta": "Explore Banking →",
+    "stock": "Stock & Kardex FIFO",
+    "stockDesc": "Multi-warehouse inventory, perpetual FIFO valuation, and stock entry receipts.",
+    "stockCta": "Explore Stock →",
+    "selling": "Sales Invoices & POS",
+    "sellingDesc": "Customer billing, automated credit limit controls, and atomic POS register checkout.",
+    "sellingCta": "Explore Selling →"
+  },
+  "specs": {
+    "title": "Specification & DDD State",
+    "architecture": "Architecture:",
+    "architectureDesc": "Aspire AppHost orchestrating .NET 9 Web API + SQL Server 2025 + Redis.",
+    "tenancy": "Multi-Tenancy:",
+    "tenancyDesc": "Resolved per HTTP request via TenantResolutionMiddleware and EF Core query filters.",
+    "rules": "Accounting Rules:",
+    "rulesDesc": "Strict double-entry balance invariant (ΣD = ΣC) and append-only ledger entries."
+  }
+}

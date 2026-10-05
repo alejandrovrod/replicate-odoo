@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Accounts.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Accounts.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -26,10 +30,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class AccountsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public AccountsController(ISender sender)
+    public AccountsController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's Chart of Accounts as a nested tree (roots at the top).</summary>
@@ -43,8 +54,9 @@ public sealed class AccountsController : ControllerBase
         if (companyId == Guid.Empty)
         {
             return Problem400(
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.");
+                _common.Text("InvalidCompany"),
+                _errors.Text(AccountErrorCodes.CompanyRequired),
+                AccountErrorCodes.CompanyRequired);
         }
 
         var tree = await _sender.SendAsync(new GetAccountTreeQuery(companyId), cancellationToken);
@@ -71,10 +83,14 @@ public sealed class AccountsController : ControllerBase
             {
                 AccountErrorCodes.DuplicateAccountCode => Problem(
                     StatusCodes.Status409Conflict,
-                    "Duplicate Account Code",
+                    _common.Text("DuplicateAccountCode"),
+                    // Instance-valued detail (the colliding code): passthrough (Phase 2 convention).
                     error.Message,
                     error.Code),
-                _ => Problem400("Account Validation Failed", error.Message, error.Code),
+                _ => Problem400(
+                    _common.Text("AccountValidationFailed"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
             };
         }
 

@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Selling.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Selling.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -36,10 +40,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class SalesOrdersController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public SalesOrdersController(ISender sender)
+    public SalesOrdersController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns the company's most recent sales orders with their lines.</summary>
@@ -58,8 +69,8 @@ public sealed class SalesOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(SellingErrorCodes.CompanyRequired),
                 SellingErrorCodes.CompanyRequired);
         }
 
@@ -84,8 +95,8 @@ public sealed class SalesOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Sales Order",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidSalesOrder"),
+                _errors.Text(SellingErrorCodes.SalesOrderNotFound),
                 SellingErrorCodes.SalesOrderNotFound);
         }
 
@@ -116,7 +127,7 @@ public sealed class SalesOrdersController : ControllerBase
 
         if (!result.IsSuccess)
         {
-            return ToActionResult(result, "Sales Order Rejected");
+            return ToActionResult(result);
         }
 
         var order = result.Value!;
@@ -145,19 +156,19 @@ public sealed class SalesOrdersController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Sales Order",
-                "Both the route id and the companyId query parameter must be non-empty GUIDs.",
+                _common.Text("InvalidSalesOrder"),
+                _errors.Text(SellingErrorCodes.SalesOrderNotFound),
                 SellingErrorCodes.SalesOrderNotFound);
         }
 
         var result = await _sender.SendAsync(
             new SubmitSalesOrderCommand(companyId, id), cancellationToken);
 
-        return ToActionResult(result, "Sales Order Rejected");
+        return ToActionResult(result);
     }
 
     /// <summary>Maps one command outcome to RFC 7807 (see the class remarks for the matrix).</summary>
-    private ObjectResult ToActionResult(Result<SalesOrderDto> result, string rejectedTitle)
+    private ObjectResult ToActionResult(Result<SalesOrderDto> result)
     {
         if (!result.IsSuccess)
         {
@@ -166,8 +177,8 @@ public sealed class SalesOrdersController : ControllerBase
             {
                 SellingErrorCodes.SalesOrderNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Sales Order Not Found",
-                    error.Message,
+                    _common.Text("SalesOrderNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 SellingErrorCodes.InvalidStatusTransition
                     or SellingErrorCodes.CreditLimitExceeded
@@ -175,16 +186,16 @@ public sealed class SalesOrdersController : ControllerBase
                     StatusCodes.Status409Conflict,
                     error.Code switch
                     {
-                        SellingErrorCodes.CreditLimitExceeded => "Credit Limit Exceeded",
-                        ConcurrencyErrorCodes.ConcurrencyConflict => "Concurrent Update Conflict",
-                        _ => "Sales Order Conflict",
+                        SellingErrorCodes.CreditLimitExceeded => _common.Text("CreditLimitExceeded"),
+                        ConcurrencyErrorCodes.ConcurrencyConflict => _common.Text("ConcurrentUpdateConflict"),
+                        _ => _common.Text("SalesOrderConflict"),
                     },
-                    error.Message,
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    rejectedTitle,
-                    error.Message,
+                    _common.Text("SalesOrderRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }
@@ -196,8 +207,8 @@ public sealed class SalesOrdersController : ControllerBase
     private ObjectResult NotFoundProblem(Guid id) =>
         Problem(
             StatusCodes.Status404NotFound,
-            "Sales Order Not Found",
-            $"Sales order '{id}' was not found in this tenant/company.",
+            _common.Text("SalesOrderNotFound"),
+            _errors.Text(SellingErrorCodes.SalesOrderNotFound),
             SellingErrorCodes.SalesOrderNotFound);
 
     private ObjectResult Problem(int status, string title, string detail, string? code)

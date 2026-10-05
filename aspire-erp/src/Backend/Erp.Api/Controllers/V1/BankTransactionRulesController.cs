@@ -1,3 +1,6 @@
+using Erp.Api.Common;
+using Erp.Api.Localization;
+using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Banking.Commands;
@@ -5,6 +8,7 @@ using Erp.Application.Features.Banking.Queries;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -22,10 +26,17 @@ namespace Erp.Api.Controllers.V1;
 public sealed class BankTransactionRulesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IStringLocalizer<ErrorMessages> _errors;
+    private readonly IStringLocalizer<CommonMessages> _common;
 
-    public BankTransactionRulesController(ISender sender)
+    public BankTransactionRulesController(
+        ISender sender,
+        IStringLocalizer<ErrorMessages> errors,
+        IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _errors = errors;
+        _common = common;
     }
 
     /// <summary>Returns every heuristic rule of the company (active and inactive).</summary>
@@ -40,8 +51,8 @@ public sealed class BankTransactionRulesController : ControllerBase
         {
             return Problem(
                 StatusCodes.Status400BadRequest,
-                "Invalid Company",
-                "The companyId query parameter must be a non-empty GUID.",
+                _common.Text("InvalidCompany"),
+                _errors.Text(BankingErrorCodes.BankTransactionRuleNotFound),
                 BankingErrorCodes.BankTransactionRuleNotFound);
         }
 
@@ -68,13 +79,13 @@ public sealed class BankTransactionRulesController : ControllerBase
             {
                 BankingErrorCodes.BankAccountNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    "Bank Account Not Found",
-                    error.Message,
+                    _common.Text("BankAccountNotFound"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
-                    "Rule Rejected",
-                    error.Message,
+                    _common.Text("RuleRejected"),
+                    _errors.Text(error.Code, error.Message),
                     error.Code),
             };
         }

@@ -1,6 +1,9 @@
 import { ArrowRight, BadgeDollarSign, CalendarRange } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useErpAction } from '../../lib/useErpAction'
+import { translateErrorCode } from '../../lib/translateErrorCode'
+import { formatMoney } from '../../lib/format'
 import type { PayrollEntryStatus, PayrollRun } from './types'
 import {
   payrollPeriodDefaults,
@@ -38,6 +41,7 @@ export function PayrollWorkbench({
   onPeriodChange: (start: string, end: string) => void
 }) {
   const runsQuery = usePayrollRuns(companyId)
+  const { t, i18n } = useTranslation('hr-payroll')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [postingDate, setPostingDate] = useState(todayIso())
   const [bankAccountId, setBankAccountId] = useState('')
@@ -84,7 +88,8 @@ export function PayrollWorkbench({
     return (
       <div className="rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
         <p className="font-medium">
-          Could not load payroll runs{runsQuery.error?.status ? ` (HTTP ${runsQuery.error.status})` : ''}.
+          {t('workbench.loadFailed')}
+          {runsQuery.error?.status ? ` (HTTP ${runsQuery.error.status})` : ''}.
         </p>
         {runsQuery.error?.message ? <p className="mt-1">{runsQuery.error.message}</p> : null}
         <button
@@ -92,14 +97,14 @@ export function PayrollWorkbench({
           onClick={() => runsQuery.reload()}
           className="mt-2 rounded border border-rose-400 px-2 py-1 text-rose-900 hover:bg-rose-100"
         >
-          Retry
+          {t('workbench.retry')}
         </button>
       </div>
     )
   }
 
   if (runsQuery.status !== 'success') {
-    return <p className="px-1 py-3 text-sm text-slate-500">Loading payroll runs…</p>
+    return <p className="px-1 py-3 text-sm text-slate-500">{t('workbench.loading')}</p>
   }
 
   return (
@@ -109,17 +114,15 @@ export function PayrollWorkbench({
           <div>
             <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
               <CalendarRange className="h-4 w-4 text-indigo-600" />
-              Payroll Run
+              {t('workbench.title')}
             </h3>
-            <p className="text-xs text-slate-500">
-              Submit prices one slip per eligible employee and posts the accrual voucher — atomically.
-            </p>
+            <p className="text-xs text-slate-500">{t('workbench.subtitle')}</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-            Period start
+            {t('workbench.periodStart')}
             <input
               type="date"
               value={periodStart}
@@ -128,7 +131,7 @@ export function PayrollWorkbench({
             />
           </label>
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-            Period end
+            {t('workbench.periodEnd')}
             <input
               type="date"
               value={periodEnd}
@@ -137,7 +140,7 @@ export function PayrollWorkbench({
             />
           </label>
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-            Posting date
+            {t('workbench.postingDate')}
             <input
               type="date"
               value={postingDate}
@@ -152,7 +155,7 @@ export function PayrollWorkbench({
             className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
           >
             <BadgeDollarSign className="h-3.5 w-3.5" />
-            {isSubmitting ? 'Submitting…' : 'Submit payroll run'}
+            {isSubmitting ? t('workbench.submitting') : t('workbench.submit')}
           </button>
           <button
             type="button"
@@ -163,58 +166,63 @@ export function PayrollWorkbench({
             }}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
           >
-            This month
+            {t('workbench.thisMonth')}
           </button>
         </div>
 
         {submitState.data ? (
           <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-900">
             <p className="font-semibold">
-              {submitState.data.entry.payrollNumber}: {submitState.data.createdSlipCount} slip(s) —
-              gross {submitState.data.entry.totalGrossPay}, deductions{' '}
-              {submitState.data.entry.totalDeductions}, net {submitState.data.entry.totalNetPay}
-              {submitState.data.entry.accrualVoucherNo ? ` (${submitState.data.entry.accrualVoucherNo})` : ''}.
+              {t('workbench.submitted', {
+                number: submitState.data.entry.payrollNumber,
+                count: submitState.data.createdSlipCount,
+                gross: formatMoney(submitState.data.entry.totalGrossPay),
+                deductions: formatMoney(submitState.data.entry.totalDeductions),
+                net: formatMoney(submitState.data.entry.totalNetPay),
+                voucher: submitState.data.entry.accrualVoucherNo
+                  ? t('workbench.voucherSuffix', { voucher: submitState.data.entry.accrualVoucherNo })
+                  : '',
+              })}
             </p>
             {submitState.data.skipped.length > 0 ? (
               <ul className="mt-2 list-disc pl-5">
                 {submitState.data.skipped.map((skip) => (
                   <li key={skip.employeeId}>
-                    <span className="font-mono">{skip.employeeNumber}</span> skipped: {skip.reason}
+                    <span className="font-mono">{skip.employeeNumber}</span>{' '}
+                    {t('workbench.skippedSuffix')}: {skip.reason}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-1">No employees skipped.</p>
+              <p className="mt-1">{t('workbench.skippedNone')}</p>
             )}
           </div>
         ) : null}
 
         {lastError ? (
           <p className="mt-3 rounded-md border border-rose-300 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
-            {lastError}{lastErrorCode ? ` (${lastErrorCode})` : ''}
+            {translateErrorCode(i18n, lastErrorCode, lastError)}
           </p>
         ) : null}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h3 className="mb-1 text-base font-semibold text-slate-900">Payroll runs</h3>
-        <p className="mb-4 text-xs text-slate-500">
-          Submitted → Paid via bank disbursement, or Submitted → Cancelled via accrual mirror.
-        </p>
+        <h3 className="mb-1 text-base font-semibold text-slate-900">{t('workbench.runsTitle')}</h3>
+        <p className="mb-4 text-xs text-slate-500">{t('workbench.runsSubtitle')}</p>
 
         {runsQuery.data.length === 0 ? (
-          <p className="py-4 text-center text-sm text-slate-500">No payroll runs yet for this company.</p>
+          <p className="py-4 text-center text-sm text-slate-500">{t('workbench.empty')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-400">
-                  <th className="py-2.5 font-semibold">Run</th>
-                  <th className="py-2.5 font-semibold">Period</th>
-                  <th className="py-2.5 font-semibold">Net pay</th>
-                  <th className="py-2.5 font-semibold">Slips</th>
-                  <th className="py-2.5 font-semibold">Status</th>
-                  <th className="py-2.5 text-right font-semibold">Actions</th>
+                  <th className="py-2.5 font-semibold">{t('workbench.colRun')}</th>
+                  <th className="py-2.5 font-semibold">{t('workbench.colPeriod')}</th>
+                  <th className="py-2.5 font-semibold">{t('workbench.colNetPay')}</th>
+                  <th className="py-2.5 font-semibold">{t('workbench.colSlips')}</th>
+                  <th className="py-2.5 font-semibold">{t('workbench.colStatus')}</th>
+                  <th className="py-2.5 text-right font-semibold">{t('workbench.colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -232,7 +240,7 @@ export function PayrollWorkbench({
                     <td className="py-2 font-mono text-slate-600">
                       {run.startDate}…{run.endDate}
                     </td>
-                    <td className="py-2 font-mono">{run.totalNetPay}</td>
+                    <td className="py-2 font-mono">{formatMoney(run.totalNetPay)}</td>
                     <td className="py-2 font-mono">{run.slipCount}</td>
                     <td className="py-2">
                       <span
@@ -246,15 +254,15 @@ export function PayrollWorkbench({
                         {run.status === 'Submitted' ? (
                           <>
                             <ActionButton
-                              label="Disburse"
-                              title="Post the Dr 2150 / Cr bank pair and mark Paid"
+                              label={t('workbench.disburse')}
+                              title={t('workbench.disburseTitle')}
                               pending={isDisbursing}
                               disabled={bankAccountId.trim() === ''}
                               onClick={() => disburse(run.id)}
                             />
                             <ActionButton
-                              label="Cancel"
-                              title="Mirror the accrual voucher and mark Cancelled"
+                              label={t('workbench.cancel')}
+                              title={t('workbench.cancelTitle')}
                               pending={isCancelling}
                               danger
                               onClick={() => cancel(run.id)}
@@ -272,37 +280,41 @@ export function PayrollWorkbench({
 
         <div className="mt-4 flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-            Disbursing bank account (GUID)
+            {t('workbench.bankAccount')}
             <input
               value={bankAccountId}
               onChange={(e) => setBankAccountId(e.target.value)}
-              placeholder="BankAccount GUID"
+              placeholder={t('workbench.bankPlaceholder')}
               spellCheck={false}
               className="w-72 rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs"
             />
           </label>
-          <span className="pb-2 text-[11px] text-slate-400">
-            Wired to the account&apos;s GL leaf (seed: Main Operating).
-          </span>
+          <span className="pb-2 text-[11px] text-slate-400">{t('workbench.wiredHint')}</span>
         </div>
 
         {detailQuery.status === 'error' ? (
           <p className="mt-4 rounded-md border border-rose-300 bg-rose-50 px-4 py-2.5 text-xs text-rose-800">
-            Could not load run detail{detailQuery.error?.status ? ` (HTTP ${detailQuery.error.status})` : ''}.
+            {t('workbench.detailFailed')}
+            {detailQuery.error?.status ? ` (HTTP ${detailQuery.error.status})` : ''}.
           </p>
         ) : null}
 
         {detailQuery.status === 'loading' ? (
-          <p className="mt-4 text-xs text-slate-500">Loading run detail…</p>
+          <p className="mt-4 text-xs text-slate-500">{t('workbench.detailLoading')}</p>
         ) : null}
 
         {detailQuery.data ? (
           <div className="mt-4 space-y-3">
             <p className="flex items-center gap-1.5 text-xs text-slate-500">
               <ArrowRight className="h-3.5 w-3.5" />
-              {detailQuery.data.entry.payrollNumber}: accrual{' '}
-              {detailQuery.data.entry.accrualVoucherNo ?? '—'}
-              {detailQuery.data.entry.paymentVoucherNo ? ` · payment ${detailQuery.data.entry.paymentVoucherNo}` : ''}.
+              {t('workbench.detailAccrual', {
+                number: detailQuery.data.entry.payrollNumber,
+                voucher: detailQuery.data.entry.accrualVoucherNo ?? '—',
+              })}
+              {detailQuery.data.entry.paymentVoucherNo
+                ? t('workbench.detailPayment', { voucher: detailQuery.data.entry.paymentVoucherNo })
+                : ''}
+              .
             </p>
             {detailQuery.data.slips.map((slip) => (
               <div key={slip.id} className="rounded-lg border border-slate-200 p-4">
@@ -321,15 +333,20 @@ export function PayrollWorkbench({
                   </span>
                 </div>
                 <p className="mt-1 font-mono text-xs text-slate-600">
-                  Gross {slip.grossPay} − deductions {slip.totalDeductions} = net {slip.netPay} ·{' '}
-                  {slip.paymentDays}d paid / {slip.absentDays}d absent
+                  {t('workbench.slipLine', {
+                    gross: formatMoney(slip.grossPay),
+                    deductions: formatMoney(slip.totalDeductions),
+                    net: formatMoney(slip.netPay),
+                    paid: slip.paymentDays,
+                    absent: slip.absentDays,
+                  })}
                 </p>
                 <table className="mt-2 w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-100 text-slate-400">
-                      <th className="py-1.5 font-semibold">Component</th>
-                      <th className="py-1.5 font-semibold">Type</th>
-                      <th className="py-1.5 text-right font-semibold">Amount</th>
+                      <th className="py-1.5 font-semibold">{t('workbench.colComponent')}</th>
+                      <th className="py-1.5 font-semibold">{t('workbench.colType')}</th>
+                      <th className="py-1.5 text-right font-semibold">{t('workbench.colAmount')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -337,7 +354,7 @@ export function PayrollWorkbench({
                       <tr key={line.id}>
                         <td className="py-1.5 text-slate-700">{line.componentName}</td>
                         <td className="py-1.5 text-slate-500">{line.componentType}</td>
-                        <td className="py-1.5 text-right font-mono text-slate-700">{line.amount}</td>
+                        <td className="py-1.5 text-right font-mono text-slate-700">{formatMoney(line.amount)}</td>
                       </tr>
                     ))}
                   </tbody>

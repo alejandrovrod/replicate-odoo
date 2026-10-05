@@ -1,4 +1,5 @@
 import { Users } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { isEligibleForPeriod, type EmploymentStatus } from './types'
 import { useEmployees } from './useHrPayrollData'
 
@@ -24,12 +25,14 @@ export function EmployeeDirectory({
   periodEnd: string
 }) {
   const employeesQuery = useEmployees(companyId)
+  const { t } = useTranslation('hr-payroll')
 
   if (employeesQuery.status === 'error') {
     return (
       <div className="rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800">
         <p className="font-medium">
-          Could not load employees{employeesQuery.error?.status ? ` (HTTP ${employeesQuery.error.status})` : ''}.
+          {t('directory.loadFailed')}
+          {employeesQuery.error?.status ? ` (HTTP ${employeesQuery.error.status})` : ''}.
         </p>
         {employeesQuery.error?.message ? <p className="mt-1">{employeesQuery.error.message}</p> : null}
         <button
@@ -37,14 +40,14 @@ export function EmployeeDirectory({
           onClick={() => employeesQuery.reload()}
           className="mt-2 rounded border border-rose-400 px-2 py-1 text-rose-900 hover:bg-rose-100"
         >
-          Retry
+          {t('directory.retry')}
         </button>
       </div>
     )
   }
 
   if (employeesQuery.status !== 'success') {
-    return <p className="px-1 py-3 text-sm text-slate-500">Loading employees…</p>
+    return <p className="px-1 py-3 text-sm text-slate-500">{t('directory.loading')}</p>
   }
 
   const eligible = employeesQuery.data.filter((e) => isEligibleForPeriod(e, periodStart, periodEnd)).length
@@ -55,26 +58,26 @@ export function EmployeeDirectory({
         <div>
           <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
             <Users className="h-4 w-4 text-indigo-600" />
-            Employee Directory
+            {t('directory.title')}
           </h3>
           <p className="text-xs text-slate-500">
-            {employeesQuery.data.length} employees · {eligible} eligible for {periodStart}…{periodEnd}.
+            {t('directory.summary', { total: employeesQuery.data.length, eligible, start: periodStart, end: periodEnd })}
           </p>
         </div>
       </div>
 
       {employeesQuery.data.length === 0 ? (
-        <p className="py-4 text-center text-sm text-slate-500">No employees yet for this company.</p>
+        <p className="py-4 text-center text-sm text-slate-500">{t('directory.empty')}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-400">
-                <th className="py-2.5 font-semibold">Employee</th>
-                <th className="py-2.5 font-semibold">Email</th>
-                <th className="py-2.5 font-semibold">Joined</th>
-                <th className="py-2.5 font-semibold">Status</th>
-                <th className="py-2.5 text-right font-semibold">Eligibility</th>
+                <th className="py-2.5 font-semibold">{t('directory.colEmployee')}</th>
+                <th className="py-2.5 font-semibold">{t('directory.colEmail')}</th>
+                <th className="py-2.5 font-semibold">{t('directory.colJoined')}</th>
+                <th className="py-2.5 font-semibold">{t('directory.colStatus')}</th>
+                <th className="py-2.5 text-right font-semibold">{t('directory.colEligibility')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -104,13 +107,9 @@ export function EmployeeDirectory({
                             ? 'bg-emerald-100 text-emerald-800'
                             : 'bg-slate-100 text-slate-500'
                         }`}
-                        title={
-                          eligibleForPeriod
-                            ? 'Eligible for the selected payroll period (HR-03)'
-                            : 'Skipped by the payroll run for this period (HR-03)'
-                        }
+                        title={eligibleForPeriod ? t('directory.eligibleTitle') : t('directory.skippedTitle')}
                       >
-                        {eligibleForPeriod ? 'Eligible' : 'Skipped'}
+                        {eligibleForPeriod ? t('directory.eligible') : t('directory.skipped')}
                       </span>
                     </td>
                   </tr>

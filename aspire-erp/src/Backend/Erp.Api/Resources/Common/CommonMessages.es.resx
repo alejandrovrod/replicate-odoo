@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <!-- Títulos genéricos RFC 7807. -->
+  <data name="BadRequest" xml:space="preserve">
+    <value>Solicitud incorrecta</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>No encontrado</value>
+  </data>
+  <data name="Conflict" xml:space="preserve">
+    <value>Conflicto</value>
+  </data>
+  <!-- CRM. -->
+  <data name="InvalidCompany" xml:space="preserve">
+    <value>Empresa inválida</value>
+  </data>
+  <data name="InvalidOpportunity" xml:space="preserve">
+    <value>Oportunidad inválida</value>
+  </data>
+  <data name="OpportunityNotFound" xml:space="preserve">
+    <value>Oportunidad no encontrada</value>
+  </data>
+  <data name="OpportunityConflict" xml:space="preserve">
+    <value>Conflicto de oportunidad</value>
+  </data>
+  <data name="OpportunityRejected" xml:space="preserve">
+    <value>Oportunidad rechazada</value>
+  </data>
+  <data name="InvalidLead" xml:space="preserve">
+    <value>Lead inválido</value>
+  </data>
+  <data name="LeadResourceNotFound" xml:space="preserve">
+    <value>Recurso de lead no encontrado</value>
+  </data>
+  <data name="LeadConflict" xml:space="preserve">
+    <value>Conflicto de lead</value>
+  </data>
+  <data name="LeadRejected" xml:space="preserve">
+    <value>Lead rechazado</value>
+  </data>
+  <!-- Comercialización. -->
+  <data name="SalesOrderNotFound" xml:space="preserve">
+    <value>Orden de venta no encontrada</value>
+  </data>
+  <data name="SalesOrderConflict" xml:space="preserve">
+    <value>Conflicto de orden de venta</value>
+  </data>
+  <data name="SalesOrderRejected" xml:space="preserve">
+    <value>Orden de venta rechazada</value>
+  </data>
+  <data name="InvalidSalesOrder" xml:space="preserve">
+    <value>Orden de venta inválida</value>
+  </data>
+  <data name="InvalidCustomer" xml:space="preserve">
+    <value>Cliente inválido</value>
+  </data>
+  <data name="CustomerNotFound" xml:space="preserve">
+    <value>Cliente no encontrado</value>
+  </data>
+  <data name="CustomerConflict" xml:space="preserve">
+    <value>Conflicto de cliente</value>
+  </data>
+  <data name="CustomerRejected" xml:space="preserve">
+    <value>Cliente rechazado</value>
+  </data>
+  <data name="DuplicateCustomerCode" xml:space="preserve">
+    <value>Código de cliente duplicado</value>
+  </data>
+  <data name="CreditLimitExceeded" xml:space="preserve">
+    <value>Límite de crédito excedido</value>
+  </data>
+  <data name="InvalidDeliveryNote" xml:space="preserve">
+    <value>Remito inválido</value>
+  </data>
+  <data name="DeliveryNoteNotFound" xml:space="preserve">
+    <value>Remito no encontrado</value>
+  </data>
+  <data name="DeliveryNoteRejected" xml:space="preserve">
+    <value>Remito rechazado</value>
+  </data>
+  <data name="SalesInvoiceRejected" xml:space="preserve">
+    <value>Factura de venta rechazada</value>
+  </data>
+  <!-- Compartido: las carreras de concurrencia optimista aparecen en varios módulos. -->
+  <data name="ConcurrentUpdateConflict" xml:space="preserve">
+    <value>Conflicto de actualización concurrente</value>
+  </data>
+  <!-- Compras. -->
+  <data name="InvalidPurchaseOrder" xml:space="preserve">
+    <value>Orden de compra inválida</value>
+  </data>
+  <data name="PurchaseOrderNotFound" xml:space="preserve">
+    <value>Orden de compra no encontrada</value>
+  </data>
+  <data name="PurchaseOrderConflict" xml:space="preserve">
+    <value>Conflicto de orden de compra</value>
+  </data>
+  <data name="PurchaseOrderRejected" xml:space="preserve">
+    <value>Orden de compra rechazada</value>
+  </data>
+  <data name="SupplierNotFound" xml:space="preserve">
+    <value>Proveedor no encontrado</value>
+  </data>
+  <data name="SupplierConflict" xml:space="preserve">
+    <value>Conflicto de proveedor</value>
+  </data>
+  <data name="SupplierRejected" xml:space="preserve">
+    <value>Proveedor rechazado</value>
+  </data>
+  <data name="DuplicateSupplierCode" xml:space="preserve">
+    <value>Código de proveedor duplicado</value>
+  </data>
+  <data name="InvalidPurchaseInvoice" xml:space="preserve">
+    <value>Factura de compra inválida</value>
+  </data>
+  <data name="PurchaseInvoiceNotFound" xml:space="preserve">
+    <value>Factura de compra no encontrada</value>
+  </data>
+  <data name="PurchaseInvoiceConflict" xml:space="preserve">
+    <value>Conflicto de factura de compra</value>
+  </data>
+  <data name="PurchaseInvoiceRejected" xml:space="preserve">
+    <value>Factura de compra rechazada</value>
+  </data>
+  <data name="DuplicatePurchaseInvoice" xml:space="preserve">
+    <value>Factura de compra duplicada</value>
+  </data>
+  <data name="OverbillingNotAllowed" xml:space="preserve">
+    <value>Sobrefacturación no permitida</value>
+  </data>
+  <data name="PurchaseReceiptConflict" xml:space="preserve">
+    <value>Conflicto de remito de recepción</value>
+  </data>
+  <data name="PurchaseReceiptRejected" xml:space="preserve">
+    <value>Remito de recepción rechazado</value>
+  </data>
+  <!-- Inventario. -->
+  <data name="StockEntryNotFound" xml:space="preserve">
+    <value>Comprobante de stock no encontrado</value>
+  </data>
+  <data name="StockEntryConflict" xml:space="preserve">
+    <value>Conflicto de comprobante de stock</value>
+  </data>
+  <data name="StockEntryRejected" xml:space="preserve">
+    <value>Comprobante de stock rechazado</value>
+  </data>
+  <data name="WarehouseConflict" xml:space="preserve">
+    <value>Conflicto de almacén</value>
+  </data>
+  <data name="WarehouseRejected" xml:space="preserve">
+    <value>Almacén rechazado</value>
+  </data>
+  <data name="ItemConflict" xml:space="preserve">
+    <value>Conflicto de artículo</value>
+  </data>
+  <data name="ItemRejected" xml:space="preserve">
+    <value>Artículo rechazado</value>
+  </data>
+  <!-- Compartido: el bloqueo de períodos fiscales aparece en varios módulos (spec AC-04). -->
+  <data name="FiscalPeriodLocked" xml:space="preserve">
+    <value>Período fiscal bloqueado</value>
+  </data>
+  <!-- Fabricación. -->
+  <data name="InvalidBom" xml:space="preserve">
+    <value>Lista de materiales inválida</value>
+  </data>
+  <data name="BomNotFound" xml:space="preserve">
+    <value>Lista de materiales no encontrada</value>
+  </data>
+  <data name="InvalidWorkOrder" xml:space="preserve">
+    <value>Orden de producción inválida</value>
+  </data>
+  <data name="WorkOrderNotFound" xml:space="preserve">
+    <value>Orden de producción no encontrada</value>
+  </data>
+  <data name="WorkOrderConflict" xml:space="preserve">
+    <value>Conflicto de orden de producción</value>
+  </data>
+  <data name="WorkOrderRejected" xml:space="preserve">
+    <value>Orden de producción rechazada</value>
+  </data>
+  <data name="ManufacturingResourceNotFound" xml:space="preserve">
+    <value>Recurso de fabricación no encontrado</value>
+  </data>
+  <data name="ManufacturingConflict" xml:space="preserve">
+    <value>Conflicto de fabricación</value>
+  </data>
+  <data name="ManufacturingRejected" xml:space="preserve">
+    <value>Fabricación rechazada</value>
+  </data>
+  <!-- Tesorería. -->
+  <data name="BankTransactionNotFound" xml:space="preserve">
+    <value>Transacción bancaria no encontrada</value>
+  </data>
+  <data name="RuleRunRejected" xml:space="preserve">
+    <value>Ejecución de reglas rechazada</value>
+  </data>
+  <data name="UnreconcileRejected" xml:space="preserve">
+    <value>Desconciliación rechazada</value>
+  </data>
+  <data name="QuickVoucherCounterpartNotFound" xml:space="preserve">
+    <value>Contraparte de comprobante rápido no encontrada</value>
+  </data>
+  <data name="QuickVoucherRejected" xml:space="preserve">
+    <value>Comprobante rápido rechazado</value>
+  </data>
+  <data name="ReconciliationCounterpartNotFound" xml:space="preserve">
+    <value>Contraparte de conciliación no encontrada</value>
+  </data>
+  <data name="ReconciliationRejected" xml:space="preserve">
+    <value>Conciliación rechazada</value>
+  </data>
+  <data name="BankAccountNotFound" xml:space="preserve">
+    <value>Cuenta bancaria no encontrada</value>
+  </data>
+  <data name="StatementImportRejected" xml:space="preserve">
+    <value>Importación de extracto rechazada</value>
+  </data>
+  <data name="RuleRejected" xml:space="preserve">
+    <value>Regla rechazada</value>
+  </data>
+  <!-- Contabilidad. -->
+  <data name="DuplicateAccountCode" xml:space="preserve">
+    <value>Código de cuenta duplicado</value>
+  </data>
+  <data name="AccountValidationFailed" xml:space="preserve">
+    <value>Validación de cuenta fallida</value>
+  </data>
+  <data name="InvalidJournalEntry" xml:space="preserve">
+    <value>Asiento contable inválido</value>
+  </data>
+  <data name="JournalEntryNotFound" xml:space="preserve">
+    <value>Asiento contable no encontrado</value>
+  </data>
+  <data name="JournalEntryConflict" xml:space="preserve">
+    <value>Conflicto de asiento contable</value>
+  </data>
+  <data name="JournalEntryRejected" xml:space="preserve">
+    <value>Asiento contable rechazado</value>
+  </data>
+  <data name="InvalidDateRange" xml:space="preserve">
+    <value>Rango de fechas inválido</value>
+  </data>
+  <data name="MissingPeriod" xml:space="preserve">
+    <value>Falta el período</value>
+  </data>
+  <data name="InvalidPeriod" xml:space="preserve">
+    <value>Período inválido</value>
+  </data>
+  <data name="MissingDate" xml:space="preserve">
+    <value>Falta la fecha</value>
+  </data>
+  <data name="InvalidDate" xml:space="preserve">
+    <value>Fecha inválida</value>
+  </data>
+  <!-- RRHH/Nómina. -->
+  <data name="InvalidPayrollDisbursement" xml:space="preserve">
+    <value>Desembolso de nómina inválido</value>
+  </data>
+  <data name="InvalidPayrollEntry" xml:space="preserve">
+    <value>Registro de nómina inválido</value>
+  </data>
+  <data name="PayrollEntryNotFound" xml:space="preserve">
+    <value>Registro de nómina no encontrado</value>
+  </data>
+  <data name="PayrollResourceNotFound" xml:space="preserve">
+    <value>Recurso de nómina no encontrado</value>
+  </data>
+  <data name="PayrollConflict" xml:space="preserve">
+    <value>Conflicto de nómina</value>
+  </data>
+  <data name="PayrollRejected" xml:space="preserve">
+    <value>Nómina rechazada</value>
+  </data>
+  <!-- Activos. -->
+  <data name="InvalidAsset" xml:space="preserve">
+    <value>Activo inválido</value>
+  </data>
+  <data name="AssetNotFound" xml:space="preserve">
+    <value>Activo no encontrado</value>
+  </data>
+  <data name="AssetResourceNotFound" xml:space="preserve">
+    <value>Recurso de activo no encontrado</value>
+  </data>
+  <data name="AssetConflict" xml:space="preserve">
+    <value>Conflicto de activo</value>
+  </data>
+  <data name="AssetRejected" xml:space="preserve">
+    <value>Activo rechazado</value>
+  </data>
+  <data name="AssetCategoryRejected" xml:space="preserve">
+    <value>Categoría de activo rechazada</value>
+  </data>
+</root>

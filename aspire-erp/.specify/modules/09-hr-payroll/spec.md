@@ -1,7 +1,7 @@
 # Functional Specification: Human Resources & Payroll (ERPNext Parity)
 
 **Module:** `09-hr-payroll`  
-**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Status:** IN PROGRESS — Block A implemented (tasks 12.1, 12.2); Block B/C pending  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext HR & Payroll](https://docs.frappe.io/erpnext/hrms)  

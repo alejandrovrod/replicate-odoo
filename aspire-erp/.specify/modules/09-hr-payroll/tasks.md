@@ -3,17 +3,17 @@
 **Module:** `09-hr-payroll`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** READY TO IMPLEMENT  
+**Status:** IN PROGRESS (Block A: 12.1, 12.2 complete)  
 
 ---
 
 ## Phase 12: Human Resources & Batch Payroll
 
-- [ ] **Task 12.1: Employee Directory & Organizational Structure**
+- [x] **Task 12.1: Employee Directory & Organizational Structure**
   - **Action:** Implement `Employee`, `Department`, and `Designation` entities in `Erp.Domain.HR` with date of joining and banking details.
   - **Acceptance:** Validates that active employees have valid email and bank accounts.
 
-- [ ] **Task 12.2: Salary Component & Structure Configuration**
+- [x] **Task 12.2: Salary Component & Structure Configuration**
   - **Action:** Create `SalaryComponent` (Earnings, Deductions) and `SalaryStructure` linking components to GL accounts.
   - **Acceptance:** Ensures all components map to valid leaf posting accounts in the Chart of Accounts.
 

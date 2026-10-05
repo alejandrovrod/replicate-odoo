@@ -3,7 +3,7 @@
 **Module:** `08-crm`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IN PROGRESS (Blocks A+B complete: 11.1-11.6 verified; 11.7 pending Block C)  
+**Status:** IMPLEMENTATION COMPLETE — all 7 tasks verified (pending Spec Kit verify + archive)  
 
 ---
 
@@ -37,8 +37,9 @@
   - **Action:** Implement idempotency filter for marketing webhook ingestion and command handler for re-opening closed lost deals.
   - **Acceptance:** Replaying duplicate webhook payload returns cached result; re-opening lost deal sets stage to Negotiation cleanly.
 
-- [ ] **Task 11.7: CRM Forecasting & Conversion Unit & Integration Tests**
+- [x] **Task 11.7: CRM Forecasting & Conversion Unit & Integration Tests**
   > **Re-verification 2026-10-04 (adoptive Block A):** unit side green; integration file does not exist yet. Re-tick on Block C.
+  > **Closed Block C:** CrmLifecycleApiTests live (conversion + replay + race + reopen, 5/5 green).
   - **Action:** Write automated unit tests for weighted pipeline calculation and integration tests for lead-to-customer conversion.
   - **Acceptance:** 100% test pass on probability bounds, loss reason enforcement, and optimistic concurrency locks.
 

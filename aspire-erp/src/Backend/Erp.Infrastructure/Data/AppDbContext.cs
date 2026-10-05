@@ -113,6 +113,12 @@ public class AppDbContext : DbContext
 
     public DbSet<SalaryStructureAssignment> SalaryStructureAssignments => Set<SalaryStructureAssignment>();
 
+    public DbSet<PayrollEntry> PayrollEntries => Set<PayrollEntry>();
+
+    public DbSet<SalarySlip> SalarySlips => Set<SalarySlip>();
+
+    public DbSet<SalarySlipLine> SalarySlipLines => Set<SalarySlipLine>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

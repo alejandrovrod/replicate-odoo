@@ -64,4 +64,14 @@ public static class HrPayrollErrorCodes
 
     // General Ledger configuration / invariants (Constitution Article III)
     public const string InvalidGlAccount = "invalid_gl_account";
+
+    // Payroll batch engine (Tasks 12.3-12.4)
+    public const string PayrollEntryNotFound = "payroll_entry_not_found";
+    public const string InvalidPayrollPeriod = "invalid_payroll_period";
+    public const string InvalidPaymentDays = "invalid_payment_days";
+    public const string NoEligibleEmployees = "no_eligible_employees";
+    public const string DuplicateSalarySlip = "duplicate_salary_slip";
+    public const string InvalidStatusTransition = "invalid_status_transition";
+    public const string BankAccountNotFound = "bank_account_not_found";
+    public const string AccrualVoucherNotFound = "accrual_voucher_not_found";
 }

@@ -24,6 +24,7 @@ using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Application.Features.Assets.Commands;
 using Erp.Application.Features.Assets.Queries;
 using Erp.Application.Features.HrPayroll.Commands;
+using Erp.Application.Features.HrPayroll.Queries;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
 using Erp.Application.Services;
@@ -217,6 +218,11 @@ builder.Services.AddScoped<IHrPayrollRepository, HrPayrollRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateSalaryComponentCommand, Result<SalaryComponentDto>>, CreateSalaryComponentCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateSalaryStructureCommand, Result<SalaryStructureDto>>, CreateSalaryStructureCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<AssignSalaryStructureCommand, Result<SalaryStructureAssignmentDto>>, AssignSalaryStructureCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitPayrollRunCommand, Result<PayrollSubmitResultDto>>, SubmitPayrollRunCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DisbursePayrollCommand, Result<PayrollEntryDto>>, DisbursePayrollCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelPayrollCommand, Result<PayrollEntryDto>>, CancelPayrollCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPayrollEntriesQuery, IReadOnlyList<PayrollEntryDto>>, GetPayrollEntriesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPayrollEntryQuery, PayrollEntryDetailDto?>, GetPayrollEntryQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

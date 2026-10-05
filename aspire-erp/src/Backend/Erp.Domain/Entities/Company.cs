@@ -102,6 +102,17 @@ public class Company : ITenantEntity
     
     public string? DefaultIncomeAccountCode { get; set; }
 
+    /// <summary>
+    /// Company-level GL default for net salary obligations (decision D3, Tasks 12.3-12.4, spec
+    /// HR-02): the ACCOUNT CODE credited with <c>PayrollEntry.TotalNetPay</c> on accrual and
+    /// debited back to zero on disbursement, e.g. "2150 - Payroll Payable". Same code-not-FK
+    /// shape as <see cref="StockReceivedAccountCode"/> (a Company -&gt; Account FK would be
+    /// circular). The Block C migration adds the column; until then the entity carries the
+    /// property and the EF mapping, and postings resolve it through
+    /// <c>IAccountRepository.FindActiveLeafByCodeAsync</c>.
+    /// </summary>
+    public string? PayrollPayableAccountCode { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public Tenant? Tenant { get; set; }

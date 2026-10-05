@@ -1,6 +1,8 @@
 using Erp.Domain.Entities;
+using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Erp.Infrastructure.Data.Repositories;
 
@@ -174,4 +176,247 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
         => await _dbContext.SalaryStructureAssignments
             .Where(a => a.EmployeeId == employeeId)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<SalaryStructureAssignment>> GetAssignmentsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+        => await _dbContext.SalaryStructureAssignments
+            .Where(a => a.CompanyId == companyId)
+            .ToListAsync(cancellationToken);
+
+    // Payroll batch engine (Tasks 12.3-12.4)
+
+    /// <summary>
+    /// Constitution III.4: SELECT MAX(PayrollNumber) WITH (UPDLOCK, HOLDLOCK) inside the AMBIENT
+    /// submit transaction, scoped to (TenantId, CompanyId, year). A rolled-back submit consumes
+    /// NO number (same generator shape as the manufacturing repository).
+    /// </summary>
+    public async Task<string> NextPayrollNumberAsync(
+        Guid companyId, int year, CancellationToken cancellationToken = default)
+        => await NextSequenceAsync(
+            "dbo.PayrollEntry", "PayrollNumber", companyId, "PE", year, cancellationToken);
+
+    public async Task<string> NextVoucherNumberAsync(
+        Guid companyId, string prefix, int year, CancellationToken cancellationToken = default)
+        => await NextGlSequenceAsync(companyId, prefix, year, cancellationToken);
+
+    /// <summary>
+    /// HR-06 live race guard: UPDLOCK/HOLDLOCK over the entry's slip rows, held to transaction
+    /// end, so concurrent slip inserts for the same entry serialize. The DB unique index stays
+    /// the authority (a blocked rival fails on it, never double-inserts).
+    /// </summary>
+    public async Task LockEntrySlipsAsync(Guid payrollEntryId, CancellationToken cancellationToken = default)
+    {
+        var transaction = _dbContext.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "Slip range locking must run inside the posting transaction: "
+                + "outside one the UPDLOCK/HOLDLOCK range lock cannot protect the insert.");
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT 1 FROM dbo.SalarySlip WITH (UPDLOCK, HOLDLOCK) WHERE PayrollEntryId = @EntryId;";
+        command.Transaction = transaction.GetDbTransaction();
+
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "@EntryId";
+        parameter.Value = payrollEntryId;
+        command.Parameters.Add(parameter);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task AddPayrollEntryAsync(PayrollEntry entry, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.PayrollEntries.AddAsync(entry, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<PayrollEntry?> GetPayrollEntryByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => _dbContext.PayrollEntries
+            .Include(e => e.Slips)
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+        => await _dbContext.PayrollEntries
+            .Where(e => e.CompanyId == companyId)
+            .OrderByDescending(e => e.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+    public async Task UpdatePayrollEntryAsync(PayrollEntry entry, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(nameof(PayrollEntry), entry.Id, ex);
+        }
+    }
+
+    public async Task AddSlipAsync(SalarySlip slip, CancellationToken cancellationToken = default)
+    {
+        var exists = await _dbContext.SalarySlips
+            .AnyAsync(s => s.PayrollEntryId == slip.PayrollEntryId && s.EmployeeId == slip.EmployeeId, cancellationToken);
+
+        if (exists)
+        {
+            // Spec HR-06: exactly one slip per (entry, employee). The DB unique index
+            // UQ_SalarySlip_Entry_Employee is the authority; this pre-check is 409 UX only.
+            throw new HrValidationException(
+                HrPayrollErrorCodes.DuplicateSalarySlip,
+                $"A salary slip for employee '{slip.EmployeeId}' already exists in payroll entry '{slip.PayrollEntryId}'.");
+        }
+
+        await _dbContext.SalarySlips.AddAsync(slip, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AddSlipLinesAsync(IReadOnlyList<SalarySlipLine> lines, CancellationToken cancellationToken = default)
+    {
+        _dbContext.SalarySlipLines.AddRange(lines);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<bool> SlipExistsAsync(Guid payrollEntryId, Guid employeeId, CancellationToken cancellationToken = default)
+        => _dbContext.SalarySlips
+            .AnyAsync(s => s.PayrollEntryId == payrollEntryId && s.EmployeeId == employeeId, cancellationToken);
+
+    public async Task<IReadOnlyList<SalarySlip>> GetSlipsByEntryAsync(Guid payrollEntryId, CancellationToken cancellationToken = default)
+        => await _dbContext.SalarySlips
+            .Include(s => s.Lines)
+            .Where(s => s.PayrollEntryId == payrollEntryId)
+            .OrderBy(s => s.SlipNumber)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<SalarySlipLine>> GetSlipLinesByEntryAsync(Guid payrollEntryId, CancellationToken cancellationToken = default)
+        => await _dbContext.SalarySlipLines
+            .Where(l => l.Slip != null && l.Slip.PayrollEntryId == payrollEntryId)
+            .OrderBy(l => l.Slip!.SlipNumber)
+            .ThenBy(l => l.ComponentName)
+            .ToListAsync(cancellationToken);
+
+    public async Task UpdateSlipAsync(SalarySlip slip, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(nameof(SalarySlip), slip.Id, ex);
+        }
+    }
+
+    public async Task AddGlEntriesAsync(IReadOnlyList<GLEntry> glEntries, CancellationToken cancellationToken = default)
+    {
+        _dbContext.GLEntries.AddRange(glEntries);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<GLEntry>> GetAccrualGlEntriesAsync(Guid payrollEntryId, CancellationToken cancellationToken = default)
+        => await _dbContext.GLEntries
+            .Where(g => g.VoucherId == payrollEntryId && g.VoucherType == PayrollVoucherType && !g.IsCancelled)
+            .OrderBy(g => g.Id)
+            .ToListAsync(cancellationToken);
+
+    private const string PayrollVoucherType = "Payroll";
+
+    private async Task<string> NextSequenceAsync(
+        string table, string column, Guid companyId, string prefix, int year, CancellationToken cancellationToken)
+    {
+        var transaction = _dbContext.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "Payroll numbering must run inside the posting transaction (Constitution III.4): "
+                + "outside one the UPDLOCK/HOLDLOCK range lock cannot protect the sequence.");
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        var tenantId = _dbContext.CurrentTenantId;
+        var pattern = $"{prefix}-{year}-%";
+
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            $"SELECT MAX({column}) FROM {table} WITH (UPDLOCK, HOLDLOCK) "
+            + $"WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND {column} LIKE @Pattern;";
+        command.Transaction = transaction.GetDbTransaction();
+
+        AddParameter(command, "@TenantId", tenantId);
+        AddParameter(command, "@CompanyId", companyId);
+        AddParameter(command, "@Pattern", pattern);
+
+        var scalar = await command.ExecuteScalarAsync(cancellationToken);
+        return FormatSequence(prefix, year, scalar as string);
+    }
+
+    private async Task<string> NextGlSequenceAsync(
+        Guid companyId, string prefix, int year, CancellationToken cancellationToken)
+    {
+        var transaction = _dbContext.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "Voucher numbering must run inside the posting transaction (Constitution III.4): "
+                + "outside one the UPDLOCK/HOLDLOCK range lock cannot protect the sequence.");
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        var tenantId = _dbContext.CurrentTenantId;
+        var pattern = $"{prefix}-{year}-%";
+
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT MAX(VoucherNo) FROM dbo.GLEntry WITH (UPDLOCK, HOLDLOCK) "
+            + "WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND VoucherNo LIKE @Pattern;";
+        command.Transaction = transaction.GetDbTransaction();
+
+        AddParameter(command, "@TenantId", tenantId);
+        AddParameter(command, "@CompanyId", companyId);
+        AddParameter(command, "@Pattern", pattern);
+
+        var scalar = await command.ExecuteScalarAsync(cancellationToken);
+        return FormatSequence(prefix, year, scalar as string);
+    }
+
+    private static string FormatSequence(string prefix, int year, string? max)
+    {
+        var nextSequence = 1;
+        if (!string.IsNullOrEmpty(max))
+        {
+            var separator = max.LastIndexOf('-');
+            if (separator < 0 || !int.TryParse(max[(separator + 1)..], out var currentSequence))
+            {
+                throw new InvalidOperationException(
+                    $"Stored voucher number '{max}' does not follow the PREFIX-YYYY-NNNNN format.");
+            }
+
+            if (currentSequence >= 99999)
+            {
+                throw new InvalidOperationException(
+                    $"Voucher sequence for '{prefix}-{year}' is exhausted (max 99999).");
+            }
+
+            nextSequence = currentSequence + 1;
+        }
+
+        return $"{prefix}-{year}-{nextSequence:D5}";
+    }
+
+    private static void AddParameter(System.Data.Common.DbCommand command, string name, object value)
+    {
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Value = value;
+        command.Parameters.Add(parameter);
+    }
 }

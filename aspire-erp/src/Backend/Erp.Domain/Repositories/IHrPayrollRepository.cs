@@ -62,4 +62,62 @@ public interface IHrPayrollRepository
     // Assignments
     Task AddAssignmentAsync(SalaryStructureAssignment assignment, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SalaryStructureAssignment>> GetAssignmentsByEmployeeAsync(Guid employeeId, CancellationToken cancellationToken = default);
+
+    /// <summary>All assignments of one company - the batch-eligibility read (Task 12.3).</summary>
+    Task<IReadOnlyList<SalaryStructureAssignment>> GetAssignmentsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    // Payroll batch engine (Tasks 12.3-12.4): entries, slips, slip lines and the GL writes.
+    // Same growth precedent as the manufacturing repository (masters first, workflow second).
+
+    /// <summary>
+    /// Gapless batch number (Constitution III.4): SELECT MAX(PayrollNumber) WITH
+    /// (UPDLOCK, HOLDLOCK) inside the AMBIENT submit transaction, scoped to
+    /// (TenantId, CompanyId, year). A rolled-back submit consumes NO number.
+    /// </summary>
+    Task<string> NextPayrollNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gapless GL voucher number (Constitution III.4): SELECT MAX(VoucherNo) WITH
+    /// (UPDLOCK, HOLDLOCK) over dbo.GLEntry inside the AMBIENT posting transaction, scoped to
+    /// (TenantId, CompanyId, prefix-year). The payroll GL prefix is PYR.
+    /// </summary>
+    Task<string> NextVoucherNumberAsync(Guid companyId, string prefix, int year, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// HR-06 live race guard: takes the UPDLOCK/HOLDLOCK range lock over one entry's slip rows
+    /// (held to transaction end) so concurrent slip inserts for the same entry serialize instead
+    /// of racing past the existence check. The DB unique index stays the authority.
+    /// </summary>
+    Task LockEntrySlipsAsync(Guid payrollEntryId, CancellationToken cancellationToken = default);
+
+    Task AddPayrollEntryAsync(PayrollEntry entry, CancellationToken cancellationToken = default);
+    Task<PayrollEntry?> GetPayrollEntryByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves the mutated entry (status transitions, totals, voucher links). Translates EF's
+    /// <c>DbUpdateConcurrencyException</c> (RowVersion WHERE clause matched 0 rows) into
+    /// <see cref="Exceptions.ConcurrencyConflictException"/>, mirroring the manufacturing repository.
+    /// </summary>
+    Task UpdatePayrollEntryAsync(PayrollEntry entry, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Persists one slip. Rejects a second slip for the same (entry, employee) pair with a
+    /// typed <c>duplicate_salary_slip</c> failure (spec HR-06 - exactly one slip; the DB unique
+    /// index is the authority, this pre-check is 409 UX only).
+    /// </summary>
+    Task AddSlipAsync(SalarySlip slip, CancellationToken cancellationToken = default);
+    Task AddSlipLinesAsync(IReadOnlyList<SalarySlipLine> lines, CancellationToken cancellationToken = default);
+    Task<bool> SlipExistsAsync(Guid payrollEntryId, Guid employeeId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SalarySlip>> GetSlipsByEntryAsync(Guid payrollEntryId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SalarySlipLine>> GetSlipLinesByEntryAsync(Guid payrollEntryId, CancellationToken cancellationToken = default);
+
+    /// <summary>Saves the mutated slip (Submitted/Cancelled transitions). Same concurrency translation as <see cref="UpdatePayrollEntryAsync"/>.</summary>
+    Task UpdateSlipAsync(SalarySlip slip, CancellationToken cancellationToken = default);
+
+    /// <summary>Appends GL lines (inside the ambient posting transaction). GLEntry stays INSERT-ONLY.</summary>
+    Task AddGlEntriesAsync(IReadOnlyList<GLEntry> glEntries, CancellationToken cancellationToken = default);
+
+    /// <summary>Live accrual lines of one entry (VoucherType "Payroll", VoucherId = entry id), ordered by id - the cancel-mirror source.</summary>
+    Task<IReadOnlyList<GLEntry>> GetAccrualGlEntriesAsync(Guid payrollEntryId, CancellationToken cancellationToken = default);
 }

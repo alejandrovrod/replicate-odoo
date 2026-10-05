@@ -43,6 +43,10 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.DefaultReceivableAccountCode).HasMaxLength(50);
         builder.Property(c => c.DefaultIncomeAccountCode).HasMaxLength(50);
 
+        // Block B (Tasks 12.3-12.4, decision D3): the payroll-payable GL default. The Block C
+        // migration adds the physical column; the mapping lands now so the model is complete.
+        builder.Property(c => c.PayrollPayableAccountCode).HasMaxLength(50);
+
         builder.Property(c => c.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(c => c.Tenant)

@@ -48,4 +48,46 @@ internal static class HrAccountGuards
 
         return account;
     }
+
+    /// <summary>
+    /// Decision D3 (Tasks 12.3-12.4, same shape as the manufacture absorption leg): company-level
+    /// GL defaults are stored as account CODES and resolve here to exactly one active leaf
+    /// account of the company (missing = configuration failure, ambiguous = configuration
+    /// failure - both loud, never silent).
+    /// </summary>
+    internal static async Task<Account> RequireAccountByCodeAsync(
+        IAccountRepository accounts,
+        Guid companyId,
+        string? accountCode,
+        string settingName,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(accountCode))
+        {
+            throw new HrValidationException(
+                HrPayrollErrorCodes.InvalidGlAccount,
+                $"Company '{companyId}' does not configure {settingName}. "
+                + "Seed it with an active leaf account code (e.g. PayrollPayableAccountCode = '2150').");
+        }
+
+        var matches = await accounts.FindActiveLeafByCodeAsync(companyId, accountCode, cancellationToken);
+
+        if (matches.Count == 0)
+        {
+            throw new HrValidationException(
+                HrPayrollErrorCodes.InvalidGlAccount,
+                $"{settingName} = '{accountCode}' does not resolve to an ACTIVE LEAF account of company "
+                + $"'{companyId}'. Seed the account (IsActive = 1, IsGroup = 0) or fix the company setting.");
+        }
+
+        if (matches.Count > 1)
+        {
+            throw new HrValidationException(
+                HrPayrollErrorCodes.InvalidGlAccount,
+                $"{settingName} = '{accountCode}' is ambiguous: {matches.Count} active leaf accounts share that "
+                + $"code in company '{companyId}'. Account codes must be unique per company.");
+        }
+
+        return matches[0];
+    }
 }

@@ -24,6 +24,10 @@
          orchestration and the VI.4 idempotency policy, all tested against Domain contracts only. -->
     <ProjectReference Include="..\..\src\Backend\Erp.Domain\Erp.Domain.csproj" />
     <ProjectReference Include="..\..\src\Backend\Erp.Application\Erp.Application.csproj" />
+    <!-- Block A-fill (08-crm): CrmModelMappingTests builds AppDbContext.Model OFFLINE (no
+         connection opened) to verify the new Lead/Opportunity/CRMActivity configurations.
+         Test-only reference; production code keeps the Application -> Domain direction. -->
+    <ProjectReference Include="..\..\src\Backend\Erp.Infrastructure\Erp.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

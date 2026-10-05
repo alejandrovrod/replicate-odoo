@@ -119,6 +119,12 @@ public class AppDbContext : DbContext
 
     public DbSet<SalarySlipLine> SalarySlipLines => Set<SalarySlipLine>();
 
+    public DbSet<Lead> Leads => Set<Lead>();
+
+    public DbSet<Opportunity> Opportunities => Set<Opportunity>();
+
+    public DbSet<CRMActivity> CRMActivities => Set<CRMActivity>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

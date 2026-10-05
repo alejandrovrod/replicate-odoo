@@ -23,6 +23,8 @@ using Erp.Application.Features.Manufacturing.Commands;
 using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Application.Features.Assets.Commands;
 using Erp.Application.Features.Assets.Queries;
+using Erp.Application.Features.Crm.Commands;
+using Erp.Application.Features.Crm.DTOs;
 using Erp.Application.Features.HrPayroll.Commands;
 using Erp.Application.Features.HrPayroll.Queries;
 using Erp.Application.Features.Warehouses.Commands;
@@ -227,6 +229,17 @@ builder.Services.AddScoped<IQueryHandler<GetEmployeesQuery, IReadOnlyList<Employ
 builder.Services.AddScoped<IQueryHandler<GetSalaryComponentsQuery, IReadOnlyList<SalaryComponentDto>>, GetSalaryComponentsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetSalaryStructuresQuery, IReadOnlyList<SalaryStructureDto>>, GetSalaryStructuresQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetStructureAssignmentsQuery, IReadOnlyList<SalaryStructureAssignmentDto>>, GetStructureAssignmentsQueryHandler>();
+
+// CRM & Sales Pipeline (Block A, tasks 11.1-11.7): lead/opportunity repository (EF
+// CrmRepository implements both the adopted ICrmRepository and the new
+// ICrmActivityRepository through the SAME scoped AppDbContext - the SalesRepository dual
+// precedent) and the three adopted command handlers. Registered from day one (banking
+// precedent); stage-advance/audit controllers land in Block B.
+builder.Services.AddScoped<ICrmRepository, CrmRepository>();
+builder.Services.AddScoped<ICrmActivityRepository, CrmRepository>();
+builder.Services.AddScoped<ICommandHandler<IngestLeadCommand, Result<Guid>>, IngestLeadCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<ConvertLeadCommand, Result<ConvertLeadResultDto>>, ConvertLeadCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<ReopenOpportunityCommand, Result<Guid>>, ReopenOpportunityCommandHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

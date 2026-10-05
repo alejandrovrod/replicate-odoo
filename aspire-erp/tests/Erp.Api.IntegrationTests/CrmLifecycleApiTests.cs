@@ -37,10 +37,14 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
 
     private readonly ErpApiFactory _factory;
 
+    /// <summary>scripts/seed-dev-stock.sql: IT-001 Steel Bracket - the catalog item the C2 live tests order.</summary>
+    private static readonly Guid SeededItemId = Guid.Parse("c0000000-0000-4000-8000-000000000001");
+
     /// <summary>Every per-test row this class created, for FK-order cleanup at Dispose.</summary>
     private readonly List<Guid> _leadIds = new();
     private readonly List<Guid> _opportunityIds = new();
     private readonly List<Guid> _customerIds = new();
+    private readonly List<Guid> _salesOrderIds = new();
 
     public CrmLifecycleApiTests(ErpApiFactory factory) => _factory = factory;
 
@@ -260,6 +264,11 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         var row = JsonNode.Parse(await board.Content.ReadAsStringAsync())!.AsArray()
             .Single(n => n!["id"]!.GetValue<Guid>() == opportunityId);
         Assert.Equal("Negotiation", row!["stage"]!.GetValue<string>());
+
+        // Fix-pass W3 (temporal-history proof, zero production-code change): the pre-reopen
+        // Lost row with its loss reason survives in OpportunityHistory - spec CRM-05 "loss
+        // reason preserved in audit history".
+        Assert.True(await HasLostHistoryRowAsync(opportunityId, "Budget frozen Q1"));
     }
 
     // ------------------------------------------------------- CRM-06 race live
@@ -301,6 +310,156 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         var deal = await ReadOpportunityAsync(opportunityId);
         Assert.Equal(winnerStage, deal.Stage);
         Assert.Equal("Open", deal.Status);
+    }
+
+    // --------------------------------- CRM-02 1-click sales-order creation live
+
+    /// <summary>
+    /// Fix-pass C2 live: a ClosedWon deal converts to a formal sales order in ONE call -
+    /// 201 with the gapless SO number, Draft status and server-side totals equal to the
+    /// opportunity amount (single line: quantity 1 at the deal amount) - while the linkage
+    /// note lands on the deal (SalesOrder carries no OpportunityId FK) and the converted
+    /// customer owns exactly one order row.
+    /// </summary>
+    [Fact]
+    public async Task CreateSalesOrder_WonDeal_Returns201DraftOrderLinkedByNote()
+    {
+        using var client = CreateClient();
+        var tag = Guid.NewGuid().ToString("N")[..8];
+        var (leadId, opportunityId, customerId) = await SetupConvertedDealAsync(client, tag, 15000m, 25m);
+        _leadIds.Add(leadId);
+        _opportunityIds.Add(opportunityId);
+        _customerIds.Add(customerId);
+
+        using var toWon = await PostAdvanceAsync(client, opportunityId, "ClosedWon");
+        Assert.Equal(HttpStatusCode.OK, toWon.StatusCode);
+
+        using var created = await PostWithKeyAsync(
+            client, HttpMethod.Post,
+            $"/api/v1/opportunities/{opportunityId}/create-sales-order?companyId={ErpApiFactory.DevCompanyId}",
+            new
+            {
+                itemId = SeededItemId,
+                quantity = 1m,
+                rate = 15000m,
+                createdByUserId = Guid.NewGuid(),
+            });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.NotNull(created.Headers.Location);
+
+        var order = JsonNode.Parse(await created.Content.ReadAsStringAsync())!;
+        var orderId = order["id"]!.GetValue<Guid>();
+        _salesOrderIds.Add(orderId);
+        Assert.Matches(@"^SO-\d{4}-\d{5}$", order["orderNumber"]!.GetValue<string>());
+        Assert.Equal("Draft", order["status"]!.GetValue<string>());
+        Assert.Equal(customerId, order["customerId"]!.GetValue<Guid>());
+        Assert.Equal(15000m, order["grandTotal"]!.GetValue<decimal>());
+        var line = Assert.Single(order["lines"]!.AsArray());
+        Assert.Equal((SeededItemId, 1m, 15000m), (
+            line!["itemId"]!.GetValue<Guid>(),
+            line["quantity"]!.GetValue<decimal>(),
+            line["rate"]!.GetValue<decimal>()));
+
+        // Delta oracle: the converted customer owns exactly this one order row.
+        Assert.Equal(1, await CountSalesOrdersAsync(customerId));
+
+        // Linkage proof: SalesOrder has no OpportunityId FK, so the deal carries a note
+        // naming the created order number (the CRM-03 conversion-note precedent).
+        Assert.True(await HasSalesOrderNoteAsync(
+            opportunityId, order["orderNumber"]!.GetValue<string>()));
+    }
+
+    /// <summary>
+    /// C2 guard live: an OPEN deal cannot mint a sales order - 409
+    /// <c>crm_opportunity_not_won</c> with zero new order rows (zero-write proof).
+    /// </summary>
+    [Fact]
+    public async Task CreateSalesOrder_OpenDeal_Is409WithZeroNewOrders()
+    {
+        using var client = CreateClient();
+        var tag = Guid.NewGuid().ToString("N")[..8];
+        var (leadId, opportunityId, customerId) = await SetupConvertedDealAsync(client, tag, 15000m, 25m);
+        _leadIds.Add(leadId);
+        _opportunityIds.Add(opportunityId);
+        _customerIds.Add(customerId);
+
+        using var rejected = await PostWithKeyAsync(
+            client, HttpMethod.Post,
+            $"/api/v1/opportunities/{opportunityId}/create-sales-order?companyId={ErpApiFactory.DevCompanyId}",
+            new { itemId = SeededItemId, quantity = 1m, rate = 15000m });
+        await AssertProblemAsync(
+            rejected, HttpStatusCode.Conflict, "Opportunity Conflict", "crm_opportunity_not_won");
+        Assert.Equal(0, await CountSalesOrdersAsync(customerId));
+    }
+
+    // ------------------------------------------------- W1 concurrent-ingest race live
+
+    /// <summary>
+    /// Fix-pass W1 live: two TRULY concurrent ingests carrying the SAME
+    /// <c>(CompanyId, Source, DeduplicationKey)</c> triple (distinct lead codes AND distinct
+    /// idempotency keys, so neither the HTTP filter nor the pre-check can serialize them)
+    /// resolve to exactly one 201 plus one 200 <c>duplicate=true</c> naming the SAME lead id
+    /// - and the filtered unique index <c>UQ_Lead_Company_Source_ExternalRef</c> guarantees
+    /// exactly one lead row (the loser re-reads the winner, zero new rows).
+    /// </summary>
+    [Fact]
+    public async Task ConcurrentIngests_SameDedupTriple_ExactlyOneWinsWithDuplicateTrue()
+    {
+        using var client = CreateClient();
+        var tag = Guid.NewGuid().ToString("N")[..8];
+        var dedupKey = $"crm-it-{tag}-race-1";
+
+        var racerOne = Task.Run(() => PostIngestAsync(client, $"CRM-IT-{tag}-R1", dedupKey, "Race Ana"));
+        var racerTwo = Task.Run(() => PostIngestAsync(client, $"CRM-IT-{tag}-R2", dedupKey, "Race Ana Again"));
+        using var first = await racerOne;
+        using var second = await racerTwo;
+
+        var outcomes = new[] { first, second };
+        var winner = Assert.Single(outcomes, r => r.StatusCode == HttpStatusCode.Created);
+        var loser = Assert.Single(outcomes, r => r.StatusCode == HttpStatusCode.OK);
+
+        var winnerBody = JsonNode.Parse(await winner.Content.ReadAsStringAsync())!;
+        var loserBody = JsonNode.Parse(await loser.Content.ReadAsStringAsync())!;
+        Assert.False(winnerBody["duplicate"]!.GetValue<bool>());
+        Assert.True(loserBody["duplicate"]!.GetValue<bool>());
+        var winnerId = winnerBody["lead"]!["id"]!.GetValue<Guid>();
+        Assert.Equal(winnerId, loserBody["lead"]!["id"]!.GetValue<Guid>());
+        _leadIds.Add(winnerId);
+
+        // Exactly one lead row for the triple - no double insert, no lost update.
+        Assert.Equal(1, await CountLeadsByDedupKeyAsync(dedupKey));
+    }
+
+    // ------------------------------------------------- S3 reopen-probability guard live
+
+    /// <summary>
+    /// Fix-pass S3 live: reopening with an out-of-range probability is a 400
+    /// <c>crm_invalid_probability_range</c> (the advance guard mirrored) and the Lost deal
+    /// stays untouched - zero writes.
+    /// </summary>
+    [Fact]
+    public async Task Reopen_OutOfRangeProbability_Is400WithZeroWrites()
+    {
+        using var client = CreateClient();
+        var tag = Guid.NewGuid().ToString("N")[..8];
+        var (leadId, opportunityId, customerId) = await SetupConvertedDealAsync(client, tag, 20000m, 25m);
+        _leadIds.Add(leadId);
+        _opportunityIds.Add(opportunityId);
+        _customerIds.Add(customerId);
+
+        using var lost = await PostAdvanceAsync(client, opportunityId, "ClosedLost", LossReason: "Budget frozen Q1");
+        Assert.Equal(HttpStatusCode.OK, lost.StatusCode);
+
+        using var rejected = await PostWithKeyAsync(
+            client, HttpMethod.Post,
+            $"/api/v1/opportunities/{opportunityId}/reopen?companyId={ErpApiFactory.DevCompanyId}&newProbability=150",
+            new { });
+        await AssertProblemAsync(
+            rejected, HttpStatusCode.BadRequest, "Opportunity Rejected", "crm_invalid_probability_range");
+
+        var deal = await ReadOpportunityAsync(opportunityId);
+        Assert.Equal(("ClosedLost", "Lost", 0m), (deal.Stage, deal.Status, deal.Probability));
+        Assert.Equal("Budget frozen Q1", deal.LossReason);
     }
 
     // ---------------------------------------------------------------------------------- helpers
@@ -496,10 +655,52 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         return (long)(await command.ExecuteScalarAsync())! > 0;
     }
 
+    private static async Task<int> CountSalesOrdersAsync(Guid customerId)
+    {
+        using var connection = new SqlConnection(ErpApiFactory.DevConnectionString);
+        await connection.OpenAsync();
+        await using var command = new SqlCommand(
+            "SELECT COUNT_BIG(*) FROM dbo.SalesOrder WHERE TenantId = @TenantId AND CustomerId = @CustomerId;",
+            connection);
+        command.Parameters.AddWithValue("@TenantId", ErpApiFactory.DevTenantId);
+        command.Parameters.AddWithValue("@CustomerId", customerId);
+        return checked((int)(long)(await command.ExecuteScalarAsync())!);
+    }
+
+    private static async Task<bool> HasSalesOrderNoteAsync(Guid opportunityId, string orderNumber)
+    {
+        using var connection = new SqlConnection(ErpApiFactory.DevConnectionString);
+        await connection.OpenAsync();
+        await using var command = new SqlCommand(
+            "SELECT COUNT_BIG(*) FROM dbo.CRMActivity WHERE OpportunityId = @Id AND Subject LIKE @Pattern;",
+            connection);
+        command.Parameters.AddWithValue("@Id", opportunityId);
+        command.Parameters.AddWithValue("@Pattern", $"%{orderNumber}%");
+        return (long)(await command.ExecuteScalarAsync())! > 0;
+    }
+
     /// <summary>
-    /// Removes every per-test row in FK order (activities -&gt; opportunities -&gt; leads -&gt;
-    /// customers). Idempotency reservations stay: they key unique per-run GUIDs and no other
-    /// class reads them.
+    /// Fix-pass W3 temporal proof: the pre-reopen Lost version of the deal - with its loss
+    /// reason - is preserved in the system-versioned history table (Opportunity is temporal,
+    /// plan.md §1), so the CRM-05 audit requirement holds with zero production-code change.
+    /// </summary>
+    private static async Task<bool> HasLostHistoryRowAsync(Guid opportunityId, string lossReason)
+    {
+        using var connection = new SqlConnection(ErpApiFactory.DevConnectionString);
+        await connection.OpenAsync();
+        await using var command = new SqlCommand(
+            "SELECT COUNT_BIG(*) FROM dbo.OpportunityHistory "
+            + "WHERE Id = @Id AND Status = N'Lost' AND LossReason = @Reason;",
+            connection);
+        command.Parameters.AddWithValue("@Id", opportunityId);
+        command.Parameters.AddWithValue("@Reason", lossReason);
+        return (long)(await command.ExecuteScalarAsync())! > 0;
+    }
+
+    /// <summary>
+    /// Removes every per-test row in FK order (activities + order lines -&gt; orders -&gt;
+    /// opportunities -&gt; leads -&gt; customers). Idempotency reservations stay: they key
+    /// unique per-run GUIDs and no other class reads them.
     /// </summary>
     public void Dispose()
     {
@@ -509,6 +710,8 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         foreach (var (sql, ids) in new (string, List<Guid>)[]
         {
             ("DELETE FROM dbo.CRMActivity WHERE OpportunityId IN (SELECT value FROM OPENJSON(@Ids));", _opportunityIds),
+            ("DELETE FROM dbo.SalesOrderItem WHERE SalesOrderId IN (SELECT value FROM OPENJSON(@Ids));", _salesOrderIds),
+            ("DELETE FROM dbo.SalesOrder WHERE Id IN (SELECT value FROM OPENJSON(@Ids));", _salesOrderIds),
             ("DELETE FROM dbo.Opportunity WHERE Id IN (SELECT value FROM OPENJSON(@Ids));", _opportunityIds),
             ("DELETE FROM dbo.Lead WHERE Id IN (SELECT value FROM OPENJSON(@Ids));", _leadIds),
             ("DELETE FROM dbo.Customer WHERE Id IN (SELECT value FROM OPENJSON(@Ids));", _customerIds),

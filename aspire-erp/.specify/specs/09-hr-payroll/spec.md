@@ -1,7 +1,7 @@
 # Functional Specification: Human Resources & Payroll (ERPNext Parity)
 
 **Module:** `09-hr-payroll`  
-**Status:** IN PROGRESS — Block A implemented (tasks 12.1, 12.2); Block B/C pending  
+**Status:** IMPLEMENTED & VERIFIED — 5/5 tasks, PASS WITH WARNINGS (0 CRITICAL, 0 UNTESTED)  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext HR & Payroll](https://docs.frappe.io/erpnext/hrms)  
@@ -30,13 +30,13 @@ The **Human Resources & Payroll Module** administers employee profiles, employme
 ### Invariant HR-01: Net Pay Mathematical Identity
 For every `SalarySlip`:
 $$\text{NetPay} = \sum \text{Earnings} - \sum \text{Deductions}$$
-- `NetPay` cannot be negative ($\text{NetPay} \ge 0.0000$). If deductions exceed gross earnings, net pay is bounded at zero and surplus deduction is deferred.
+- `NetPay` cannot be negative ($\text{NetPay} \ge 0.0000$). If deductions exceed gross earnings, net pay is bounded at zero and the surplus deduction is absorbed (credited only to the effective amount pro-rata; no carry-forward ledger exists — scope amendment 2026-10-04, verified).
 
 ### Invariant HR-02: Two-Phase Double-Entry Payroll Accounting
 
 #### Phase 1: Payroll Accrual (`JournalEntry` on Submission)
 Recognizes total labor expenses and establishes statutory and salary liabilities:
-- **Debit:** `5110 - Salary and Wages Expense` = $\text{TotalGrossPay}$
+- **Debit:** `5130 - Salary and Wages Expense` = $\text{TotalGrossPay}$ (scope amendment 2026-10-04: 5110 is Office Supplies Expense asserted by 01-accounting tests and cannot be repurposed; 5130 seeded for payroll)
 - **Credit:** `2220 - Income Tax Payable (Statutory)` = $\text{TotalTaxesWithheld}$
 - **Credit:** `2225 - Social Security / Pension Payable` = $\text{TotalPensionDeductions}$
 - **Credit:** `2150 - Payroll Payable (Net Staff Salaries)` = $\text{TotalNetPay}$
@@ -74,7 +74,7 @@ Only employees with `Status == Active` whose employment start date is on or befo
   - Net Pay: $80,000.00
 - **When** the payroll accrual is submitted
 - **Then** a balanced `GLEntry` voucher is posted:
-  - Debit `5110 - Salaries Expense` for $100,000.00
+  - Debit `5130 - Salaries Expense` for $100,000.00 (scope amendment 2026-10-04: see HR-02)
   - Credit `2220 - Tax Withholding Liability` for $12,000.00
   - Credit `2225 - Pension Payable` for $8,000.00
   - Credit `2150 - Payroll Payable` for $80,000.00

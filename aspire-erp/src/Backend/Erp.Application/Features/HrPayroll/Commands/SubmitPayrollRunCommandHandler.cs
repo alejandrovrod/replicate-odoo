@@ -95,11 +95,30 @@ public sealed class SubmitPayrollRunCommandHandler
 
                 // Reserve the entry first (Draft, number assigned inside the transaction -
                 // Constitution III.4, the work-order precedent). Slips attach to it below.
+                var payrollNumber = await _hr.NextPayrollNumberAsync(company.Id, command.PostingDate.Year, token);
+
+                // Block C overlap guard (HR-06 live provability): a second submit for an
+                // overlapping period would double-pay (separate entries, no shared slip rows -
+                // the (PayrollEntryId, EmployeeId) unique index cannot catch it). Runs AFTER
+                // NextPayrollNumberAsync took its UPDLOCK/HOLDLOCK over the company's year
+                // range (held to transaction end) but BEFORE the entry row is inserted, so
+                // concurrent same-year submits serialize on the numbering lock and the loser
+                // observes the winner's committed entry here (409, zero writes). Cancelled
+                // runs released their period (mirror posted), so they never block a re-run.
+                if (await _hr.HasOverlappingEntryAsync(command.CompanyId, command.StartDate, command.EndDate, token))
+                {
+                    throw new HrValidationException(
+                        HrPayrollErrorCodes.PayrollPeriodOverlap,
+                        $"Company '{command.CompanyId}' already has a non-Cancelled payroll run overlapping "
+                        + $"[{command.StartDate:yyyy-MM-dd}..{command.EndDate:yyyy-MM-dd}]. "
+                        + "Cancel that run before submitting an overlapping period.");
+                }
+
                 var entry = new PayrollEntry
                 {
                     Id = Guid.NewGuid(),
                     CompanyId = company.Id,
-                    PayrollNumber = await _hr.NextPayrollNumberAsync(company.Id, command.PostingDate.Year, token),
+                    PayrollNumber = payrollNumber,
                     StartDate = command.StartDate,
                     EndDate = command.EndDate,
                     PostingDate = command.PostingDate,

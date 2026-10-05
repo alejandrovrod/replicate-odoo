@@ -95,6 +95,13 @@ public interface IHrPayrollRepository
     Task<IReadOnlyList<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Block C overlap guard (HR-06 live provability): true when a non-Cancelled entry of the
+    /// company overlaps [startDate, EndDate] (both bounds inclusive). Cancelled runs released
+    /// their accrual (mirror) and their period, so they never block a re-run.
+    /// </summary>
+    Task<bool> HasOverlappingEntryAsync(Guid companyId, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Saves the mutated entry (status transitions, totals, voucher links). Translates EF's
     /// <c>DbUpdateConcurrencyException</c> (RowVersion WHERE clause matched 0 rows) into
     /// <see cref="Exceptions.ConcurrencyConflictException"/>, mirroring the manufacturing repository.

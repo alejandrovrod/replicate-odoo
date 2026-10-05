@@ -637,4 +637,46 @@ public sealed class PayrollBatchTests
         Assert.Equal(HrPayrollErrorCodes.DuplicateSalarySlip, ex.Code);
         Assert.Equal(slipsBefore, _hr.Slips.Count);
     }
+
+    [Fact]
+    public async Task Submit_Rejects_Overlapping_Period_With_Zero_Writes()
+    {
+        SeedEmployee("E001");
+        var first = await SubmitAsync();
+        Assert.True(first.IsSuccess);
+        var glCount = _hr.AddedGlEntries.Count;
+
+        // Same October window again: the live Submitted entry blocks the re-run.
+        var second = await SubmitAsync();
+        Assert.False(second.IsSuccess);
+        Assert.Equal(HrPayrollErrorCodes.PayrollPeriodOverlap, second.Error!.Code);
+
+        // Partial-overlap (October-November) is blocked too; the winner is untouched.
+        var partial = await SubmitHandler().HandleAsync(new SubmitPayrollRunCommand(
+            _companyId, new DateOnly(2026, 10, 15), new DateOnly(2026, 11, 15), new DateOnly(2026, 11, 15)));
+        Assert.False(partial.IsSuccess);
+        Assert.Equal(HrPayrollErrorCodes.PayrollPeriodOverlap, partial.Error!.Code);
+
+        Assert.Single(_hr.Entries);
+        Assert.Equal(glCount, _hr.AddedGlEntries.Count);
+    }
+
+    [Fact]
+    public async Task Submit_Allows_Rerun_After_Cancel_Releases_Period()
+    {
+        SeedEmployee("E001");
+        var first = await SubmitAsync();
+        Assert.True(first.IsSuccess);
+
+        var cancelled = await CancelHandler().HandleAsync(
+            new CancelPayrollCommand(_companyId, first.Value!.Entry.Id));
+        Assert.True(cancelled.IsSuccess);
+
+        // The Cancelled run released its accrual (mirror) and its period: re-running the
+        // same October window prices the employee again instead of 409ing.
+        var rerun = await SubmitAsync();
+        Assert.True(rerun.IsSuccess);
+        Assert.Equal(1, rerun.Value!.CreatedSlipCount);
+        Assert.Equal(2, _hr.Entries.Count);
+    }
 }

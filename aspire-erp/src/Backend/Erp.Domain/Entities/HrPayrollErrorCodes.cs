@@ -74,4 +74,12 @@ public static class HrPayrollErrorCodes
     public const string InvalidStatusTransition = "invalid_status_transition";
     public const string BankAccountNotFound = "bank_account_not_found";
     public const string AccrualVoucherNotFound = "accrual_voucher_not_found";
+
+    /// <summary>
+    /// Block C overlap guard (HR-06 live provability): a second submit whose period overlaps a
+    /// non-Cancelled entry of the same company is rejected before writing a single row. The
+    /// (PayrollEntryId, EmployeeId) unique index cannot catch same-period double-pay (separate
+    /// entries, no shared slip rows) - this guard closes that real money hole.
+    /// </summary>
+    public const string PayrollPeriodOverlap = "payroll_period_overlap";
 }

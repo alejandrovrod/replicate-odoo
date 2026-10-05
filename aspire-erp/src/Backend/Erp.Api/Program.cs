@@ -223,6 +223,10 @@ builder.Services.AddScoped<ICommandHandler<DisbursePayrollCommand, Result<Payrol
 builder.Services.AddScoped<ICommandHandler<CancelPayrollCommand, Result<PayrollEntryDto>>, CancelPayrollCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPayrollEntriesQuery, IReadOnlyList<PayrollEntryDto>>, GetPayrollEntriesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPayrollEntryQuery, PayrollEntryDetailDto?>, GetPayrollEntryQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetEmployeesQuery, IReadOnlyList<EmployeeDto>>, GetEmployeesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalaryComponentsQuery, IReadOnlyList<SalaryComponentDto>>, GetSalaryComponentsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalaryStructuresQuery, IReadOnlyList<SalaryStructureDto>>, GetSalaryStructuresQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetStructureAssignmentsQuery, IReadOnlyList<SalaryStructureAssignmentDto>>, GetStructureAssignmentsQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

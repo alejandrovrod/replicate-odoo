@@ -266,6 +266,7 @@ public sealed class PayrollEntriesController : ControllerBase
                     error.Code),
             HrPayrollErrorCodes.InvalidStatusTransition
                 or HrPayrollErrorCodes.DuplicateSalarySlip
+                or HrPayrollErrorCodes.PayrollPeriodOverlap
                 or AccountingErrorCodes.FiscalPeriodLocked
                 or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,

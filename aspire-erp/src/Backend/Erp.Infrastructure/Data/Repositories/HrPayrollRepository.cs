@@ -240,6 +240,24 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
             .Include(e => e.Slips)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
+    /// <summary>
+    /// Block C overlap guard read: any non-Cancelled entry of the company whose window
+    /// intersects [startDate, endDate] blocks the submit. Runs INSIDE the ambient submit
+    /// transaction AFTER <see cref="NextPayrollNumberAsync"/> took its UPDLOCK/HOLDLOCK over
+    /// the company's year range, so concurrent same-year submits serialize on the numbering
+    /// lock first and the loser observes the winner's committed entry (409, zero writes).
+    /// Status is stored as its NAME (HasConversion&lt;string&gt;), so the enum comparison
+    /// below translates to a string inequality.
+    /// </summary>
+    public Task<bool> HasOverlappingEntryAsync(Guid companyId, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken = default)
+        => _dbContext.PayrollEntries
+            .AnyAsync(
+                e => e.CompanyId == companyId
+                    && e.Status != PayrollEntryStatus.Cancelled
+                    && e.StartDate <= endDate
+                    && e.EndDate >= startDate,
+                cancellationToken);
+
     public async Task<IReadOnlyList<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
         => await _dbContext.PayrollEntries
             .Where(e => e.CompanyId == companyId)
@@ -276,9 +294,29 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Persists slip lines. Lines that <see cref="AddSlipAsync"/> already cascade-saved through
+    /// the slip's <c>Lines</c> navigation arrive here tracked (Unchanged) and are SKIPPED -
+    /// re-adding them would insert every row a second time (live Block C proof: PK violation
+    /// on the second save). Lines that are still unsaved (Added) or untracked (Detached) are
+    /// inserted normally, so the method stays correct when called without the cascade.
+    /// </summary>
     public async Task AddSlipLinesAsync(IReadOnlyList<SalarySlipLine> lines, CancellationToken cancellationToken = default)
     {
-        _dbContext.SalarySlipLines.AddRange(lines);
+        var pending = lines
+            .Where(l =>
+            {
+                var state = _dbContext.Entry(l).State;
+                return state is EntityState.Detached or EntityState.Added;
+            })
+            .ToList();
+
+        if (pending.Count == 0)
+        {
+            return;
+        }
+
+        _dbContext.SalarySlipLines.AddRange(pending);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 

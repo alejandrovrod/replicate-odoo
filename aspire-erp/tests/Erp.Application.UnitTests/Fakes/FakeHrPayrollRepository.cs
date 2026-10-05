@@ -285,6 +285,13 @@ public sealed class FakeHrPayrollRepository : IHrPayrollRepository
     public Task<PayrollEntry?> GetPayrollEntryByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(_entries.FirstOrDefault(e => e.Id == id));
 
+    public Task<bool> HasOverlappingEntryAsync(Guid companyId, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken = default)
+        => Task.FromResult(_entries.Any(
+            e => e.CompanyId == companyId
+                && e.Status != PayrollEntryStatus.Cancelled
+                && e.StartDate <= endDate
+                && e.EndDate >= startDate));
+
     public Task<IReadOnlyList<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<PayrollEntry>>(
             _entries.Where(e => e.CompanyId == companyId).OrderByDescending(e => e.CreatedAt).ToList());

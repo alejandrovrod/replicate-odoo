@@ -2,6 +2,39 @@ using Erp.Domain.Entities;
 
 namespace Erp.Application.DTOs;
 
+/// <summary>Employee directory row (Task 12.5 read): identity, org links, dates and lifecycle.</summary>
+public sealed record EmployeeDto(
+    Guid Id,
+    Guid CompanyId,
+    string EmployeeNumber,
+    string FirstName,
+    string LastName,
+    string WorkEmail,
+    Guid? DepartmentId,
+    Guid? DesignationId,
+    DateOnly DateOfJoining,
+    DateOnly? DateOfRelieving,
+    SalaryMode SalaryMode,
+    EmploymentStatus Status,
+    bool IsActive)
+{
+    public static EmployeeDto Build(Employee employee) =>
+        new(
+            employee.Id,
+            employee.CompanyId,
+            employee.EmployeeNumber,
+            employee.FirstName,
+            employee.LastName,
+            employee.WorkEmail,
+            employee.DepartmentId,
+            employee.DesignationId,
+            employee.DateOfJoining,
+            employee.DateOfRelieving,
+            employee.SalaryMode,
+            employee.Status,
+            employee.IsActive);
+}
+
 /// <summary>Salary component payload (Task 12.2): the pay element plus its GL posting account.</summary>
 public sealed record SalaryComponentDto(
     Guid Id,

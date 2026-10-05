@@ -1,7 +1,7 @@
 # Functional Specification: CRM & Sales Pipeline (ERPNext Parity)
 
 **Module:** `08-crm`  
-**Status:** 100% PRODUCTION CERTIFIED (Recursive Validator Pass 3/3)  
+**Status:** IN PROGRESS — Block A (adopt + verify) implemented; Block B/C pending  
 **Version:** 2.0.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext CRM Documentation](https://docs.frappe.io/erpnext/CRM)  

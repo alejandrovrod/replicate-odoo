@@ -53,6 +53,25 @@ public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
     public Task<Opportunity?> GetOpportunityByIdAsync(Guid opportunityId, CancellationToken cancellationToken = default)
         => _dbContext.Opportunities.FirstOrDefaultAsync(o => o.Id == opportunityId, cancellationToken);
 
+    public Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default)
+        => _dbContext.Leads.FirstOrDefaultAsync(
+            l => l.CompanyId == companyId && l.Source == source && l.ExternalReference == externalReference,
+            cancellationToken);
+
+    public async Task<IReadOnlyList<Lead>> ListLeadsAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default)
+        => await _dbContext.Leads
+            .Where(l => l.CompanyId == companyId)
+            .OrderByDescending(l => l.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Opportunity>> ListOpportunitiesAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default)
+        => await _dbContext.Opportunities
+            .Where(o => o.CompanyId == companyId)
+            .OrderByDescending(o => o.OpportunityNumber)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
     public async Task AddLeadAsync(Lead lead, CancellationToken cancellationToken = default)
     {
         await _dbContext.Leads.AddAsync(lead, cancellationToken);

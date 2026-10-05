@@ -13,6 +13,18 @@ public interface ICrmRepository
     Task<Lead?> GetLeadByIdAsync(Guid leadId, CancellationToken cancellationToken = default);
     Task<Opportunity?> GetOpportunityByIdAsync(Guid opportunityId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Webhook replay lookup (Block B, spec CRM-04): the lead carrying this external reference
+    /// for the company/source, or null. Implemented by EF and every test fake.
+    /// </summary>
+    Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default);
+
+    /// <summary>Most recent leads of a company (the Block B list read).</summary>
+    Task<IReadOnlyList<Lead>> ListLeadsAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default);
+
+    /// <summary>Most recent opportunities of a company (the Block B board/list read).</summary>
+    Task<IReadOnlyList<Opportunity>> ListOpportunitiesAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default);
+
     Task AddLeadAsync(Lead lead, CancellationToken cancellationToken = default);
     Task UpdateLeadAsync(Lead lead, CancellationToken cancellationToken = default);
 

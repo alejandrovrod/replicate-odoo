@@ -25,6 +25,7 @@ using Erp.Application.Features.Assets.Commands;
 using Erp.Application.Features.Assets.Queries;
 using Erp.Application.Features.Crm.Commands;
 using Erp.Application.Features.Crm.DTOs;
+using Erp.Application.Features.Crm.Queries;
 using Erp.Application.Features.HrPayroll.Commands;
 using Erp.Application.Features.HrPayroll.Queries;
 using Erp.Application.Features.Warehouses.Commands;
@@ -237,9 +238,12 @@ builder.Services.AddScoped<IQueryHandler<GetStructureAssignmentsQuery, IReadOnly
 // precedent); stage-advance/audit controllers land in Block B.
 builder.Services.AddScoped<ICrmRepository, CrmRepository>();
 builder.Services.AddScoped<ICrmActivityRepository, CrmRepository>();
-builder.Services.AddScoped<ICommandHandler<IngestLeadCommand, Result<Guid>>, IngestLeadCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<IngestLeadCommand, Result<IngestLeadResultDto>>, IngestLeadCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<ConvertLeadCommand, Result<ConvertLeadResultDto>>, ConvertLeadCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<ReopenOpportunityCommand, Result<Guid>>, ReopenOpportunityCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<AdvanceOpportunityStageCommand, Result<OpportunityDto>>, AdvanceOpportunityStageCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetLeadsQuery, IReadOnlyList<LeadDto>>, GetLeadsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetOpportunitiesQuery, IReadOnlyList<OpportunityDto>>, GetOpportunitiesQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

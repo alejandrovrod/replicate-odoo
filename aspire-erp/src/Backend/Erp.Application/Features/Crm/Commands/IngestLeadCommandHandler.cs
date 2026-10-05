@@ -1,4 +1,5 @@
 using Erp.Application.Common;
+using Erp.Application.Features.Crm.DTOs;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Erp.Application.Features.Crm.Commands;
 
-public sealed class IngestLeadCommandHandler : ICommandHandler<IngestLeadCommand, Result<Guid>>
+public sealed class IngestLeadCommandHandler : ICommandHandler<IngestLeadCommand, Result<IngestLeadResultDto>>
 {
     private readonly ICrmRepository _crmRepository;
     private readonly ICompanyRepository _companyRepository;
@@ -21,7 +22,7 @@ public sealed class IngestLeadCommandHandler : ICommandHandler<IngestLeadCommand
         _companyRepository = companyRepository;
     }
 
-    public async Task<Result<Guid>> HandleAsync(IngestLeadCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result<IngestLeadResultDto>> HandleAsync(IngestLeadCommand command, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -29,6 +30,24 @@ public sealed class IngestLeadCommandHandler : ICommandHandler<IngestLeadCommand
                 ?? throw new CRMValidationException(
                     CRMErrorCodes.CompanyRequired,
                     $"Company '{command.CompanyId}' not found.");
+
+            // Spec CRM-04 replay: the (CompanyId, Source, DeduplicationKey) triple already
+            // exists - return it untouched (zero writes). A null/empty key means "no dedup
+            // requested" (manual entry): always insert.
+            if (!string.IsNullOrWhiteSpace(command.DeduplicationKey))
+            {
+                var existing = await _crmRepository.GetLeadByDedupKeyAsync(
+                    command.CompanyId,
+                    command.Source,
+                    command.DeduplicationKey!,
+                    cancellationToken);
+
+                if (existing is not null)
+                {
+                    return Result<IngestLeadResultDto>.Success(
+                        new IngestLeadResultDto(LeadDto.Build(existing), Duplicate: true));
+                }
+            }
 
             var lead = new Lead
             {
@@ -41,6 +60,9 @@ public sealed class IngestLeadCommandHandler : ICommandHandler<IngestLeadCommand
                 Email = command.Email,
                 Phone = command.Phone,
                 Source = command.Source,
+                ExternalReference = string.IsNullOrWhiteSpace(command.DeduplicationKey)
+                    ? null
+                    : command.DeduplicationKey,
                 Status = LeadStatus.Open,
                 IsActive = true
             };
@@ -55,11 +77,12 @@ public sealed class IngestLeadCommandHandler : ICommandHandler<IngestLeadCommand
 
             await _crmRepository.AddLeadAsync(lead, cancellationToken);
 
-            return Result<Guid>.Success(lead.Id);
+            return Result<IngestLeadResultDto>.Success(
+                new IngestLeadResultDto(LeadDto.Build(lead), Duplicate: false));
         }
         catch (CRMValidationException ex)
         {
-            return Result<Guid>.Failure(ex.Code, ex.Message);
+            return Result<IngestLeadResultDto>.Failure(ex.Code, ex.Message);
         }
     }
 }

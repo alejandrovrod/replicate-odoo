@@ -35,6 +35,7 @@ public sealed class LeadConfiguration : IEntityTypeConfiguration<Lead>
         builder.Property(l => l.Source).HasMaxLength(50).IsRequired().HasDefaultValue("Website");
         builder.Property(l => l.Status).HasMaxLength(30).IsRequired().HasDefaultValue("Open");
         builder.Property(l => l.IsActive).HasDefaultValue(true);
+        builder.Property(l => l.ExternalReference).HasMaxLength(100);
 
         builder.HasOne(l => l.Company)
             .WithMany()

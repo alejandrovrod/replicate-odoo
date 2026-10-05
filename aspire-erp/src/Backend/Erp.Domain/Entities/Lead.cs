@@ -50,6 +50,14 @@ public class Lead : ITenantEntity
     /// <summary>Indicates if the lead is actively being pursued.</summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// External deduplication reference for webhook intake (Block B, spec CRM-04): the caller's
+    /// idempotency/webhook id. Null for manually created leads. The (CompanyId, Source,
+    /// ExternalReference) triple identifies a replay - the column is added here with its EF
+    /// mapping, the physical migration lands in Block C.
+    /// </summary>
+    public string? ExternalReference { get; set; }
+
     public Company? Company { get; set; }
 
     /// <summary>

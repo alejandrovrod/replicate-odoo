@@ -74,6 +74,16 @@ public class CrmModelMappingTests
     }
 
     [Fact]
+    public void LeadMapping_ShouldCarryOptionalExternalReference_ForWebhookDedup()
+    {
+        var lead = BuildDesignModel().FindEntityType(typeof(Lead))!;
+
+        var externalReference = lead.FindProperty(nameof(Lead.ExternalReference))!;
+        Assert.True(externalReference.IsNullable);
+        Assert.Equal(100, externalReference.GetMaxLength());
+    }
+
+    [Fact]
     public void ActivityMapping_ShouldCascadeFromOpportunity_WithEnumNameType()
     {
         var activity = BuildDesignModel().FindEntityType(typeof(CRMActivity))!;

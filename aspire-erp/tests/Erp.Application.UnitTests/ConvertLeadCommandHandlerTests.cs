@@ -25,7 +25,7 @@ public class ConvertLeadCommandHandlerTests
         var crmRepo = new FakeCrmRepository { LeadToReturn = lead };
         var customerRepo = new FakeCustomerRepository();
 
-        var handler = new ConvertLeadCommandHandler(crmRepo, customerRepo, companyRepo);
+        var handler = new ConvertLeadCommandHandler(crmRepo, new FakeActivityRepository(), customerRepo, companyRepo);
         var cmd = new ConvertLeadCommand(companyId, leadId, "C-01");
 
         // Act
@@ -41,6 +41,79 @@ public class ConvertLeadCommandHandlerTests
         Assert.True(crmRepo.UpdateLeadCalled);
         
         Assert.Equal(LeadStatus.Converted, lead.Status);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldCopyConversionNote_WhenConverting()
+    {
+        // Arrange (Block B, task 11.4 audit trail): an assigned lead carries an author.
+        var companyId = Guid.NewGuid();
+        var leadId = Guid.NewGuid();
+        var assigneeId = Guid.NewGuid();
+
+        var companyRepo = new FakeCompanyRepository { CompanyToReturn = new Company { Id = companyId } };
+        var lead = new Lead
+        {
+            Id = leadId,
+            CompanyId = companyId,
+            Status = LeadStatus.Open,
+            LeadCode = "L-42",
+            LeadName = "Alex Rivera",
+            OrganizationName = "TechCorp",
+            AssignedToUserId = assigneeId
+        };
+        var crmRepo = new FakeCrmRepository { LeadToReturn = lead };
+        var activityRepo = new FakeActivityRepository();
+        var customerRepo = new FakeCustomerRepository();
+
+        var handler = new ConvertLeadCommandHandler(crmRepo, activityRepo, customerRepo, companyRepo);
+        var cmd = new ConvertLeadCommand(companyId, leadId, "C-42");
+
+        // Act
+        var result = await handler.HandleAsync(cmd);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var activity = Assert.Single(activityRepo.Activities);
+        Assert.Equal(result.Value.OpportunityId, activity.OpportunityId);
+        Assert.Equal(CRMActivityType.Note, activity.Type);
+        Assert.Equal("Converted from lead L-42", activity.Subject);
+        Assert.Contains("L-42", activity.Content!);
+        Assert.Contains("Alex Rivera", activity.Content!);
+        Assert.Contains("TechCorp", activity.Content!);
+        Assert.Equal(assigneeId, activity.CreatedByUserId);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldPreferCallerAuthor_OverAssignee()
+    {
+        // Arrange
+        var companyId = Guid.NewGuid();
+        var leadId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+
+        var companyRepo = new FakeCompanyRepository { CompanyToReturn = new Company { Id = companyId } };
+        var lead = new Lead
+        {
+            Id = leadId,
+            CompanyId = companyId,
+            Status = LeadStatus.Open,
+            LeadCode = "L-43",
+            LeadName = "Sam Lee",
+            AssignedToUserId = Guid.NewGuid()
+        };
+        var crmRepo = new FakeCrmRepository { LeadToReturn = lead };
+        var activityRepo = new FakeActivityRepository();
+
+        var handler = new ConvertLeadCommandHandler(crmRepo, activityRepo, new FakeCustomerRepository(), companyRepo);
+        var cmd = new ConvertLeadCommand(companyId, leadId, "C-43", ConvertedByUserId: callerId);
+
+        // Act
+        var result = await handler.HandleAsync(cmd);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(callerId, Assert.Single(activityRepo.Activities).CreatedByUserId);
     }
 
     private class FakeCompanyRepository : ICompanyRepository
@@ -66,6 +139,16 @@ public class ConvertLeadCommandHandlerTests
         public Task UpdateOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<string> NextOpportunityNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default) => Task.FromResult("OPP-001");
         public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) => operation(cancellationToken);
+        public Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default) => Task.FromResult<Lead?>(null);
+        public Task<System.Collections.Generic.IReadOnlyList<Lead>> ListLeadsAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Lead>>(new System.Collections.Generic.List<Lead>());
+        public Task<System.Collections.Generic.IReadOnlyList<Opportunity>> ListOpportunitiesAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Opportunity>>(new System.Collections.Generic.List<Opportunity>());
+    }
+
+    private class FakeActivityRepository : ICrmActivityRepository
+    {
+        public System.Collections.Generic.List<CRMActivity> Activities { get; } = new();
+        public Task AddActivityAsync(CRMActivity activity, CancellationToken cancellationToken = default) { Activities.Add(activity); return Task.CompletedTask; }
+        public Task<System.Collections.Generic.IReadOnlyList<CRMActivity>> ListByOpportunityAsync(Guid opportunityId, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<CRMActivity>>(Activities.FindAll(a => a.OpportunityId == opportunityId));
     }
 
     private class FakeCustomerRepository : ICustomerRepository

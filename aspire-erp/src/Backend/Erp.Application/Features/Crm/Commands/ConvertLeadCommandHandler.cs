@@ -12,15 +12,18 @@ namespace Erp.Application.Features.Crm.Commands;
 public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadCommand, Result<ConvertLeadResultDto>>
 {
     private readonly ICrmRepository _crmRepository;
+    private readonly ICrmActivityRepository _activityRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly ICompanyRepository _companyRepository;
 
     public ConvertLeadCommandHandler(
         ICrmRepository crmRepository,
+        ICrmActivityRepository activityRepository,
         ICustomerRepository customerRepository,
         ICompanyRepository companyRepository)
     {
         _crmRepository = crmRepository;
+        _activityRepository = activityRepository;
         _customerRepository = customerRepository;
         _companyRepository = companyRepository;
     }
@@ -119,6 +122,30 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
                 // 3. Mark Lead as Converted
                 lead.MarkAsConverted(opportunity.Id, customer.Id);
                 await _crmRepository.UpdateLeadAsync(lead, token);
+
+                // 4. Spec CRM-03 audit trail: one Note on the new opportunity referencing the
+                // source lead, so history survives the conversion boundary. Author is the
+                // caller when known, else the lead's assignee; with neither known there is no
+                // attributable author (CRMActivityValidator forbids empty) so the note is
+                // omitted - the Customer+Opportunity+Converted writes still commit.
+                var authorId = command.ConvertedByUserId ?? lead.AssignedToUserId;
+                if (authorId.HasValue && authorId.Value != Guid.Empty)
+                {
+                    await _activityRepository.AddActivityAsync(new CRMActivity
+                    {
+                        Id = Guid.NewGuid(),
+                        OpportunityId = opportunity.Id,
+                        Type = CRMActivityType.Note,
+                        Subject = $"Converted from lead {lead.LeadCode}",
+                        Content = $"Converted from lead {lead.LeadCode} ({lead.LeadName})"
+                            + (string.IsNullOrWhiteSpace(lead.OrganizationName)
+                                ? string.Empty
+                                : $" at {lead.OrganizationName}")
+                            + $" as customer {customer.CustomerCode}.",
+                        ActivityDate = DateTimeOffset.UtcNow,
+                        CreatedByUserId = authorId.Value
+                    }, token);
+                }
 
                 return new ConvertLeadResultDto(
                     lead.Id,

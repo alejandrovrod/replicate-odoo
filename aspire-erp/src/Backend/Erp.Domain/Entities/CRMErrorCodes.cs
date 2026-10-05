@@ -17,4 +17,6 @@ public static class CRMErrorCodes
     public const string OpportunityAlreadyClosed = "crm_opportunity_already_closed";
     public const string LeadAlreadyConverted = "crm_lead_already_converted";
     public const string InvalidProbabilityRange = "crm_invalid_probability_range";
+    public const string InvalidStatusTransition = "invalid_status_transition";
+    public const string InvalidOpportunityStage = "crm_invalid_opportunity_stage";
 }

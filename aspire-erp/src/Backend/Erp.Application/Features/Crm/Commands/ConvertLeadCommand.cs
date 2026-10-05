@@ -15,5 +15,6 @@ public record ConvertLeadCommand(
     int PaymentTermsDays = 30,
     decimal OpportunityAmount = 0m,
     decimal OpportunityProbability = 10m,
-    DateOnly? ExpectedClosingDate = null
+    DateOnly? ExpectedClosingDate = null,
+    Guid? ConvertedByUserId = null
 ) : ICommand<Result<ConvertLeadResultDto>>;

@@ -3,7 +3,7 @@
 **Module:** `09-hr-payroll`  
 **Specification:** [spec.md](./spec.md)  
 **Technical Plan:** [plan.md](./plan.md)  
-**Status:** IN PROGRESS (Block A: 12.1, 12.2 complete)  
+**Status:** IN PROGRESS (Block A: 12.1, 12.2 complete; Block B: 12.3, 12.4 complete)  
 
 ---
 
@@ -17,11 +17,11 @@
   - **Action:** Create `SalaryComponent` (Earnings, Deductions) and `SalaryStructure` linking components to GL accounts.
   - **Acceptance:** Ensures all components map to valid leaf posting accounts in the Chart of Accounts.
 
-- [ ] **Task 12.3: Monthly Payroll Batch Engine (`PayrollEntry`)**
+- [x] **Task 12.3: Monthly Payroll Batch Engine (`PayrollEntry`)**
   - **Action:** Implement `PayrollEntry` generating individual `SalarySlip` pay stubs for all active eligible employees for a given month.
   - **Acceptance:** Invariant verified: $\text{GrossPay} - \text{TotalDeductions} == \text{NetPay} \ge 0.00$.
 
-- [ ] **Task 12.4: Two-Phase Payroll Accounting Integration**
+- [x] **Task 12.4: Two-Phase Payroll Accounting Integration**
   - **Action:** Phase 1 posts balanced labor cost accrual to `GLEntry`; Phase 2 executes bank wire transfer payment clearing payroll payable.
   - **Acceptance:** `PayrollPayable` balance associated with the completed run returns to exactly $0.00.
 

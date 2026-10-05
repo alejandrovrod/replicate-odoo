@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Factory,
+  Handshake,
   Landmark,
   Layers,
   LayoutDashboard,
@@ -50,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'selling', label: 'Selling & POS', icon: Receipt },
       { id: 'buying', label: 'Buying & Vendors', icon: Truck },
       { id: 'hr-payroll', label: 'HR & Payroll', icon: Users, badge: 'ERPNext' },
+      { id: 'crm', label: 'CRM & Pipeline', icon: Handshake, badge: 'ERPNext' },
     ],
   },
 ]

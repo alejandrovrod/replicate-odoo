@@ -19,6 +19,7 @@ const ROUTE_TITLES: Record<NavRoute, { title: string; category: string }> = {
   selling: { title: 'Sales Invoices & POS', category: 'Selling' },
   buying: { title: 'Purchase Orders & Vendor Bills', category: 'Buying' },
   'hr-payroll': { title: 'Payroll Runs & Directory', category: 'Human Resources' },
+  crm: { title: 'Sales Pipeline & Leads', category: 'CRM' },
 }
 
 export function Header() {

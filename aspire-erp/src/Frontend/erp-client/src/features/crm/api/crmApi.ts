@@ -3,9 +3,12 @@ import { useTenantStore } from '../../../store/useTenantStore'
 import type {
   AdvanceStagePayload,
   ConvertLeadResult,
+  CreateSalesOrderPayload,
   IngestLeadResult,
+  ItemOption,
   LeadDto,
   OpportunityDto,
+  SalesOrderCreated,
 } from '../types/crm'
 
 /**
@@ -104,6 +107,30 @@ export const crmApi = {
       { defaultCurrency: 'USD', paymentTermsDays: 30, ...body },
       { params: { companyId } },
     )
+    return response.data
+  },
+
+  /** POST /api/v1/opportunities/{id}/create-sales-order - 1-click order from a ClosedWon deal. */
+  createSalesOrder: async (payload: CreateSalesOrderPayload): Promise<SalesOrderCreated> => {
+    const companyId = useTenantStore.getState().companyId
+    const response = await apiClient.post<SalesOrderCreated>(
+      `/v1/opportunities/${payload.id}/create-sales-order`,
+      {
+        itemId: payload.itemId,
+        quantity: payload.quantity,
+        rate: payload.rate,
+      },
+      { params: { companyId } },
+    )
+    return response.data
+  },
+
+  /** GET /api/v1/items - catalog picker for the sales-order line (no stock quantities needed). */
+  getItems: async (): Promise<ItemOption[]> => {
+    const companyId = useTenantStore.getState().companyId
+    const response = await apiClient.get<ItemOption[]>('/v1/items', {
+      params: { companyId },
+    })
     return response.data
   },
 }

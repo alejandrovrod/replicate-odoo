@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AdvanceStagePayload, OpportunityDto, OpportunityStage } from '../types/crm';
 import { OpportunityCard } from './OpportunityCard';
+import { CreateSalesOrderForm } from './CreateSalesOrderForm';
+import { ApiError } from '../../../api/client';
 import { useErpAction } from '../../../lib/useErpAction';
 import { crmApi } from '../api/crmApi';
 
@@ -8,13 +10,6 @@ const STAGES: OpportunityStage[] = ['Prospecting', 'Qualification', 'Proposal', 
 
 export function OpportunityKanbanBoard() {
   const [opportunities, setOpportunities] = useState<OpportunityDto[]>([]);
-
-  // Stage updates go through the live advance endpoint (POST
-  // /api/v1/opportunities/{id}/advance); useErpAction unwraps RFC 7807 rejections
-  // (400 missing loss reason, 409 concurrency conflict) into state.error.
-  const { state, dispatch, isPending } = useErpAction<OpportunityDto, AdvanceStagePayload>(
-    crmApi.advanceStage
-  );
 
   const reload = useCallback(() => {
     crmApi.getOpportunities().then(setOpportunities).catch(console.error);
@@ -24,19 +19,27 @@ export function OpportunityKanbanBoard() {
     reload();
   }, [reload]);
 
-  const mergeUpdated = useCallback((updated: OpportunityDto) => {
-    setOpportunities(prev => prev.map(o => o.id === updated.id ? updated : o));
-  }, []);
-
-  // Sync state back from the action; a 409 concurrency_conflict means another tab moved
-  // the deal first, so reload the board instead of keeping the optimistic row.
-  useEffect(() => {
-    if (state.isSuccess && state.data) {
-      mergeUpdated(state.data);
-    } else if (state.errorCode === 'concurrency_conflict') {
-      reload();
+  // Stage updates go through the live advance endpoint (POST
+  // /api/v1/opportunities/{id}/advance); useErpAction unwraps RFC 7807 rejections
+  // (400 missing loss reason, 409 concurrency conflict) into state.error. The merge
+  // and the conflict reload live INSIDE this callback (the WorkOrdersBoard precedent),
+  // never in an effect on the action state.
+  const { state, dispatch, isPending } = useErpAction<OpportunityDto, AdvanceStagePayload>(
+    async (payload) => {
+      try {
+        const updated = await crmApi.advanceStage(payload);
+        setOpportunities(prev => prev.map(o => o.id === updated.id ? updated : o));
+        return updated;
+      } catch (err) {
+        // A 409 concurrency_conflict means another tab moved the deal first, so reload
+        // the board instead of keeping the optimistic row.
+        if (err instanceof ApiError && err.code === 'concurrency_conflict') {
+          reload();
+        }
+        throw err;
+      }
     }
-  }, [state, reload, mergeUpdated]);
+  );
 
   const handleDrop = (id: string, newStage: OpportunityStage) => {
     // If dragging into same stage, do nothing
@@ -56,7 +59,7 @@ export function OpportunityKanbanBoard() {
     e.dataTransfer.setData('opportunityId', id);
   };
 
-  // Recalculate weighted forecast (Invariant CRM-01 UI projection)
+  // Weighted forecast (Invariant CRM-01 UI projection): sum of amount x probability.
   const totalWeighted = useMemo(() =>
     opportunities.reduce((acc, curr) => acc + curr.weightedAmount, 0),
   [opportunities]);
@@ -94,6 +97,9 @@ export function OpportunityKanbanBoard() {
               {opportunities.filter(o => o.stage === stage).map(opp => (
                 <div key={opp.id} draggable onDragStart={(e) => handleDragStart(e, opp.id)}>
                   <OpportunityCard opportunity={opp} />
+                  {opp.status === 'Won' && (
+                    <CreateSalesOrderForm opportunity={opp} onCreated={reload} />
+                  )}
                 </div>
               ))}
             </div>

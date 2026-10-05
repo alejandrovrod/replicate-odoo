@@ -3,6 +3,7 @@ import { AccountTreeTable } from './features/accounting/AccountTreeTable'
 import { GeneralLedgerOverview } from './features/accounting/GeneralLedgerOverview'
 import { BankingOverview } from './features/banking/BankingOverview'
 import { BuyingOverview } from './features/buying/BuyingOverview'
+import { CrmOverview } from './features/crm/CrmOverview'
 import { DashboardOverview } from './features/dashboard/DashboardOverview'
 import { HrPayrollOverview } from './features/hr-payroll/HrPayrollOverview'
 import { ManufacturingOverview } from './features/manufacturing/ManufacturingOverview'
@@ -46,6 +47,8 @@ function App() {
       {currentRoute === 'buying' && <BuyingOverview />}
 
       {currentRoute === 'hr-payroll' && <HrPayrollOverview />}
+
+      {currentRoute === 'crm' && <CrmOverview />}
     </AppShell>
   )
 }

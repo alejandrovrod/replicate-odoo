@@ -70,3 +70,27 @@ export interface AdvanceStagePayload {
   lossReason?: string
   rowVersion?: string
 }
+
+/** Body of POST /api/v1/opportunities/{id}/create-sales-order (spec CRM-02 1-click creation). */
+export interface CreateSalesOrderPayload {
+  id: string
+  itemId: string
+  quantity: number
+  rate: number
+}
+
+/** Created sales order as returned by the create-sales-order route (header + order number). */
+export interface SalesOrderCreated {
+  id: string
+  orderNumber: string
+  customerId: string
+  grandTotal: number
+  status: string
+}
+
+/** One GET /api/v1/items row, trimmed to what the sales-order line picker needs. */
+export interface ItemOption {
+  id: string
+  code: string
+  name: string
+}

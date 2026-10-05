@@ -99,6 +99,20 @@ public class AppDbContext : DbContext
 
     public DbSet<AssetDepreciationSchedule> AssetDepreciationSchedules => Set<AssetDepreciationSchedule>();
 
+    public DbSet<Department> Departments => Set<Department>();
+
+    public DbSet<Designation> Designations => Set<Designation>();
+
+    public DbSet<Employee> Employees => Set<Employee>();
+
+    public DbSet<SalaryComponent> SalaryComponents => Set<SalaryComponent>();
+
+    public DbSet<SalaryStructure> SalaryStructures => Set<SalaryStructure>();
+
+    public DbSet<SalaryStructureLine> SalaryStructureLines => Set<SalaryStructureLine>();
+
+    public DbSet<SalaryStructureAssignment> SalaryStructureAssignments => Set<SalaryStructureAssignment>();
+
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();
 

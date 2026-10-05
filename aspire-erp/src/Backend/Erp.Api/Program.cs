@@ -23,6 +23,7 @@ using Erp.Application.Features.Manufacturing.Commands;
 using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Application.Features.Assets.Commands;
 using Erp.Application.Features.Assets.Queries;
+using Erp.Application.Features.HrPayroll.Commands;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
 using Erp.Application.Services;
@@ -206,6 +207,16 @@ builder.Services.AddScoped<ICommandHandler<CancelDisposeAssetCommand, Result<Ass
 builder.Services.AddScoped<IQueryHandler<GetAssetCategoriesQuery, IReadOnlyList<AssetCategoryDto>>, GetAssetCategoriesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAssetsQuery, IReadOnlyList<AssetDto>>, GetAssetsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAssetDetailQuery, AssetDetailDto?>, GetAssetDetailQueryHandler>();
+
+// Human Resources & Payroll masters (Tasks 12.1-12.2): salary components, structures and
+// assignments. Same split as every other module: repository in Erp.Infrastructure, handlers
+// and DTOs in Erp.Application - only the composition root knows both (decision C2).
+// Registered from day one (banking precedent) so Block B (batch engine, Tasks 12.3-12.4)
+// builds on the same composition.
+builder.Services.AddScoped<IHrPayrollRepository, HrPayrollRepository>();
+builder.Services.AddScoped<ICommandHandler<CreateSalaryComponentCommand, Result<SalaryComponentDto>>, CreateSalaryComponentCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateSalaryStructureCommand, Result<SalaryStructureDto>>, CreateSalaryStructureCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<AssignSalaryStructureCommand, Result<SalaryStructureAssignmentDto>>, AssignSalaryStructureCommandHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

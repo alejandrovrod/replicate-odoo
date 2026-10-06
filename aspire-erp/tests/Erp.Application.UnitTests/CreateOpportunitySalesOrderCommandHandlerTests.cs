@@ -2,9 +2,11 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Crm.Commands;
 using Erp.Application.Features.Selling.Commands;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -251,8 +253,8 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
         public Task<string> NextOpportunityNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default) => Task.FromResult("OPP-1");
         public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) => operation(cancellationToken);
         public Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default) => Task.FromResult<Lead?>(null);
-        public Task<System.Collections.Generic.IReadOnlyList<Lead>> ListLeadsAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Lead>>(new System.Collections.Generic.List<Lead>());
-        public Task<System.Collections.Generic.IReadOnlyList<Opportunity>> ListOpportunitiesAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Opportunity>>(new System.Collections.Generic.List<Opportunity>());
+        public Task<PagedResult<Lead>> ListLeadsAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default) => Task.FromResult(new PagedResult<Lead>(new List<Lead>(), 0, paging.SafePageNumber, paging.SafePageSize));
+        public Task<PagedResult<Opportunity>> ListOpportunitiesAsync(Guid companyId, PagedRequest paging, string? stage, CancellationToken cancellationToken = default) => Task.FromResult(new PagedResult<Opportunity>(new List<Opportunity>(), 0, paging.SafePageNumber, paging.SafePageSize));
     }
 
     private sealed class FakeCustomerRepository : ICustomerRepository
@@ -262,7 +264,7 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
         public Task AddAsync(Customer customer, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<bool> ExistsCodeAsync(Guid companyId, string customerCode, CancellationToken cancellationToken = default) => Task.FromResult(false);
         public Task<Customer?> GetByIdAsync(Guid customerId, CancellationToken cancellationToken = default) => Task.FromResult(CustomerToReturn);
-        public Task<System.Collections.Generic.IReadOnlyList<Customer>> GetRecentAsync(Guid companyId, int limit, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Customer>>(new System.Collections.Generic.List<Customer>());
+        public Task<PagedResult<Customer>> GetRecentAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default) => Task.FromResult(new PagedResult<Customer>(new List<Customer>(), 0, paging.SafePageNumber, paging.SafePageSize));
         public Task UpdateAsync(Customer customer, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 

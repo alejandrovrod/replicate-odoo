@@ -1,6 +1,8 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,17 +65,17 @@ public sealed class CustomerRepository : ICustomerRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Customer>> GetRecentAsync(
+    public async Task<PagedResult<Customer>> GetRecentAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.Customers
             .Where(c => c.CompanyId == companyId)
 
             // plan.md §1 defines no CreatedAt column, and Id is NEWSEQUENTIALID() (monotonic by
             // insert order), so id descending is the "newest first" ordering of the list view -
-            // the same expression SupplierRepository uses via CreatedAt.
+            // the same expression SupplierRepository uses via CreatedAt. ORDER BY is mandatory:
+            // deterministic pages require it.
             .OrderByDescending(c => c.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 }

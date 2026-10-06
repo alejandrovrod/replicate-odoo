@@ -6,6 +6,7 @@ using Erp.Application.Common;
 using Erp.Application.Features.Crm.Commands;
 using Erp.Application.Features.Crm.DTOs;
 using Erp.Application.Features.Crm.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -56,11 +57,12 @@ public sealed class LeadsController : ControllerBase
     /// <param name="limit">Maximum number of leads to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<LeadDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<LeadDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
         [FromQuery] Guid companyId,
-        [FromQuery] int limit = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
@@ -72,7 +74,7 @@ public sealed class LeadsController : ControllerBase
                 CRMErrorCodes.CompanyRequired);
         }
 
-        var leads = await _sender.SendAsync(new GetLeadsQuery(companyId, limit), cancellationToken);
+        var leads = await _sender.SendAsync(new GetLeadsQuery(companyId, page, pageSize), cancellationToken);
         return Ok(leads);
     }
 

@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -11,7 +12,7 @@ namespace Erp.Application.Features.Buying.Queries;
 /// <see cref="IItemRepository"/>. Tenant isolation is automatic (Constitution II.3).
 /// </summary>
 public sealed class GetPurchaseOrdersQueryHandler
-    : IQueryHandler<GetPurchaseOrdersQuery, IReadOnlyList<PurchaseOrderDto>>
+    : IQueryHandler<GetPurchaseOrdersQuery, PagedResult<PurchaseOrderDto>>
 {
     private readonly IPurchaseRepository _purchases;
     private readonly ISupplierRepository _suppliers;
@@ -27,20 +28,22 @@ public sealed class GetPurchaseOrdersQueryHandler
         _items = items;
     }
 
-    public async Task<IReadOnlyList<PurchaseOrderDto>> HandleAsync(
+    public async Task<PagedResult<PurchaseOrderDto>> HandleAsync(
         GetPurchaseOrdersQuery query,
         CancellationToken cancellationToken = default)
     {
-        var limit = query.Limit <= 0 ? 50 : Math.Min(query.Limit, 500);
-        var orders = await _purchases.GetRecentOrdersByCompanyAsync(query.CompanyId, limit, cancellationToken);
-        if (orders.Count == 0)
+        var page = await _purchases.GetRecentOrdersByCompanyAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        if (page.Items.Count == 0)
         {
-            return Array.Empty<PurchaseOrderDto>();
+            return page.Map(new List<PurchaseOrderDto>());
         }
 
-        var supplierIds = new List<Guid>(orders.Count);
+        var supplierIds = new List<Guid>(page.Items.Count);
         var itemIds = new HashSet<Guid>();
-        foreach (var order in orders)
+        foreach (var order in page.Items)
         {
             if (!supplierIds.Contains(order.SupplierId))
             {
@@ -67,8 +70,8 @@ public sealed class GetPurchaseOrdersQueryHandler
             itemById[item.Id] = item;
         }
 
-        var result = new List<PurchaseOrderDto>(orders.Count);
-        foreach (var order in orders)
+        var result = new List<PurchaseOrderDto>(page.Items.Count);
+        foreach (var order in page.Items)
         {
             if (!supplierById.TryGetValue(order.SupplierId, out var supplier))
             {
@@ -79,6 +82,6 @@ public sealed class GetPurchaseOrdersQueryHandler
             result.Add(PurchaseOrderDto.Build(order, supplier, itemById));
         }
 
-        return result;
+        return page.Map(result);
     }
 }

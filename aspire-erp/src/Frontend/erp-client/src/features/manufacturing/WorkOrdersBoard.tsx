@@ -1,9 +1,11 @@
 import { ArrowRight, CheckCircle2, ClipboardList, PackageCheck, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Pagination } from '../../components/ui/Pagination'
 import { useErpAction } from '../../lib/useErpAction'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { formatMoney } from '../../lib/format'
+import { usePagination } from '../../lib/pagination'
 import type { ManufacturingPosting, WorkOrder, WorkOrderStatus } from './types'
 import {
   postCancelWorkOrder,
@@ -29,12 +31,13 @@ const STATUS_BADGE: Record<WorkOrderStatus, string> = {
  */
 export function WorkOrdersBoard({ companyId }: { companyId: string }) {
   const { t, i18n } = useTranslation('manufacturing')
-  const ordersQuery = useWorkOrders(companyId)
+  const paging = usePagination()
+  const ordersQuery = useWorkOrders(companyId, paging.page, paging.pageSize)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [producedQty, setProducedQty] = useState('')
 
   const selected: WorkOrder | null =
-    ordersQuery.data.find((o) => o.id === selectedId) ?? null
+    ordersQuery.items.find((o) => o.id === selectedId) ?? null
 
   const refresh = () => {
     setSelectedId(null)
@@ -138,7 +141,7 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
         </p>
       ) : null}
 
-      {ordersQuery.data.length === 0 ? (
+      {ordersQuery.items.length === 0 ? (
         <p className="py-4 text-center text-sm text-slate-500">{t('board.empty')}</p>
       ) : (
         <div className="overflow-x-auto">
@@ -153,7 +156,7 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {ordersQuery.data.map((order) => (
+              {ordersQuery.items.map((order) => (
                 <tr key={order.id} className="h-11 hover:bg-slate-50">
                   <td className="py-2">
                     <button
@@ -218,6 +221,15 @@ export function WorkOrdersBoard({ companyId }: { companyId: string }) {
           </table>
         </div>
       )}
+
+      <div className="mt-3 flex justify-end">
+        <Pagination
+          totalCount={ordersQuery.totalCount}
+          page={paging.page}
+          pageSize={paging.pageSize}
+          onPageChange={paging.setPage}
+        />
+      </div>
 
       {selected?.status === 'InProcess' ? (
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">

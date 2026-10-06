@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError, apiClient } from '../../api/client'
+import { useApiList, type QueryStatus } from '../../lib/useApiList'
 import type {
   HrEmployee,
   PayrollRun,
@@ -10,90 +11,41 @@ import type {
   StructureAssignment,
 } from './types'
 
-export type QueryStatus = 'idle' | 'loading' | 'success' | 'error'
+export type { QueryStatus }
 
-interface QueryState<T> {
-  key: string
-  attempt: number
-  status: 'success' | 'error'
-  data: T
-  error: ApiError | null
-}
-
-/** Stable empty array so effects never re-run because a caller rebuilt its literal. */
-const EMPTY: never[] = []
-
+/** Local error wrapper for the single-read detail hook below (list hooks use the shared loader). */
 const toApiError = (cause: unknown): ApiError =>
   cause instanceof ApiError
     ? cause
     : new ApiError(0, 'Unexpected Error', cause instanceof Error ? cause.message : String(cause))
 
-/**
- * Shared GET loader for the HR payroll feature (same contract as the manufacturing
- * `useApiList`): tenant header injection and RFC 7807 handling live in
- * `src/api/client.ts`. The effect keys off the JSON round-trip of `params`.
- */
-function useApiList<T>(path: string, params: Record<string, string | number>, enabled: boolean) {
-  const paramsKey = JSON.stringify(params)
-  const key = `${path}?${paramsKey}`
-  const [attempt, setAttempt] = useState(0)
-  const [state, setState] = useState<QueryState<T[]> | null>(null)
-
-  useEffect(() => {
-    if (!enabled) return undefined
-
-    let cancelled = false
-    const query = JSON.parse(paramsKey) as Record<string, string | number>
-    apiClient.get<T[]>(path, { params: query }).then(
-      (response) => {
-        if (!cancelled) setState({ key, attempt, status: 'success', data: response.data, error: null })
-      },
-      (cause: unknown) => {
-        if (!cancelled) setState({ key, attempt, status: 'error', data: EMPTY as T[], error: toApiError(cause) })
-      },
-    )
-
-    return () => {
-      cancelled = true
-    }
-  }, [path, paramsKey, attempt, enabled, key])
-
-  const reload = useCallback(() => setAttempt((current) => current + 1), [])
-
-  if (!enabled) return { data: EMPTY as T[], status: 'idle' as const, error: null, reload }
-  if (state && state.key === key && state.attempt === attempt) {
-    return { data: state.data, status: state.status, error: state.error, reload }
-  }
-  return { data: EMPTY as T[], status: 'loading' as const, error: null, reload }
+/** GET /api/v1/hr/employees?companyId=&page=&pageSize= - the directory rows. */
+export function useEmployees(companyId: string, page = 1, pageSize = 50) {
+  return useApiList<HrEmployee>('/v1/hr/employees', { companyId, page, pageSize }, Boolean(companyId))
 }
 
-/** GET /api/v1/hr/employees?companyId= - the directory rows. */
-export function useEmployees(companyId: string) {
-  return useApiList<HrEmployee>('/v1/hr/employees', { companyId }, Boolean(companyId))
+/** GET /api/v1/hr/salary-components?companyId=&page=&pageSize= - the pay elements. */
+export function useSalaryComponents(companyId: string, page = 1, pageSize = 50) {
+  return useApiList<SalaryComponent>('/v1/hr/salary-components', { companyId, page, pageSize }, Boolean(companyId))
 }
 
-/** GET /api/v1/hr/salary-components?companyId= - the pay elements. */
-export function useSalaryComponents(companyId: string) {
-  return useApiList<SalaryComponent>('/v1/hr/salary-components', { companyId }, Boolean(companyId))
+/** GET /api/v1/hr/salary-structures?companyId=&page=&pageSize= - structures with their priced lines. */
+export function useSalaryStructures(companyId: string, page = 1, pageSize = 50) {
+  return useApiList<SalaryStructure>('/v1/hr/salary-structures', { companyId, page, pageSize }, Boolean(companyId))
 }
 
-/** GET /api/v1/hr/salary-structures?companyId= - structures with their priced lines. */
-export function useSalaryStructures(companyId: string) {
-  return useApiList<SalaryStructure>('/v1/hr/salary-structures', { companyId }, Boolean(companyId))
-}
-
-/** GET /api/v1/hr/structure-assignments?companyId= - the eligibility windows. */
-export function useStructureAssignments(companyId: string) {
+/** GET /api/v1/hr/structure-assignments?companyId=&page=&pageSize= - the eligibility windows. */
+export function useStructureAssignments(companyId: string, page = 1, pageSize = 50) {
   return useApiList<StructureAssignment>(
     '/v1/hr/structure-assignments',
-    { companyId },
+    { companyId, page, pageSize },
     Boolean(companyId),
   )
 }
 
-/** GET /api/v1/payroll-runs?companyId= - batch headers, newest first. */
-export function usePayrollRuns(companyId: string) {
-  return useApiList<PayrollRun>('/v1/payroll-runs', { companyId }, Boolean(companyId))
+/** GET /api/v1/payroll-runs?companyId=&page=&pageSize= - batch headers, newest first. */
+export function usePayrollRuns(companyId: string, page = 1, pageSize = 50) {
+  return useApiList<PayrollRun>('/v1/payroll-runs', { companyId, page, pageSize }, Boolean(companyId))
 }
 
 /** GET /api/v1/payroll-runs/{id}?companyId= - one batch with every slip and its lines. */

@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -139,13 +140,18 @@ public sealed class FakeBankRepository : IBankRepository
             .ToList());
     }
 
-    public Task<IReadOnlyList<BankTransactionRule>> GetRulesByCompanyAsync(
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<BankTransactionRule>> GetRulesByCompanyAsync(
         Guid companyId,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<BankTransactionRule>>(_rules
+    {
+        var items = _rules
             .Where(r => r.CompanyId == companyId)
             .OrderBy(r => r.Priority)
-            .ToList());
+            .ToList();
+        return Task.FromResult(new PagedResult<BankTransactionRule>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task AddRuleAsync(BankTransactionRule rule, CancellationToken cancellationToken = default)
     {
@@ -167,18 +173,22 @@ public sealed class FakeBankRepository : IBankRepository
             .Where(t => bankAccountId == null || t.BankAccountId == bankAccountId)
             .ToList());
 
-    public Task<IReadOnlyList<BankTransaction>> GetTransactionsAsync(
+    public Task<PagedResult<BankTransaction>> GetTransactionsAsync(
         Guid companyId,
         Guid? bankAccountId,
         BankTransactionStatus? status,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<BankTransaction>>(_persistedTransactions
+    {
+        var items = _persistedTransactions
             .Where(t => t.CompanyId == companyId)
             .Where(t => bankAccountId == null || t.BankAccountId == bankAccountId)
             .Where(t => status == null || t.Status == status)
             .OrderByDescending(t => t.TransactionDate)
             .ThenBy(t => t.Id)
-            .ToList());
+            .ToList();
+        return Task.FromResult(new PagedResult<BankTransaction>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task UpdateTransactionAsync(BankTransaction transaction, CancellationToken cancellationToken = default)
     {

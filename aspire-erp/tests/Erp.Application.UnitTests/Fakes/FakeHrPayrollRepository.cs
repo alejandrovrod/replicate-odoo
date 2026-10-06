@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -207,8 +208,12 @@ public sealed class FakeHrPayrollRepository : IHrPayrollRepository
         => Task.FromResult(_employees.FirstOrDefault(
             e => e.CompanyId == companyId && e.EmployeeNumber == employeeNumber));
 
-    public Task<IReadOnlyList<Employee>> GetEmployeesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Employee>>(_employees.Where(e => e.CompanyId == companyId).ToList());
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<Employee>> GetEmployeesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _employees.Where(e => e.CompanyId == companyId).ToList();
+        return Task.FromResult(new PagedResult<Employee>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task AddComponentAsync(SalaryComponent component, CancellationToken cancellationToken = default)
     {
@@ -220,8 +225,14 @@ public sealed class FakeHrPayrollRepository : IHrPayrollRepository
     public Task<SalaryComponent?> GetComponentByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(_components.FirstOrDefault(c => c.Id == id));
 
-    public Task<IReadOnlyList<SalaryComponent>> GetComponentsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<SalaryComponent>>(_components.Where(c => c.CompanyId == companyId).ToList());
+    public Task<PagedResult<SalaryComponent>> GetComponentsByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _components.Where(c => c.CompanyId == companyId).ToList();
+        return Task.FromResult(new PagedResult<SalaryComponent>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
+
+    public Task<IReadOnlyList<SalaryComponent>> GetComponentsByIdsAsync(IReadOnlyList<Guid> componentIds, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<SalaryComponent>>(_components.Where(c => componentIds.Contains(c.Id)).ToList());
 
     public Task AddStructureAsync(SalaryStructure structure, CancellationToken cancellationToken = default)
     {
@@ -233,8 +244,11 @@ public sealed class FakeHrPayrollRepository : IHrPayrollRepository
     public Task<SalaryStructure?> GetStructureByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(_structures.FirstOrDefault(s => s.Id == id));
 
-    public Task<IReadOnlyList<SalaryStructure>> GetStructuresByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<SalaryStructure>>(_structures.Where(s => s.CompanyId == companyId).ToList());
+    public Task<PagedResult<SalaryStructure>> GetStructuresByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _structures.Where(s => s.CompanyId == companyId).ToList();
+        return Task.FromResult(new PagedResult<SalaryStructure>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task AddAssignmentAsync(SalaryStructureAssignment assignment, CancellationToken cancellationToken = default)
     {
@@ -246,8 +260,11 @@ public sealed class FakeHrPayrollRepository : IHrPayrollRepository
     public Task<IReadOnlyList<SalaryStructureAssignment>> GetAssignmentsByEmployeeAsync(Guid employeeId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<SalaryStructureAssignment>>(_assignments.Where(a => a.EmployeeId == employeeId).ToList());
 
-    public Task<IReadOnlyList<SalaryStructureAssignment>> GetAssignmentsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<SalaryStructureAssignment>>(_assignments.Where(a => a.CompanyId == companyId).ToList());
+    public Task<PagedResult<SalaryStructureAssignment>> GetAssignmentsByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _assignments.Where(a => a.CompanyId == companyId).ToList();
+        return Task.FromResult(new PagedResult<SalaryStructureAssignment>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task<string> NextPayrollNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default)
     {
@@ -292,9 +309,11 @@ public sealed class FakeHrPayrollRepository : IHrPayrollRepository
                 && e.StartDate <= endDate
                 && e.EndDate >= startDate));
 
-    public Task<IReadOnlyList<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<PayrollEntry>>(
-            _entries.Where(e => e.CompanyId == companyId).OrderByDescending(e => e.CreatedAt).ToList());
+    public Task<PagedResult<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _entries.Where(e => e.CompanyId == companyId).OrderByDescending(e => e.CreatedAt).ToList();
+        return Task.FromResult(new PagedResult<PayrollEntry>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task UpdatePayrollEntryAsync(PayrollEntry entry, CancellationToken cancellationToken = default)
     {

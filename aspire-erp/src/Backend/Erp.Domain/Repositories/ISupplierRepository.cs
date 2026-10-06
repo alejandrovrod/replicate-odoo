@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -26,5 +27,5 @@ public interface ISupplierRepository
     Task<IReadOnlyList<Supplier>> GetByIdsAsync(IReadOnlyList<Guid> supplierIds, CancellationToken cancellationToken = default);
 
     /// <summary>The most recent suppliers of the tenant (newest first) for the list view.</summary>
-    Task<IReadOnlyList<Supplier>> GetRecentAsync(int limit, CancellationToken cancellationToken = default);
+    Task<PagedResult<Supplier>> GetRecentAsync(PagedRequest paging, CancellationToken cancellationToken = default);
 }

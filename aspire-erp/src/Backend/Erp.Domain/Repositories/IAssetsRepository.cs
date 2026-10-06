@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -31,10 +32,10 @@ public interface IAssetsRepository
     Task<Asset?> GetAssetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>Lists one company's asset headers, ordered by asset code (Block B reads).</summary>
-    Task<IReadOnlyList<Asset>> GetAssetsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<Asset>> GetAssetsByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>Lists one company's asset categories, ordered by name (Block B reads).</summary>
-    Task<IReadOnlyList<AssetCategory>> GetCategoriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<AssetCategory>> GetCategoriesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Every schedule line with ScheduleDate <= <paramref name="asOfDate"/> on this company's

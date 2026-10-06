@@ -1,8 +1,10 @@
 using Erp.Application.Features.Crm.Commands;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -265,7 +267,7 @@ public class AdvanceOpportunityStageTests
         public Task<string> NextOpportunityNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default) => Task.FromResult("OPP-1");
         public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) => operation(cancellationToken);
         public Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default) => Task.FromResult<Lead?>(null);
-        public Task<System.Collections.Generic.IReadOnlyList<Lead>> ListLeadsAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Lead>>(new System.Collections.Generic.List<Lead>());
-        public Task<System.Collections.Generic.IReadOnlyList<Opportunity>> ListOpportunitiesAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Opportunity>>(new System.Collections.Generic.List<Opportunity>());
+        public Task<PagedResult<Lead>> ListLeadsAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default) => Task.FromResult(new PagedResult<Lead>(new List<Lead>(), 0, paging.SafePageNumber, paging.SafePageSize));
+        public Task<PagedResult<Opportunity>> ListOpportunitiesAsync(Guid companyId, PagedRequest paging, string? stage, CancellationToken cancellationToken = default) => Task.FromResult(new PagedResult<Opportunity>(new List<Opportunity>(), 0, paging.SafePageNumber, paging.SafePageSize));
     }
 }

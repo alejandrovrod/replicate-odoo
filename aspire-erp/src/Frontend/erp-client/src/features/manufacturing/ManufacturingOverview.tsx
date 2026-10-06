@@ -1,9 +1,10 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useMemo, useState } from 'react'
 import { CheckCircle2, Factory } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { ApiError, apiClient } from '../../api/client'
+import { ApiError } from '../../api/client'
+import { MAX_PAGE_SIZE } from '../../lib/pagination'
 import { useTenantStore } from '../../store/useTenantStore'
-import type { WorkOrder } from './types'
+import { useWorkOrders } from './useManufacturingData'
 
 const BomEditor = lazy(() => import('./BomEditor').then((m) => ({ default: m.BomEditor })))
 const WorkOrdersBoard = lazy(() =>
@@ -26,37 +27,27 @@ export function ManufacturingOverview() {
   const { t } = useTranslation('manufacturing')
   const companyId = useTenantStore((state) => state.companyId)
   const [refreshSignal, setRefreshSignal] = useState(0)
-  const [counts, setCounts] = useState<StatusCounts>({ draft: 0, submitted: 0, inProcess: 0, completed: 0 })
-  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
-  // re-translates on language switches (same decision as CrmOverview).
-  const [countsError, setCountsError] = useState<unknown>(null)
 
-  const refresh = useCallback(() => setRefreshSignal((n) => n + 1), [])
-
-  useEffect(() => {
-    if (!companyId) return
-    let cancelled = false
-    apiClient.get<WorkOrder[]>('/v1/workorders', { params: { companyId } }).then(
-      (response) => {
-        if (cancelled) return
-        setCounts({
-          draft: response.data.filter((o) => o.status === 'Draft').length,
-          submitted: response.data.filter((o) => o.status === 'Submitted').length,
-          inProcess: response.data.filter((o) => o.status === 'InProcess').length,
-          completed: response.data.filter((o) => o.status === 'Completed').length,
-        })
-        setCountsError(null)
-      },
-      (cause: unknown) => {
-        if (!cancelled) {
-          setCountsError(cause)
-        }
-      },
-    )
-    return () => {
-      cancelled = true
+  // Status cards need per-status counts, and the list endpoint has no status filter: one
+  // bounded read (MAX_PAGE_SIZE, no pager) feeds the counters. Beyond 500 open orders the
+  // cards saturate — a dedicated counts endpoint would lift that ceiling.
+  const countsQuery = useWorkOrders(companyId, 1, MAX_PAGE_SIZE)
+  const { reload: reloadCounts } = countsQuery
+  const counts = useMemo<StatusCounts>(() => {
+    const rows = countsQuery.status === 'success' ? countsQuery.items : []
+    return {
+      draft: rows.filter((o) => o.status === 'Draft').length,
+      submitted: rows.filter((o) => o.status === 'Submitted').length,
+      inProcess: rows.filter((o) => o.status === 'InProcess').length,
+      completed: rows.filter((o) => o.status === 'Completed').length,
     }
-  }, [companyId, refreshSignal])
+  }, [countsQuery])
+  const countsError = countsQuery.status === 'error' ? countsQuery.error : null
+
+  const refresh = useCallback(() => {
+    setRefreshSignal((n) => n + 1)
+    reloadCounts()
+  }, [reloadCounts])
 
   const cards = [
     {

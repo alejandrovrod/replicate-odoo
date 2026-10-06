@@ -10,6 +10,7 @@ import { HrPayrollOverview } from './features/hr-payroll/HrPayrollOverview'
 import { ManufacturingOverview } from './features/manufacturing/ManufacturingOverview'
 import { SellingOverview } from './features/selling/SellingOverview'
 import { StockOverview } from './features/stock/StockOverview'
+import { WarehouseView } from './features/stock/pages/WarehouseView'
 import { useNavigationStore } from './store/useNavigationStore'
 import { useTenantStore } from './store/useTenantStore'
 
@@ -39,6 +40,8 @@ function App() {
       {currentRoute === 'banking' && <BankingOverview />}
 
       {currentRoute === 'stock' && <StockOverview />}
+
+      {currentRoute === 'stock-warehouses' && <WarehouseView />}
 
       {currentRoute === 'manufacturing' && <ManufacturingOverview />}
 

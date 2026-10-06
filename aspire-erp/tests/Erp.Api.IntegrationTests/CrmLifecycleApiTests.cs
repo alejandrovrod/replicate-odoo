@@ -283,9 +283,9 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
 
         // The pipeline board read reflects the re-opened stage.
         using var board = await client.GetAsync(
-            $"/api/v1/opportunities?companyId={ErpApiFactory.DevCompanyId}&limit=50");
+            $"/api/v1/opportunities?companyId={ErpApiFactory.DevCompanyId}&pageSize=50");
         Assert.Equal(HttpStatusCode.OK, board.StatusCode);
-        var row = JsonNode.Parse(await board.Content.ReadAsStringAsync())!.AsArray()
+        var row = JsonNode.Parse(await board.Content.ReadAsStringAsync())!["items"]!.AsArray()
             .Single(n => n!["id"]!.GetValue<Guid>() == opportunityId);
         Assert.Equal("Negotiation", row!["stage"]!.GetValue<string>());
 
@@ -566,9 +566,9 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
     private static async Task<JsonNode> ReadOpportunityDtoAsync(HttpClient client, Guid opportunityId)
     {
         using var board = await client.GetAsync(
-            $"/api/v1/opportunities?companyId={ErpApiFactory.DevCompanyId}&limit=50");
+            $"/api/v1/opportunities?companyId={ErpApiFactory.DevCompanyId}&pageSize=50");
         Assert.Equal(HttpStatusCode.OK, board.StatusCode);
-        return JsonNode.Parse(await board.Content.ReadAsStringAsync())!.AsArray()
+        return JsonNode.Parse(await board.Content.ReadAsStringAsync())!["items"]!.AsArray()
             .Single(n => n!["id"]!.GetValue<Guid>() == opportunityId)!;
     }
 

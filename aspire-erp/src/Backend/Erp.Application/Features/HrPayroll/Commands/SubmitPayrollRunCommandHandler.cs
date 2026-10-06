@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -83,9 +84,15 @@ public sealed class SubmitPayrollRunCommandHandler
 
                 var overrides = ValidateOverrides(command.PaymentDayOverrides);
 
-                var employees = await _hr.GetEmployeesByCompanyAsync(command.CompanyId, token);
-                var assignments = await _hr.GetAssignmentsByCompanyAsync(command.CompanyId, token);
-                var components = await _hr.GetComponentsByCompanyAsync(command.CompanyId, token);
+                var employees = await LoadAllAsync(
+                    (paging, t) => _hr.GetEmployeesByCompanyAsync(command.CompanyId, paging, t),
+                    token);
+                var assignments = await LoadAllAsync(
+                    (paging, t) => _hr.GetAssignmentsByCompanyAsync(command.CompanyId, paging, t),
+                    token);
+                var components = await LoadAllAsync(
+                    (paging, t) => _hr.GetComponentsByCompanyAsync(command.CompanyId, paging, t),
+                    token);
                 var componentsById = components.ToDictionary(c => c.Id);
 
                 var assignmentsByEmployee = assignments
@@ -522,6 +529,34 @@ public sealed class SubmitPayrollRunCommandHandler
         };
 
     private static decimal Round4(decimal value) => Math.Round(value, 4, MidpointRounding.AwayFromZero);
+
+    /// <summary>
+    /// Drains a paged list read for batch processing (the submit run must see every eligible row,
+    /// so a single page is never enough). Pages at <c>MaxPageSize</c> and stops at the first
+    /// short page — no unbounded query, no silent 500-row truncation.
+    /// </summary>
+    private static async Task<List<T>> LoadAllAsync<T>(
+        Func<PagedRequest, CancellationToken, Task<PagedResult<T>>> getPage,
+        CancellationToken cancellationToken)
+    {
+        var all = new List<T>();
+        var pageNumber = 1;
+
+        while (true)
+        {
+            var page = await getPage(new PagedRequest(pageNumber, PagedRequest.MaxPageSize), cancellationToken);
+            all.AddRange(page.Items);
+
+            if (page.Items.Count < PagedRequest.MaxPageSize)
+            {
+                break;
+            }
+
+            pageNumber++;
+        }
+
+        return all;
+    }
 
     /// <summary>One employee pricing outcome: either a priced slip or a skip reason (never both).</summary>
     private sealed record PricedSlip(

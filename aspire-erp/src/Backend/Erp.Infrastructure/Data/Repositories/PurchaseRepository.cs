@@ -1,8 +1,10 @@
 using System.Data;
 using System.Data.Common;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -255,17 +257,16 @@ public sealed class PurchaseRepository : IPurchaseRepository
             .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == purchaseOrderId, cancellationToken);
 
-    public async Task<IReadOnlyList<PurchaseOrder>> GetRecentOrdersByCompanyAsync(
+    public async Task<PagedResult<PurchaseOrder>> GetRecentOrdersByCompanyAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.PurchaseOrders
             .Where(o => o.CompanyId == companyId)
             .Include(o => o.Items)
             .OrderByDescending(o => o.CreatedAt)
             .ThenByDescending(o => o.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task<PurchaseReceipt?> GetReceiptByIdAsync(
         Guid purchaseReceiptId,
@@ -275,17 +276,16 @@ public sealed class PurchaseRepository : IPurchaseRepository
             .Include(r => r.PurchaseOrder)
             .FirstOrDefaultAsync(r => r.Id == purchaseReceiptId, cancellationToken);
 
-    public async Task<IReadOnlyList<PurchaseReceipt>> GetRecentReceiptsByCompanyAsync(
+    public async Task<PagedResult<PurchaseReceipt>> GetRecentReceiptsByCompanyAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.PurchaseReceipts
             .Where(r => r.CompanyId == companyId)
             .Include(r => r.Lines)
             .OrderByDescending(r => r.CreatedAt)
             .ThenByDescending(r => r.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task<IReadOnlyList<PurchaseReceiptLine>> GetReceiptLinesByIdsAsync(
         IEnumerable<Guid> receiptLineIds,
@@ -359,17 +359,16 @@ public sealed class PurchaseRepository : IPurchaseRepository
             .Where(l => l.PurchaseReceiptLineId == purchaseReceiptLineId)
             .SumAsync(l => (decimal?)l.Qty, cancellationToken) ?? 0m;
 
-    public async Task<IReadOnlyList<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(
+    public async Task<PagedResult<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.PurchaseInvoices
             .Where(i => i.CompanyId == companyId)
             .Include(i => i.Lines)
             .OrderByDescending(i => i.CreatedAt)
             .ThenByDescending(i => i.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task<PurchaseInvoice?> GetInvoiceByIdAsync(
         Guid purchaseInvoiceId,

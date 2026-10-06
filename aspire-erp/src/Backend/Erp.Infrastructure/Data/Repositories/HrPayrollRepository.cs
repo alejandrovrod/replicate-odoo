@@ -1,6 +1,8 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -124,10 +126,11 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
             e => e.CompanyId == companyId && e.EmployeeNumber == employeeNumber,
             cancellationToken);
 
-    public async Task<IReadOnlyList<Employee>> GetEmployeesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<Employee>> GetEmployeesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.Employees
             .Where(e => e.CompanyId == companyId)
-            .ToListAsync(cancellationToken);
+            .OrderBy(e => e.EmployeeNumber)
+            .ToPagedResultAsync(paging, cancellationToken);
 
     // Salary components
 
@@ -140,10 +143,23 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
     public Task<SalaryComponent?> GetComponentByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => _dbContext.SalaryComponents.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
-    public async Task<IReadOnlyList<SalaryComponent>> GetComponentsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SalaryComponent>> GetComponentsByIdsAsync(IReadOnlyList<Guid> componentIds, CancellationToken cancellationToken = default)
+    {
+        if (componentIds.Count == 0)
+        {
+            return Array.Empty<SalaryComponent>();
+        }
+
+        return await _dbContext.SalaryComponents
+            .Where(c => componentIds.Contains(c.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<PagedResult<SalaryComponent>> GetComponentsByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.SalaryComponents
             .Where(c => c.CompanyId == companyId)
-            .ToListAsync(cancellationToken);
+            .OrderBy(c => c.ComponentName)
+            .ToPagedResultAsync(paging, cancellationToken);
 
     // Salary structures + lines
 
@@ -158,11 +174,12 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
             .Include(s => s.Lines)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
-    public async Task<IReadOnlyList<SalaryStructure>> GetStructuresByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<SalaryStructure>> GetStructuresByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.SalaryStructures
             .Include(s => s.Lines)
             .Where(s => s.CompanyId == companyId)
-            .ToListAsync(cancellationToken);
+            .OrderBy(s => s.StructureName)
+            .ToPagedResultAsync(paging, cancellationToken);
 
     // Assignments
 
@@ -177,10 +194,11 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
             .Where(a => a.EmployeeId == employeeId)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<SalaryStructureAssignment>> GetAssignmentsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<SalaryStructureAssignment>> GetAssignmentsByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.SalaryStructureAssignments
             .Where(a => a.CompanyId == companyId)
-            .ToListAsync(cancellationToken);
+            .OrderBy(a => a.EffectiveFrom)
+            .ToPagedResultAsync(paging, cancellationToken);
 
     // Payroll batch engine (Tasks 12.3-12.4)
 
@@ -258,11 +276,11 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
                     && e.EndDate >= startDate,
                 cancellationToken);
 
-    public async Task<IReadOnlyList<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.PayrollEntries
             .Where(e => e.CompanyId == companyId)
             .OrderByDescending(e => e.CreatedAt)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task UpdatePayrollEntryAsync(PayrollEntry entry, CancellationToken cancellationToken = default)
     {

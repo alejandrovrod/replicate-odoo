@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FileText, Truck, AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { ApiError, apiClient } from '../../api/client'
+import { Pagination } from '../../components/ui/Pagination'
+import { useApiList } from '../../lib/useApiList'
+import { MAX_PAGE_SIZE, usePagination } from '../../lib/pagination'
 import { formatMoney } from '../../lib/format'
 import { useTenantStore } from '../../store/useTenantStore'
 import { PurchaseReceiptModal } from './PurchaseReceiptModal'
@@ -28,34 +30,33 @@ interface PurchaseOrder {
 export function BuyingOverview() {
   const { t } = useTranslation('buying')
   const companyId = useTenantStore((state) => state.companyId)
-  const [orders, setOrders] = useState<PurchaseOrder[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
-  // re-translates on language switches (same decision as CrmOverview).
-  const [error, setError] = useState<unknown>(null)
+  const paging = usePagination()
+  const enabled = Boolean(companyId)
+
+  // Table page (pager below) + ONE bounded read for the unbilled stat (no pager).
+  const ordersQuery = useApiList<PurchaseOrder>(
+    '/v1/purchaseorders',
+    { companyId, page: paging.page, pageSize: paging.pageSize },
+    enabled,
+  )
+  const statsQuery = useApiList<PurchaseOrder>(
+    '/v1/purchaseorders',
+    { companyId, page: 1, pageSize: MAX_PAGE_SIZE },
+    enabled,
+  )
+  const orders = ordersQuery.status === 'success' ? ordersQuery.items : []
+  const isLoading = ordersQuery.status === 'loading'
+  const error = ordersQuery.status === 'error' ? ordersQuery.error : null
 
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
-  
-  const fetchOrders = async () => {
-    if (!companyId) return
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await apiClient.get(`/v1/purchaseorders?companyId=${companyId}`)
-      setOrders(response.data)
-    } catch (cause: unknown) {
-      setError(cause)
-    } finally {
-      setIsLoading(false)
-    }
+
+  const reloadAll = () => {
+    ordersQuery.reload()
+    statsQuery.reload()
   }
 
-  useEffect(() => {
-    fetchOrders()
-  }, [companyId])
-
-  // Calculate some simple vendor aging mock metrics from actual orders
-  const unbilledAmount = orders
+  // Vendor aging metric over the bounded stat read (see note above).
+  const unbilledAmount = (statsQuery.status === 'success' ? statsQuery.items : [])
     .filter(o => o.receivedPercentage > 0 && o.billedPercentage < 100)
     .reduce((sum, o) => sum + (o.grandTotal * (1 - (o.billedPercentage / 100))), 0)
     
@@ -98,7 +99,7 @@ export function BuyingOverview() {
         {error ? (
           <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
             <AlertCircle className="h-4 w-4" />
-            {error instanceof ApiError ? error.message : t('orders.loadFailed')}
+            {error.status === 0 ? t('orders.loadFailed') : error.message}
           </div>
         ) : null}
 
@@ -163,13 +164,22 @@ export function BuyingOverview() {
             </tbody>
           </table>
         </div>
+
+        <div className="mt-3 flex justify-end">
+          <Pagination
+            totalCount={ordersQuery.totalCount}
+            page={paging.page}
+            pageSize={paging.pageSize}
+            onPageChange={paging.setPage}
+          />
+        </div>
       </div>
 
       {selectedOrder && (
         <PurchaseReceiptModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
-          onSuccess={fetchOrders}
+          onSuccess={reloadAll}
         />
       )}
     </div>

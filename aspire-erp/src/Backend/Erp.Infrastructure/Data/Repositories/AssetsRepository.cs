@@ -1,8 +1,10 @@
 using System.Data;
 using System.Data.Common;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -228,23 +230,25 @@ public sealed class AssetsRepository : IAssetsRepository
     public async Task<Asset?> GetAssetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.Assets.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
-    public async Task<IReadOnlyList<Asset>> GetAssetsByCompanyAsync(
+    public async Task<PagedResult<Asset>> GetAssetsByCompanyAsync(
         Guid companyId,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.Assets
             .Where(e => e.CompanyId == companyId)
             .OrderBy(e => e.AssetCode)
             .ThenBy(e => e.Id)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
-    public async Task<IReadOnlyList<AssetCategory>> GetCategoriesByCompanyAsync(
+    public async Task<PagedResult<AssetCategory>> GetCategoriesByCompanyAsync(
         Guid companyId,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.AssetCategories
             .Where(e => e.CompanyId == companyId)
             .OrderBy(e => e.CategoryName)
             .ThenBy(e => e.Id)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task<IReadOnlyList<AssetDepreciationSchedule>> GetDueSchedulesAsync(
         Guid companyId,

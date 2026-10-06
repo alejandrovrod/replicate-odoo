@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -35,14 +36,19 @@ public sealed class FakeCustomerRepository : ICustomerRepository
     public Task<Customer?> GetByIdAsync(Guid customerId, CancellationToken cancellationToken = default)
         => Task.FromResult(_customers.FirstOrDefault(c => c.Id == customerId));
 
-    public Task<IReadOnlyList<Customer>> GetRecentAsync(
+    // In-memory fakes ignore paging and return the whole seeded set: paging itself is
+    // covered by the shared extension plus integration tests, handler tests assert mapping.
+    public Task<PagedResult<Customer>> GetRecentAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Customer>>(
-            _customers
-                .Where(c => c.CompanyId == companyId)
-                .OrderByDescending(c => c.Id)
-                .Take(limit)
-                .ToList());
+        => Task.FromResult(
+            new PagedResult<Customer>(
+                _customers
+                    .Where(c => c.CompanyId == companyId)
+                    .OrderByDescending(c => c.Id)
+                    .ToList(),
+                _customers.Count(c => c.CompanyId == companyId),
+                paging.SafePageNumber,
+                paging.SafePageSize));
 }

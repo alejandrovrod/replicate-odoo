@@ -670,17 +670,18 @@ public sealed class JournalEntryPipelineTests
             createdAt: new DateTimeOffset(2026, 3, 2, 12, 0, 0, TimeSpan.Zero));
 
         var handler = new GetJournalEntriesQueryHandler(_journals);
-        var list = await handler.HandleAsync(new GetJournalEntriesQuery(_companyId, Limit: 10));
+        var page = await handler.HandleAsync(new GetJournalEntriesQuery(_companyId, PageSize: 10));
 
-        Assert.Equal(2, list.Count);
-        Assert.Equal(newer.Id, list[0].Id);
-        Assert.Equal(older.Id, list[1].Id);
+        Assert.Equal(2, page.Items.Count);
+        Assert.Equal(2, page.TotalCount);
+        Assert.Equal(newer.Id, page.Items[0].Id);
+        Assert.Equal(older.Id, page.Items[1].Id);
 
-        // An empty company returns an empty list (the API turns that into 200 []).
-        Assert.Empty(await handler.HandleAsync(new GetJournalEntriesQuery(Guid.NewGuid())));
+        // An empty company returns an empty page (the API turns that into 200 with empty items).
+        Assert.Empty((await handler.HandleAsync(new GetJournalEntriesQuery(Guid.NewGuid()))).Items);
 
-        // Limit: 0 falls back to the documented default (50), never to "no rows".
-        Assert.Equal(2, (await handler.HandleAsync(new GetJournalEntriesQuery(_companyId, 0))).Count);
+        // PageNumber 0 falls back to page 1 (never to "no rows").
+        Assert.Equal(2, (await handler.HandleAsync(new GetJournalEntriesQuery(_companyId, 0))).Items.Count);
     }
 }
 

@@ -227,22 +227,34 @@ public class StockEntriesConcurrencyApiTests : IClassFixture<ErpApiFactory>
     /// </summary>
     private static async Task<decimal> ReadOnHandAsync(HttpClient client)
     {
-        using var response = await client.GetAsync(
-            $"/api/v1/items?companyId={ErpApiFactory.DevCompanyId}");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // Pages through the item list: the dev database accumulates rows across runs, so no
+        // fixed page can guarantee the item (Standard Pagination Pattern consequence).
+        for (var page = 1; ; page++)
+        {
+            using var response = await client.GetAsync(
+                $"/api/v1/items?companyId={ErpApiFactory.DevCompanyId}&page={page}&pageSize=500");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var items = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsArray();
-        var item = items.Single(node => string.Equals(
-            node!["id"]!.GetValue<string>(),
-            ItemId.ToString(),
-            StringComparison.OrdinalIgnoreCase));
+            var items = JsonNode.Parse(await response.Content.ReadAsStringAsync())!["items"]!.AsArray();
+            var item = items.SingleOrDefault(node => string.Equals(
+                node!["id"]!.GetValue<string>(),
+                ItemId.ToString(),
+                StringComparison.OrdinalIgnoreCase));
+            if (item is not null)
+            {
+                var stock = item!["stock"]!.AsArray().Single(node => string.Equals(
+                    node!["warehouseId"]!.GetValue<string>(),
+                    WarehouseId.ToString(),
+                    StringComparison.OrdinalIgnoreCase));
 
-        var stock = item!["stock"]!.AsArray().Single(node => string.Equals(
-            node!["warehouseId"]!.GetValue<string>(),
-            WarehouseId.ToString(),
-            StringComparison.OrdinalIgnoreCase));
+                return stock!["qty"]!.GetValue<decimal>();
+            }
 
-        return stock!["qty"]!.GetValue<decimal>();
+            if (items.Count == 0)
+            {
+                throw new InvalidOperationException($"Item {ItemId} not found in any page of the item list.");
+            }
+        }
     }
 
     private static string Iso(DateOnly date) =>

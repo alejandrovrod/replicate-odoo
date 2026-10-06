@@ -5,6 +5,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Selling.Commands;
 using Erp.Application.Features.Selling.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -58,11 +59,12 @@ public sealed class SalesOrdersController : ControllerBase
     /// <param name="limit">Maximum number of orders to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<SalesOrderDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<SalesOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
         [FromQuery] Guid companyId,
-        [FromQuery] int limit = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
@@ -74,7 +76,7 @@ public sealed class SalesOrdersController : ControllerBase
                 SellingErrorCodes.CompanyRequired);
         }
 
-        var orders = await _sender.SendAsync(new GetSalesOrdersQuery(companyId, limit), cancellationToken);
+        var orders = await _sender.SendAsync(new GetSalesOrdersQuery(companyId, page, pageSize), cancellationToken);
         return Ok(orders);
     }
 

@@ -163,6 +163,12 @@
   <data name="WarehouseRejected" xml:space="preserve">
     <value>Warehouse Rejected</value>
   </data>
+  <data name="InvalidWarehouseId" xml:space="preserve">
+    <value>Invalid Warehouse Id</value>
+  </data>
+  <data name="WarehouseNotFound" xml:space="preserve">
+    <value>Warehouse Not Found</value>
+  </data>
   <data name="ItemConflict" xml:space="preserve">
     <value>Item Conflict</value>
   </data>

@@ -1,7 +1,9 @@
 using Erp.Application.Features.Crm.Commands;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -122,7 +124,7 @@ public class IngestLeadDedupTests
             LastDedupLookup = (companyId, source, externalReference);
             return Task.FromResult(DedupMatch);
         }
-        public Task<System.Collections.Generic.IReadOnlyList<Lead>> ListLeadsAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Lead>>(new System.Collections.Generic.List<Lead>());
-        public Task<System.Collections.Generic.IReadOnlyList<Opportunity>> ListOpportunitiesAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default) => Task.FromResult<System.Collections.Generic.IReadOnlyList<Opportunity>>(new System.Collections.Generic.List<Opportunity>());
+        public Task<PagedResult<Lead>> ListLeadsAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default) => Task.FromResult(new PagedResult<Lead>(new List<Lead>(), 0, paging.SafePageNumber, paging.SafePageSize));
+        public Task<PagedResult<Opportunity>> ListOpportunitiesAsync(Guid companyId, PagedRequest paging, string? stage, CancellationToken cancellationToken = default) => Task.FromResult(new PagedResult<Opportunity>(new List<Opportunity>(), 0, paging.SafePageNumber, paging.SafePageSize));
     }
 }

@@ -4,6 +4,7 @@ using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Manufacturing.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,11 +42,13 @@ public sealed class BomsController : ControllerBase
     /// <param name="companyId">Company that owns the recipes.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<BomDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<BomDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -56,7 +59,7 @@ public sealed class BomsController : ControllerBase
                 ManufacturingErrorCodes.BomNotFound);
         }
 
-        var boms = await _sender.SendAsync(new GetBomsQuery(companyId), cancellationToken);
+        var boms = await _sender.SendAsync(new GetBomsQuery(companyId, page, pageSize), cancellationToken);
         return Ok(boms);
     }
 

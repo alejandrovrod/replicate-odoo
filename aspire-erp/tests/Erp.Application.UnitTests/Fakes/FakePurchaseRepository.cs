@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -146,23 +147,27 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
         Guid purchaseOrderId, CancellationToken cancellationToken = default)
         => Task.FromResult(_orders.FirstOrDefault(o => o.Id == purchaseOrderId));
 
-    public Task<IReadOnlyList<PurchaseOrder>> GetRecentOrdersByCompanyAsync(
-        Guid companyId, int limit, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<PurchaseOrder>>(
-            _orders.Where(o => o.CompanyId == companyId).Take(limit).ToList());
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<PurchaseOrder>> GetRecentOrdersByCompanyAsync(
+        Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _orders.Where(o => o.CompanyId == companyId).ToList();
+        return Task.FromResult(new PagedResult<PurchaseOrder>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task<PurchaseReceipt?> GetReceiptByIdAsync(
         Guid purchaseReceiptId, CancellationToken cancellationToken = default)
         => Task.FromResult(AttachOrder(_receipts.FirstOrDefault(r => r.Id == purchaseReceiptId)));
 
-    public Task<IReadOnlyList<PurchaseReceipt>> GetRecentReceiptsByCompanyAsync(
-        Guid companyId, int limit, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<PurchaseReceipt>>(
-            _receipts
-                .Where(r => r.CompanyId == companyId)
-                .Take(limit)
-                .Select(AttachOrder)
-                .ToList()!);
+    public Task<PagedResult<PurchaseReceipt>> GetRecentReceiptsByCompanyAsync(
+        Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _receipts
+            .Where(r => r.CompanyId == companyId)
+            .Select(AttachOrder)
+            .ToList()!;
+        return Task.FromResult(new PagedResult<PurchaseReceipt>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task<bool> ReceiptHasInvoiceAsync(
         Guid purchaseReceiptId, CancellationToken cancellationToken = default)
@@ -173,10 +178,12 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
         return Task.FromResult(_invoices.SelectMany(i => i.Lines).Any(l => receiptLineIds.Contains(l.PurchaseReceiptLineId)));
     }
 
-    public Task<IReadOnlyList<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(
-        Guid companyId, int limit, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<PurchaseInvoice>>(
-            _invoices.Where(i => i.CompanyId == companyId).Take(limit).ToList());
+    public Task<PagedResult<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(
+        Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _invoices.Where(i => i.CompanyId == companyId).ToList();
+        return Task.FromResult(new PagedResult<PurchaseInvoice>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task<PurchaseInvoice?> GetInvoiceByIdAsync(
         Guid purchaseInvoiceId, CancellationToken cancellationToken = default)

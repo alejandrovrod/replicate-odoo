@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -21,7 +22,7 @@ public interface IItemRepository
     Task<bool> ExistsSkuAsync(string code, CancellationToken cancellationToken = default);
 
     /// <summary>All items of the tenant - the source of the ItemList query.</summary>
-    Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PagedResult<Item>> GetAllAsync(PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>The item with the given id, or null when it does not exist in this tenant.</summary>
     Task<Item?> GetByIdAsync(Guid itemId, CancellationToken cancellationToken = default);

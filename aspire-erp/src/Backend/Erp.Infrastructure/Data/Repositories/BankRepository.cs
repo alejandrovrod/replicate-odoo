@@ -1,6 +1,8 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Infrastructure.Data.Repositories;
@@ -111,13 +113,14 @@ public sealed class BankRepository : IBankRepository
             .ToList();
     }
 
-    public async Task<IReadOnlyList<BankTransactionRule>> GetRulesByCompanyAsync(
+    public async Task<PagedResult<BankTransactionRule>> GetRulesByCompanyAsync(
         Guid companyId,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.BankTransactionRules
             .Where(r => r.CompanyId == companyId)
             .OrderBy(r => r.Priority)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task AddRuleAsync(BankTransactionRule rule, CancellationToken cancellationToken = default)
     {
@@ -147,10 +150,11 @@ public sealed class BankRepository : IBankRepository
         return await query.ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<BankTransaction>> GetTransactionsAsync(
+    public async Task<PagedResult<BankTransaction>> GetTransactionsAsync(
         Guid companyId,
         Guid? bankAccountId,
         BankTransactionStatus? status,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
     {
         var query = _dbContext.BankTransactions.Where(t => t.CompanyId == companyId);
@@ -168,7 +172,7 @@ public sealed class BankRepository : IBankRepository
         return await query
             .OrderByDescending(t => t.TransactionDate)
             .ThenBy(t => t.Id)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
     }
 
     public async Task UpdateTransactionAsync(BankTransaction transaction, CancellationToken cancellationToken = default)

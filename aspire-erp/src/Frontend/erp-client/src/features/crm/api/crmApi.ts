@@ -1,4 +1,5 @@
 import { apiClient } from '../../../api/client'
+import type { PagedResult } from '../../../lib/pagination'
 import { useTenantStore } from '../../../store/useTenantStore'
 import type {
   AdvanceStagePayload,
@@ -18,11 +19,11 @@ import type {
  * callers pass only business parameters.
  */
 export const crmApi = {
-  /** GET /api/v1/opportunities - the pipeline board source, newest first. */
-  getOpportunities: async (stage?: string): Promise<OpportunityDto[]> => {
+  /** GET /api/v1/opportunities - the pipeline board source, newest first (paginated). */
+  getOpportunities: async (stage?: string, page = 1, pageSize = 50): Promise<PagedResult<OpportunityDto>> => {
     const companyId = useTenantStore.getState().companyId
-    const response = await apiClient.get<OpportunityDto[]>('/v1/opportunities', {
-      params: { companyId, limit: 50, ...(stage ? { stage } : {}) },
+    const response = await apiClient.get<PagedResult<OpportunityDto>>('/v1/opportunities', {
+      params: { companyId, page, pageSize, ...(stage ? { stage } : {}) },
     })
     return response.data
   },
@@ -62,11 +63,11 @@ export const crmApi = {
     return response.data
   },
 
-  /** GET /api/v1/leads - the company's most recent leads. */
-  getLeads: async (): Promise<LeadDto[]> => {
+  /** GET /api/v1/leads - the company's most recent leads (paginated). */
+  getLeads: async (page = 1, pageSize = 50): Promise<PagedResult<LeadDto>> => {
     const companyId = useTenantStore.getState().companyId
-    const response = await apiClient.get<LeadDto[]>('/v1/leads', {
-      params: { companyId, limit: 50 },
+    const response = await apiClient.get<PagedResult<LeadDto>>('/v1/leads', {
+      params: { companyId, page, pageSize },
     })
     return response.data
   },
@@ -125,12 +126,12 @@ export const crmApi = {
     return response.data
   },
 
-  /** GET /api/v1/items - catalog picker for the sales-order line (no stock quantities needed). */
+  /** GET /api/v1/items - catalog picker for the sales-order line (bounded single page, no pager). */
   getItems: async (): Promise<ItemOption[]> => {
     const companyId = useTenantStore.getState().companyId
-    const response = await apiClient.get<ItemOption[]>('/v1/items', {
-      params: { companyId },
+    const response = await apiClient.get<PagedResult<ItemOption>>('/v1/items', {
+      params: { companyId, page: 1, pageSize: 500 },
     })
-    return response.data
+    return response.data.items
   },
 }

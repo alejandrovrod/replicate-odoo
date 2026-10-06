@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 
@@ -43,10 +44,10 @@ public interface IManufacturingRepository
     Task<BillOfMaterials?> GetDefaultActiveBomByItemIdAsync(Guid itemId, CancellationToken cancellationToken = default);
 
     /// <summary>Lists one company's BOM headers with their items and operations (Task 9.5 UI reads).</summary>
-    Task<IReadOnlyList<BillOfMaterials>> ListBomsAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<BillOfMaterials>> ListBomsAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>Lists one company's work-order headers (Task 9.5 execution board reads).</summary>
-    Task<IReadOnlyList<WorkOrder>> ListWorkOrdersAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<WorkOrder>> ListWorkOrdersAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>Gets a work order by its ID (header only - the aggregate carries no lines).</summary>
     Task<WorkOrder?> GetWorkOrderByIdAsync(Guid id, CancellationToken cancellationToken = default);

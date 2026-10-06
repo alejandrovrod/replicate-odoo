@@ -8,6 +8,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <!-- Explicit pin: the transitive Microsoft.OpenApi 2.0.0 is affected by GHSA-v5pm-xwqc-g5wc (NU1903);
          2.7.5 is the first patched version in the 2.x line consumed by Microsoft.AspNetCore.OpenApi. -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />

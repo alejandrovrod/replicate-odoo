@@ -1,8 +1,10 @@
 using System.Data;
 using System.Data.Common;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -59,19 +61,28 @@ public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
             l => l.CompanyId == companyId && l.Source == source && l.ExternalReference == externalReference,
             cancellationToken);
 
-    public async Task<IReadOnlyList<Lead>> ListLeadsAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<Lead>> ListLeadsAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.Leads
             .Where(l => l.CompanyId == companyId)
             .OrderByDescending(l => l.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
-    public async Task<IReadOnlyList<Opportunity>> ListOpportunitiesAsync(Guid companyId, int limit = 50, CancellationToken cancellationToken = default)
-        => await _dbContext.Opportunities
-            .Where(o => o.CompanyId == companyId)
+    public async Task<PagedResult<Opportunity>> ListOpportunitiesAsync(Guid companyId, PagedRequest paging, string? stage, CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Opportunities
+            .Where(o => o.CompanyId == companyId);
+
+        // The stage filter used to run in memory after Take(); it now constrains the query so
+        // pages stay consistent (Standard Pagination Pattern).
+        if (!string.IsNullOrWhiteSpace(stage))
+        {
+            query = query.Where(o => o.Stage == stage);
+        }
+
+        return await query
             .OrderByDescending(o => o.OpportunityNumber)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
+    }
 
     public async Task AddLeadAsync(Lead lead, CancellationToken cancellationToken = default)
     {

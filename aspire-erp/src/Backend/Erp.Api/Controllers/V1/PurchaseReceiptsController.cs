@@ -6,6 +6,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -46,11 +47,12 @@ public sealed class PurchaseReceiptsController : ControllerBase
     /// <param name="limit">Maximum number of receipts to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<PurchaseReceiptDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<PurchaseReceiptDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
         [FromQuery] Guid companyId,
-        [FromQuery] int limit = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
@@ -62,7 +64,7 @@ public sealed class PurchaseReceiptsController : ControllerBase
                 PurchaseErrorCodes.CompanyNotFound);
         }
 
-        var receipts = await _sender.SendAsync(new GetPurchaseReceiptsQuery(companyId, limit), cancellationToken);
+        var receipts = await _sender.SendAsync(new GetPurchaseReceiptsQuery(companyId, page, pageSize), cancellationToken);
         return Ok(receipts);
     }
 

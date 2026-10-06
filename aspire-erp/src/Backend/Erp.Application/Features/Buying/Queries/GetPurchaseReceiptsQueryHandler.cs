@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -11,7 +12,7 @@ namespace Erp.Application.Features.Buying.Queries;
 /// (Constitution II.3); CompanyId is business scoping.
 /// </summary>
 public sealed class GetPurchaseReceiptsQueryHandler
-    : IQueryHandler<GetPurchaseReceiptsQuery, IReadOnlyList<PurchaseReceiptDto>>
+    : IQueryHandler<GetPurchaseReceiptsQuery, PagedResult<PurchaseReceiptDto>>
 {
     private readonly IPurchaseRepository _purchases;
     private readonly IItemRepository _items;
@@ -22,26 +23,28 @@ public sealed class GetPurchaseReceiptsQueryHandler
         _items = items;
     }
 
-    public async Task<IReadOnlyList<PurchaseReceiptDto>> HandleAsync(
+    public async Task<PagedResult<PurchaseReceiptDto>> HandleAsync(
         GetPurchaseReceiptsQuery query,
         CancellationToken cancellationToken = default)
     {
-        var limit = query.Limit <= 0 ? 50 : Math.Min(query.Limit, 500);
-        var receipts = await _purchases.GetRecentReceiptsByCompanyAsync(query.CompanyId, limit, cancellationToken);
-        if (receipts.Count == 0)
+        var page = await _purchases.GetRecentReceiptsByCompanyAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        if (page.Items.Count == 0)
         {
-            return Array.Empty<PurchaseReceiptDto>();
+            return page.Map(new List<PurchaseReceiptDto>());
         }
 
-        var itemById = await LoadItemsAsync(receipts, cancellationToken);
+        var itemById = await LoadItemsAsync(page.Items, cancellationToken);
 
-        var result = new List<PurchaseReceiptDto>(receipts.Count);
-        foreach (var receipt in receipts)
+        var result = new List<PurchaseReceiptDto>(page.Items.Count);
+        foreach (var receipt in page.Items)
         {
             result.Add(PurchaseReceiptDto.Build(receipt, itemById));
         }
 
-        return result;
+        return page.Map(result);
     }
 
     private async Task<Dictionary<Guid, Item>> LoadItemsAsync(

@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -11,7 +12,7 @@ namespace Erp.Application.Features.Manufacturing.Queries;
 /// the manufacturing repository. Tenant isolation is automatic (Constitution II.3); CompanyId
 /// is business scoping. Read-only: no stock, no GL, no idempotency guard.
 /// </summary>
-public sealed class GetBomsQueryHandler : IQueryHandler<GetBomsQuery, IReadOnlyList<BomDto>>
+public sealed class GetBomsQueryHandler : IQueryHandler<GetBomsQuery, PagedResult<BomDto>>
 {
     private readonly IManufacturingRepository _manufacturing;
     private readonly IItemRepository _items;
@@ -22,11 +23,15 @@ public sealed class GetBomsQueryHandler : IQueryHandler<GetBomsQuery, IReadOnlyL
         _items = items;
     }
 
-    public async Task<IReadOnlyList<BomDto>> HandleAsync(
+    public async Task<PagedResult<BomDto>> HandleAsync(
         GetBomsQuery query,
         CancellationToken cancellationToken = default)
     {
-        var boms = await _manufacturing.ListBomsAsync(query.CompanyId, cancellationToken);
-        return await BomDtoAssembler.BuildAsync(boms, _manufacturing, _items, cancellationToken);
+        var page = await _manufacturing.ListBomsAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        var items = await BomDtoAssembler.BuildAsync(page.Items, _manufacturing, _items, cancellationToken);
+        return page.Map(items);
     }
 }

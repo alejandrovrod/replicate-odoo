@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -119,17 +120,24 @@ public sealed class FakeAssetsRepository : IAssetsRepository
     public Task<Asset?> GetAssetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(_assets.FirstOrDefault(a => a.Id == id));
 
-    public Task<IReadOnlyList<Asset>> GetAssetsByCompanyAsync(
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<Asset>> GetAssetsByCompanyAsync(
         Guid companyId,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Asset>>(
-            _assets.Where(a => a.CompanyId == companyId).OrderBy(a => a.AssetCode).ThenBy(a => a.Id).ToList());
+    {
+        var items = _assets.Where(a => a.CompanyId == companyId).OrderBy(a => a.AssetCode).ThenBy(a => a.Id).ToList();
+        return Task.FromResult(new PagedResult<Asset>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
-    public Task<IReadOnlyList<AssetCategory>> GetCategoriesByCompanyAsync(
+    public Task<PagedResult<AssetCategory>> GetCategoriesByCompanyAsync(
         Guid companyId,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<AssetCategory>>(
-            _categories.Where(c => c.CompanyId == companyId).OrderBy(c => c.CategoryName).ThenBy(c => c.Id).ToList());
+    {
+        var items = _categories.Where(c => c.CompanyId == companyId).OrderBy(c => c.CategoryName).ThenBy(c => c.Id).ToList();
+        return Task.FromResult(new PagedResult<AssetCategory>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task<IReadOnlyList<AssetDepreciationSchedule>> GetDueSchedulesAsync(
         Guid companyId,

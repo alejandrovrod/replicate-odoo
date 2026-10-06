@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -47,24 +48,29 @@ public interface IHrPayrollRepository
     Task UpdateEmployeeAsync(Employee employee, CancellationToken cancellationToken = default);
     Task<Employee?> GetEmployeeByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Employee?> GetEmployeeByNumberAsync(Guid companyId, string employeeNumber, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Employee>> GetEmployeesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<Employee>> GetEmployeesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     // Salary components
     Task AddComponentAsync(SalaryComponent component, CancellationToken cancellationToken = default);
     Task<SalaryComponent?> GetComponentByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<SalaryComponent>> GetComponentsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<SalaryComponent>> GetComponentsByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Components by id for enriching one page of structures (bounded lookup, mirrors the items
+    /// pattern — never a full-catalog read).
+    /// </summary>
+    Task<IReadOnlyList<SalaryComponent>> GetComponentsByIdsAsync(IReadOnlyList<Guid> componentIds, CancellationToken cancellationToken = default);
     // Salary structures + lines
     Task AddStructureAsync(SalaryStructure structure, CancellationToken cancellationToken = default);
     Task<SalaryStructure?> GetStructureByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<SalaryStructure>> GetStructuresByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<SalaryStructure>> GetStructuresByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     // Assignments
     Task AddAssignmentAsync(SalaryStructureAssignment assignment, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<SalaryStructureAssignment>> GetAssignmentsByEmployeeAsync(Guid employeeId, CancellationToken cancellationToken = default);
 
     /// <summary>All assignments of one company - the batch-eligibility read (Task 12.3).</summary>
-    Task<IReadOnlyList<SalaryStructureAssignment>> GetAssignmentsByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<SalaryStructureAssignment>> GetAssignmentsByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     // Payroll batch engine (Tasks 12.3-12.4): entries, slips, slip lines and the GL writes.
     // Same growth precedent as the manufacturing repository (masters first, workflow second).
@@ -92,7 +98,7 @@ public interface IHrPayrollRepository
 
     Task AddPayrollEntryAsync(PayrollEntry entry, CancellationToken cancellationToken = default);
     Task<PayrollEntry?> GetPayrollEntryByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task<PagedResult<PayrollEntry>> GetPayrollEntriesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Block C overlap guard (HR-06 live provability): true when a non-Cancelled entry of the

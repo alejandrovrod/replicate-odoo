@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -10,7 +11,7 @@ namespace Erp.Application.Features.Stock.Queries;
 /// line item codes/names from <see cref="IItemRepository"/>. Tenant isolation is automatic
 /// (Constitution II.3); CompanyId is business scoping.
 /// </summary>
-public sealed class GetStockEntriesQueryHandler : IQueryHandler<GetStockEntriesQuery, IReadOnlyList<StockEntryDto>>
+public sealed class GetStockEntriesQueryHandler : IQueryHandler<GetStockEntriesQuery, PagedResult<StockEntryDto>>
 {
     private readonly IStockRepository _stock;
     private readonly IItemRepository _items;
@@ -21,19 +22,21 @@ public sealed class GetStockEntriesQueryHandler : IQueryHandler<GetStockEntriesQ
         _items = items;
     }
 
-    public async Task<IReadOnlyList<StockEntryDto>> HandleAsync(
+    public async Task<PagedResult<StockEntryDto>> HandleAsync(
         GetStockEntriesQuery query,
         CancellationToken cancellationToken = default)
     {
-        var limit = query.Limit <= 0 ? 50 : Math.Min(query.Limit, 500);
-        var entries = await _stock.GetRecentByCompanyAsync(query.CompanyId, limit, cancellationToken);
-        if (entries.Count == 0)
+        var page = await _stock.GetRecentByCompanyAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        if (page.Items.Count == 0)
         {
-            return Array.Empty<StockEntryDto>();
+            return page.Map(new List<StockEntryDto>());
         }
 
         var itemIds = new HashSet<Guid>();
-        foreach (var entry in entries)
+        foreach (var entry in page.Items)
         {
             foreach (var line in entry.Items)
             {
@@ -48,8 +51,8 @@ public sealed class GetStockEntriesQueryHandler : IQueryHandler<GetStockEntriesQ
             itemById[item.Id] = item;
         }
 
-        var result = new List<StockEntryDto>(entries.Count);
-        foreach (var entry in entries)
+        var result = new List<StockEntryDto>(page.Items.Count);
+        foreach (var entry in page.Items)
         {
             var lines = new List<StockEntryLineDto>(entry.Items.Count);
             foreach (var line in entry.Items.OrderBy(l => l.LineNumber))
@@ -76,6 +79,6 @@ public sealed class GetStockEntriesQueryHandler : IQueryHandler<GetStockEntriesQ
                 lines));
         }
 
-        return result;
+        return page.Map(result);
     }
 }

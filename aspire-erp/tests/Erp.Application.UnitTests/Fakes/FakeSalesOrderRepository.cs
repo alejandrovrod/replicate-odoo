@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -68,8 +69,11 @@ public sealed class FakeSalesOrderRepository : ISalesOrderRepository
         Guid salesOrderId, CancellationToken cancellationToken = default)
         => Task.FromResult(_orders.FirstOrDefault(o => o.Id == salesOrderId));
 
-    public Task<IReadOnlyList<SalesOrder>> GetRecentOrdersByCompanyAsync(
-        Guid companyId, int limit, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<SalesOrder>>(
-            _orders.Where(o => o.CompanyId == companyId).Take(limit).ToList());
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<SalesOrder>> GetRecentOrdersByCompanyAsync(
+        Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _orders.Where(o => o.CompanyId == companyId).ToList();
+        return Task.FromResult(new PagedResult<SalesOrder>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 }

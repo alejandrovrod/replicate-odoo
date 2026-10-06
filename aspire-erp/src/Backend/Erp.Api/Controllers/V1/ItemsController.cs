@@ -5,6 +5,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Items.Commands;
 using Erp.Application.Features.Items.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -49,9 +50,13 @@ public sealed class ItemsController : ControllerBase
     /// <param name="companyId">Company whose warehouses bound the stock breakdown.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<ItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<ItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Get([FromQuery] Guid companyId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Get(
+        [FromQuery] Guid companyId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -62,7 +67,7 @@ public sealed class ItemsController : ControllerBase
                 "company_required");
         }
 
-        var items = await _sender.SendAsync(new GetItemsQuery(companyId), cancellationToken);
+        var items = await _sender.SendAsync(new GetItemsQuery(companyId, page, pageSize), cancellationToken);
         return Ok(items);
     }
 

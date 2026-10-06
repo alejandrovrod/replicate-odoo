@@ -1,8 +1,10 @@
 using System.Data;
 using System.Data.Common;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -184,9 +186,9 @@ public sealed class SalesRepository : ISalesOrderRepository, IDeliveryNoteReposi
             .Include(o => o.Customer)
             .FirstOrDefaultAsync(o => o.Id == salesOrderId, cancellationToken);
 
-    public async Task<IReadOnlyList<SalesOrder>> GetRecentOrdersByCompanyAsync(
+    public async Task<PagedResult<SalesOrder>> GetRecentOrdersByCompanyAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.SalesOrders
             .Where(o => o.CompanyId == companyId)
@@ -194,8 +196,7 @@ public sealed class SalesRepository : ISalesOrderRepository, IDeliveryNoteReposi
             .Include(o => o.Customer)
             .OrderByDescending(o => o.CreatedAt)
             .ThenByDescending(o => o.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task<DeliveryNote?> GetDeliveryNoteByIdAsync(
         Guid deliveryNoteId,
@@ -204,17 +205,16 @@ public sealed class SalesRepository : ISalesOrderRepository, IDeliveryNoteReposi
             .Include(d => d.Lines)
             .FirstOrDefaultAsync(d => d.Id == deliveryNoteId, cancellationToken);
 
-    public async Task<IReadOnlyList<DeliveryNote>> GetRecentDeliveryNotesByCompanyAsync(
+    public async Task<PagedResult<DeliveryNote>> GetRecentDeliveryNotesByCompanyAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.DeliveryNotes
             .Where(d => d.CompanyId == companyId)
             .Include(d => d.Lines)
             .OrderByDescending(d => d.CreatedAt)
             .ThenByDescending(d => d.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     private static void AddParameter(DbCommand command, string name, object value)
     {

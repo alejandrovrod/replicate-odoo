@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -32,8 +33,39 @@ public sealed class FakeWarehouseRepository : IWarehouseRepository
     public Task<IReadOnlyList<Warehouse>> GetByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Warehouse>>(_warehouses.Where(w => w.CompanyId == companyId).ToList());
 
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<Warehouse>> GetFlatWarehousesAsync(
+        Guid companyId,
+        bool leavesOnly,
+        bool? isActive,
+        PagedRequest paging,
+        CancellationToken cancellationToken = default)
+    {
+        var items = _warehouses.Where(w => w.CompanyId == companyId);
+        if (leavesOnly)
+        {
+            items = items.Where(w => !w.IsGroup);
+        }
+
+        if (isActive is not null)
+        {
+            items = items.Where(w => w.IsActive == isActive);
+        }
+
+        var list = items.OrderBy(w => w.WarehouseCode).ToList();
+        return Task.FromResult(new PagedResult<Warehouse>(list, list.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
+
     public Task<bool> ExistsByCodeAsync(Guid companyId, string code, CancellationToken cancellationToken = default)
         => Task.FromResult(_warehouses.Any(w => w.CompanyId == companyId && w.WarehouseCode == code));
+
+    public Task UpdateAsync(Warehouse warehouse, CancellationToken cancellationToken = default)
+    {
+        UpdatedWarehouse = warehouse;
+        return Task.CompletedTask;
+    }
+
+    public Warehouse? UpdatedWarehouse { get; private set; }
 }
 
 

@@ -162,6 +162,12 @@
   <data name="WarehouseRejected" xml:space="preserve">
     <value>Almacén rechazado</value>
   </data>
+  <data name="InvalidWarehouseId" xml:space="preserve">
+    <value>Id de almacén inválido</value>
+  </data>
+  <data name="WarehouseNotFound" xml:space="preserve">
+    <value>Almacén no encontrado</value>
+  </data>
   <data name="ItemConflict" xml:space="preserve">
     <value>Conflicto de artículo</value>
   </data>

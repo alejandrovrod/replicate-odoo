@@ -1,9 +1,11 @@
 import { ArrowRight, BadgeDollarSign, CalendarRange } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Pagination } from '../../components/ui/Pagination'
 import { useErpAction } from '../../lib/useErpAction'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { formatMoney } from '../../lib/format'
+import { usePagination } from '../../lib/pagination'
 import type { PayrollEntryStatus, PayrollRun } from './types'
 import {
   payrollPeriodDefaults,
@@ -40,7 +42,8 @@ export function PayrollWorkbench({
   periodEnd: string
   onPeriodChange: (start: string, end: string) => void
 }) {
-  const runsQuery = usePayrollRuns(companyId)
+  const paging = usePagination()
+  const runsQuery = usePayrollRuns(companyId, paging.page, paging.pageSize)
   const { t, i18n } = useTranslation('hr-payroll')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [postingDate, setPostingDate] = useState(todayIso())
@@ -210,7 +213,7 @@ export function PayrollWorkbench({
         <h3 className="mb-1 text-base font-semibold text-slate-900">{t('workbench.runsTitle')}</h3>
         <p className="mb-4 text-xs text-slate-500">{t('workbench.runsSubtitle')}</p>
 
-        {runsQuery.data.length === 0 ? (
+        {runsQuery.items.length === 0 ? (
           <p className="py-4 text-center text-sm text-slate-500">{t('workbench.empty')}</p>
         ) : (
           <div className="overflow-x-auto">
@@ -226,7 +229,7 @@ export function PayrollWorkbench({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {runsQuery.data.map((run) => (
+                {runsQuery.items.map((run) => (
                   <tr key={run.id} className="h-11 hover:bg-slate-50">
                     <td className="py-2">
                       <button
@@ -277,6 +280,15 @@ export function PayrollWorkbench({
             </table>
           </div>
         )}
+
+        <div className="mt-3 flex justify-end">
+          <Pagination
+            totalCount={runsQuery.totalCount}
+            page={paging.page}
+            pageSize={paging.pageSize}
+            onPageChange={paging.setPage}
+          />
+        </div>
 
         <div className="mt-4 flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">

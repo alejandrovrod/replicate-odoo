@@ -1,12 +1,13 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 
 namespace Erp.Application.Features.Banking.Queries;
 
 /// <summary>Lists the staging lines of a company through the repository (tenant filter automatic).</summary>
 public sealed class GetBankTransactionsQueryHandler
-    : IQueryHandler<GetBankTransactionsQuery, IReadOnlyList<BankTransactionDto>>
+    : IQueryHandler<GetBankTransactionsQuery, PagedResult<BankTransactionDto>>
 {
     private readonly IBankRepository _bank;
 
@@ -15,13 +16,17 @@ public sealed class GetBankTransactionsQueryHandler
         _bank = bank;
     }
 
-    public async Task<IReadOnlyList<BankTransactionDto>> HandleAsync(
+    public async Task<PagedResult<BankTransactionDto>> HandleAsync(
         GetBankTransactionsQuery query,
         CancellationToken cancellationToken = default)
     {
-        var transactions = await _bank.GetTransactionsAsync(
-            query.CompanyId, query.BankAccountId, query.Status, cancellationToken);
+        var page = await _bank.GetTransactionsAsync(
+            query.CompanyId,
+            query.BankAccountId,
+            query.Status,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
 
-        return transactions.Select(BankTransactionDto.From).ToList();
+        return page.Map(page.Items.Select(BankTransactionDto.From).ToList());
     }
 }

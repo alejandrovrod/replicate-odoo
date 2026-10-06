@@ -1,12 +1,13 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 
 namespace Erp.Application.Features.Assets.Queries;
 
 /// <summary>Lists one company's asset categories for the Block C asset workbench. Read-only.</summary>
 public sealed class GetAssetCategoriesQueryHandler
-    : IQueryHandler<GetAssetCategoriesQuery, IReadOnlyList<AssetCategoryDto>>
+    : IQueryHandler<GetAssetCategoriesQuery, PagedResult<AssetCategoryDto>>
 {
     private readonly IAssetsRepository _assets;
 
@@ -15,17 +16,20 @@ public sealed class GetAssetCategoriesQueryHandler
         _assets = assets;
     }
 
-    public async Task<IReadOnlyList<AssetCategoryDto>> HandleAsync(
+    public async Task<PagedResult<AssetCategoryDto>> HandleAsync(
         GetAssetCategoriesQuery query,
         CancellationToken cancellationToken = default)
     {
-        var categories = await _assets.GetCategoriesByCompanyAsync(query.CompanyId, cancellationToken);
-        var result = new List<AssetCategoryDto>(categories.Count);
-        foreach (var category in categories)
+        var page = await _assets.GetCategoriesByCompanyAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        var result = new List<AssetCategoryDto>(page.Items.Count);
+        foreach (var category in page.Items)
         {
             result.Add(AssetCategoryDto.Build(category));
         }
 
-        return result;
+        return page.Map(result);
     }
 }

@@ -1,11 +1,12 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 
 namespace Erp.Application.Features.Buying.Queries;
 
 /// <summary>Assembles <see cref="GetSuppliersQuery"/> from <see cref="ISupplierRepository"/>.</summary>
-public sealed class GetSuppliersQueryHandler : IQueryHandler<GetSuppliersQuery, IReadOnlyList<SupplierDto>>
+public sealed class GetSuppliersQueryHandler : IQueryHandler<GetSuppliersQuery, PagedResult<SupplierDto>>
 {
     private readonly ISupplierRepository _suppliers;
 
@@ -14,12 +15,13 @@ public sealed class GetSuppliersQueryHandler : IQueryHandler<GetSuppliersQuery, 
         _suppliers = suppliers;
     }
 
-    public async Task<IReadOnlyList<SupplierDto>> HandleAsync(
+    public async Task<PagedResult<SupplierDto>> HandleAsync(
         GetSuppliersQuery query,
         CancellationToken cancellationToken = default)
     {
-        var limit = query.Limit <= 0 ? 50 : Math.Min(query.Limit, 500);
-        var suppliers = await _suppliers.GetRecentAsync(limit, cancellationToken);
-        return suppliers.Select(SupplierDto.From).ToList();
+        var page = await _suppliers.GetRecentAsync(
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        return page.Map(page.Items.Select(SupplierDto.From).ToList());
     }
 }

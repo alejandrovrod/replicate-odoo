@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useMemo, useState } from 'react'
 import {
   CheckCircle2,
   Landmark,
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ApiError, apiClient } from '../../api/client'
+import { useApiList } from '../../lib/useApiList'
+import { MAX_PAGE_SIZE } from '../../lib/pagination'
 import { useErpAction } from '../../lib/useErpAction'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { useTenantStore } from '../../store/useTenantStore'
@@ -35,38 +37,30 @@ export function BankingOverview() {
   const companyId = useTenantStore((state) => state.companyId)
   const [showImporter, setShowImporter] = useState(false)
   const [refreshSignal, setRefreshSignal] = useState(0)
-  const [counts, setCounts] = useState<StatusCounts>({ unreconciled: 0, matched: 0, reconciled: 0 })
-  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
-  // re-translates on language switches (same decision as CrmOverview).
-  const [countsError, setCountsError] = useState<unknown>(null)
 
-  const refresh = useCallback(() => setRefreshSignal((n) => n + 1), [])
-
-  useEffect(() => {
-    if (!companyId) return
-    let cancelled = false
-    apiClient
-      .get<BankTransaction[]>('/v1/bank-transactions', { params: { companyId } })
-      .then(
-        (response) => {
-          if (cancelled) return
-          setCounts({
-            unreconciled: response.data.filter((l) => l.status === 'Unreconciled').length,
-            matched: response.data.filter((l) => l.status === 'Matched').length,
-            reconciled: response.data.filter((l) => l.status === 'Reconciled').length,
-          })
-          setCountsError(null)
-        },
-        (cause: unknown) => {
-          if (!cancelled) {
-            setCountsError(cause)
-          }
-        },
-      )
-    return () => {
-      cancelled = true
+  // Status cards need per-status counts, and the list endpoint has no status filter: one
+  // bounded read (MAX_PAGE_SIZE, no pager) feeds the counters. Beyond 500 staging lines the
+  // cards saturate — a dedicated counts endpoint would lift that ceiling.
+  const countsQuery = useApiList<BankTransaction>(
+    '/v1/bank-transactions',
+    { companyId, page: 1, pageSize: MAX_PAGE_SIZE },
+    Boolean(companyId),
+  )
+  const { reload: reloadCounts } = countsQuery
+  const counts = useMemo<StatusCounts>(() => {
+    const rows = countsQuery.status === 'success' ? countsQuery.items : []
+    return {
+      unreconciled: rows.filter((l) => l.status === 'Unreconciled').length,
+      matched: rows.filter((l) => l.status === 'Matched').length,
+      reconciled: rows.filter((l) => l.status === 'Reconciled').length,
     }
-  }, [companyId, refreshSignal])
+  }, [countsQuery])
+  const countsError = countsQuery.status === 'error' ? countsQuery.error : null
+
+  const refresh = useCallback(() => {
+    setRefreshSignal((n) => n + 1)
+    reloadCounts()
+  }, [reloadCounts])
 
   const { state: rulesState, dispatch: runRules, isPending: isRunningRules } = useErpAction<
     RuleMatchSummary,

@@ -31,12 +31,47 @@
   "warehouses": {
     "title": "Warehouses",
     "subtitle": "Stock balance and perpetual valuation per leaf location.",
+    "manageTitle": "Warehouses",
+    "manageSubtitle": "Manage your company's warehouse locations and hierarchical groups.",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "type": "Type",
+      "status": "Status"
+    },
+    "typeGroup": "Group",
+    "typeLedger": "Ledger",
     "empty": "No warehouses yet for this company.",
     "active": "Active",
     "inactive": "Inactive",
     "statusLine": "{{status}} · stock account {{account}}",
     "stockedSkus_one": "{{count}} SKU on hand",
-    "stockedSkus_other": "{{count}} SKUs on hand"
+    "stockedSkus_other": "{{count}} SKUs on hand",
+    "search": "Search...",
+    "manage": "Manage"
+  },
+  "warehouseForm": {
+    "titleNew": "New Warehouse",
+    "titleEdit": "Edit Warehouse",
+    "errorRequired": "Name and Code are required.",
+    "errorConflict": "Concurrency conflict or duplicate code. Please refresh and try again.",
+    "errorGeneric": "An error occurred while saving.",
+    "codeLabel": "Warehouse Code *",
+    "codePlaceholder": "e.g. WH-001",
+    "nameLabel": "Warehouse Name *",
+    "namePlaceholder": "e.g. Main Warehouse",
+    "isGroup": "Is Group Warehouse",
+    "active": "Active",
+    "parentLabel": "Parent Warehouse",
+    "parentNone": "-- None --",
+    "accountLabel": "Stock Account",
+    "accountPlaceholder": "Select a stock account…",
+    "accountHint": "Leaf posting accounts of this company.",
+    "accountLoading": "Loading accounts…",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save",
+    "errorAccountRequired": "A stock account is required."
   },
   "items": {
     "title": "Items & Stock Levels",

@@ -45,6 +45,12 @@ Cross-cutting findings:
 - The master [`tasks.md`](./tasks.md) still shows Phases 5–8 unchecked although modules 03, 05 and 06–09
   are archived. It must be reconciled (see R-00).
 - No frontend test runner exists. Every UI task so far was verified by `tsc` + `vite build` + lint only.
+- **Master data has no create/edit UI.** `POST` endpoints exist for warehouses, items, customers,
+  suppliers, accounts and asset categories, but the frontend never calls them (the only frontend
+  `POST` calls are purchase receipts and POS). BOMs and payroll masters have no write endpoint at all.
+  All catalog data comes from `scripts/seed-dev-*.sql`. No `PUT`/`DELETE` (edit/disable) exists for any catalog.
+- Observed on 2026-10-05 in the stock screen: 0 warehouses listed while item `IT-001` shows
+  6,540 units valued at -84,820. Needs investigation (seed/company mismatch or valuation defect).
 
 ---
 
@@ -84,6 +90,25 @@ Doctypes probed in `src/Backend` (class/record name search, excluding migrations
 | R-00 | Reconcile master `tasks.md` / `plan.md` / `spec.md` indexes with the archive state | — | Drift found in this audit |
 | R-01 | Finish and archive `00-i18n` (commit the pending controller edits) | — | Active change |
 | R-02 | Add a frontend test runner (Vitest + Testing Library) and a smoke test per feature | — | Carry-forward S2 (assets/banking/manufacturing) |
+
+### Phase RM — Master data management (prerequisite for real usage)
+
+In ERPNext every catalog is a DocType with list + form views. Aspire ERP must offer the same before
+any transactional flow can be used without SQL seeds. One shared list/form pattern, reused per catalog.
+
+| ID | Task | Depends on | Source |
+|----|------|------------|--------|
+| RM-00 | Investigate 0-warehouse / negative-valuation anomaly in the stock screen | — | Observed 2026-10-05 |
+| RM-01 | Shared master-data UI pattern: list (search, filter, paging) + create/edit form + enable/disable | R-02 | Gap |
+| RM-02 | Company setup (default accounts, currency, fiscal settings) | RM-01 | Gap |
+| RM-03 | Chart of accounts: create/edit/disable from the tree | RM-01 | Gap (API `POST` exists) |
+| RM-04 | Warehouses: create/edit/disable within the tree, linked stock account | RM-01 | Gap (API `POST` exists) |
+| RM-05 | UOM and items (valuation method, default accounts, UOM conversions) | RM-01 | Gap (API `POST` exists) |
+| RM-06 | Customers and suppliers (credit limit, payment terms, default accounts) | RM-01 | Gap (API `POST` exists) |
+| RM-07 | Asset categories | RM-01 | Gap (API `POST` exists) |
+| RM-08 | Add `PUT`/disable endpoints with optimistic concurrency for all catalogs above | — | Gap |
+
+BOM (R-24) and payroll masters (R-25) are also master data; they follow RM-01 once their write API exists.
 
 ### Phase R1 — Close the accounting loop (highest priority)
 

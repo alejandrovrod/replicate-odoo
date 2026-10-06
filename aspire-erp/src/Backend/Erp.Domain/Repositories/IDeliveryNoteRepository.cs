@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -31,5 +32,5 @@ public interface IDeliveryNoteRepository
     Task<DeliveryNote?> GetDeliveryNoteByIdAsync(Guid deliveryNoteId, CancellationToken cancellationToken = default);
 
     /// <summary>Most recent delivery notes of a company (newest first) with lines.</summary>
-    Task<IReadOnlyList<DeliveryNote>> GetRecentDeliveryNotesByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+    Task<PagedResult<DeliveryNote>> GetRecentDeliveryNotesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 }

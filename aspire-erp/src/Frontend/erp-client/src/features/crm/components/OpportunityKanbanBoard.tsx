@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MAX_PAGE_SIZE } from '../../../lib/pagination';
 import type { AdvanceStagePayload, OpportunityDto, OpportunityStage } from '../types/crm';
 import { OpportunityCard } from './OpportunityCard';
 import { CreateSalesOrderForm } from './CreateSalesOrderForm';
@@ -14,8 +15,11 @@ export function OpportunityKanbanBoard() {
   const { t, i18n } = useTranslation('crm');
   const [opportunities, setOpportunities] = useState<OpportunityDto[]>([]);
 
+  // Kanban exception to pagination (same rationale as trees): the board groups by stage
+  // client-side, so it needs the full context on one bounded page (MAX_PAGE_SIZE, no pager).
+  // A paginated kanban would strand cards across pages and break drag-and-drop.
   const reload = useCallback(() => {
-    crmApi.getOpportunities().then(setOpportunities).catch(console.error);
+    crmApi.getOpportunities(undefined, 1, MAX_PAGE_SIZE).then((page) => setOpportunities(page.items)).catch(console.error);
   }, []);
 
   useEffect(() => {

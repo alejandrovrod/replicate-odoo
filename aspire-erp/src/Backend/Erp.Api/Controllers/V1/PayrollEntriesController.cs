@@ -6,6 +6,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.HrPayroll.Commands;
 using Erp.Application.Features.HrPayroll.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -203,11 +204,13 @@ public sealed class PayrollEntriesController : ControllerBase
     /// <param name="companyId">Company that owns the batches.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<PayrollEntryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<PayrollEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -218,7 +221,7 @@ public sealed class PayrollEntriesController : ControllerBase
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
-        var entries = await _sender.SendAsync(new GetPayrollEntriesQuery(companyId), cancellationToken);
+        var entries = await _sender.SendAsync(new GetPayrollEntriesQuery(companyId, page, pageSize), cancellationToken);
         return Ok(entries);
     }
 

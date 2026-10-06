@@ -6,6 +6,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -62,11 +63,12 @@ public sealed class PurchaseInvoicesController : ControllerBase
     /// <param name="limit">Maximum number of invoices to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<PurchaseInvoiceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<PurchaseInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
         [FromQuery] Guid companyId,
-        [FromQuery] int limit = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
@@ -78,7 +80,7 @@ public sealed class PurchaseInvoicesController : ControllerBase
                 PurchaseErrorCodes.CompanyNotFound);
         }
 
-        var invoices = await _sender.SendAsync(new GetPurchaseInvoicesQuery(companyId, limit), cancellationToken);
+        var invoices = await _sender.SendAsync(new GetPurchaseInvoicesQuery(companyId, page, pageSize), cancellationToken);
         return Ok(invoices);
     }
 

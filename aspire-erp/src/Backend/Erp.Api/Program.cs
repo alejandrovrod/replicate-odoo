@@ -31,6 +31,7 @@ using Erp.Application.Features.HrPayroll.Queries;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
 using Erp.Application.Services;
+using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 using Erp.Infrastructure.Data;
 using Erp.Infrastructure.Data.Repositories;
@@ -97,12 +98,14 @@ builder.Services.AddScoped<IIdempotencyRepository, IdempotencyRepository>();
 builder.Services.AddScoped<IStockPostingService, StockPostingService>();
 
 builder.Services.AddScoped<ICommandHandler<CreateItemCommand, Result<ItemDto>>, CreateItemCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetItemsQuery, IReadOnlyList<ItemDto>>, GetItemsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetItemsQuery, PagedResult<ItemDto>>, GetItemsQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateWarehouseCommand, Result<WarehouseDto>>, CreateWarehouseCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetWarehousesQuery, IReadOnlyList<WarehouseTreeNodeDto>>, GetWarehousesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetFlatWarehousesQuery, PagedResult<WarehouseDto>>, GetFlatWarehousesQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateStockEntryCommand, Result<StockEntryPostingDto>>, CreateStockEntryCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelStockEntryCommand, Result<bool>>, CancelStockEntryCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetStockEntriesQuery, IReadOnlyList<StockEntryDto>>, GetStockEntriesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetStockEntriesQuery, PagedResult<StockEntryDto>>, GetStockEntriesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetStockSummaryQuery, StockSummaryDto>, GetStockSummaryQueryHandler>();
 
 // Buying Cycle (Tasks 4.1-4.3): supplier master, purchase order workflow and the buying posting
 // engine (accrual on receipt, interim clearance + A/P + Input Tax on invoice). Same split as the
@@ -112,23 +115,23 @@ builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<IPurchasePostingService, PurchasePostingService>();
 
 builder.Services.AddScoped<ICommandHandler<CreateSupplierCommand, Result<SupplierDto>>, CreateSupplierCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetSuppliersQuery, IReadOnlyList<SupplierDto>>, GetSuppliersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSuppliersQuery, PagedResult<SupplierDto>>, GetSuppliersQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreatePurchaseOrderCommand, Result<PurchaseOrderDto>>, CreatePurchaseOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdatePurchaseOrderCommand, Result<PurchaseOrderDto>>, UpdatePurchaseOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitPurchaseOrderCommand, Result<PurchaseOrderDto>>, SubmitPurchaseOrderCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetPurchaseOrdersQuery, IReadOnlyList<PurchaseOrderDto>>, GetPurchaseOrdersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPurchaseOrdersQuery, PagedResult<PurchaseOrderDto>>, GetPurchaseOrdersQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<PostPurchaseReceiptCommand, Result<PurchaseReceiptPostingDto>>, PostPurchaseReceiptCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetPurchaseReceiptsQuery, IReadOnlyList<PurchaseReceiptDto>>, GetPurchaseReceiptsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPurchaseReceiptsQuery, PagedResult<PurchaseReceiptDto>>, GetPurchaseReceiptsQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<PostPurchaseInvoiceCommand, Result<PurchaseInvoicePostingDto>>, PostPurchaseInvoiceCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelPurchaseInvoiceCommand, Result<PurchaseInvoiceDto>>, CancelPurchaseInvoiceCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetPurchaseInvoicesQuery, IReadOnlyList<PurchaseInvoiceDto>>, GetPurchaseInvoicesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPurchaseInvoicesQuery, PagedResult<PurchaseInvoiceDto>>, GetPurchaseInvoicesQueryHandler>();
 
 // Selling (Task 5.1): customer master, the plan.md §2 credit-limit gate's owner. Same split as
 // the other modules: repository in Erp.Infrastructure, handlers in Erp.Application - only the
 // composition root knows both (decision C2).
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateCustomerCommand, Result<CustomerDto>>, CreateCustomerCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetCustomersQuery, IReadOnlyList<CustomerDto>>, GetCustomersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCustomersQuery, PagedResult<CustomerDto>>, GetCustomersQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetCustomerByIdQuery, CustomerDto?>, GetCustomerByIdQueryHandler>();
 
 // Selling cycle (Tasks 5.2/5.2b): the sales order workflow, the delivery-note posting engine and
@@ -147,10 +150,10 @@ builder.Services.AddScoped<ICommandHandler<SubmitSalesInvoiceCommand, Result<Sal
 
 builder.Services.AddScoped<ICommandHandler<CreateSalesOrderCommand, Result<SalesOrderDto>>, CreateSalesOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitSalesOrderCommand, Result<SalesOrderDto>>, SubmitSalesOrderCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetSalesOrdersQuery, IReadOnlyList<SalesOrderDto>>, GetSalesOrdersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalesOrdersQuery, PagedResult<SalesOrderDto>>, GetSalesOrdersQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetSalesOrderByIdQuery, SalesOrderDto?>, GetSalesOrderByIdQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<PostDeliveryNoteCommand, Result<DeliveryNotePostingDto>>, PostDeliveryNoteCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetDeliveryNotesQuery, IReadOnlyList<DeliveryNoteDto>>, GetDeliveryNotesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetDeliveryNotesQuery, PagedResult<DeliveryNoteDto>>, GetDeliveryNotesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetDeliveryNoteByIdQuery, DeliveryNoteDto?>, GetDeliveryNoteByIdQueryHandler>();
 
 // Journal Entry pipeline (tasks.md 2.3/2.4): the manual-voucher aggregate, the gapless JV number
@@ -161,7 +164,7 @@ builder.Services.AddScoped<IJournalRepository, JournalRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateJournalEntryCommand, Result<JournalEntryDto>>, CreateJournalEntryCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitJournalEntryCommand, Result<JournalEntryDto>>, SubmitJournalEntryCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelJournalEntryCommand, Result<JournalEntryDto>>, CancelJournalEntryCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetJournalEntriesQuery, IReadOnlyList<JournalEntryDto>>, GetJournalEntriesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetJournalEntriesQuery, PagedResult<JournalEntryDto>>, GetJournalEntriesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetJournalEntryQuery, JournalEntryDto?>, GetJournalEntryQueryHandler>();
 
 // Financial Reporting (tasks.md 2.5): the four read-only report queries over GLEntry. The ledger
@@ -192,8 +195,8 @@ builder.Services.AddScoped<ICommandHandler<CreateBankTransactionRuleCommand, Res
 builder.Services.AddScoped<ICommandHandler<ReconcileBankTransactionCommand, Result<ReconciliationSummary>>, ReconcileBankTransactionCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UnreconcileBankTransactionCommand, Result<bool>>, UnreconcileBankTransactionCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateVoucherFromBankTransactionCommand, Result<JournalEntryDto>>, CreateVoucherFromBankTransactionCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetBankTransactionsQuery, IReadOnlyList<BankTransactionDto>>, GetBankTransactionsQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetBankTransactionRulesQuery, IReadOnlyList<BankTransactionRuleDto>>, GetBankTransactionRulesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBankTransactionsQuery, PagedResult<BankTransactionDto>>, GetBankTransactionsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBankTransactionRulesQuery, PagedResult<BankTransactionRuleDto>>, GetBankTransactionRulesQueryHandler>();
 
 // Manufacturing (Block A masters + Block B work-order workflow and postings, tasks 9.1-9.4,
 // plus the Block C cancel/reversal and UI reads, tasks 9.5-9.7):
@@ -208,9 +211,9 @@ builder.Services.AddScoped<ICommandHandler<SubmitWorkOrderCommand, Result<WorkOr
 builder.Services.AddScoped<ICommandHandler<TransferMaterialsToWipCommand, Result<StockEntryPostingDto>>, TransferMaterialsToWipCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CompleteManufactureCommand, Result<StockEntryPostingDto>>, CompleteManufactureCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelWorkOrderCommand, Result<WorkOrderDto>>, CancelWorkOrderCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetBomsQuery, IReadOnlyList<BomDto>>, GetBomsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBomsQuery, PagedResult<BomDto>>, GetBomsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBomDetailQuery, BomDto?>, GetBomDetailQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetWorkOrdersQuery, IReadOnlyList<WorkOrderDto>>, GetWorkOrdersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetWorkOrdersQuery, PagedResult<WorkOrderDto>>, GetWorkOrdersQueryHandler>();
 
 // Fixed Assets (Block A masters + capitalization, tasks 10.1-10.3): the category/asset/schedule
 // repository and the commands behind the asset controllers. Same split as every other module:
@@ -223,8 +226,8 @@ builder.Services.AddScoped<ICommandHandler<CapitalizeAssetCommand, Result<AssetC
 builder.Services.AddScoped<ICommandHandler<PostDueDepreciationsCommand, Result<DepreciationRunDto>>, PostDueDepreciationsCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DisposeAssetCommand, Result<AssetDisposalDto>>, DisposeAssetCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelDisposeAssetCommand, Result<AssetDisposalReversalDto>>, CancelDisposeAssetCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetAssetCategoriesQuery, IReadOnlyList<AssetCategoryDto>>, GetAssetCategoriesQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetAssetsQuery, IReadOnlyList<AssetDto>>, GetAssetsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAssetCategoriesQuery, PagedResult<AssetCategoryDto>>, GetAssetCategoriesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAssetsQuery, PagedResult<AssetDto>>, GetAssetsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAssetDetailQuery, AssetDetailDto?>, GetAssetDetailQueryHandler>();
 
 // Human Resources & Payroll masters (Tasks 12.1-12.2): salary components, structures and
@@ -239,12 +242,12 @@ builder.Services.AddScoped<ICommandHandler<AssignSalaryStructureCommand, Result<
 builder.Services.AddScoped<ICommandHandler<SubmitPayrollRunCommand, Result<PayrollSubmitResultDto>>, SubmitPayrollRunCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DisbursePayrollCommand, Result<PayrollEntryDto>>, DisbursePayrollCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelPayrollCommand, Result<PayrollEntryDto>>, CancelPayrollCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetPayrollEntriesQuery, IReadOnlyList<PayrollEntryDto>>, GetPayrollEntriesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPayrollEntriesQuery, PagedResult<PayrollEntryDto>>, GetPayrollEntriesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPayrollEntryQuery, PayrollEntryDetailDto?>, GetPayrollEntryQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetEmployeesQuery, IReadOnlyList<EmployeeDto>>, GetEmployeesQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetSalaryComponentsQuery, IReadOnlyList<SalaryComponentDto>>, GetSalaryComponentsQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetSalaryStructuresQuery, IReadOnlyList<SalaryStructureDto>>, GetSalaryStructuresQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetStructureAssignmentsQuery, IReadOnlyList<SalaryStructureAssignmentDto>>, GetStructureAssignmentsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetEmployeesQuery, PagedResult<EmployeeDto>>, GetEmployeesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalaryComponentsQuery, PagedResult<SalaryComponentDto>>, GetSalaryComponentsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalaryStructuresQuery, PagedResult<SalaryStructureDto>>, GetSalaryStructuresQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetStructureAssignmentsQuery, PagedResult<SalaryStructureAssignmentDto>>, GetStructureAssignmentsQueryHandler>();
 
 // CRM & Sales Pipeline (Block A, tasks 11.1-11.7): lead/opportunity repository (EF
 // CrmRepository implements both the adopted ICrmRepository and the new
@@ -258,8 +261,8 @@ builder.Services.AddScoped<ICommandHandler<ConvertLeadCommand, Result<ConvertLea
 builder.Services.AddScoped<ICommandHandler<ReopenOpportunityCommand, Result<Guid>>, ReopenOpportunityCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<AdvanceOpportunityStageCommand, Result<OpportunityDto>>, AdvanceOpportunityStageCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateOpportunitySalesOrderCommand, Result<SalesOrderDto>>, CreateOpportunitySalesOrderCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetLeadsQuery, IReadOnlyList<LeadDto>>, GetLeadsQueryHandler>();
-builder.Services.AddScoped<IQueryHandler<GetOpportunitiesQuery, IReadOnlyList<OpportunityDto>>, GetOpportunitiesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetLeadsQuery, PagedResult<LeadDto>>, GetLeadsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetOpportunitiesQuery, PagedResult<OpportunityDto>>, GetOpportunitiesQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).
@@ -286,6 +289,11 @@ app.UseRequestLocalization();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Ensure database is created and migrations are applied in Development
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
 }
 
 // Tenant pipeline first: resolution must run before the logging scope opens, because the scope

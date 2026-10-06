@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -32,8 +33,9 @@ public sealed class FakeItemRepository : IItemRepository
     public Task<bool> ExistsSkuAsync(string code, CancellationToken cancellationToken = default)
         => Task.FromResult(SkuExists || _items.Any(i => i.ItemCode == code));
 
-    public Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Item>>(_items);
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<Item>> GetAllAsync(PagedRequest paging, CancellationToken cancellationToken = default)
+        => Task.FromResult(new PagedResult<Item>(_items, _items.Count, paging.SafePageNumber, paging.SafePageSize));
 
     public Task<Item?> GetByIdAsync(Guid itemId, CancellationToken cancellationToken = default)
         => Task.FromResult(_items.FirstOrDefault(i => i.Id == itemId));

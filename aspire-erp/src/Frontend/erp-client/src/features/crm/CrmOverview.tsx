@@ -3,7 +3,6 @@ import { Handshake } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../api/client'
 import { crmApi } from './api/crmApi'
-import type { LeadDto } from './types/crm'
 
 const OpportunityKanbanBoard = lazy(() =>
   import('./components/OpportunityKanbanBoard').then((m) => ({
@@ -18,7 +17,9 @@ const OpportunityKanbanBoard = lazy(() =>
  */
 export function CrmOverview() {
   const { t } = useTranslation('crm')
-  const [leads, setLeads] = useState<LeadDto[]>([])
+  // The strip shows only the COUNT, so it reads totalCount from a 1-row page instead of
+  // pulling the whole list (Standard Pagination Pattern).
+  const [leadCount, setLeadCount] = useState(0)
   // Kept as the raw error, not a string: the ApiError branch is already localized by the
   // backend (Accept-Language) while the generic branch must re-render when the user switches
   // language - a pre-rendered string would stay frozen in the old language.
@@ -26,10 +27,10 @@ export function CrmOverview() {
 
   useEffect(() => {
     let cancelled = false
-    crmApi.getLeads().then(
-      (rows) => {
+    crmApi.getLeads(1, 1).then(
+      (page) => {
         if (cancelled) return
-        setLeads(rows)
+        setLeadCount(page.totalCount)
         setLeadsError(null)
       },
       (cause: unknown) => {
@@ -55,7 +56,7 @@ export function CrmOverview() {
         </div>
         <div className="text-right">
           <p className="text-xs font-medium text-slate-500">{t('overview.openLeads')}</p>
-          <p className="text-2xl font-bold text-emerald-700">{leads.length}</p>
+          <p className="text-2xl font-bold text-emerald-700">{leadCount}</p>
         </div>
       </div>
 

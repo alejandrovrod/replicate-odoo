@@ -1,6 +1,7 @@
 import { Boxes, Cog, GitBranch } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { MAX_PAGE_SIZE } from '../../lib/pagination'
 import { formatMoney } from '../../lib/format'
 import type { Bom } from './types'
 import { useBoms } from './useManufacturingData'
@@ -16,13 +17,15 @@ import { useBoms } from './useManufacturingData'
  */
 export function BomEditor({ companyId }: { companyId: string }) {
   const { t } = useTranslation('manufacturing')
-  const bomsQuery = useBoms(companyId)
+  // Recipe picker: a dropdown needs the whole catalog on one page. Bounded single fetch
+  // (MAX_PAGE_SIZE, no pager) — the documented picker pattern, not an unbounded list.
+  const bomsQuery = useBoms(companyId, 1, MAX_PAGE_SIZE)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const selected: Bom | null = useMemo(() => {
-    if (bomsQuery.data.length === 0) return null
-    return bomsQuery.data.find((b) => b.id === selectedId) ?? bomsQuery.data[0]
-  }, [bomsQuery.data, selectedId])
+    if (bomsQuery.items.length === 0) return null
+    return bomsQuery.items.find((b) => b.id === selectedId) ?? bomsQuery.items[0]
+  }, [bomsQuery.items, selectedId])
 
   if (bomsQuery.status === 'error') {
     return (
@@ -47,7 +50,7 @@ export function BomEditor({ companyId }: { companyId: string }) {
     return <p className="px-1 py-3 text-sm text-slate-500">{t('bom.loading')}</p>
   }
 
-  if (bomsQuery.data.length === 0) {
+  if (bomsQuery.items.length === 0) {
     return (
       <p className="rounded-md border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
         {t('bom.empty')}
@@ -72,7 +75,7 @@ export function BomEditor({ companyId }: { companyId: string }) {
             onChange={(e) => setSelectedId(e.target.value)}
             className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs text-slate-800"
           >
-            {bomsQuery.data.map((bom) => (
+            {bomsQuery.items.map((bom) => (
               <option key={bom.id} value={bom.id}>
                 {bom.bomNumber} · {bom.itemCode}
               </option>

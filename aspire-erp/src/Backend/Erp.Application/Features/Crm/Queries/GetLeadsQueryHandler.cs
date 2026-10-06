@@ -1,11 +1,12 @@
 using Erp.Application.Common;
 using Erp.Application.Features.Crm.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 
 namespace Erp.Application.Features.Crm.Queries;
 
 /// <summary>Assembles <see cref="GetLeadsQuery"/> from <see cref="ICrmRepository"/>.</summary>
-public sealed class GetLeadsQueryHandler : IQueryHandler<GetLeadsQuery, IReadOnlyList<LeadDto>>
+public sealed class GetLeadsQueryHandler : IQueryHandler<GetLeadsQuery, PagedResult<LeadDto>>
 {
     private readonly ICrmRepository _crm;
 
@@ -14,12 +15,14 @@ public sealed class GetLeadsQueryHandler : IQueryHandler<GetLeadsQuery, IReadOnl
         _crm = crm;
     }
 
-    public async Task<IReadOnlyList<LeadDto>> HandleAsync(
+    public async Task<PagedResult<LeadDto>> HandleAsync(
         GetLeadsQuery query,
         CancellationToken cancellationToken = default)
     {
-        var limit = query.Limit <= 0 ? 50 : Math.Min(query.Limit, 500);
-        var leads = await _crm.ListLeadsAsync(query.CompanyId, limit, cancellationToken);
-        return leads.Select(LeadDto.Build).ToList();
+        var page = await _crm.ListLeadsAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        return page.Map(page.Items.Select(LeadDto.Build).ToList());
     }
 }

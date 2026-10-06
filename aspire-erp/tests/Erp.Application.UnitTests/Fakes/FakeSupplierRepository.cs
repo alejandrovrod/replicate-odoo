@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -35,12 +36,16 @@ public sealed class FakeSupplierRepository : ISupplierRepository
         => Task.FromResult<IReadOnlyList<Supplier>>(
             _suppliers.Where(s => supplierIds.Contains(s.Id)).ToList());
 
-    public Task<IReadOnlyList<Supplier>> GetRecentAsync(int limit, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Supplier>>(
-            _suppliers
-                .OrderByDescending(s => s.CreatedAt)
-                .ThenByDescending(s => s.Id)
-                .Take(limit)
-                .ToList());
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<Supplier>> GetRecentAsync(PagedRequest paging, CancellationToken cancellationToken = default)
+        => Task.FromResult(
+            new PagedResult<Supplier>(
+                _suppliers
+                    .OrderByDescending(s => s.CreatedAt)
+                    .ThenByDescending(s => s.Id)
+                    .ToList(),
+                _suppliers.Count,
+                paging.SafePageNumber,
+                paging.SafePageSize));
 }
 

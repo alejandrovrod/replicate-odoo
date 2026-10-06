@@ -24,6 +24,9 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
         builder.Property(w => w.IsGroup).HasDefaultValue(false);
         builder.Property(w => w.IsActive).HasDefaultValue(true);
 
+        // Optimistic concurrency: store-generated rowversion token.
+        builder.Property(w => w.RowVersion).IsRowVersion();
+
         builder.HasOne<Company>()
             .WithMany()
             .HasForeignKey(w => w.CompanyId)

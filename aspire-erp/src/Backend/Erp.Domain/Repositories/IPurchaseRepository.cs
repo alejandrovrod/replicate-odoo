@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 
@@ -62,13 +63,13 @@ public interface IPurchaseRepository
     Task<PurchaseOrder?> GetOrderByIdAsync(Guid purchaseOrderId, CancellationToken cancellationToken = default);
 
     /// <summary>Most recent purchase orders of a company (newest first) with lines.</summary>
-    Task<IReadOnlyList<PurchaseOrder>> GetRecentOrdersByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+    Task<PagedResult<PurchaseOrder>> GetRecentOrdersByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>The receipt with its lines and navigation to its order, or null.</summary>
     Task<PurchaseReceipt?> GetReceiptByIdAsync(Guid purchaseReceiptId, CancellationToken cancellationToken = default);
 
     /// <summary>Most recent purchase receipts of a company (newest first) with lines.</summary>
-    Task<IReadOnlyList<PurchaseReceipt>> GetRecentReceiptsByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+    Task<PagedResult<PurchaseReceipt>> GetRecentReceiptsByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>Fetches receipt lines with their parent receipts.</summary>
     Task<IReadOnlyList<PurchaseReceiptLine>> GetReceiptLinesByIdsAsync(IEnumerable<Guid> receiptLineIds, CancellationToken cancellationToken = default);
@@ -83,7 +84,7 @@ public interface IPurchaseRepository
     Task<bool> InvoiceBillNumberExistsAsync(Guid companyId, string billNumber, CancellationToken cancellationToken = default);
 
     /// <summary>Most recent purchase invoices of a company (newest first) with lines.</summary>
-    Task<IReadOnlyList<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+    Task<PagedResult<PurchaseInvoice>> GetRecentInvoicesByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>The invoice with its lines, or null when it does not exist in this tenant (spec BY-05).</summary>
     Task<PurchaseInvoice?> GetInvoiceByIdAsync(Guid purchaseInvoiceId, CancellationToken cancellationToken = default);

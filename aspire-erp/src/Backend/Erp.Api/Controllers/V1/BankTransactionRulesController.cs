@@ -5,6 +5,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Banking.Commands;
 using Erp.Application.Features.Banking.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,11 +42,13 @@ public sealed class BankTransactionRulesController : ControllerBase
 
     /// <summary>Returns every heuristic rule of the company (active and inactive).</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<BankTransactionRuleDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<BankTransactionRuleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -57,7 +60,8 @@ public sealed class BankTransactionRulesController : ControllerBase
         }
 
         var rules = await _sender.SendAsync(
-            new GetBankTransactionRulesQuery(companyId), cancellationToken);
+            new GetBankTransactionRulesQuery(companyId, page, pageSize), cancellationToken);
+        return Ok(rules);
         return Ok(rules);
     }
 

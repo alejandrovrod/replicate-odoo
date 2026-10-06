@@ -1,5 +1,7 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Infrastructure.Data.Repositories;
@@ -28,10 +30,10 @@ public sealed class ItemRepository : IItemRepository
     public Task<bool> ExistsSkuAsync(string code, CancellationToken cancellationToken = default)
         => _dbContext.Items.AnyAsync(i => i.ItemCode == code, cancellationToken);
 
-    public async Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResult<Item>> GetAllAsync(PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.Items
             .OrderBy(i => i.ItemCode)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public Task<Item?> GetByIdAsync(Guid itemId, CancellationToken cancellationToken = default)
         => _dbContext.Items.FirstOrDefaultAsync(i => i.Id == itemId, cancellationToken);

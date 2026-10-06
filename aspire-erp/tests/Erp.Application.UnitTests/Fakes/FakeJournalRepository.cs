@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -111,13 +112,15 @@ public sealed class FakeJournalRepository : IJournalRepository
         Guid journalEntryId, CancellationToken cancellationToken = default)
         => Task.FromResult(_entries.FirstOrDefault(e => e.Id == journalEntryId));
 
-    public Task<IReadOnlyList<JournalEntry>> GetRecentByCompanyAsync(
-        Guid companyId, int limit, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<JournalEntry>>(
-            _entries
-                .Where(e => e.CompanyId == companyId)
-                .OrderByDescending(e => e.CreatedAt)
-                .Take(limit)
-                .ToList());
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<JournalEntry>> GetRecentByCompanyAsync(
+        Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _entries
+            .Where(e => e.CompanyId == companyId)
+            .OrderByDescending(e => e.CreatedAt)
+            .ToList();
+        return Task.FromResult(new PagedResult<JournalEntry>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 }
 

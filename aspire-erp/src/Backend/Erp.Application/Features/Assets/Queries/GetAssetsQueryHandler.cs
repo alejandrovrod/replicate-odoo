@@ -1,11 +1,12 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 
 namespace Erp.Application.Features.Assets.Queries;
 
 /// <summary>Lists one company's asset headers for the Block C asset workbench. Read-only.</summary>
-public sealed class GetAssetsQueryHandler : IQueryHandler<GetAssetsQuery, IReadOnlyList<AssetDto>>
+public sealed class GetAssetsQueryHandler : IQueryHandler<GetAssetsQuery, PagedResult<AssetDto>>
 {
     private readonly IAssetsRepository _assets;
 
@@ -14,17 +15,20 @@ public sealed class GetAssetsQueryHandler : IQueryHandler<GetAssetsQuery, IReadO
         _assets = assets;
     }
 
-    public async Task<IReadOnlyList<AssetDto>> HandleAsync(
+    public async Task<PagedResult<AssetDto>> HandleAsync(
         GetAssetsQuery query,
         CancellationToken cancellationToken = default)
     {
-        var assets = await _assets.GetAssetsByCompanyAsync(query.CompanyId, cancellationToken);
-        var result = new List<AssetDto>(assets.Count);
-        foreach (var asset in assets)
+        var page = await _assets.GetAssetsByCompanyAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        var result = new List<AssetDto>(page.Items.Count);
+        foreach (var asset in page.Items)
         {
             result.Add(AssetDto.Build(asset));
         }
 
-        return result;
+        return page.Map(result);
     }
 }

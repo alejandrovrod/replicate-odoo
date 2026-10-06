@@ -60,15 +60,6 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
             <th className="px-3 py-2 font-semibold">{t('items.code')}</th>
             <th className="px-3 py-2 font-semibold">{t('items.item')}</th>
             <th className="px-3 py-2 font-semibold">{t('items.valuation')}</th>
-            {leafWarehouses.map((warehouse) => (
-              <th
-                key={warehouse.id}
-                className="px-3 py-2 text-right font-semibold"
-                title={warehouse.name}
-              >
-                {warehouse.code}
-              </th>
-            ))}
             <th className="px-3 py-2 text-right font-semibold">{t('items.onHand')}</th>
             <th className="px-3 py-2 text-right font-semibold">{t('items.value')}</th>
             <th className="px-3 py-2" />
@@ -78,7 +69,7 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
           {items.length === 0 ? (
             <tr className="h-9">
               <td
-                colSpan={7 + leafWarehouses.length}
+                colSpan={7}
                 className="px-4 text-center text-slate-500"
               >
                 {t('items.empty')}
@@ -119,31 +110,7 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
                         {item.valuationMethod === 'Fifo' ? t('items.fifo') : item.valuationMethod}
                       </span>
                   </td>
-                  {leafWarehouses.map((warehouse) => {
-                    const row = byWarehouse.get(warehouse.id)
-                    if (!row) {
-                      return (
-                        <td
-                          key={warehouse.id}
-                          className="px-3 text-right font-mono text-slate-300"
-                          title={t('items.noMovement')}
-                        >
-                          —
-                        </td>
-                      )
-                    }
-                    return (
-                      <td
-                        key={warehouse.id}
-                        className={`px-3 text-right font-mono ${
-                          row.qty > 0 ? 'font-medium text-emerald-700' : 'text-slate-400'
-                        }`}
-                        title={`${warehouse.name}: ${formatMoney(row.value)}`}
-                      >
-                        {formatQty(row.qty)}
-                      </td>
-                    )
-                  })}
+
                   <td className="px-3 text-right font-mono font-semibold text-slate-900">
                     {formatQty(totalQty)}
                   </td>

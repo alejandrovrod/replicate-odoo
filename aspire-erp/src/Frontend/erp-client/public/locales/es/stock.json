@@ -31,12 +31,47 @@
   "warehouses": {
     "title": "Almacenes",
     "subtitle": "Saldo de stock y valuación perpetua por ubicación hoja.",
+    "manageTitle": "Almacenes",
+    "manageSubtitle": "Gestioná las ubicaciones y grupos jerárquicos de almacenes de tu empresa.",
+    "columns": {
+      "code": "Código",
+      "name": "Nombre",
+      "type": "Tipo",
+      "status": "Estado"
+    },
+    "typeGroup": "Grupo",
+    "typeLedger": "Físico",
     "empty": "Todavía no hay almacenes para esta empresa.",
     "active": "Activo",
     "inactive": "Inactivo",
     "statusLine": "{{status}} · cuenta de stock {{account}}",
     "stockedSkus_one": "{{count}} SKU en existencia",
-    "stockedSkus_other": "{{count}} SKUs en existencia"
+    "stockedSkus_other": "{{count}} SKUs en existencia",
+    "search": "Buscar...",
+    "manage": "Administrar"
+  },
+  "warehouseForm": {
+    "titleEdit": "Editar Almacén",
+    "titleNew": "Nuevo Almacén",
+    "codeLabel": "Código de almacén *",
+    "codePlaceholder": "ej. WH-001",
+    "nameLabel": "Nombre del almacén *",
+    "namePlaceholder": "ej. Almacén Central",
+    "isGroup": "Es almacén agrupador",
+    "active": "Activo",
+    "parentLabel": "Almacén padre",
+    "parentNone": "-- Ninguno --",
+    "accountLabel": "Cuenta de stock",
+    "accountPlaceholder": "Seleccioná una cuenta de stock…",
+    "accountHint": "Cuentas de imputación hoja de esta empresa.",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "errorRequired": "El nombre y el código son obligatorios.",
+    "errorConflict": "Conflicto de concurrencia o código duplicado. Por favor, actualizá e intentá nuevamente.",
+    "errorGeneric": "Ocurrió un error al guardar.",
+    "accountLoading": "Cargando cuentas…",
+    "errorAccountRequired": "Se requiere una cuenta de stock."
   },
   "items": {
     "title": "Artículos y niveles de stock",

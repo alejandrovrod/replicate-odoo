@@ -6,6 +6,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Banking.Commands;
 using Erp.Application.Features.Banking.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -78,12 +79,14 @@ public sealed class BankTransactionsController : ControllerBase
 
     /// <summary>Returns the company's staging lines (optional account / status filter).</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<BankTransactionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<BankTransactionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
         [FromQuery] Guid companyId,
         [FromQuery] Guid? bankAccountId = null,
         [FromQuery] BankTransactionStatus? status = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
@@ -96,7 +99,7 @@ public sealed class BankTransactionsController : ControllerBase
         }
 
         var transactions = await _sender.SendAsync(
-            new GetBankTransactionsQuery(companyId, bankAccountId, status), cancellationToken);
+            new GetBankTransactionsQuery(companyId, bankAccountId, status, page, pageSize), cancellationToken);
         return Ok(transactions);
     }
 

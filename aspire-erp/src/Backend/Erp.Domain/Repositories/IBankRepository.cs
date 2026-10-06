@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -56,8 +57,9 @@ public interface IBankRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>All rules of a company (active and inactive) for the management read.</summary>
-    Task<IReadOnlyList<BankTransactionRule>> GetRulesByCompanyAsync(
+    Task<PagedResult<BankTransactionRule>> GetRulesByCompanyAsync(
         Guid companyId,
+        PagedRequest paging,
         CancellationToken cancellationToken = default);
 
     /// <summary>Persists one heuristic rule (inside the ambient transaction).</summary>
@@ -77,10 +79,11 @@ public interface IBankRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>Gets staging transactions of a company (optionally filtered) for the list read.</summary>
-    Task<IReadOnlyList<BankTransaction>> GetTransactionsAsync(
+    Task<PagedResult<BankTransaction>> GetTransactionsAsync(
         Guid companyId,
         Guid? bankAccountId,
         BankTransactionStatus? status,
+        PagedRequest paging,
         CancellationToken cancellationToken = default);
 
     /// <summary>

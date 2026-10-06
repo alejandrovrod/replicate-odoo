@@ -2,9 +2,10 @@ import { Plus, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../api/client'
+import { MAX_PAGE_SIZE } from '../../lib/pagination'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { localISODate } from './format'
-import { postStockEntry, type CreateStockEntryPayload } from './useStockData'
+import { postStockEntry, useItems, type CreateStockEntryPayload } from './useStockData'
 import type { FlatWarehouse, StockEntryPosting, StockEntryType } from './types'
 
 interface LineDraft {
@@ -16,7 +17,6 @@ interface LineDraft {
 
 interface StockEntryModalProps {
   companyId: string
-  items: { id: string; code: string; name: string; isActive: boolean }[]
   /** Posting targets: leaf warehouses only (group nodes hold no stock). */
   leafWarehouses: FlatWarehouse[]
   defaultItemId: string | null
@@ -41,13 +41,16 @@ const nextLineKey = (): string => `line-${++lineSequence}`
  */
 export function StockEntryModal({
   companyId,
-  items,
   leafWarehouses,
   defaultItemId,
   onClose,
   onPosted,
 }: StockEntryModalProps) {
-  const activeItems = items.filter((item) => item.isActive)
+  // Item picker: the table page must not limit what can be posted, so the modal reads its own
+  // bounded catalog page (MAX_PAGE_SIZE, no pager) — the documented picker pattern.
+  const catalogQuery = useItems(companyId, 1, MAX_PAGE_SIZE)
+  const catalogReady = catalogQuery.status === 'success'
+  const activeItems = (catalogReady ? catalogQuery.items : []).filter((item) => item.isActive)
   const { t, i18n } = useTranslation('stock')
   const [entryType, setEntryType] = useState<StockEntryType>('MaterialReceipt')
   const [warehouseId, setWarehouseId] = useState(leafWarehouses[0]?.id ?? '')
@@ -336,7 +339,7 @@ export function StockEntryModal({
               onClick={() => {
                 void handlePost()
               }}
-              disabled={submitting}
+              disabled={submitting || !catalogReady}
               className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting

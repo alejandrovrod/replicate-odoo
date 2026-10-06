@@ -1,5 +1,7 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Infrastructure.Data.Repositories;
@@ -40,10 +42,9 @@ public sealed class SupplierRepository : ISupplierRepository
             .Where(s => supplierIds.Contains(s.Id))
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<Supplier>> GetRecentAsync(int limit, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<Supplier>> GetRecentAsync(PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.Suppliers
             .OrderByDescending(s => s.CreatedAt)
             .ThenByDescending(s => s.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 }

@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -45,8 +46,11 @@ public sealed class FakeDeliveryNoteRepository : IDeliveryNoteRepository
         Guid deliveryNoteId, CancellationToken cancellationToken = default)
         => Task.FromResult(_notes.FirstOrDefault(n => n.Id == deliveryNoteId));
 
-    public Task<IReadOnlyList<DeliveryNote>> GetRecentDeliveryNotesByCompanyAsync(
-        Guid companyId, int limit, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<DeliveryNote>>(
-            _notes.Where(n => n.CompanyId == companyId).Take(limit).ToList());
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<DeliveryNote>> GetRecentDeliveryNotesByCompanyAsync(
+        Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _notes.Where(n => n.CompanyId == companyId).ToList();
+        return Task.FromResult(new PagedResult<DeliveryNote>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 }

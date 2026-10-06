@@ -1,12 +1,15 @@
 import { Boxes, CheckCircle2, Layers, Plus, Warehouse, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Pagination } from '../../components/ui/Pagination'
+import { MAX_PAGE_SIZE, usePagination } from '../../lib/pagination'
 import { useTenantStore } from '../../store/useTenantStore'
 import { formatMoney, formatQty } from './format'
 import { ItemList } from './ItemList'
 import { StockEntryModal } from './StockEntryModal'
 import { flattenWarehouses, type StockEntryPosting, type StockEntryType } from './types'
-import { useItems, useStockEntries, useWarehouses } from './useStockData'
+import { useItems, useStockEntries, useWarehouses, useFlatWarehouses } from './useStockData'
+import { useNavigationStore } from '../../store/useNavigationStore'
 
 const ENTRY_TYPE_BADGE: Record<StockEntryType, string> = {
   MaterialReceipt: 'bg-emerald-100 text-emerald-700',
@@ -26,38 +29,52 @@ export function StockOverview() {
   const { t } = useTranslation('stock')
   const companyId = useTenantStore((state) => state.companyId)
   const tenantId = useTenantStore((state) => state.tenantId)
-  const itemsQuery = useItems(companyId)
+  // Each table owns its page: changing pages never refetches the other table.
+  const itemsPaging = usePagination()
+  const movesPaging = usePagination(20)
+  const itemsQuery = useItems(companyId, itemsPaging.page, itemsPaging.pageSize)
   const warehousesQuery = useWarehouses(companyId)
-  const entriesQuery = useStockEntries(companyId)
+  const entriesQuery = useStockEntries(companyId, movesPaging.page, movesPaging.pageSize)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [lastPosted, setLastPosted] = useState<StockEntryPosting | null>(null)
 
-  const items = itemsQuery.data
+  // Use the new flat, paginated endpoint for the warehouse cards grid
+  const whPaging = usePagination(6)
+  const flatWarehousesQuery = useFlatWarehouses(companyId, whPaging.page, whPaging.pageSize, true)
+  const gridWarehouses = flatWarehousesQuery.items
+
+  // NOTE (Standard Pagination Pattern): the stat cards, the warehouse grid and the entry
+  // modal picker aggregate over rows, so they read ONE bounded page (MAX_PAGE_SIZE, no pager)
+  // while the two tables below paginate with a pager. Beyond 500 SKUs the aggregates saturate —
+  // a dedicated counts endpoint would lift that ceiling.
+  const statsQuery = useItems(companyId, 1, MAX_PAGE_SIZE)
+  const statsItems = statsQuery.status === 'success' ? statsQuery.items : []
+  const items = itemsQuery.items
   const leafWarehouses = useMemo(
     () => flattenWarehouses(warehousesQuery.data, true),
     [warehousesQuery.data],
   )
 
-  const totalValue = items.reduce(
+  const totalValue = statsItems.reduce(
     (sum, item) => sum + item.stock.reduce((lineSum, row) => lineSum + row.value, 0),
     0,
   )
-  const activeSkus = items.filter((item) => item.isActive).length
+  const activeSkus = statsItems.filter((item) => item.isActive).length
 
   const stockedSkus = (warehouseId: string): number =>
-    items.filter((item) =>
+    statsItems.filter((item) =>
       item.stock.some((row) => row.warehouseId === warehouseId && row.qty !== 0),
     ).length
 
   const warehouseValue = (warehouseId: string): number =>
-    items.reduce(
+    statsItems.reduce(
       (sum, item) => sum + (item.stock.find((row) => row.warehouseId === warehouseId)?.value ?? 0),
       0,
     )
 
-  const movements = entriesQuery.data
+  const movements = entriesQuery.items
     .flatMap((entry) =>
       entry.lines.map((line) => ({ entry, line, key: `${entry.id}:${line.lineNumber}` })),
     )
@@ -74,6 +91,7 @@ export function StockOverview() {
     setLastPosted(posting)
     itemsQuery.reload()
     entriesQuery.reload()
+    statsQuery.reload()
   }
 
   if (!companyId || !tenantId) {
@@ -191,39 +209,60 @@ export function StockOverview() {
 
       {/* Warehouse grid */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-        <h3 className="text-base font-semibold text-slate-900">{t('warehouses.title')}</h3>
-        <p className="mb-4 text-xs text-slate-500">{t('warehouses.subtitle')}</p>
-        {leafWarehouses.length === 0 ? (
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">{t('warehouses.title')}</h3>
+            <p className="mb-4 text-xs text-slate-500">{t('warehouses.subtitle')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => useNavigationStore.getState().setCurrentRoute('stock-warehouses')}
+            className="inline-flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+          >
+            {t('warehouses.manage', 'Administrar')}
+          </button>
+        </div>
+        {gridWarehouses.length === 0 ? (
           <p className="text-sm text-slate-500">{t('warehouses.empty')}</p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {leafWarehouses.map((warehouse) => (
-              <div key={warehouse.id} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-slate-900">{warehouse.name}</span>
-                  <span className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] text-slate-600">
-                    {warehouse.code}
-                  </span>
+          <>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {gridWarehouses.map((warehouse) => (
+                <div key={warehouse.id} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-slate-900">{warehouse.name}</span>
+                    <span className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] text-slate-600">
+                      {warehouse.code}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {t('warehouses.statusLine', {
+                      status: warehouse.isActive
+                        ? t('warehouses.active')
+                        : t('warehouses.inactive'),
+                      account: warehouse.accountId.slice(-4),
+                    })}
+                  </p>
+                  <div className="mt-4 flex items-baseline justify-between border-t border-slate-200 pt-3 text-xs">
+                    <span className="text-slate-500">
+                      {t('warehouses.stockedSkus', { count: stockedSkus(warehouse.id) })}
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {formatMoney(warehouseValue(warehouse.id))}
+                    </span>
+                  </div>
                 </div>
-                <p className="mt-1 text-xs text-slate-400">
-                  {t('warehouses.statusLine', {
-                    status: warehouse.isActive
-                      ? t('warehouses.active')
-                      : t('warehouses.inactive'),
-                    account: warehouse.stockAccountId.slice(-4),
-                  })}
-                </p>
-                <div className="mt-4 flex items-baseline justify-between border-t border-slate-200 pt-3 text-xs">
-                  <span className="text-slate-500">
-                    {t('warehouses.stockedSkus', { count: stockedSkus(warehouse.id) })}
-                  </span>
-                  <span className="font-bold text-slate-900">
-                    {formatMoney(warehouseValue(warehouse.id))}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Pagination
+                totalCount={flatWarehousesQuery.totalCount}
+                page={whPaging.page}
+                pageSize={whPaging.pageSize}
+                onPageChange={whPaging.setPage}
+              />
+            </div>
+          </>
         )}
       </div>
 
@@ -251,6 +290,14 @@ export function StockOverview() {
           onReload={itemsQuery.reload}
           onNewEntry={openModal}
         />
+        <div className="mt-3 flex justify-end">
+          <Pagination
+            totalCount={itemsQuery.totalCount}
+            page={itemsPaging.page}
+            pageSize={itemsPaging.pageSize}
+            onPageChange={itemsPaging.setPage}
+          />
+        </div>
       </div>
 
       {/* Recent movements */}
@@ -309,12 +356,20 @@ export function StockOverview() {
             </tbody>
           </table>
         </div>
+
+        <div className="mt-3 flex justify-end">
+          <Pagination
+            totalCount={entriesQuery.totalCount}
+            page={movesPaging.page}
+            pageSize={movesPaging.pageSize}
+            onPageChange={movesPaging.setPage}
+          />
+        </div>
       </div>
 
       {isModalOpen ? (
         <StockEntryModal
           companyId={companyId}
-          items={items}
           leafWarehouses={leafWarehouses}
           defaultItemId={selectedItemId}
           onClose={() => setIsModalOpen(false)}

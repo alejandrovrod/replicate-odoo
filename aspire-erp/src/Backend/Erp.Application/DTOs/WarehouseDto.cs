@@ -11,7 +11,8 @@ public sealed record WarehouseDto(
     Guid? ParentWarehouseId,
     Guid AccountId,
     bool IsGroup,
-    bool IsActive)
+    bool IsActive,
+    byte[] RowVersion)
 {
     public static WarehouseDto From(Warehouse warehouse) =>
         new(
@@ -22,7 +23,8 @@ public sealed record WarehouseDto(
             warehouse.ParentWarehouseId,
             warehouse.AccountId ?? Guid.Empty,
             warehouse.IsGroup,
-            warehouse.IsActive);
+            warehouse.IsActive,
+            warehouse.RowVersion);
 }
 
 /// <summary>One node of the hierarchical warehouse tree returned by GET /api/v1/warehouses.</summary>
@@ -34,5 +36,6 @@ public sealed record WarehouseTreeNodeDto(
     Guid AccountId,
     bool IsGroup,
     bool IsActive,
+    byte[] RowVersion,
     IReadOnlyList<WarehouseTreeNodeDto> Children);
 

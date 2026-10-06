@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -24,7 +25,7 @@ public interface ICustomerRepository
     Task<Customer?> GetByIdAsync(Guid customerId, CancellationToken cancellationToken = default);
 
     /// <summary>The most recent customers of the company (newest first) for the list view.</summary>
-    Task<IReadOnlyList<Customer>> GetRecentAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+    Task<PagedResult<Customer>> GetRecentAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>Persists an updated customer.</summary>
     Task UpdateAsync(Customer customer, CancellationToken cancellationToken = default);

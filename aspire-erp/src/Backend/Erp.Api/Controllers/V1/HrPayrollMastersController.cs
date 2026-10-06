@@ -4,6 +4,7 @@ using Erp.Api.Shared;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.HrPayroll.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -46,11 +47,13 @@ public sealed class HrPayrollMastersController : ControllerBase
     /// <param name="companyId">Company that owns the employees.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("employees")]
-    [ProducesResponseType(typeof(IReadOnlyList<EmployeeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<EmployeeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Employees(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -61,7 +64,7 @@ public sealed class HrPayrollMastersController : ControllerBase
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
-        var employees = await _sender.SendAsync(new GetEmployeesQuery(companyId), cancellationToken);
+        var employees = await _sender.SendAsync(new GetEmployeesQuery(companyId, page, pageSize), cancellationToken);
         return Ok(employees);
     }
 
@@ -69,11 +72,13 @@ public sealed class HrPayrollMastersController : ControllerBase
     /// <param name="companyId">Company that owns the components.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("salary-components")]
-    [ProducesResponseType(typeof(IReadOnlyList<SalaryComponentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<SalaryComponentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Components(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -84,7 +89,7 @@ public sealed class HrPayrollMastersController : ControllerBase
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
-        var components = await _sender.SendAsync(new GetSalaryComponentsQuery(companyId), cancellationToken);
+        var components = await _sender.SendAsync(new GetSalaryComponentsQuery(companyId, page, pageSize), cancellationToken);
         return Ok(components);
     }
 
@@ -92,11 +97,13 @@ public sealed class HrPayrollMastersController : ControllerBase
     /// <param name="companyId">Company that owns the structures.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("salary-structures")]
-    [ProducesResponseType(typeof(IReadOnlyList<SalaryStructureDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<SalaryStructureDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Structures(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -107,7 +114,7 @@ public sealed class HrPayrollMastersController : ControllerBase
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
-        var structures = await _sender.SendAsync(new GetSalaryStructuresQuery(companyId), cancellationToken);
+        var structures = await _sender.SendAsync(new GetSalaryStructuresQuery(companyId, page, pageSize), cancellationToken);
         return Ok(structures);
     }
 
@@ -115,11 +122,13 @@ public sealed class HrPayrollMastersController : ControllerBase
     /// <param name="companyId">Company that owns the assignments.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("structure-assignments")]
-    [ProducesResponseType(typeof(IReadOnlyList<SalaryStructureAssignmentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<SalaryStructureAssignmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Assignments(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -130,7 +139,7 @@ public sealed class HrPayrollMastersController : ControllerBase
                 HrPayrollErrorCodes.CompanyNotFound);
         }
 
-        var assignments = await _sender.SendAsync(new GetStructureAssignmentsQuery(companyId), cancellationToken);
+        var assignments = await _sender.SendAsync(new GetStructureAssignmentsQuery(companyId, page, pageSize), cancellationToken);
         return Ok(assignments);
     }
 

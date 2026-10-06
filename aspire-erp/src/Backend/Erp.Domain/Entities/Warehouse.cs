@@ -22,4 +22,12 @@ public class Warehouse : ITenantEntity
     public Account? Account { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Optimistic concurrency token (SQL Server <c>rowversion</c>): EF puts
+    /// the original value in the UPDATE ... WHERE clause, so a concurrent change made between the
+    /// load and the save throws <c>DbUpdateConcurrencyException</c> instead of silently winning.
+    /// Store-generated: never set from code.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = null!;
 }

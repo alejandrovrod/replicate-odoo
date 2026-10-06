@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -65,6 +66,9 @@ public sealed class FakeStockRepository : IStockRepository
     public Task<IReadOnlyList<StockBalance>> GetStockBalancesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<StockBalance>>(Array.Empty<StockBalance>());
 
+    public Task<StockSummary> GetStockSummaryAsync(Guid companyId, CancellationToken cancellationToken = default)
+        => Task.FromResult(new StockSummary(0, 0, 0m, 0, 0));
+
     public Task AddStockEntryAsync(StockEntry stockEntry, CancellationToken cancellationToken = default)
     {
         _stockEntries.Add(stockEntry);
@@ -92,8 +96,12 @@ public sealed class FakeStockRepository : IStockRepository
         return Task.FromResult($"{prefix}-{year}-{next:00000}");
     }
 
-    public Task<IReadOnlyList<StockEntry>> GetRecentByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<StockEntry>>(_stockEntries.TakeLast(limit).Reverse().ToList());
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<StockEntry>> GetRecentByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _stockEntries.AsEnumerable().Reverse().ToList();
+        return Task.FromResult(new PagedResult<StockEntry>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task UpdateStockEntryAsync(StockEntry stockEntry, CancellationToken cancellationToken = default)
     {

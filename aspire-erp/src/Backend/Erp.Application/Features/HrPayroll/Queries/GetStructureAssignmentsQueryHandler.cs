@@ -1,11 +1,13 @@
 using Erp.Application.Common;
+using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 
 namespace Erp.Application.Features.HrPayroll.Queries;
 
 /// <summary>Lists one company's structure assignments (the eligibility windows). Read-only.</summary>
-public sealed class GetStructureAssignmentsQueryHandler : IQueryHandler<GetStructureAssignmentsQuery, IReadOnlyList<SalaryStructureAssignmentDto>>
+public sealed class GetStructureAssignmentsQueryHandler : IQueryHandler<GetStructureAssignmentsQuery, PagedResult<SalaryStructureAssignmentDto>>
 {
     private readonly IHrPayrollRepository _hr;
 
@@ -14,14 +16,14 @@ public sealed class GetStructureAssignmentsQueryHandler : IQueryHandler<GetStruc
         _hr = hr;
     }
 
-    public async Task<IReadOnlyList<SalaryStructureAssignmentDto>> HandleAsync(
+    public async Task<PagedResult<SalaryStructureAssignmentDto>> HandleAsync(
         GetStructureAssignmentsQuery query,
         CancellationToken cancellationToken = default)
     {
-        var assignments = await _hr.GetAssignmentsByCompanyAsync(query.CompanyId, cancellationToken);
-        return assignments
-            .OrderBy(a => a.EffectiveFrom)
-            .Select(SalaryStructureAssignmentDto.Build)
-            .ToList();
+        var page = await _hr.GetAssignmentsByCompanyAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        return page.Map(page.Items.Select(SalaryStructureAssignmentDto.Build).ToList());
     }
 }

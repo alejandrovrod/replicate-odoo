@@ -5,6 +5,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,12 +43,13 @@ public sealed class SuppliersController : ControllerBase
     /// <param name="limit">Maximum number of suppliers to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<SupplierDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<SupplierDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(
-        [FromQuery] int limit = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
-        var suppliers = await _sender.SendAsync(new GetSuppliersQuery(limit), cancellationToken);
+        var suppliers = await _sender.SendAsync(new GetSuppliersQuery(page, pageSize), cancellationToken);
         return Ok(suppliers);
     }
 

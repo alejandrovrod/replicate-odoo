@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -25,6 +26,25 @@ public interface IWarehouseRepository
     /// <summary>All warehouses of one company - the flat source the tree query assembles into a hierarchy.</summary>
     Task<IReadOnlyList<Warehouse>> GetByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Flat paged warehouses for card grids (Standard Pagination Pattern): the tree endpoint
+    /// stays hierarchical, this one servesLayouts that need rows. <c>leavesOnly</c> restricts to
+    /// ledger warehouses (groups hold no stock); <c>isActive</c> optionally filters by status.
+    /// Ordered by code for stable pages.
+    /// </summary>
+    Task<PagedResult<Warehouse>> GetFlatWarehousesAsync(
+        Guid companyId,
+        bool leavesOnly,
+        bool? isActive,
+        PagedRequest paging,
+        CancellationToken cancellationToken = default);
     /// <summary>True when the code already exists within the given company (codes are unique per company).</summary>
     Task<bool> ExistsByCodeAsync(Guid companyId, string code, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Persists changes to a tracked warehouse. A concurrent modification between load and save
+    /// surfaces as <c>DbUpdateConcurrencyException</c> (RowVersion WHERE clause) — implementations
+    /// translate it into <c>ConcurrencyConflictException</c>, mirroring JournalRepository.
+    /// </summary>
+    Task UpdateAsync(Warehouse warehouse, CancellationToken cancellationToken = default);
 }

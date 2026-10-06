@@ -32,6 +32,7 @@ const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys 
   buying: { title: 'nav.route.buying', category: 'nav.category.buying' },
   'hr-payroll': { title: 'nav.route.hr-payroll', category: 'nav.category.hr' },
   crm: { title: 'nav.route.crm', category: 'nav.category.crm' },
+  'stock-warehouses': { title: 'nav.route.stock', category: 'nav.category.stock' },
 }
 
 const FALLBACK_NAV = {

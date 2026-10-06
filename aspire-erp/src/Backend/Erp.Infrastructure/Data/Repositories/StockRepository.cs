@@ -1,7 +1,9 @@
 using System.Data;
 using System.Data.Common;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -155,6 +157,22 @@ public sealed class StockRepository : IStockRepository
         return balances;
     }
 
+    public async Task<StockSummary> GetStockSummaryAsync(Guid companyId, CancellationToken cancellationToken = default)
+    {
+        // Scalar aggregates only: five cheap COUNT/SUM round-trips, zero materialized rows.
+        var warehouseIds = _dbContext.Warehouses.Where(w => w.CompanyId == companyId);
+
+        var totalSkus = await _dbContext.Items.CountAsync(cancellationToken);
+        var activeSkus = await _dbContext.Items.CountAsync(i => i.IsActive, cancellationToken);
+        var totalValue = await _dbContext.StockLedgerEntries
+            .Where(e => warehouseIds.Select(w => w.Id).Contains(e.WarehouseId))
+            .SumAsync(e => (decimal?)e.Amount, cancellationToken) ?? 0m;
+        var warehouseCount = await warehouseIds.CountAsync(cancellationToken);
+        var leafCount = await warehouseIds.CountAsync(w => !w.IsGroup, cancellationToken);
+
+        return new StockSummary(totalSkus, activeSkus, totalValue, warehouseCount, leafCount);
+    }
+
     public async Task AddStockEntryAsync(StockEntry stockEntry, CancellationToken cancellationToken = default)
     {
         await _dbContext.StockEntries.AddAsync(stockEntry, cancellationToken);
@@ -245,17 +263,16 @@ public sealed class StockRepository : IStockRepository
         return $"{prefix}-{year}-{nextSequence:D5}";
     }
 
-    public async Task<IReadOnlyList<StockEntry>> GetRecentByCompanyAsync(
+    public async Task<PagedResult<StockEntry>> GetRecentByCompanyAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.StockEntries
             .Where(e => e.CompanyId == companyId)
             .Include(e => e.Items)
             .OrderByDescending(e => e.CreatedAt)
             .ThenByDescending(e => e.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task<StockEntry?> GetEntryByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.StockEntries

@@ -1,8 +1,10 @@
 using System.Data;
 using System.Data.Common;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -152,9 +154,9 @@ public sealed class JournalRepository : IJournalRepository
                 .ThenInclude(l => l.Account)
             .FirstOrDefaultAsync(j => j.Id == journalEntryId, cancellationToken);
 
-    public async Task<IReadOnlyList<JournalEntry>> GetRecentByCompanyAsync(
+    public async Task<PagedResult<JournalEntry>> GetRecentByCompanyAsync(
         Guid companyId,
-        int limit,
+        PagedRequest paging,
         CancellationToken cancellationToken = default)
         => await _dbContext.JournalEntries
             .Where(j => j.CompanyId == companyId)
@@ -162,8 +164,7 @@ public sealed class JournalRepository : IJournalRepository
                 .ThenInclude(l => l.Account)
             .OrderByDescending(j => j.CreatedAt)
             .ThenByDescending(j => j.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     private static void AddParameter(DbCommand command, string name, object value)
     {

@@ -1,5 +1,8 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
+using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Infrastructure.Data.Repositories;
@@ -65,8 +68,49 @@ public sealed class WarehouseRepository : IWarehouseRepository
             .Where(w => w.CompanyId == companyId)
             .ToListAsync(cancellationToken);
 
+    public async Task<PagedResult<Warehouse>> GetFlatWarehousesAsync(
+        Guid companyId,
+        bool leavesOnly,
+        bool? isActive,
+        PagedRequest paging,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Warehouses.Where(w => w.CompanyId == companyId);
+
+        if (leavesOnly)
+        {
+            query = query.Where(w => !w.IsGroup);
+        }
+
+        if (isActive is not null)
+        {
+            query = query.Where(w => w.IsActive == isActive);
+        }
+
+        return await query
+            .OrderBy(w => w.WarehouseCode)
+            .ThenBy(w => w.Id)
+            .ToPagedResultAsync(paging, cancellationToken);
+    }
+
     public Task<bool> ExistsByCodeAsync(Guid companyId, string code, CancellationToken cancellationToken = default)
         => _dbContext.Warehouses.AnyAsync(
             w => w.CompanyId == companyId && w.WarehouseCode == code,
             cancellationToken);
+
+    public async Task UpdateAsync(Warehouse warehouse, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Another request touched this warehouse between our load and our save (the handler
+            // already fails fast on a stale token, but a race can still slip through) - the
+            // RowVersion WHERE clause matched 0 rows. Translate into the typed domain failure
+            // the handler converts into a 409 Result.Failure, mirroring JournalRepository.
+            throw new ConcurrencyConflictException(nameof(Warehouse), warehouse.Id, ex);
+        }
+    }
 }

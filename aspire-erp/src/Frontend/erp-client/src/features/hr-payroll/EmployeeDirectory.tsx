@@ -1,5 +1,7 @@
 import { Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Pagination } from '../../components/ui/Pagination'
+import { usePagination } from '../../lib/pagination'
 import { isEligibleForPeriod, type EmploymentStatus } from './types'
 import { useEmployees } from './useHrPayrollData'
 
@@ -24,7 +26,8 @@ export function EmployeeDirectory({
   periodStart: string
   periodEnd: string
 }) {
-  const employeesQuery = useEmployees(companyId)
+  const paging = usePagination()
+  const employeesQuery = useEmployees(companyId, paging.page, paging.pageSize)
   const { t } = useTranslation('hr-payroll')
 
   if (employeesQuery.status === 'error') {
@@ -50,7 +53,8 @@ export function EmployeeDirectory({
     return <p className="px-1 py-3 text-sm text-slate-500">{t('directory.loading')}</p>
   }
 
-  const eligible = employeesQuery.data.filter((e) => isEligibleForPeriod(e, periodStart, periodEnd)).length
+  // Both counts describe the visible page (the paginator below carries the global total).
+  const eligible = employeesQuery.items.filter((e) => isEligibleForPeriod(e, periodStart, periodEnd)).length
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
@@ -61,12 +65,12 @@ export function EmployeeDirectory({
             {t('directory.title')}
           </h3>
           <p className="text-xs text-slate-500">
-            {t('directory.summary', { total: employeesQuery.data.length, eligible, start: periodStart, end: periodEnd })}
+            {t('directory.summary', { total: employeesQuery.items.length, eligible, start: periodStart, end: periodEnd })}
           </p>
         </div>
       </div>
 
-      {employeesQuery.data.length === 0 ? (
+      {employeesQuery.items.length === 0 ? (
         <p className="py-4 text-center text-sm text-slate-500">{t('directory.empty')}</p>
       ) : (
         <div className="overflow-x-auto">
@@ -81,7 +85,7 @@ export function EmployeeDirectory({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {employeesQuery.data.map((employee) => {
+              {employeesQuery.items.map((employee) => {
                 const eligibleForPeriod = isEligibleForPeriod(employee, periodStart, periodEnd)
                 return (
                   <tr key={employee.id} className="h-11 hover:bg-slate-50">
@@ -119,6 +123,15 @@ export function EmployeeDirectory({
           </table>
         </div>
       )}
+
+      <div className="mt-3 flex justify-end">
+        <Pagination
+          totalCount={employeesQuery.totalCount}
+          page={paging.page}
+          pageSize={paging.pageSize}
+          onPageChange={paging.setPage}
+        />
+      </div>
     </div>
   )
 }

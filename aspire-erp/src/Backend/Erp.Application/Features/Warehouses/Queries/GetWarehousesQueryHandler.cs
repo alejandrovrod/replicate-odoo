@@ -70,6 +70,7 @@ public sealed class GetWarehousesQueryHandler : IQueryHandler<GetWarehousesQuery
                 warehouse.AccountId ?? Guid.Empty,
                 warehouse.IsGroup,
                 warehouse.IsActive,
+                warehouse.RowVersion,
                 childNodes ?? (IReadOnlyList<WarehouseTreeNodeDto>)Array.Empty<WarehouseTreeNodeDto>());
         }
 

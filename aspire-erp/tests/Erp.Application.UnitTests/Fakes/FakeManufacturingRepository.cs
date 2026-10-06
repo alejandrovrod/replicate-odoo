@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -57,13 +58,18 @@ public sealed class FakeManufacturingRepository : IManufacturingRepository
     public Task<BillOfMaterials?> GetDefaultActiveBomByItemIdAsync(Guid itemId, CancellationToken cancellationToken = default)
         => Task.FromResult(_boms.FirstOrDefault(b => b.ItemId == itemId && b.IsActive && b.IsDefault));
 
-    public Task<IReadOnlyList<BillOfMaterials>> ListBomsAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<BillOfMaterials>>(
-            _boms.Where(b => b.CompanyId == companyId).OrderBy(b => b.BomNumber).ToList());
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
+    public Task<PagedResult<BillOfMaterials>> ListBomsAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _boms.Where(b => b.CompanyId == companyId).OrderBy(b => b.BomNumber).ToList();
+        return Task.FromResult(new PagedResult<BillOfMaterials>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
-    public Task<IReadOnlyList<WorkOrder>> ListWorkOrdersAsync(Guid companyId, CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<WorkOrder>>(
-            _workOrders.Where(o => o.CompanyId == companyId).OrderByDescending(o => o.CreatedAt).ToList());
+    public Task<PagedResult<WorkOrder>> ListWorkOrdersAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
+    {
+        var items = _workOrders.Where(o => o.CompanyId == companyId).OrderByDescending(o => o.CreatedAt).ToList();
+        return Task.FromResult(new PagedResult<WorkOrder>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 
     public Task<WorkOrder?> GetWorkOrderByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(_workOrders.FirstOrDefault(o => o.Id == id));

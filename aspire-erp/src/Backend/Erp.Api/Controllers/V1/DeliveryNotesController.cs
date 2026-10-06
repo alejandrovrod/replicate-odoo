@@ -6,6 +6,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Selling.Commands;
 using Erp.Application.Features.Selling.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -60,11 +61,12 @@ public sealed class DeliveryNotesController : ControllerBase
     /// <param name="limit">Maximum number of notes to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<DeliveryNoteDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<DeliveryNoteDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
         [FromQuery] Guid companyId,
-        [FromQuery] int limit = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
@@ -76,7 +78,7 @@ public sealed class DeliveryNotesController : ControllerBase
                 SellingErrorCodes.CompanyRequired);
         }
 
-        var notes = await _sender.SendAsync(new GetDeliveryNotesQuery(companyId, limit), cancellationToken);
+        var notes = await _sender.SendAsync(new GetDeliveryNotesQuery(companyId, page, pageSize), cancellationToken);
         return Ok(notes);
     }
 

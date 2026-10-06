@@ -148,7 +148,7 @@ public class BankStatementImportApiTests : IClassFixture<ErpApiFactory>
             using var list = await client.GetAsync(
                 $"/api/v1/bank-transactions?companyId={ErpApiFactory.DevCompanyId}&status=Matched");
             Assert.Equal(HttpStatusCode.OK, list.StatusCode);
-            var matched = JsonNode.Parse(await list.Content.ReadAsStringAsync())!.AsArray();
+            var matched = JsonNode.Parse(await list.Content.ReadAsStringAsync())!["items"]!.AsArray();
             var stripe = Assert.Single(matched, n =>
                 string.Equals(n!["description"]!.GetValue<string>(), "STRIPE PAYOUT REF 98234", StringComparison.Ordinal));
             Assert.Equal("Customer", stripe!["suggestedPartyType"]!.GetValue<string>());
@@ -393,7 +393,7 @@ public class BankStatementImportApiTests : IClassFixture<ErpApiFactory>
         using var response = await client.GetAsync(
             $"/api/v1/bank-transactions?companyId={ErpApiFactory.DevCompanyId}&status={status}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        return JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsArray()
+        return JsonNode.Parse(await response.Content.ReadAsStringAsync())!["items"]!.AsArray()
             .Select(n => n!).ToArray();
     }
 

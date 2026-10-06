@@ -1,10 +1,10 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { CheckCircle2, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { ApiError, apiClient } from '../../api/client'
+import { Suspense, lazy, useCallback, useMemo, useState } from 'react'
+import { ApiError } from '../../api/client'
+import { MAX_PAGE_SIZE } from '../../lib/pagination'
 import { useTenantStore } from '../../store/useTenantStore'
-import type { PayrollRun } from './types'
-import { payrollPeriodDefaults } from './useHrPayrollData'
+import { usePayrollRuns, payrollPeriodDefaults } from './useHrPayrollData'
 
 const EmployeeDirectory = lazy(() =>
   import('./EmployeeDirectory').then((m) => ({ default: m.EmployeeDirectory })),
@@ -30,39 +30,29 @@ export function HrPayrollOverview() {
   const companyId = useTenantStore((state) => state.companyId)
   const [refreshSignal, setRefreshSignal] = useState(0)
   const [period, setPeriod] = useState(payrollPeriodDefaults)
-  const [counts, setCounts] = useState<StatusCounts>({ submitted: 0, paid: 0, cancelled: 0 })
-  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
-  // re-translates on language switches (same decision as CrmOverview).
-  const [countsError, setCountsError] = useState<unknown>(null)
 
-  const refresh = useCallback(() => setRefreshSignal((n) => n + 1), [])
+  // Status cards need per-status counts, and the list endpoint has no status filter: one
+  // bounded read (MAX_PAGE_SIZE, no pager) feeds the counters. Beyond 500 runs the cards
+  // saturate — a dedicated counts endpoint would lift that ceiling.
+  const countsQuery = usePayrollRuns(companyId, 1, MAX_PAGE_SIZE)
+  const { reload: reloadCounts } = countsQuery
+  const counts = useMemo<StatusCounts>(() => {
+    const rows = countsQuery.status === 'success' ? countsQuery.items : []
+    return {
+      submitted: rows.filter((r) => r.status === 'Submitted').length,
+      paid: rows.filter((r) => r.status === 'Paid').length,
+      cancelled: rows.filter((r) => r.status === 'Cancelled').length,
+    }
+  }, [countsQuery])
+  const countsError = countsQuery.status === 'error' ? countsQuery.error : null
+
+  const refresh = useCallback(() => {
+    setRefreshSignal((n) => n + 1)
+    reloadCounts()
+  }, [reloadCounts])
   const onPeriodChange = useCallback((start: string, end: string) => {
     setPeriod({ start, end })
   }, [])
-
-  useEffect(() => {
-    if (!companyId) return
-    let cancelled = false
-    apiClient.get<PayrollRun[]>('/v1/payroll-runs', { params: { companyId } }).then(
-      (response) => {
-        if (cancelled) return
-        setCounts({
-          submitted: response.data.filter((r) => r.status === 'Submitted').length,
-          paid: response.data.filter((r) => r.status === 'Paid').length,
-          cancelled: response.data.filter((r) => r.status === 'Cancelled').length,
-        })
-        setCountsError(null)
-      },
-      (cause: unknown) => {
-        if (!cancelled) {
-          setCountsError(cause)
-        }
-      },
-    )
-    return () => {
-      cancelled = true
-    }
-  }, [companyId, refreshSignal])
 
   const cards = [
     {

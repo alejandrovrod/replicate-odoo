@@ -38,7 +38,7 @@ export interface WarehouseNode {
   code: string
   name: string
   parentWarehouseId: string | null
-  stockAccountId: string
+  accountId: string
   isGroup: boolean
   isActive: boolean
   children: WarehouseNode[]
@@ -128,7 +128,7 @@ export interface FlatWarehouse {
   depth: number
   isGroup: boolean
   isActive: boolean
-  stockAccountId: string
+  accountId: string
 }
 
 /**
@@ -145,7 +145,7 @@ export function flattenWarehouses(nodes: WarehouseNode[], leavesOnly = false): F
         depth,
         isGroup: node.isGroup,
         isActive: node.isActive,
-        stockAccountId: node.stockAccountId,
+        accountId: node.accountId,
       }
       const children = walk(node.children, depth + 1)
       if (leavesOnly) {

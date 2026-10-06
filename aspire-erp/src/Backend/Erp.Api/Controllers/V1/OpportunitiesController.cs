@@ -7,6 +7,7 @@ using Erp.Application.DTOs;
 using Erp.Application.Features.Crm.Commands;
 using Erp.Application.Features.Crm.DTOs;
 using Erp.Application.Features.Crm.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -64,11 +65,12 @@ public sealed class OpportunitiesController : ControllerBase
     /// <param name="stage">Optional stage filter (e.g. Negotiation).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<OpportunityDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<OpportunityDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
         [FromQuery] Guid companyId,
-        [FromQuery] int limit = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
         [FromQuery] string? stage = null,
         CancellationToken cancellationToken = default)
     {
@@ -82,7 +84,7 @@ public sealed class OpportunitiesController : ControllerBase
         }
 
         var opportunities = await _sender.SendAsync(
-            new GetOpportunitiesQuery(companyId, limit, stage), cancellationToken);
+            new GetOpportunitiesQuery(companyId, page, pageSize, stage), cancellationToken);
         return Ok(opportunities);
     }
 

@@ -113,14 +113,14 @@ public class CustomersApiTests : IClassFixture<ErpApiFactory>, IDisposable
             $"/api/v1/customers?companyId={ErpApiFactory.DevCompanyId}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var list = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsArray();
+        var list = JsonNode.Parse(await response.Content.ReadAsStringAsync())!["items"]!.AsArray();
         Assert.Contains(list, node => node!["code"]?.GetValue<string>() == code);
 
         // Company scoping: a company that owns no customers comes back EMPTY.
         using var otherCompany = await client.GetAsync(
             $"/api/v1/customers?companyId={Guid.NewGuid()}");
         Assert.Equal(HttpStatusCode.OK, otherCompany.StatusCode);
-        Assert.Empty(JsonNode.Parse(await otherCompany.Content.ReadAsStringAsync())!.AsArray());
+        Assert.Empty(JsonNode.Parse(await otherCompany.Content.ReadAsStringAsync())!["items"]!.AsArray());
 
         // Tenant scoping (Constitution Article II.3): the SAME companyId seen from a foreign
         // tenant must come back EMPTY - no cross-tenant leakage.
@@ -128,7 +128,7 @@ public class CustomersApiTests : IClassFixture<ErpApiFactory>, IDisposable
         using var foreignResponse = await foreignClient.GetAsync(
             $"/api/v1/customers?companyId={ErpApiFactory.DevCompanyId}");
         Assert.Equal(HttpStatusCode.OK, foreignResponse.StatusCode);
-        Assert.Empty(JsonNode.Parse(await foreignResponse.Content.ReadAsStringAsync())!.AsArray());
+        Assert.Empty(JsonNode.Parse(await foreignResponse.Content.ReadAsStringAsync())!["items"]!.AsArray());
     }
 
     [Fact]

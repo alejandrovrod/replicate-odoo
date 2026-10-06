@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, PlusCircle, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { ApiError, apiClient } from '../../api/client'
+import { Pagination } from '../../components/ui/Pagination'
+import { apiClient } from '../../api/client'
+import { useApiList } from '../../lib/useApiList'
+import { usePagination } from '../../lib/pagination'
 import { useErpAction } from '../../lib/useErpAction'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { formatQty } from '../../lib/format'
@@ -33,34 +36,36 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
   const { t, i18n } = useTranslation('banking')
   const companyId = useTenantStore((state) => state.companyId)
   const [statusFilter, setStatusFilter] = useState<BankTransactionStatus>('Unreconciled')
-  const [lines, setLines] = useState<BankTransaction[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  // Raw error, not a string: the ApiError branch is backend-localized, the generic branch
-  // re-translates on language switches (same decision as CrmOverview).
-  const [loadError, setLoadError] = useState<unknown>(null)
+  const paging = usePagination()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [slices, setSlices] = useState<AllocationSlice[]>([{ ...EMPTY_SLICE }])
   const [showVoucherDialog, setShowVoucherDialog] = useState(false)
 
-  const load = useCallback(async () => {
-    if (!companyId) return
-    setIsLoading(true)
-    setLoadError(null)
-    try {
-      const response = await apiClient.get<BankTransaction[]>('/v1/bank-transactions', {
-        params: { companyId, status: statusFilter },
-      })
-      setLines(response.data)
-    } catch (err) {
-      setLoadError(err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [companyId, statusFilter])
+  const linesQuery = useApiList<BankTransaction>(
+    '/v1/bank-transactions',
+    { companyId, status: statusFilter, page: paging.page, pageSize: paging.pageSize },
+    Boolean(companyId),
+  )
+  const lines = linesQuery.status === 'success' ? linesQuery.items : []
+  const isLoading = linesQuery.status === 'loading'
+  const loadError = linesQuery.status === 'error' ? linesQuery.error : null
+  const load = linesQuery.reload
 
+  // A filter change can strand the view on an empty page: reset to page one.
+  const changeFilter = (next: BankTransactionStatus) => {
+    setStatusFilter(next)
+    paging.setPage(1)
+  }
+
+  // The parent bumps refreshSignal after imports and rule runs (no remount — same instance).
+  const firstRefresh = useRef(true)
   useEffect(() => {
-    void load()
-  }, [load, refreshSignal])
+    if (firstRefresh.current) {
+      firstRefresh.current = false
+      return
+    }
+    load()
+  }, [refreshSignal, load])
 
   const selected = lines.find((l) => l.id === selectedId) ?? null
   const expected = selected ? netAmount(selected) : 0
@@ -125,7 +130,7 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
           <div className="flex items-center gap-2">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as BankTransactionStatus)}
+              onChange={(e) => changeFilter(e.target.value as BankTransactionStatus)}
               className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs"
               aria-label={t('recon.statusFilter')}
             >
@@ -147,7 +152,7 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
         {isLoading && <p className="mt-4 text-xs text-slate-500">{t('recon.loading')}</p>}
         {loadError ? (
           <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-            {loadError instanceof ApiError ? loadError.message : t('overview.loadFailed')}
+            {loadError.status === 0 ? t('overview.loadFailed') : loadError.message}
           </div>
         ) : null}
         {!isLoading && !loadError && lines.length === 0 && (
@@ -192,6 +197,15 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
             </li>
           ))}
         </ul>
+
+        <div className="mt-3 flex justify-end">
+          <Pagination
+            totalCount={linesQuery.totalCount}
+            page={paging.page}
+            pageSize={paging.pageSize}
+            onPageChange={paging.setPage}
+          />
+        </div>
       </div>
 
       {/* Right: counterpart picker */}

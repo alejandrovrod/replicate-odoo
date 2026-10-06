@@ -480,7 +480,7 @@ public class WorkOrderManufacturingApiTests : IClassFixture<ErpApiFactory>
     private static Task<HttpResponseMessage> PostSubmitAsync(HttpClient client, Guid orderId) =>
         PostWithKeyAsync(
             client, HttpMethod.Post,
-            $"/api/v1/workorders/{orderId}/submit?companyId={ErpApiFactory.DevCompanyId}");
+            $"/api/v1/workorders/{orderId}/submit?companyId={ErpApiFactory.DevCompanyId}&pageSize=500");
 
     private static Task<HttpResponseMessage> PostTransferAsync(HttpClient client, Guid orderId, Guid? key = null) =>
         PostWithKeyAsync(
@@ -605,10 +605,10 @@ public class WorkOrderManufacturingApiTests : IClassFixture<ErpApiFactory>
 
     private static async Task<string> ReadOrderStatusAsync(HttpClient client, Guid orderId)
     {
-        using var response = await client.GetAsync($"/api/v1/workorders?companyId={ErpApiFactory.DevCompanyId}");
+        using var response = await client.GetAsync($"/api/v1/workorders?companyId={ErpApiFactory.DevCompanyId}&pageSize=500");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var orders = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsArray();
+        var orders = JsonNode.Parse(await response.Content.ReadAsStringAsync())!["items"]!.AsArray();
         var order = orders.Single(n => string.Equals(
             n!["id"]!.GetValue<string>(), orderId.ToString(), StringComparison.OrdinalIgnoreCase));
         return order!["status"]!.GetValue<string>();
@@ -616,15 +616,29 @@ public class WorkOrderManufacturingApiTests : IClassFixture<ErpApiFactory>
 
     private static async Task<decimal> ReadOnHandAsync(HttpClient client, Guid itemId, Guid warehouseId)
     {
-        using var response = await client.GetAsync($"/api/v1/items?companyId={ErpApiFactory.DevCompanyId}");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // Pages through the item list: the dev database accumulates rows across runs, so no
+        // fixed page can guarantee the item (Standard Pagination Pattern consequence).
+        for (var page = 1; ; page++)
+        {
+            using var response = await client.GetAsync(
+                $"/api/v1/items?companyId={ErpApiFactory.DevCompanyId}&page={page}&pageSize=500");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var items = JsonNode.Parse(await response.Content.ReadAsStringAsync())!.AsArray();
-        var item = items.Single(n => string.Equals(
-            n!["id"]!.GetValue<string>(), itemId.ToString(), StringComparison.OrdinalIgnoreCase));
-        var row = item!["stock"]!.AsArray().Single(n => string.Equals(
-            n!["warehouseId"]!.GetValue<string>(), warehouseId.ToString(), StringComparison.OrdinalIgnoreCase));
-        return row!["qty"]!.GetValue<decimal>();
+            var items = JsonNode.Parse(await response.Content.ReadAsStringAsync())!["items"]!.AsArray();
+            var item = items.SingleOrDefault(n => string.Equals(
+                n!["id"]!.GetValue<string>(), itemId.ToString(), StringComparison.OrdinalIgnoreCase));
+            if (item is not null)
+            {
+                var row = item!["stock"]!.AsArray().Single(n => string.Equals(
+                    n!["warehouseId"]!.GetValue<string>(), warehouseId.ToString(), StringComparison.OrdinalIgnoreCase));
+                return row!["qty"]!.GetValue<decimal>();
+            }
+
+            if (items.Count == 0)
+            {
+                throw new InvalidOperationException($"Item {itemId} not found in any page of the item list.");
+            }
+        }
     }
 
     private static decimal Sum(JsonArray gl, string accountCode, string side) =>

@@ -1,8 +1,10 @@
 using System.Data;
 using System.Data.Common;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -115,19 +117,19 @@ public sealed class ManufacturingRepository : IManufacturingRepository
             .Include(e => e.Operations)
             .FirstOrDefaultAsync(e => e.ItemId == itemId && e.IsActive && e.IsDefault, cancellationToken);
 
-    public async Task<IReadOnlyList<BillOfMaterials>> ListBomsAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<BillOfMaterials>> ListBomsAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.BillsOfMaterials
             .Include(e => e.Items)
             .Include(e => e.Operations)
             .Where(e => e.CompanyId == companyId)
             .OrderBy(e => e.BomNumber)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
-    public async Task<IReadOnlyList<WorkOrder>> ListWorkOrdersAsync(Guid companyId, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<WorkOrder>> ListWorkOrdersAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default)
         => await _dbContext.WorkOrders
             .Where(e => e.CompanyId == companyId)
             .OrderByDescending(e => e.CreatedAt)
-            .ToListAsync(cancellationToken);
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task<WorkOrder?> GetWorkOrderByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _dbContext.WorkOrders.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);

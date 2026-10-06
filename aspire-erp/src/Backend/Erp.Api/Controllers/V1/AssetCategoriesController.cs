@@ -5,6 +5,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Assets.Commands;
 using Erp.Application.Features.Assets.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -69,11 +70,13 @@ public sealed class AssetCategoriesController : ControllerBase
     /// <param name="companyId">Company that owns the categories.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<AssetCategoryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<AssetCategoryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -84,7 +87,7 @@ public sealed class AssetCategoriesController : ControllerBase
                 AssetErrorCodes.CompanyNotFound);
         }
 
-        var categories = await _sender.SendAsync(new GetAssetCategoriesQuery(companyId), cancellationToken);
+        var categories = await _sender.SendAsync(new GetAssetCategoriesQuery(companyId, page, pageSize), cancellationToken);
         return Ok(categories);
     }
 

@@ -1,72 +1,17 @@
-import { useCallback, useEffect, useState } from 'react'
-import { ApiError, apiClient } from '../../api/client'
+import { apiClient } from '../../api/client'
+import { useApiList, type QueryStatus } from '../../lib/useApiList'
 import type { Bom, ManufacturingPosting, WorkOrder } from './types'
 
-export type QueryStatus = 'idle' | 'loading' | 'success' | 'error'
+export type { QueryStatus }
 
-interface QueryState<T> {
-  key: string
-  attempt: number
-  status: 'success' | 'error'
-  data: T
-  error: ApiError | null
+/** GET /api/v1/workorders?companyId=&page=&pageSize= - headers for the execution board. */
+export function useWorkOrders(companyId: string, page = 1, pageSize = 50) {
+  return useApiList<WorkOrder>('/v1/workorders', { companyId, page, pageSize }, Boolean(companyId))
 }
 
-/** Stable empty array so effects never re-run because a caller rebuilt its literal. */
-const EMPTY: never[] = []
-
-const toApiError = (cause: unknown): ApiError =>
-  cause instanceof ApiError
-    ? cause
-    : new ApiError(0, 'Unexpected Error', cause instanceof Error ? cause.message : String(cause))
-
-/**
- * Shared GET loader for the manufacturing feature (same contract as the stock
- * `useApiList`): tenant header injection and RFC 7807 handling live in
- * `src/api/client.ts`. The effect keys off the JSON round-trip of `params`.
- */
-function useApiList<T>(path: string, params: Record<string, string | number>, enabled: boolean) {
-  const paramsKey = JSON.stringify(params)
-  const key = `${path}?${paramsKey}`
-  const [attempt, setAttempt] = useState(0)
-  const [state, setState] = useState<QueryState<T[]> | null>(null)
-
-  useEffect(() => {
-    if (!enabled) return undefined
-
-    let cancelled = false
-    const query = JSON.parse(paramsKey) as Record<string, string | number>
-    apiClient.get<T[]>(path, { params: query }).then(
-      (response) => {
-        if (!cancelled) setState({ key, attempt, status: 'success', data: response.data, error: null })
-      },
-      (cause: unknown) => {
-        if (!cancelled) setState({ key, attempt, status: 'error', data: EMPTY as T[], error: toApiError(cause) })
-      },
-    )
-
-    return () => {
-      cancelled = true
-    }
-  }, [path, paramsKey, attempt, enabled, key])
-
-  const reload = useCallback(() => setAttempt((current) => current + 1), [])
-
-  if (!enabled) return { data: EMPTY as T[], status: 'idle' as const, error: null, reload }
-  if (state && state.key === key && state.attempt === attempt) {
-    return { data: state.data, status: state.status, error: state.error, reload }
-  }
-  return { data: EMPTY as T[], status: 'loading' as const, error: null, reload }
-}
-
-/** GET /api/v1/workorders?companyId= - headers for the execution board. */
-export function useWorkOrders(companyId: string) {
-  return useApiList<WorkOrder>('/v1/workorders', { companyId }, Boolean(companyId))
-}
-
-/** GET /api/v1/boms?companyId= - recipes for the BOM tree editor. */
-export function useBoms(companyId: string) {
-  return useApiList<Bom>('/v1/boms', { companyId }, Boolean(companyId))
+/** GET /api/v1/boms?companyId=&page=&pageSize= - recipes for the BOM tree editor. */
+export function useBoms(companyId: string, page = 1, pageSize = 50) {
+  return useApiList<Bom>('/v1/boms', { companyId, page, pageSize }, Boolean(companyId))
 }
 
 /**

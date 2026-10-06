@@ -127,14 +127,14 @@ public class SalesOrderDeliveryNoteApiTests : IClassFixture<ErpApiFactory>, IDis
 
         using var list = await client.GetAsync($"{SalesOrdersPath}?companyId={ErpApiFactory.DevCompanyId}");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
-        var orders = JsonNode.Parse(await list.Content.ReadAsStringAsync())!.AsArray();
+        var orders = JsonNode.Parse(await list.Content.ReadAsStringAsync())!["items"]!.AsArray();
         Assert.Contains(orders, node => node!["id"]!.GetValue<Guid>() == id);
 
         using var foreignClient = CreateClient(ErpApiFactory.ForeignTenantId);
         using var foreign = await foreignClient.GetAsync(
             $"{SalesOrdersPath}?companyId={ErpApiFactory.DevCompanyId}");
         Assert.Equal(HttpStatusCode.OK, foreign.StatusCode);
-        Assert.Empty(JsonNode.Parse(await foreign.Content.ReadAsStringAsync())!.AsArray());
+        Assert.Empty(JsonNode.Parse(await foreign.Content.ReadAsStringAsync())!["items"]!.AsArray());
     }
 
     /// <summary>
@@ -311,7 +311,7 @@ public class SalesOrderDeliveryNoteApiTests : IClassFixture<ErpApiFactory>, IDis
 
         using var list = await client.GetAsync($"{DeliveryNotesPath}?companyId={ErpApiFactory.DevCompanyId}");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
-        var notes = JsonNode.Parse(await list.Content.ReadAsStringAsync())!.AsArray();
+        var notes = JsonNode.Parse(await list.Content.ReadAsStringAsync())!["items"]!.AsArray();
         Assert.Contains(notes, node => node!["id"]!.GetValue<Guid>() == note["id"]!.GetValue<Guid>());
     }
 
@@ -416,7 +416,7 @@ public class SalesOrderDeliveryNoteApiTests : IClassFixture<ErpApiFactory>, IDis
 
         using var list = await client.GetAsync($"{DeliveryNotesPath}?companyId={ErpApiFactory.DevCompanyId}");
         Assert.Equal(HttpStatusCode.OK, list.StatusCode);
-        var notes = JsonNode.Parse(await list.Content.ReadAsStringAsync())!.AsArray();
+        var notes = JsonNode.Parse(await list.Content.ReadAsStringAsync())!["items"]!.AsArray();
         Assert.Equal(1, notes.Count(node => node!["salesOrderId"]!.GetValue<Guid>() == orderId));
     }
 

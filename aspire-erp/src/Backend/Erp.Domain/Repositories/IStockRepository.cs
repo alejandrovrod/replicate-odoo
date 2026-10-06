@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -79,7 +80,7 @@ public interface IStockRepository
     Task<string> NextVoucherNumberAsync(Guid companyId, string prefix, int year, CancellationToken cancellationToken = default);
 
     /// <summary>Most recent stock vouchers of a company (newest first) for the list view.</summary>
-    Task<IReadOnlyList<StockEntry>> GetRecentByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+    Task<PagedResult<StockEntry>> GetRecentByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 
     /// <summary>Gets a stock entry by its ID, including its Items.</summary>
     Task<StockEntry?> GetEntryByIdAsync(Guid id, CancellationToken cancellationToken = default);
@@ -89,7 +90,21 @@ public interface IStockRepository
 
     /// <summary>Gets the GL rows produced by a voucher ID.</summary>
     Task<IReadOnlyList<GLEntry>> GetGlEntriesByVoucherIdAsync(Guid voucherId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Company inventory aggregates for the overview stat cards (Standard Pagination Pattern
+    /// companion): scalar COUNT/SUM queries only, never materialized rows.
+    /// </summary>
+    Task<StockSummary> GetStockSummaryAsync(Guid companyId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Read-model row for one (item, warehouse) pair inside a company.</summary>
 public sealed record StockBalance(Guid ItemId, Guid WarehouseId, decimal Qty, decimal Value);
+
+/// <summary>Aggregate snapshot behind GET /api/v1/stock/summary (all scalars, no rows).</summary>
+public sealed record StockSummary(
+    int TotalSkus,
+    int ActiveSkus,
+    decimal TotalValue,
+    int WarehouseCount,
+    int LeafWarehouseCount);

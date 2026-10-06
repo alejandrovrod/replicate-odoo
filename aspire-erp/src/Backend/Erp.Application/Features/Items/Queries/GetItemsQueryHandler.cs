@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Repositories;
 
@@ -10,7 +11,7 @@ namespace Erp.Application.Features.Items.Queries;
 /// <see cref="IStockRepository"/> (SUM of the Kardex rows per item/warehouse) and warehouse labels
 /// from <see cref="IWarehouseRepository"/> - all tenant-isolated automatically (Constitution II.3).
 /// </summary>
-public sealed class GetItemsQueryHandler : IQueryHandler<GetItemsQuery, IReadOnlyList<ItemDto>>
+public sealed class GetItemsQueryHandler : IQueryHandler<GetItemsQuery, PagedResult<ItemDto>>
 {
     private readonly IItemRepository _items;
     private readonly IStockRepository _stock;
@@ -23,12 +24,14 @@ public sealed class GetItemsQueryHandler : IQueryHandler<GetItemsQuery, IReadOnl
         _warehouses = warehouses;
     }
 
-    public async Task<IReadOnlyList<ItemDto>> HandleAsync(GetItemsQuery query, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<ItemDto>> HandleAsync(GetItemsQuery query, CancellationToken cancellationToken = default)
     {
-        var items = await _items.GetAllAsync(cancellationToken);
-        if (items.Count == 0)
+        var page = await _items.GetAllAsync(
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        if (page.Items.Count == 0)
         {
-            return Array.Empty<ItemDto>();
+            return page.Map(new List<ItemDto>());
         }
 
         var balances = await _stock.GetStockBalancesByCompanyAsync(query.CompanyId, cancellationToken);
@@ -40,9 +43,20 @@ public sealed class GetItemsQueryHandler : IQueryHandler<GetItemsQuery, IReadOnl
             warehouseById[warehouse.Id] = warehouse;
         }
 
+        var pageIds = new HashSet<Guid>(page.Items.Count);
+        foreach (var item in page.Items)
+        {
+            pageIds.Add(item.Id);
+        }
+
         var stockByItem = new Dictionary<Guid, List<ItemStockDto>>();
         foreach (var balance in balances)
         {
+            if (!pageIds.Contains(balance.ItemId))
+            {
+                continue;
+            }
+
             if (!warehouseById.TryGetValue(balance.WarehouseId, out var warehouse))
             {
                 continue;
@@ -62,8 +76,8 @@ public sealed class GetItemsQueryHandler : IQueryHandler<GetItemsQuery, IReadOnl
                 balance.Value));
         }
 
-        var result = new List<ItemDto>(items.Count);
-        foreach (var item in items)
+        var result = new List<ItemDto>(page.Items.Count);
+        foreach (var item in page.Items)
         {
             var stock = stockByItem.TryGetValue(item.Id, out var list)
                 ? (IReadOnlyList<ItemStockDto>)list
@@ -72,7 +86,7 @@ public sealed class GetItemsQueryHandler : IQueryHandler<GetItemsQuery, IReadOnl
             result.Add(ItemDto.From(item, stock));
         }
 
-        return result;
+        return page.Map(result);
     }
 }
 

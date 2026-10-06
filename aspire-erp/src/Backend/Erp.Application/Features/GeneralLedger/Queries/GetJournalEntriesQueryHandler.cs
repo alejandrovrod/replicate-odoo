@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 
 namespace Erp.Application.Features.GeneralLedger.Queries;
@@ -10,7 +11,7 @@ namespace Erp.Application.Features.GeneralLedger.Queries;
 /// (Constitution II.3).
 /// </summary>
 public sealed class GetJournalEntriesQueryHandler
-    : IQueryHandler<GetJournalEntriesQuery, IReadOnlyList<JournalEntryDto>>
+    : IQueryHandler<GetJournalEntriesQuery, PagedResult<JournalEntryDto>>
 {
     private readonly IJournalRepository _journals;
 
@@ -19,23 +20,25 @@ public sealed class GetJournalEntriesQueryHandler
         _journals = journals;
     }
 
-    public async Task<IReadOnlyList<JournalEntryDto>> HandleAsync(
+    public async Task<PagedResult<JournalEntryDto>> HandleAsync(
         GetJournalEntriesQuery query,
         CancellationToken cancellationToken = default)
     {
-        var limit = query.Limit <= 0 ? 50 : Math.Min(query.Limit, 500);
-        var entries = await _journals.GetRecentByCompanyAsync(query.CompanyId, limit, cancellationToken);
-        if (entries.Count == 0)
+        var page = await _journals.GetRecentByCompanyAsync(
+            query.CompanyId,
+            new PagedRequest(query.PageNumber, query.PageSize),
+            cancellationToken);
+        if (page.Items.Count == 0)
         {
-            return Array.Empty<JournalEntryDto>();
+            return page.Map(new List<JournalEntryDto>());
         }
 
-        var result = new List<JournalEntryDto>(entries.Count);
-        foreach (var entry in entries)
+        var result = new List<JournalEntryDto>(page.Items.Count);
+        foreach (var entry in page.Items)
         {
             result.Add(JournalEntryDto.Build(entry));
         }
 
-        return result;
+        return page.Map(result);
     }
 }

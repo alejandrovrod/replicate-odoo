@@ -6,6 +6,7 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Manufacturing.Commands;
 using Erp.Application.Features.Manufacturing.Queries;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -136,11 +137,13 @@ public sealed class WorkOrdersController : ControllerBase
     /// <param name="companyId">Company that owns the orders.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<WorkOrderDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<WorkOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
         [FromQuery] Guid companyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
         if (companyId == Guid.Empty)
         {
@@ -151,7 +154,7 @@ public sealed class WorkOrdersController : ControllerBase
                 ManufacturingErrorCodes.WorkOrderNotFound);
         }
 
-        var orders = await _sender.SendAsync(new GetWorkOrdersQuery(companyId), cancellationToken);
+        var orders = await _sender.SendAsync(new GetWorkOrdersQuery(companyId, page, pageSize), cancellationToken);
         return Ok(orders);
     }
 

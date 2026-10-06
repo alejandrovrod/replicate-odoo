@@ -1,3 +1,4 @@
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 
 namespace Erp.Domain.Repositories;
@@ -48,5 +49,5 @@ public interface IJournalRepository
     Task<JournalEntry?> GetByIdAsync(Guid journalEntryId, CancellationToken cancellationToken = default);
 
     /// <summary>Most recent journal entries of a company (newest first) with lines.</summary>
-    Task<IReadOnlyList<JournalEntry>> GetRecentByCompanyAsync(Guid companyId, int limit, CancellationToken cancellationToken = default);
+    Task<PagedResult<JournalEntry>> GetRecentByCompanyAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default);
 }

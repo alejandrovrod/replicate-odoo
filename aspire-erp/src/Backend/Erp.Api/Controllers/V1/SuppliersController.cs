@@ -92,6 +92,55 @@ public sealed class SuppliersController : ControllerBase
         return CreatedAtAction(nameof(Get), new { }, result.Value);
     }
 
+    /// <summary>Updates an existing supplier. 200 with the updated supplier.</summary>
+    /// <param name="id">Supplier ID.</param>
+    /// <param name="command">Updated supplier data including RowVersion.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSupplierCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidSupplierId"),
+                _errors.Text("supplier_not_found"),
+                "supplier_not_found");
+        }
+
+        var result = await _sender.SendAsync(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+
+            return error.Code switch
+            {
+                "supplier_not_found" => Problem(
+                    StatusCodes.Status404NotFound,
+                    _common.Text("SupplierNotFound"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                ConcurrencyErrorCodes.ConcurrencyConflict or PurchaseErrorCodes.DuplicateSupplierCode => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("DuplicateSupplierCode"),
+                    error.Message,
+                    error.Code),
+                _ => Problem(
+                    StatusCodes.Status400BadRequest,
+                    _common.Text("SupplierRejected"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+            };
+        }
+
+        return Ok(result.Value!);
+    }
+
     private ObjectResult Problem(int status, string title, string detail, string? code)
     {
         var problem = new ProblemDetails

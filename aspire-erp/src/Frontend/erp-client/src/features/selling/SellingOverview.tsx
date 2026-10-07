@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { FileText, ShoppingCart } from 'lucide-react'
+import { FileText, ShoppingCart, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { PosCashierModal } from './PosCashierModal'
+import { useNavigationStore } from '../../store/useNavigationStore'
 
 export function SellingOverview() {
   const { t } = useTranslation('selling')
@@ -20,6 +21,14 @@ export function SellingOverview() {
           <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => useNavigationStore.getState().setCurrentRoute('selling-customers')}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+          >
+            <Users className="h-4 w-4 text-emerald-600" />
+            {t('overview.manageCustomers', 'Clientes')}
+          </button>
           <button
             type="button"
             className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"

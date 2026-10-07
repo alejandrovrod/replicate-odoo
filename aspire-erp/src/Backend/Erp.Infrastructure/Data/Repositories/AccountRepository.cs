@@ -102,4 +102,20 @@ public sealed class AccountRepository : IAccountRepository
                 && a.IsActive
                 && !a.IsGroup)
             .ToListAsync(cancellationToken);
+
+    public async Task UpdateAsync(Account account, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Accounts.Update(account);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _dbContext.Entry(account).State = EntityState.Detached;
+            throw new AccountValidationException(
+                "concurrency_conflict",
+                $"The account '{account.AccountCode}' was modified by another user. Please refresh and try again.");
+        }
+    }
 }

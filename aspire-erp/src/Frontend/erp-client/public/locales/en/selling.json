@@ -7,7 +7,8 @@
     "title": "Selling & Point of Sale (POS)",
     "subtitle": "Customer invoicing, credit limit validation, and high-speed cashier POS registers.",
     "newInvoice": "New Sales Invoice",
-    "launchPos": "Launch POS Cashier"
+    "launchPos": "Launch POS Cashier",
+    "manageCustomers": "Manage Customers"
   },
   "invoices": {
     "title": "Recent Sales Invoices",
@@ -39,5 +40,34 @@
   "pay": {
     "cash": "Cash",
     "card": "Card"
+  },
+  "customers": {
+    "manageTitle": "Customers",
+    "manageSubtitle": "Manage your customers and credit limits.",
+    "search": "Search customers...",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "taxId": "Tax ID",
+      "creditLimit": "Credit Limit",
+      "status": "Status"
+    },
+    "active": "Active",
+    "inactive": "Disabled"
+  },
+  "customerForm": {
+    "titleNew": "New Customer",
+    "titleEdit": "Edit Customer",
+    "codeLabel": "Customer Code *",
+    "nameLabel": "Customer Name *",
+    "taxIdLabel": "Tax ID",
+    "creditLimitLabel": "Credit Limit",
+    "active": "Active",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "errorRequired": "Name and Code are required.",
+    "errorConflict": "Concurrency conflict or duplicate code. Please refresh and try again.",
+    "errorGeneric": "An error occurred while saving."
   }
 }

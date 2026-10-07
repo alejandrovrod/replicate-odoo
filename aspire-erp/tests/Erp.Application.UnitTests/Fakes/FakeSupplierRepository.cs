@@ -24,6 +24,11 @@ public sealed class FakeSupplierRepository : ISupplierRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
     public Task<bool> ExistsCodeAsync(string code, CancellationToken cancellationToken = default)
         => Task.FromResult(_suppliers.Any(s => s.Code == code));
 

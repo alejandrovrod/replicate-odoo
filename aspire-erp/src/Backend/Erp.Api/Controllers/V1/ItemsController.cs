@@ -106,6 +106,55 @@ public sealed class ItemsController : ControllerBase
         return Created("/api/v1/items", dto);
     }
 
+    /// <summary>Updates an existing SKU. 200 with the updated item.</summary>
+    /// <param name="id">Item ID.</param>
+    /// <param name="command">Updated item data including RowVersion.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ItemDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateItemCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidItemId"),
+                _errors.Text("item_not_found"),
+                "item_not_found");
+        }
+
+        var result = await _sender.SendAsync(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+
+            return error.Code switch
+            {
+                "item_not_found" => Problem(
+                    StatusCodes.Status404NotFound,
+                    _common.Text("ItemNotFound"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                ConcurrencyErrorCodes.ConcurrencyConflict or StockErrorCodes.DuplicateItemCode => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("ItemConflict"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                _ => Problem(
+                    StatusCodes.Status400BadRequest,
+                    _common.Text("ItemRejected"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+            };
+        }
+
+        return Ok(result.Value!);
+    }
+
     private ObjectResult Problem(int status, string title, string detail, string? code)
     {
         var problem = new ProblemDetails

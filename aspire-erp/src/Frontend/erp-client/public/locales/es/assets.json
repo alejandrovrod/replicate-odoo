@@ -1,6 +1,106 @@
 {
   "module": {
-    "title": "Asset categories, depreciation plans and disposals.",
+    "title": "Activos Fijos",
     "subtitle": "Categorías de activos, planes de depreciación y bajas."
+  },
+  "categories": {
+    "manageTitle": "Categorías de Activos",
+    "manageSubtitle": "Gestiona las clasificaciones de activos fijos y sus cuentas contables por defecto.",
+    "search": "Buscar categorías de activos...",
+    "columns": {
+      "name": "Nombre de la Categoría",
+      "depreciable": "Depreciable",
+      "status": "Estado"
+    },
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "depreciable": "Sí",
+    "nonDepreciable": "No",
+    "loading": "Cargando categorías de activos...",
+    "error": "Error al cargar categorías:"
+  },
+  "categoryForm": {
+    "titleNew": "Nueva Categoría",
+    "titleEdit": "Editar Categoría",
+    "nameLabel": "Nombre de Categoría *",
+    "namePlaceholder": "ej. Equipo de Cómputo",
+    "fixedAssetAccountLabel": "Cuenta de Activo Fijo *",
+    "accumulatedDepreciationAccountLabel": "Cuenta de Depreciación Acumulada *",
+    "depreciationExpenseAccountLabel": "Cuenta de Gasto por Depreciación *",
+    "cwipAccountLabel": "Cuenta CWIP (Opcional)",
+    "gainOnDisposalAccountLabel": "Cuenta de Ganancia en Venta (Opcional)",
+    "lossOnDisposalAccountLabel": "Cuenta de Pérdida en Venta (Opcional)",
+    "selectAccount": "-- Seleccionar Cuenta --",
+    "isNonDepreciable": "¿Es No Depreciable?",
+    "isNonDepreciableDesc": "ej. Terrenos",
+    "active": "Activa",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "errorRequired": "El Nombre de la Categoría y las cuentas contables principales son obligatorios.",
+    "errorConflict": "Conflicto de concurrencia. Intente nuevamente.",
+    "errorGeneric": "Ocurrió un error al guardar."
+  },
+  "assets": {
+    "columns": {
+      "code": "Código",
+      "name": "Nombre",
+      "purchaseDate": "Fecha Compra",
+      "purchaseAmount": "Monto Compra",
+      "nbv": "Valor Neto",
+      "status": "Estado"
+    },
+    "status": {
+      "capitalized": "Capitalizado",
+      "draft": "Borrador",
+      "sold": "Vendido",
+      "scrapped": "Descartado"
+    },
+    "loading": "Cargando activos...",
+    "error": "Error al cargar activos:",
+    "manageTitle": "Activos Fijos",
+    "manageSubtitle": "Gestiona tus activos fijos, revisa el valor contable y haz seguimiento a la depreciación.",
+    "titleNew": "Nuevo Activo",
+    "search": "Buscar activos...",
+    "creationNotice": "Los activos se crean automáticamente al capitalizarlos desde el módulo de compras o por carga inicial de datos.",
+    "depreciation": {
+      "runBtn": "Correr Depreciación",
+      "title": "Correr Depreciación",
+      "description": "Ejecuta la depreciación para todos los activos capitalizados hasta la fecha seleccionada. Esto generará un comprobante de diario.",
+      "asOfDate": "Fecha de Corte",
+      "success": "Depreciación Ejecutada Exitosamente",
+      "bookedCount": "Activos Depreciados:",
+      "totalAmount": "Monto Total Depreciado:",
+      "voucherNo": "Comprobante Generado:"
+    },
+    "detail": {
+      "title": "Detalles del Activo",
+      "info": "Información del Activo",
+      "schedule": "Tabla de Amortización",
+      "purchaseDate": "Fecha Compra",
+      "grossAmount": "Valor Bruto",
+      "salvageValue": "Valor Rescate",
+      "netBookValue": "Valor Neto Contable",
+      "accDepreciation": "Deprec. Acumulada",
+      "depreciationMethod": "Método de Depreciación"
+    },
+    "schedule": {
+      "columns": {
+        "date": "Fecha",
+        "amount": "Monto",
+        "accumulated": "Acumulado",
+        "status": "Estado"
+      },
+      "status": {
+        "scheduled": "Programado",
+        "booked": "Contabilizado",
+        "cancelled": "Cancelado"
+      }
+    },
+    "capitalize": {
+      "btn": "Capitalizar",
+      "success": "Activo capitalizado exitosamente",
+      "error": "Error capitalizando el activo"
+    }
   }
 }

@@ -98,6 +98,45 @@ public sealed class AccountsController : ControllerBase
         return CreatedAtAction(nameof(GetTree), new { companyId = dto.CompanyId }, dto);
     }
 
+    /// <summary>Updates an existing account (e.g. name or active status). 200 with the updated account.</summary>
+    /// <param name="id">Account ID.</param>
+    /// <param name="command">Updated account data.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAccountCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id)
+        {
+            return Problem400(_common.Text("InvalidId"), "The ID in the URL must match the ID in the body.");
+        }
+
+        var result = await _sender.SendAsync(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+            if (error.Code == "account_not_found")
+            {
+                return Problem(StatusCodes.Status404NotFound, _common.Text("AccountNotFound"), error.Message, error.Code);
+            }
+            if (error.Code == "concurrency_conflict")
+            {
+                return Problem(StatusCodes.Status409Conflict, _common.Text("ConcurrencyConflict"), error.Message, error.Code);
+            }
+
+            return Problem400(
+                _common.Text("AccountValidationFailed"),
+                _errors.Text(error.Code, error.Message),
+                error.Code);
+        }
+
+        return Ok(result.Value!);
+    }
+
     private ObjectResult Problem400(string title, string detail, string? code = null)
         => Problem(StatusCodes.Status400BadRequest, title, detail, code);
 

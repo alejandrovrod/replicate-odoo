@@ -9,6 +9,16 @@ export function useItems(companyId: string, page = 1, pageSize = 50) {
   return useApiList<Item>('/v1/items', { companyId, page, pageSize }, Boolean(companyId))
 }
 
+export async function createItem(payload: Partial<Item>): Promise<Item> {
+  const response = await apiClient.post<Item>('/v1/items', payload)
+  return response.data
+}
+
+export async function updateItem(id: string, payload: Partial<Item>): Promise<Item> {
+  const response = await apiClient.put<Item>(`/v1/items/${id}`, payload)
+  return response.data
+}
+
 /** GET /api/v1/warehouses/tree?companyId= - the nested warehouse hierarchy (tree: unpaged by design). */
 export function useWarehouses(companyId: string) {
   return useApiTreeList<WarehouseNode>('/v1/warehouses/tree', { companyId }, Boolean(companyId))

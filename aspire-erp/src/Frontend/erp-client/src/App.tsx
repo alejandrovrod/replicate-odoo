@@ -11,6 +11,11 @@ import { ManufacturingOverview } from './features/manufacturing/ManufacturingOve
 import { SellingOverview } from './features/selling/SellingOverview'
 import { StockOverview } from './features/stock/StockOverview'
 import { WarehouseView } from './features/stock/pages/WarehouseView'
+import { ItemView } from './features/stock/pages/ItemView'
+import { AssetCategoryView } from './features/assets/AssetCategoryView'
+import { AssetView } from './features/assets/AssetView'
+import { CustomerView } from './features/selling/pages/CustomerView'
+import { SupplierView } from './features/buying/pages/SupplierView'
 import { useNavigationStore } from './store/useNavigationStore'
 import { useTenantStore } from './store/useTenantStore'
 
@@ -37,17 +42,27 @@ function App() {
 
       {currentRoute === 'accounting-journal' && <GeneralLedgerOverview />}
 
+      {currentRoute === 'assets-categories' && <AssetCategoryView />}
+      
+      {currentRoute === 'assets' && <AssetView />}
+
       {currentRoute === 'banking' && <BankingOverview />}
 
       {currentRoute === 'stock' && <StockOverview />}
 
       {currentRoute === 'stock-warehouses' && <WarehouseView />}
 
+      {currentRoute === 'stock-items' && <ItemView />}
+
       {currentRoute === 'manufacturing' && <ManufacturingOverview />}
 
       {currentRoute === 'selling' && <SellingOverview />}
 
+      {currentRoute === 'selling-customers' && <CustomerView />}
+
       {currentRoute === 'buying' && <BuyingOverview />}
+
+      {currentRoute === 'buying-suppliers' && <SupplierView />}
 
       {currentRoute === 'hr-payroll' && <HrPayrollOverview />}
 

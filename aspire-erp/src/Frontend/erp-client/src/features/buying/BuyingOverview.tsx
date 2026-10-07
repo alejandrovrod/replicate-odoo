@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText, Truck, AlertCircle } from 'lucide-react'
+import { FileText, Truck, AlertCircle, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Pagination } from '../../components/ui/Pagination'
 import { useApiList } from '../../lib/useApiList'
@@ -7,6 +7,7 @@ import { MAX_PAGE_SIZE, usePagination } from '../../lib/pagination'
 import { formatMoney } from '../../lib/format'
 import { useTenantStore } from '../../store/useTenantStore'
 import { PurchaseReceiptModal } from './PurchaseReceiptModal'
+import { useNavigationStore } from '../../store/useNavigationStore'
 
 interface PurchaseOrder {
   id: string
@@ -68,6 +69,14 @@ export function BuyingOverview() {
           <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => useNavigationStore.getState().setCurrentRoute('buying-suppliers')}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+          >
+            <Users className="h-4 w-4 text-indigo-600" />
+            {t('overview.manageSuppliers', 'Proveedores')}
+          </button>
           <button
             type="button"
             className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"

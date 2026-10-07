@@ -29,4 +29,7 @@ public interface IItemRepository
 
     /// <summary>The subset of the given ids that exists in this tenant (for line expansion).</summary>
     Task<IReadOnlyList<Item>> GetByIdsAsync(IReadOnlyList<Guid> itemIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Updates an existing item.</summary>
+    Task UpdateAsync(Item item, CancellationToken cancellationToken = default);
 }

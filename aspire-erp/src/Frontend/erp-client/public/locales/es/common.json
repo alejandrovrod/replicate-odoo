@@ -91,6 +91,8 @@
       "dashboard": "Panel",
       "accountingCoa": "Plan de cuentas",
       "accountingJournal": "Libro mayor",
+      "assets": "Activos Fijos",
+      "assetsCategories": "Categorías de Activos",
       "banking": "Banco y concil.",
       "stock": "Stock y Kardex",
       "manufacturing": "Fabricación",

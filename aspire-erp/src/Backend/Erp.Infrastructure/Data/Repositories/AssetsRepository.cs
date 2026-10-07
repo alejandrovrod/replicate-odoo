@@ -315,6 +315,20 @@ public sealed class AssetsRepository : IAssetsRepository
         }
     }
 
+    public async Task UpdateCategoryAsync(AssetCategory category, string originalRowVersion, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Note: UpdateCategoryAsync acts on an entity that is already attached/loaded by GetCategoryByIdAsync.
+            // EF Core tracking handles the fields and RowVersion.
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(nameof(AssetCategory), category.Id, ex);
+        }
+    }
+
     public async Task UpdateScheduleAsync(AssetDepreciationSchedule line, CancellationToken cancellationToken = default)
     {
         try

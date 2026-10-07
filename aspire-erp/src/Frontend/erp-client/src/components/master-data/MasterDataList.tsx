@@ -39,6 +39,7 @@ interface MasterDataListProps<T> {
    * warehouse tree), which keep the full hierarchy by design.
    */
   pagination?: ListPagination
+  actions?: ReactNode
 }
 
 export function MasterDataList<T>({
@@ -51,6 +52,7 @@ export function MasterDataList<T>({
   searchPlaceholder = 'Search...',
   newButtonText = 'New',
   pagination,
+  actions,
 }: MasterDataListProps<T>) {
   // Shared chrome lives in the `common` namespace so this generic list needs no ns prop.
   const { t } = useTranslation('common')
@@ -63,14 +65,17 @@ export function MasterDataList<T>({
           </h2>
           {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
         </div>
-        <Button onClick={onNew}>{newButtonText}</Button>
+        <div className="flex items-center gap-3">
+          {actions}
+          <Button onClick={onNew}>{newButtonText}</Button>
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">
         <Input placeholder={searchPlaceholder} className="max-w-sm" />
       </div>
 
-      <div className="rounded-md border">
+      <div className="bg-white">
         <Table>
           <TableHeader>
             <TableRow>

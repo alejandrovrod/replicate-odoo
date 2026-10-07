@@ -30,6 +30,11 @@ public sealed class FakeItemRepository : IItemRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateAsync(Item item, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
     public Task<bool> ExistsSkuAsync(string code, CancellationToken cancellationToken = default)
         => Task.FromResult(SkuExists || _items.Any(i => i.ItemCode == code));
 

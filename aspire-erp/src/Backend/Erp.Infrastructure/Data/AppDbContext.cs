@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Erp.Application.Common;
 using Erp.Domain.Common;
 using Erp.Domain.Entities;
+using Erp.Domain.Entities.System;
 using Erp.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -124,6 +125,12 @@ public class AppDbContext : DbContext
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
 
     public DbSet<CRMActivity> CRMActivities => Set<CRMActivity>();
+
+    public DbSet<Catalog> Catalogs => Set<Catalog>();
+    
+    public DbSet<CatalogItem> CatalogItems => Set<CatalogItem>();
+    
+    public DbSet<CatalogItemTranslation> CatalogItemTranslations => Set<CatalogItemTranslation>();
 
     /// <summary>Tenant visible to this context instance. Exposed for model cache keying if needed.</summary>
     public Guid CurrentTenantId => _tenantProvider.GetCurrentTenantId();

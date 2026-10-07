@@ -70,6 +70,7 @@ public sealed class GetAccountTreeQueryHandler : IQueryHandler<GetAccountTreeQue
                 account.RootType,
                 account.IsGroup,
                 account.IsActive,
+                account.Type,
                 childNodes ?? (IReadOnlyList<AccountTreeNodeDto>)Array.Empty<AccountTreeNodeDto>());
         }
 

@@ -87,10 +87,21 @@
     "onHand": "On Hand",
     "value": "Value",
     "active": "Active",
-    "inactive": "Inactive",
+    "inactive": "Disabled",
     "noMovement": "No movement in this warehouse",
     "fifo": "FIFO",
-    "newEntry": "New entry"
+    "newEntry": "New entry",
+    "manageTitle": "Items & Products",
+    "manageSubtitle": "Manage SKUs, products, and services.",
+    "search": "Search items...",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "uom": "Base UOM",
+      "valuation": "Valuation",
+      "status": "Status"
+    },
+    "manage": "Manage Items"
   },
   "movements": {
     "title": "Recent Movements",
@@ -149,5 +160,20 @@
     "lineNeedsItem": "Every line needs an item.",
     "qtyPositive": "Quantities must be greater than zero.",
     "rateRequired": "Receipts need a unit rate: it opens the FIFO layer that later issues consume."
+  },
+  "itemForm": {
+    "titleNew": "New Item",
+    "titleEdit": "Edit Item",
+    "codeLabel": "Item Code *",
+    "nameLabel": "Item Name *",
+    "uomLabel": "Base UOM",
+    "valuationLabel": "Valuation Method",
+    "active": "Active",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "errorRequired": "Name and Code are required.",
+    "errorConflict": "Concurrency conflict or duplicate code. Please refresh and try again.",
+    "errorGeneric": "An error occurred while saving."
   }
 }

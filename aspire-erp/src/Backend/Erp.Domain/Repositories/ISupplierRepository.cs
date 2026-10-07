@@ -28,4 +28,7 @@ public interface ISupplierRepository
 
     /// <summary>The most recent suppliers of the tenant (newest first) for the list view.</summary>
     Task<PagedResult<Supplier>> GetRecentAsync(PagedRequest paging, CancellationToken cancellationToken = default);
+
+    /// <summary>Updates an existing supplier.</summary>
+    Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default);
 }

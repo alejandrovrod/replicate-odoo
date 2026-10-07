@@ -66,6 +66,45 @@ public sealed class AssetCategoriesController : ControllerBase
         return CreatedAtAction(nameof(List), new { companyId = category.CompanyId }, category);
     }
 
+    /// <summary>Updates an existing asset category (Task 10.1 / RM-08).</summary>
+    [HttpPut("{id}")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(AssetCategoryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(
+        [FromRoute] Guid id,
+        [FromBody] UpdateAssetCategoryCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (id != command.Id)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidRequest"),
+                "Route ID does not match body ID.",
+                "invalid_request");
+        }
+
+        var result = await _sender.SendAsync(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+            var status = error.Code == "concurrency_conflict"
+                ? StatusCodes.Status409Conflict
+                : StatusCodes.Status400BadRequest;
+
+            return Problem(
+                status,
+                _common.Text("AssetCategoryRejected"),
+                _errors.Text(error.Code, error.Message),
+                error.Code);
+        }
+
+        return Ok(result.Value!);
+    }
+
     /// <summary>Lists the company's asset categories. Read-only: no idempotency guard.</summary>
     /// <param name="companyId">Company that owns the categories.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>

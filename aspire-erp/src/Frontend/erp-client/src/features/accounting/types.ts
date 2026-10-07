@@ -1,11 +1,27 @@
 /** Mirrors Erp.Application.DTOs.AccountTreeNodeDto (decision C7 nested shape). */
 export type AccountRootType = 'Asset' | 'Liability' | 'Equity' | 'Income' | 'Expense'
 
+export type AccountType =
+  | 'Other'
+  | 'Bank'
+  | 'Cash'
+  | 'Receivable'
+  | 'Payable'
+  | 'Stock'
+  | 'COGS'
+  | 'Tax'
+  | 'Equity'
+  | 'Revenue'
+  | 'Expense'
+  | 'Depreciation'
+  | 'RoundOff'
+
 export interface AccountTreeNode {
   id: string
   code: string
   name: string
   rootType: AccountRootType
+  type?: AccountType
   isGroup: boolean
   isActive: boolean
   children: AccountTreeNode[]

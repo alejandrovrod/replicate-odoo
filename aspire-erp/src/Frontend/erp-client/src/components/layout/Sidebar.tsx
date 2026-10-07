@@ -9,6 +9,7 @@ import {
   Layers,
   LayoutDashboard,
   ListTree,
+  Archive,
   Receipt,
   Truck,
   Users,
@@ -49,6 +50,8 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'accounting-coa', label: 'nav.item.accountingCoa', icon: ListTree },
       { id: 'accounting-journal', label: 'nav.item.accountingJournal', icon: BookOpenCheck },
+      { id: 'assets', label: 'nav.item.assets', icon: Archive },
+      { id: 'assets-categories', label: 'nav.item.assetsCategories', icon: Layers },
       { id: 'banking', label: 'nav.item.banking', icon: Landmark, badge: 'ERPNext' },
     ],
   },

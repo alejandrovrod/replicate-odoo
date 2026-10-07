@@ -99,12 +99,12 @@ any transactional flow can be used without SQL seeds. One shared list/form patte
 | ID | Task | Depends on | Source |
 |----|------|------------|--------|
 | RM-00 | Investigate 0-warehouse / negative-valuation anomaly in the stock screen | — | Observed 2026-10-05 |
-| RM-01 | Shared master-data UI pattern: list (search, filter, paging) + create/edit form + enable/disable | R-02 | Gap |
+| RM-01 | Shared master-data UI pattern: list (search, filter, paging) + create/edit form + enable/disable | R-02 | Done |
 | RM-02 | Company setup (default accounts, currency, fiscal settings) | RM-01 | Gap |
 | RM-03 | Chart of accounts: create/edit/disable from the tree | RM-01 | Gap (API `POST` exists) |
-| RM-04 | Warehouses: create/edit/disable within the tree, linked stock account | RM-01 | Gap (API `POST` exists) |
-| RM-05 | UOM and items (valuation method, default accounts, UOM conversions) | RM-01 | Gap (API `POST` exists) |
-| RM-06 | Customers and suppliers (credit limit, payment terms, default accounts) | RM-01 | Gap (API `POST` exists) |
+| RM-04 | Warehouses: create/edit/disable within the tree, linked stock account | RM-01 | Done |
+| RM-05 | UOM and items (valuation method, default accounts, UOM conversions) | RM-01 | Done |
+| RM-06 | Customers and suppliers (credit limit, payment terms, default accounts) | RM-01 | Done |
 | RM-07 | Asset categories | RM-01 | Gap (API `POST` exists) |
 | RM-08 | Add `PUT`/disable endpoints with optimistic concurrency for all catalogs above | — | Gap |
 

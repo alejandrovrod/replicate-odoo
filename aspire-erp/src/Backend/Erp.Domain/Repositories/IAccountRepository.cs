@@ -44,4 +44,7 @@ public interface IAccountRepository
     /// more than one = ambiguous configuration).
     /// </summary>
     Task<IReadOnlyList<Account>> FindActiveLeafByCodeAsync(Guid companyId, string accountCode, CancellationToken cancellationToken = default);
+
+    /// <summary>Updates an existing account.</summary>
+    Task UpdateAsync(Account account, CancellationToken cancellationToken = default);
 }

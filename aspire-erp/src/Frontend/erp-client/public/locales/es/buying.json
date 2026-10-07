@@ -7,7 +7,8 @@
     "title": "Subsistema de compras y abastecimiento",
     "subtitle": "Órdenes de compra, remitos de recepción y cotejo de 3 vías con devengamientos intermedios.",
     "newReceipt": "Remito de recepción",
-    "newOrder": "Nueva orden de compra"
+    "newOrder": "Nueva orden de compra",
+    "manageSuppliers": "Proveedores"
   },
   "stats": {
     "unbilled": "Remitos no facturados (devengados)"
@@ -39,5 +40,32 @@
     "posted": "¡Remito registrado!",
     "created": "El remito {{number}} fue registrado con éxito.",
     "done": "Listo"
+  },
+  "suppliers": {
+    "manageTitle": "Proveedores",
+    "manageSubtitle": "Gestionar proveedores y condiciones de pago.",
+    "search": "Buscar proveedores...",
+    "columns": {
+      "code": "Código",
+      "name": "Nombre",
+      "taxId": "CUIT/RUT",
+      "status": "Estado"
+    },
+    "active": "Activo",
+    "inactive": "Inactivo"
+  },
+  "supplierForm": {
+    "titleNew": "Nuevo Proveedor",
+    "titleEdit": "Editar Proveedor",
+    "codeLabel": "Código Proveedor *",
+    "nameLabel": "Nombre Proveedor *",
+    "taxIdLabel": "CUIT/RUT",
+    "active": "Activo",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "errorRequired": "El nombre y el código son obligatorios.",
+    "errorConflict": "Conflicto de concurrencia o código duplicado. Refresque e intente de nuevo.",
+    "errorGeneric": "Ocurrió un error al guardar."
   }
 }

@@ -91,6 +91,8 @@
       "dashboard": "Dashboard",
       "accountingCoa": "Chart of Accounts",
       "accountingJournal": "General Ledger",
+      "assets": "Fixed Assets",
+      "assetsCategories": "Asset Categories",
       "banking": "Banking & Rec",
       "stock": "Stock & Kardex",
       "manufacturing": "Manufacturing",

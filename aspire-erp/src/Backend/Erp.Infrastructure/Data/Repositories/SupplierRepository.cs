@@ -47,4 +47,18 @@ public sealed class SupplierRepository : ISupplierRepository
             .OrderByDescending(s => s.CreatedAt)
             .ThenByDescending(s => s.Id)
             .ToPagedResultAsync(paging, cancellationToken);
+
+    public async Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Suppliers.Update(supplier);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _dbContext.Entry(supplier).State = EntityState.Detached;
+            throw new InvalidOperationException("concurrency_conflict");
+        }
+    }
 }

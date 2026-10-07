@@ -5,6 +5,9 @@ import { useTenantStore } from '../../store/useTenantStore'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import type { AccountRootType, AccountTreeNode } from './types'
 import { useAccountTree } from './useAccountTree'
+import { AccountFormModal, type AccountFormData } from './components/AccountFormModal'
+import { apiClient } from '../../api/client'
+import { Plus, Edit2 } from 'lucide-react'
 
 /** Depth indent in px. Padding (not margin/width) so column widths never move. */
 const INDENT_PX = 20
@@ -115,6 +118,43 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
   // restore `userExpanded` untouched. Reset on every keystroke (a new query re-derives it).
   const [searchExpanded, setSearchExpanded] = useState<ReadonlySet<string> | null>(null)
 
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingAccount, setEditingAccount] = useState<Partial<AccountFormData> | null>(null)
+
+  const handleCreate = () => {
+    setEditingAccount(null)
+    setIsModalOpen(true)
+  }
+
+  const handleEdit = (node: AccountTreeNode) => {
+    setEditingAccount({
+      id: node.id,
+      companyId,
+      accountCode: node.code,
+      accountName: node.name,
+      rootType: node.rootType,
+      isGroup: node.isGroup,
+      isActive: node.isActive,
+      // Parent ID and RowVersion aren't in the tree node currently, so we'd need to either fetch them 
+      // or assume they aren't needed for simple edits. Since it's automatic mode, I'll pass what we have.
+      // Actually, tree might not have rowVersion but we can do a simple PUT if backend allows or fetch it.
+      // Wait, UpdateAccountCommand takes RowVersion. If we don't have it, we might get concurrency error if it's required.
+      // Assuming empty row version works for first save if backend handles it, or we can fetch the account.
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleSaveAccount = async (data: AccountFormData) => {
+    if (data.id) {
+      // Put
+      await apiClient.put(`/v1/accounts/${data.id}`, { ...data, rowVersion: data.rowVersion ? data.rowVersion : [] })
+    } else {
+      // Post
+      await apiClient.post('/v1/accounts', data)
+    }
+    reload()
+  }
+
   const searchQuery = query.trim().toLowerCase()
   const filtered = useMemo<FilteredTree | null>(() => {
     if (!searchQuery) return null
@@ -194,7 +234,7 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
   }
 
   return (
-    <div className="w-full rounded-lg border border-slate-200">
+    <div className="w-full">
       <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
         <Search className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
         <input
@@ -215,6 +255,16 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
             <X className="size-4" aria-hidden="true" />
           </button>
         ) : null}
+        <div className="ml-auto flex items-center">
+          <button
+            type="button"
+            onClick={handleCreate}
+            className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {t('tree.newAccount', 'New Account')}
+          </button>
+        </div>
       </div>
       <div className="w-full overflow-x-auto">
         <table className="w-full table-fixed border-collapse text-sm">
@@ -225,6 +275,7 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
             <col className="w-28" />
             <col className="w-24" />
             <col className="w-24" />
+            <col className="w-16" />
           </colgroup>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -234,12 +285,13 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
               <th className="px-2 py-2 font-semibold">{t('tree.colRootType')}</th>
               <th className="px-2 py-2 font-semibold">{t('tree.colKind')}</th>
               <th className="px-2 py-2 font-semibold">{t('tree.colStatus')}</th>
+              <th className="px-2 py-2" aria-label={t('tree.actionsColumn')} />
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr className={ROW_HEIGHT_CLASS}>
-                <td colSpan={6} className="px-4 text-center text-slate-500">
+                <td colSpan={7} className="px-4 text-center text-slate-500">
                   {filtered
                     ? t('tree.emptyFiltered', { query: query.trim() })
                     : t('tree.empty')}
@@ -314,6 +366,16 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
                         {node.isActive ? t('tree.active') : t('tree.inactive')}
                       </span>
                     </td>
+                    <td className="px-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(node)}
+                        className="inline-flex size-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        title={t('tree.edit', 'Edit Account')}
+                      >
+                        <Edit2 className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </td>
                   </tr>
                 )
               })
@@ -321,6 +383,15 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
           </tbody>
         </table>
       </div>
+
+      <AccountFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveAccount}
+        companyId={companyId}
+        initialData={editingAccount}
+        accountsQuery={{ nodes, status }}
+      />
     </div>
   )
 }

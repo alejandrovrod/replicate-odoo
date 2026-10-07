@@ -49,4 +49,18 @@ public sealed class ItemRepository : IItemRepository
             .Where(i => itemIds.Contains(i.Id))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task UpdateAsync(Item item, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Items.Update(item);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            _dbContext.Entry(item).State = EntityState.Detached;
+            throw new InvalidOperationException("concurrency_conflict");
+        }
+    }
 }

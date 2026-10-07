@@ -29,6 +29,8 @@ public class Supplier : ITenantEntity
 
     public Guid? DefaultPayableAccountId { get; set; }
 
+    public Account? DefaultPayableAccount { get; set; }
+
     public string BillingCurrency { get; set; } = "USD";
 
     public int PaymentTermsDays { get; set; } = 30;

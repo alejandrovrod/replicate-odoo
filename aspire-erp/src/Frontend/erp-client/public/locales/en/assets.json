@@ -1,6 +1,106 @@
 {
   "module": {
     "title": "Fixed Assets & Depreciation",
-    "subtitle": "Activos fijos y depreciación"
+    "subtitle": "Asset categories, depreciation plans and disposals."
+  },
+  "categories": {
+    "manageTitle": "Asset Categories",
+    "manageSubtitle": "Manage your fixed asset classifications and default ledger accounts.",
+    "search": "Search asset categories...",
+    "columns": {
+      "name": "Category Name",
+      "depreciable": "Depreciable",
+      "status": "Status"
+    },
+    "active": "Active",
+    "inactive": "Disabled",
+    "depreciable": "Yes",
+    "nonDepreciable": "No",
+    "loading": "Loading asset categories...",
+    "error": "Error loading categories:"
+  },
+  "categoryForm": {
+    "titleNew": "New Category",
+    "titleEdit": "Edit Category",
+    "nameLabel": "Category Name *",
+    "namePlaceholder": "e.g. IT Equipment",
+    "fixedAssetAccountLabel": "Fixed Asset Account *",
+    "accumulatedDepreciationAccountLabel": "Accumulated Depreciation Account *",
+    "depreciationExpenseAccountLabel": "Depreciation Expense Account *",
+    "cwipAccountLabel": "CWIP Account (Optional)",
+    "gainOnDisposalAccountLabel": "Gain on Disposal Account (Optional)",
+    "lossOnDisposalAccountLabel": "Loss on Disposal Account (Optional)",
+    "selectAccount": "-- Select Account --",
+    "isNonDepreciable": "Is Non-Depreciable?",
+    "isNonDepreciableDesc": "e.g., Land",
+    "active": "Active",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "errorRequired": "Category Name and core GL accounts are required.",
+    "errorConflict": "Concurrency conflict. Please try again.",
+    "errorGeneric": "An error occurred while saving."
+  },
+  "assets": {
+    "columns": {
+      "code": "Asset Code",
+      "name": "Asset Name",
+      "purchaseDate": "Purchase Date",
+      "purchaseAmount": "Purchase Amount",
+      "nbv": "Net Book Value",
+      "status": "Status"
+    },
+    "status": {
+      "capitalized": "Capitalized",
+      "draft": "Draft",
+      "sold": "Sold",
+      "scrapped": "Scrapped"
+    },
+    "loading": "Loading assets...",
+    "error": "Error loading assets:",
+    "manageTitle": "Fixed Assets",
+    "manageSubtitle": "Manage your fixed assets, view net book value, and track depreciation.",
+    "titleNew": "New Asset",
+    "search": "Search assets...",
+    "creationNotice": "Assets are automatically created when capitalized from the purchasing module or initialized via data seeds.",
+    "depreciation": {
+      "runBtn": "Run Depreciation",
+      "title": "Run Depreciation",
+      "description": "Run depreciation for all active capitalized assets up to the selected date. This will generate a journal entry voucher.",
+      "asOfDate": "As of Date",
+      "success": "Depreciation Run Successful",
+      "bookedCount": "Assets Booked:",
+      "totalAmount": "Total Amount Booked:",
+      "voucherNo": "Voucher Generated:"
+    },
+    "detail": {
+      "title": "Asset Details",
+      "info": "Asset Information",
+      "schedule": "Depreciation Schedule",
+      "purchaseDate": "Purchase Date",
+      "grossAmount": "Gross Amount",
+      "salvageValue": "Salvage Value",
+      "netBookValue": "Net Book Value",
+      "accDepreciation": "Acc. Depreciation",
+      "depreciationMethod": "Depreciation Method"
+    },
+    "schedule": {
+      "columns": {
+        "date": "Date",
+        "amount": "Amount",
+        "accumulated": "Accumulated",
+        "status": "Status"
+      },
+      "status": {
+        "scheduled": "Scheduled",
+        "booked": "Booked",
+        "cancelled": "Cancelled"
+      }
+    },
+    "capitalize": {
+      "btn": "Capitalize",
+      "success": "Asset capitalized successfully",
+      "error": "Error capitalizating asset"
+    }
   }
 }

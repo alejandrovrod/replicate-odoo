@@ -214,6 +214,11 @@ public sealed class FakeAssetsRepository : IAssetsRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateCategoryAsync(AssetCategory category, string originalRowVersion, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
     public Task<string> NextAssetCodeAsync(Guid companyId, int year, CancellationToken cancellationToken = default)
     {
         var key = (companyId, year);

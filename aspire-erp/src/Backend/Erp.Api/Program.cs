@@ -30,6 +30,7 @@ using Erp.Application.Features.HrPayroll.Commands;
 using Erp.Application.Features.HrPayroll.Queries;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
+using Erp.Application.Features.Catalogs;
 using Erp.Application.Services;
 using Erp.Domain.Common;
 using Erp.Domain.Repositories;
@@ -263,6 +264,10 @@ builder.Services.AddScoped<ICommandHandler<AdvanceOpportunityStageCommand, Resul
 builder.Services.AddScoped<ICommandHandler<CreateOpportunitySalesOrderCommand, Result<SalesOrderDto>>, CreateOpportunitySalesOrderCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetLeadsQuery, PagedResult<LeadDto>>, GetLeadsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetOpportunitiesQuery, PagedResult<OpportunityDto>>, GetOpportunitiesQueryHandler>();
+
+// System Catalogs
+builder.Services.AddScoped<ICatalogRepository, CatalogRepository>();
+builder.Services.AddScoped<IQueryHandler<GetCatalogByCodeQuery, List<CatalogItemDto>>, GetCatalogByCodeQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

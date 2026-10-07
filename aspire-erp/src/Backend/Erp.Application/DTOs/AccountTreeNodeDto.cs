@@ -13,4 +13,5 @@ public sealed record AccountTreeNodeDto(
     AccountRootType RootType,
     bool IsGroup,
     bool IsActive,
+    AccountType Type,
     IReadOnlyList<AccountTreeNodeDto> Children);

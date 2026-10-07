@@ -147,6 +147,55 @@ public sealed class CustomersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = dto.Id, companyId = dto.CompanyId }, dto);
     }
 
+    /// <summary>Updates an existing customer. 200 with the updated customer.</summary>
+    /// <param name="id">Customer ID.</param>
+    /// <param name="command">Updated customer data including RowVersion.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCustomerCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidCustomer"),
+                _errors.Text(SellingErrorCodes.CustomerNotFound),
+                SellingErrorCodes.CustomerNotFound);
+        }
+
+        var result = await _sender.SendAsync(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+
+            return error.Code switch
+            {
+                SellingErrorCodes.CustomerNotFound => Problem(
+                    StatusCodes.Status404NotFound,
+                    _common.Text("CustomerNotFound"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                ConcurrencyErrorCodes.ConcurrencyConflict or SellingErrorCodes.DuplicateCustomerCode => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("DuplicateCustomerCode"),
+                    error.Message,
+                    error.Code),
+                _ => Problem(
+                    StatusCodes.Status400BadRequest,
+                    _common.Text("CustomerRejected"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+            };
+        }
+
+        return Ok(result.Value!);
+    }
+
     private ObjectResult Problem(int status, string title, string detail, string? code)
     {
         var problem = new ProblemDetails

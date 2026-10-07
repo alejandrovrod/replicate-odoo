@@ -90,7 +90,18 @@
     "inactive": "Inactivo",
     "noMovement": "Sin movimientos en este almacén",
     "fifo": "FIFO",
-    "newEntry": "Nuevo comprobante"
+    "newEntry": "Nuevo comprobante",
+    "manageTitle": "Artículos y Productos",
+    "manageSubtitle": "Gestionar SKUs, productos y servicios.",
+    "search": "Buscar artículos...",
+    "columns": {
+      "code": "Código",
+      "name": "Nombre",
+      "uom": "UdM Base",
+      "valuation": "Valoración",
+      "status": "Estado"
+    },
+    "manage": "Administrar Artículos"
   },
   "movements": {
     "title": "Movimientos recientes",
@@ -149,5 +160,20 @@
     "lineNeedsItem": "Cada renglón necesita un artículo.",
     "qtyPositive": "Las cantidades deben ser mayores que cero.",
     "rateRequired": "Las recepciones necesitan un precio unitario: abre la capa FIFO que luego consumen los egresos."
+  },
+  "itemForm": {
+    "titleNew": "Nuevo Artículo",
+    "titleEdit": "Editar Artículo",
+    "codeLabel": "Código de Artículo *",
+    "nameLabel": "Nombre de Artículo *",
+    "uomLabel": "UdM Base",
+    "valuationLabel": "Método de Valoración",
+    "active": "Activo",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "errorRequired": "El nombre y el código son obligatorios.",
+    "errorConflict": "Conflicto de concurrencia o código duplicado. Refresque e intente de nuevo.",
+    "errorGeneric": "Ocurrió un error al guardar."
   }
 }

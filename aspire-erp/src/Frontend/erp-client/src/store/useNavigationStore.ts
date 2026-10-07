@@ -4,6 +4,8 @@ export type NavRoute =
   | 'dashboard'
   | 'accounting-coa'
   | 'accounting-journal'
+  | 'assets'
+  | 'assets-categories'
   | 'banking'
   | 'stock'
   | 'manufacturing'
@@ -12,6 +14,9 @@ export type NavRoute =
   | 'hr-payroll'
   | 'crm'
   | 'stock-warehouses'
+  | 'stock-items'
+  | 'selling-customers'
+  | 'buying-suppliers'
 
 interface NavigationState {
   currentRoute: NavRoute
@@ -27,6 +32,8 @@ const parseHash = (): NavRoute => {
     'dashboard',
     'accounting-coa',
     'accounting-journal',
+    'assets',
+    'assets-categories',
     'banking',
     'stock',
     'manufacturing',
@@ -35,6 +42,9 @@ const parseHash = (): NavRoute => {
     'hr-payroll',
     'crm',
     'stock-warehouses',
+    'stock-items',
+    'selling-customers',
+    'buying-suppliers',
   ]
   return validRoutes.includes(hash as NavRoute) ? (hash as NavRoute) : 'accounting-coa'
 }

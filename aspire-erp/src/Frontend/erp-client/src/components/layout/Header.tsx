@@ -25,6 +25,7 @@ const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys 
     title: 'nav.route.accounting-journal',
     category: 'nav.category.accounting',
   },
+  'assets-categories': { title: 'nav.item.assetsCategories', category: 'nav.category.accounting' },
   banking: { title: 'nav.route.banking', category: 'nav.category.treasury' },
   stock: { title: 'nav.route.stock', category: 'nav.category.stock' },
   manufacturing: { title: 'nav.route.manufacturing', category: 'nav.category.manufacturing' },
@@ -33,6 +34,10 @@ const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys 
   'hr-payroll': { title: 'nav.route.hr-payroll', category: 'nav.category.hr' },
   crm: { title: 'nav.route.crm', category: 'nav.category.crm' },
   'stock-warehouses': { title: 'nav.route.stock', category: 'nav.category.stock' },
+  'assets': { title: 'nav.item.assets', category: 'nav.category.accounting' },
+  'stock-items': { title: 'nav.route.stock', category: 'nav.category.stock' },
+  'selling-customers': { title: 'nav.route.selling', category: 'nav.category.selling' },
+  'buying-suppliers': { title: 'nav.route.buying', category: 'nav.category.buying' },
 }
 
 const FALLBACK_NAV = {
@@ -52,13 +57,12 @@ export function Header() {
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
       {/* Breadcrumb & Title */}
       <div className="flex items-center gap-3">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+        <div className="flex flex-col justify-center">
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
             <span>{t(meta.category)}</span>
-            <span>/</span>
-            <span className="text-slate-600">{t(meta.title)}</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-slate-900">{t(meta.title)}</span>
           </div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">{t(meta.title)}</h1>
         </div>
       </div>
 

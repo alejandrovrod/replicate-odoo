@@ -7,7 +7,8 @@
     "title": "Buying & Procurement Subsystem",
     "subtitle": "Purchase orders, material receipts, and 3-way matching with interim accruals.",
     "newReceipt": "Purchase Receipt",
-    "newOrder": "New Purchase Order"
+    "newOrder": "New Purchase Order",
+    "manageSuppliers": "Manage Suppliers"
   },
   "stats": {
     "unbilled": "Unbilled Receipts (Accrued)"
@@ -39,5 +40,32 @@
     "posted": "Receipt Posted!",
     "created": "Receipt {{number}} has been successfully posted.",
     "done": "Done"
+  },
+  "suppliers": {
+    "manageTitle": "Suppliers",
+    "manageSubtitle": "Manage your suppliers and payment terms.",
+    "search": "Search suppliers...",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "taxId": "Tax ID",
+      "status": "Status"
+    },
+    "active": "Active",
+    "inactive": "Disabled"
+  },
+  "supplierForm": {
+    "titleNew": "New Supplier",
+    "titleEdit": "Edit Supplier",
+    "codeLabel": "Supplier Code *",
+    "nameLabel": "Supplier Name *",
+    "taxIdLabel": "Tax ID",
+    "active": "Active",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "errorRequired": "Name and Code are required.",
+    "errorConflict": "Concurrency conflict or duplicate code. Please refresh and try again.",
+    "errorGeneric": "An error occurred while saving."
   }
 }

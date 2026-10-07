@@ -273,14 +273,23 @@ export function StockOverview() {
             <h3 className="text-base font-semibold text-slate-900">{t('items.title')}</h3>
             <p className="text-xs text-slate-500">{t('items.subtitle')}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => openModal(null)}
-            className="inline-flex items-center gap-1 rounded border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <Plus className="size-3" aria-hidden="true" />
-            {t('overview.newEntry')}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => useNavigationStore.getState().setCurrentRoute('stock-items')}
+              className="inline-flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {t('items.manage', 'Administrar Artículos')}
+            </button>
+            <button
+              type="button"
+              onClick={() => openModal(null)}
+              className="inline-flex items-center gap-1 rounded border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <Plus className="size-3" aria-hidden="true" />
+              {t('overview.newEntry')}
+            </button>
+          </div>
         </div>
         <ItemList
           items={items}

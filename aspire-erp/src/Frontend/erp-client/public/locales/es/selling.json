@@ -7,7 +7,8 @@
     "title": "Ventas y punto de venta (POS)",
     "subtitle": "Facturación a clientes, validación de límite de crédito y cajas registradoras de alta velocidad.",
     "newInvoice": "Nueva factura de venta",
-    "launchPos": "Abrir caja POS"
+    "launchPos": "Abrir caja POS",
+    "manageCustomers": "Clientes"
   },
   "invoices": {
     "title": "Facturas de venta recientes",
@@ -39,5 +40,34 @@
   "pay": {
     "cash": "Efectivo",
     "card": "Tarjeta"
+  },
+  "customers": {
+    "manageTitle": "Clientes",
+    "manageSubtitle": "Gestionar clientes y límites de crédito.",
+    "search": "Buscar clientes...",
+    "columns": {
+      "code": "Código",
+      "name": "Nombre",
+      "taxId": "CUIT/RUT",
+      "creditLimit": "Límite Crédito",
+      "status": "Estado"
+    },
+    "active": "Activo",
+    "inactive": "Inactivo"
+  },
+  "customerForm": {
+    "titleNew": "Nuevo Cliente",
+    "titleEdit": "Editar Cliente",
+    "codeLabel": "Código Cliente *",
+    "nameLabel": "Nombre Cliente *",
+    "taxIdLabel": "CUIT/RUT",
+    "creditLimitLabel": "Límite de Crédito",
+    "active": "Activo",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "errorRequired": "El nombre y el código son obligatorios.",
+    "errorConflict": "Conflicto de concurrencia o código duplicado. Refresque e intente de nuevo.",
+    "errorGeneric": "Ocurrió un error al guardar."
   }
 }

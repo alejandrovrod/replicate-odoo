@@ -36,6 +36,11 @@ public sealed class FakeAccountRepository : IAccountRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateAsync(Account account, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyList<Account>> GetByIdWithAncestorsAsync(Guid accountId, CancellationToken cancellationToken = default)
         => Task.FromResult(Ancestors);
 

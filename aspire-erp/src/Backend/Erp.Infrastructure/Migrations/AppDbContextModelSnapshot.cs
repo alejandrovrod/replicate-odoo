@@ -3298,6 +3298,9 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid?>("DefaultPayableAccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("DefaultPayableAccountId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -3333,11 +3336,126 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasIndex("DefaultPayableAccountId");
 
+                    b.HasIndex("DefaultPayableAccountId1");
+
                     b.HasIndex("TenantId", "Code")
                         .IsUnique()
                         .HasDatabaseName("IX_Supplier_Tenant_Code");
 
                     b.ToTable("Supplier", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.System.Catalog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Code")
+                        .IsUnique()
+                        .HasFilter("[CompanyId] IS NOT NULL");
+
+                    b.ToTable("Catalogs");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.System.CatalogItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CatalogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DefaultName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CatalogId", "CompanyId", "Code")
+                        .IsUnique()
+                        .HasFilter("[CompanyId] IS NOT NULL");
+
+                    b.ToTable("CatalogItems");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.System.CatalogItemTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CatalogItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LanguageCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TranslatedName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CatalogItemId", "LanguageCode")
+                        .IsUnique();
+
+                    b.ToTable("CatalogItemTranslations");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Tenant", b =>
@@ -4672,6 +4790,34 @@ namespace Erp.Infrastructure.Migrations
                         .HasForeignKey("DefaultPayableAccountId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("FK_Supplier_Account");
+
+                    b.HasOne("Erp.Domain.Entities.Account", "DefaultPayableAccount")
+                        .WithMany()
+                        .HasForeignKey("DefaultPayableAccountId1");
+
+                    b.Navigation("DefaultPayableAccount");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.System.CatalogItem", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.System.Catalog", "Catalog")
+                        .WithMany("Items")
+                        .HasForeignKey("CatalogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Catalog");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.System.CatalogItemTranslation", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.System.CatalogItem", "CatalogItem")
+                        .WithMany("Translations")
+                        .HasForeignKey("CatalogItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CatalogItem");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Warehouse", b =>
@@ -4843,6 +4989,16 @@ namespace Erp.Infrastructure.Migrations
             modelBuilder.Entity("Erp.Domain.Entities.StockEntry", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.System.Catalog", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.System.CatalogItem", b =>
+                {
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Warehouse", b =>

@@ -104,6 +104,34 @@
     "typeRevenue": "Revenue",
     "typeExpense": "Expense",
     "typeDepreciation": "Depreciation",
-    "typeRoundOff": "Round Off"
+    "typeRoundOff": "Round Off",
+    "currencyNone": "-- Default (USD) --"
+  },
+  "currencies": {
+    "manageTitle": "Currencies",
+    "manageSubtitle": "Global ISO catalog used by every monetary master.",
+    "search": "Search currencies...",
+    "columns": {
+      "code": "Code",
+      "symbol": "Symbol",
+      "fraction": "Fraction",
+      "status": "Status"
+    },
+    "active": "Active",
+    "inactive": "Disabled"
+  },
+  "currencyForm": {
+    "titleNew": "New Currency",
+    "titleEdit": "Edit Currency",
+    "codeLabel": "Code *",
+    "symbolLabel": "Symbol *",
+    "fractionLabel": "Fraction Name",
+    "active": "Active",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "errorRequired": "Code and Symbol are required.",
+    "errorConflict": "Concurrency conflict or duplicate code. Please refresh and try again.",
+    "errorGeneric": "An error occurred while saving."
   }
 }

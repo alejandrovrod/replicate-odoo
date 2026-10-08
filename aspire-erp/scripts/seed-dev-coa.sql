@@ -26,10 +26,10 @@ GO
 -- --- Company ----------------------------------------------------------------
 IF NOT EXISTS (SELECT 1 FROM dbo.Company WHERE Id = '22222222-2222-4222-8222-222222222222')
 BEGIN
-    INSERT INTO dbo.Company (Id, TenantId, Name, DefaultCurrency, TaxId, CreatedAt)
+    INSERT INTO dbo.Company (Id, TenantId, Name, TaxId, CreatedAt)
     VALUES ('22222222-2222-4222-8222-222222222222',
             '11111111-1111-4111-8111-111111111111',
-            'Aspire Dev Company', 'USD', 'DEV-TAXID', SYSDATETIMEOFFSET());
+            'Aspire Dev Company', 'DEV-TAXID', SYSDATETIMEOFFSET());
 END;
 GO
 
@@ -39,44 +39,44 @@ GO
 -- Children (IsGroup = 0) inherit their parent's RootType.
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001000')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000001000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1000', 'Assets', 'Asset', 1, NULL, 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000001000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1000', 'Assets', 'Asset', 1, NULL, 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001110')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000001110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1110', 'Cash and Cash Equivalents', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000001110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1110', 'Cash and Cash Equivalents', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001120')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000001120', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1120', 'Accounts Receivable', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000001120', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1120', 'Accounts Receivable', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000002000')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000002000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2000', 'Liabilities', 'Liability', 1, NULL, 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000002000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2000', 'Liabilities', 'Liability', 1, NULL, 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000002110')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000002110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2110', 'Accounts Payable', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000002110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2110', 'Accounts Payable', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000003000')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000003000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '3000', 'Equity', 'Equity', 1, NULL, 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000003000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '3000', 'Equity', 'Equity', 1, NULL, 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000004000')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000004000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '4000', 'Income', 'Income', 1, NULL, 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000004000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '4000', 'Income', 'Income', 1, NULL, 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000004110')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000004110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '4110', 'Sales Revenue', 'Income', 0, 'a0000000-0000-4000-8000-000000004000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000004110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '4110', 'Sales Revenue', 'Income', 0, 'a0000000-0000-4000-8000-000000004000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000005000')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000005000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5000', 'Expenses', 'Expense', 1, NULL, 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000005000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5000', 'Expenses', 'Expense', 1, NULL, 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000005110')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000005110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5110', 'Office Supplies Expense', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000005110', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5110', 'Office Supplies Expense', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 1);
 GO
 
 -- --- Stock & Inventory accounts (Phase 3, tasks 3.1-3.2 / spec ST-01, ST-02) --
@@ -85,16 +85,16 @@ GO
 -- 5210 Cost of Goods Sold : the expense debited on issues at FIFO cost (ST-02).
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001310')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000001310', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1310', 'Stock In Hand', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000001310', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1310', 'Stock In Hand', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000002120')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000002120', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2120', 'Stock Received But Not Billed', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000002120', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2120', 'Stock Received But Not Billed', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000005210')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000005210', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5210', 'Cost of Goods Sold', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000005210', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5210', 'Cost of Goods Sold', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 1);
 GO
 
 -- --- Company posting defaults (decision D3 + module 03/04 consumers) --------

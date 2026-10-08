@@ -95,7 +95,7 @@ export const crmApi = {
     id: string,
     body: {
       customerCode: string
-      defaultCurrency?: string
+      defaultCurrencyId?: string | null
       paymentTermsDays?: number
       opportunityAmount?: number
       opportunityProbability?: number
@@ -105,7 +105,7 @@ export const crmApi = {
     const companyId = useTenantStore.getState().companyId
     const response = await apiClient.post<ConvertLeadResult>(
       `/v1/leads/${id}/convert`,
-      { defaultCurrency: 'USD', paymentTermsDays: 30, ...body },
+      { defaultCurrencyId: null, paymentTermsDays: 30, ...body },
       { params: { companyId } },
     )
     return response.data

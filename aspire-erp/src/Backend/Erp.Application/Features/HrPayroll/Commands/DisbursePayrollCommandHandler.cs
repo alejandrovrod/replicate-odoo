@@ -164,7 +164,7 @@ public sealed class DisbursePayrollCommandHandler
             Credit = credit,
             DebitInAccountCurrency = debit,
             CreditInAccountCurrency = credit,
-            AccountCurrency = account.Currency,
+            AccountCurrency = account.Currency?.Code ?? "USD",
             VoucherType = VoucherType,
             VoucherNo = voucherNo,
             VoucherId = entry.Id,

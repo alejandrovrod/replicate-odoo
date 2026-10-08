@@ -66,7 +66,9 @@ public sealed class AccountRepository : IAccountRepository
 
             visited.Add(id);
 
-            var current = await _dbContext.Accounts.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+            var current = await _dbContext.Accounts
+                .Include(a => a.Currency)
+                .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
             if (current is null)
             {
                 break;
@@ -86,17 +88,21 @@ public sealed class AccountRepository : IAccountRepository
 
     public async Task<IReadOnlyList<Account>> GetByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
         => await _dbContext.Accounts
+            .Include(a => a.Currency)
             .Where(a => a.CompanyId == companyId)
             .ToListAsync(cancellationToken);
 
     public Task<Account?> GetByIdAsync(Guid accountId, CancellationToken cancellationToken = default)
-        => _dbContext.Accounts.FirstOrDefaultAsync(a => a.Id == accountId, cancellationToken);
+        => _dbContext.Accounts
+            .Include(a => a.Currency)
+            .FirstOrDefaultAsync(a => a.Id == accountId, cancellationToken);
 
     public async Task<IReadOnlyList<Account>> FindActiveLeafByCodeAsync(
         Guid companyId,
         string accountCode,
         CancellationToken cancellationToken = default)
         => await _dbContext.Accounts
+            .Include(a => a.Currency)
             .Where(a => a.CompanyId == companyId
                 && a.AccountCode == accountCode
                 && a.IsActive

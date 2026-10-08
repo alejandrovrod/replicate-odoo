@@ -34,5 +34,15 @@ public class Item : ITenantEntity
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Default income account for sales postings (nullable FK to Account).</summary>
+    public Guid? IncomeAccountId { get; set; }
+
+    public Account? IncomeAccount { get; set; }
+
+    /// <summary>Default expense account for purchase/expense postings (nullable FK to Account).</summary>
+    public Guid? ExpenseAccountId { get; set; }
+
+    public Account? ExpenseAccount { get; set; }
+
     public byte[] RowVersion { get; set; } = null!;
 }

@@ -5,8 +5,10 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Selling.Commands;
 using Erp.Application.Features.Selling.Queries;
+using Erp.Application.Features.Payments.Queries;
 using Erp.Domain.Common;
 using Erp.Domain.Entities;
+using Erp.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -34,15 +36,18 @@ namespace Erp.Api.Controllers.V1;
 public sealed class CustomersController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly ICustomerRepository _customers;
     private readonly IStringLocalizer<ErrorMessages> _errors;
     private readonly IStringLocalizer<CommonMessages> _common;
 
     public CustomersController(
         ISender sender,
+        ICustomerRepository customers,
         IStringLocalizer<ErrorMessages> errors,
         IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _customers = customers;
         _errors = errors;
         _common = common;
     }
@@ -194,6 +199,77 @@ public sealed class CustomersController : ControllerBase
         }
 
         return Ok(result.Value!);
+    }
+
+    /// <summary>
+    /// Returns the customer's open receivables for the payment allocation grid (spec R-12):
+    /// invoices with OutstandingAmount &gt; 0 and Unpaid/PartiallyPaid status, oldest due first.
+    /// </summary>
+    /// <param name="id">Customer ID.</param>
+    /// <param name="companyId">Company that owns the customer.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("{id}/outstanding-invoices")]
+    [ProducesResponseType(typeof(IReadOnlyList<OutstandingInvoiceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetOutstandingInvoices(
+        Guid id,
+        [FromQuery] Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidCustomer"),
+                _errors.Text(SellingErrorCodes.CustomerNotFound),
+                SellingErrorCodes.CustomerNotFound);
+        }
+
+        var customer = await _customers.GetByIdAsync(id, cancellationToken);
+        if (customer is null || customer.CompanyId != companyId)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("CustomerNotFound"),
+                _errors.Text(SellingErrorCodes.CustomerNotFound),
+                SellingErrorCodes.CustomerNotFound);
+        }
+
+        var invoices = await _sender.SendAsync(
+            new GetOutstandingSalesInvoicesQuery(companyId, id), cancellationToken);
+        return Ok(invoices);
+    }
+
+    /// <summary>Disables a customer (sets IsActive = false).</summary>
+    [HttpPut("{id}/disable")]
+    [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, false, cancellationToken);
+
+    /// <summary>Enables a customer (sets IsActive = true).</summary>
+    [HttpPut("{id}/enable")]
+    [ProducesResponseType(typeof(CustomerDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, true, cancellationToken);
+
+    private async Task<IActionResult> SetActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken)
+    {
+        var customer = await _customers.GetByIdAsync(id, cancellationToken);
+        if (customer is null)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("CustomerNotFound"),
+                _errors.Text(SellingErrorCodes.CustomerNotFound),
+                SellingErrorCodes.CustomerNotFound);
+        }
+
+        customer.IsActive = isActive;
+        await _customers.UpdateAsync(customer, cancellationToken);
+        return Ok(CustomerDto.From(customer));
     }
 
     private ObjectResult Problem(int status, string title, string detail, string? code)

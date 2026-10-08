@@ -16,9 +16,12 @@ public static class AccountValidator
 {
     public const int MaxAccountCodeLength = 50;
     public const int MaxAccountNameLength = 150;
-    public const int MaxCurrencyLength = 3;
 
-    /// <summary>Field-level rules: required code/name (50/150), defined RootType, currency, company.</summary>
+    /// <summary>Field-level rules: required code/name (50/150), defined RootType, company.</summary>
+    /// <remarks>
+    /// Currency travels as <c>CurrencyId</c> (RM-09 FK to the global catalog, validated for
+    /// existence by the command handler) - the ISO-format check was removed with the string column.
+    /// </remarks>
     /// <param name="type">
     /// Optional ERPNext account_type (Task 1.1): defaults to <see cref="AccountType.Other"/> so
     /// existing callers that predate the Type column keep compiling; CreateAccountCommandHandler
@@ -30,7 +33,6 @@ public static class AccountValidator
         string? accountCode,
         string? accountName,
         AccountRootType rootType,
-        string? currency,
         AccountType type = AccountType.Other)
     {
         if (companyId == Guid.Empty)
@@ -83,13 +85,6 @@ public static class AccountValidator
             throw new AccountValidationException(
                 AccountErrorCodes.InvalidAccountType,
                 $"Type must be one of: {string.Join(", ", Enum.GetNames<AccountType>())}.");
-        }
-
-        if (string.IsNullOrWhiteSpace(currency) || currency.Length > MaxCurrencyLength)
-        {
-            throw new AccountValidationException(
-                AccountErrorCodes.CurrencyInvalid,
-                $"Currency must be a non-empty ISO 4217 code of at most {MaxCurrencyLength} characters.");
         }
     }
 

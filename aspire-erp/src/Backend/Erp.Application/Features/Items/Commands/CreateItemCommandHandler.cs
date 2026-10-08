@@ -62,6 +62,8 @@ public sealed class CreateItemCommandHandler : ICommandHandler<CreateItemCommand
                 ItemName = command.Name.Trim(),
                 ValuationMethod = command.ValuationMethod,
                 StockUomId = command.BaseUOMId,
+                IncomeAccountId = command.IncomeAccountId,
+                ExpenseAccountId = command.ExpenseAccountId,
                 IsActive = command.IsActive,
 
                 // TenantId is intentionally NOT set: AppDbContext stamps CurrentTenantId on insert

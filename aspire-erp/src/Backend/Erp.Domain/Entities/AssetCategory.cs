@@ -83,5 +83,13 @@ public class AssetCategory : ITenantEntity
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Optimistic concurrency token (SQL Server <c>rowversion</c>): EF puts the original value
+    /// in the UPDATE ... WHERE clause, so a concurrent change between load and save throws
+    /// <c>DbUpdateConcurrencyException</c> instead of silently winning.
+    /// Store-generated: never set from code.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = null!;
+
     public DateTimeOffset CreatedAt { get; set; }
 }

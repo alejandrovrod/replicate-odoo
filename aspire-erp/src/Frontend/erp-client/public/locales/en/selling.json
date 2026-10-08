@@ -68,6 +68,10 @@
     "saving": "Saving...",
     "errorRequired": "Name and Code are required.",
     "errorConflict": "Concurrency conflict or duplicate code. Please refresh and try again.",
-    "errorGeneric": "An error occurred while saving."
+    "errorGeneric": "An error occurred while saving.",
+    "receivableAccountLabel": "Default Receivable Account",
+    "accountNone": "-- Select Account --",
+    "currencyLabel": "Currency",
+    "currencyNone": "-- Default (USD) --"
   }
 }

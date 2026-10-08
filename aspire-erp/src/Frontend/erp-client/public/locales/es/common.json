@@ -87,6 +87,13 @@
       "accounting": "Contabilidad y finanzas",
       "operations": "Operaciones"
     },
+    "folder": {
+      "masters": "Datos Maestros",
+      "transactions": "Transacciones",
+      "assets": "Activos Fijos",
+      "banking": "Bancos y Concil.",
+      "config": "Configuración"
+    },
     "item": {
       "dashboard": "Panel",
       "accountingCoa": "Plan de cuentas",
@@ -99,7 +106,9 @@
       "selling": "Ventas y PDV",
       "buying": "Compras y prov.",
       "hrPayroll": "RRHH y nómina",
-      "crm": "CRM y pipeline"
+      "crm": "CRM y pipeline",
+      "accountingCurrencies": "Monedas",
+      "bankingAccounts": "Cuentas Bancarias"
     },
     "expandSidebar": "Expandir barra lateral",
     "collapseSidebar": "Contraer barra lateral"

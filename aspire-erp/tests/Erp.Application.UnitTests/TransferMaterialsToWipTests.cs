@@ -93,7 +93,7 @@ public sealed class TransferMaterialsToWipTests
             AccountName = name,
             IsActive = true,
             IsGroup = false,
-            Currency = "USD",
+
         };
 
     private Warehouse NewWarehouse(Guid id, string code, Guid accountId) =>

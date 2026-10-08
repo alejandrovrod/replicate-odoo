@@ -27,7 +27,7 @@ public class ConvertLeadCommandHandlerTests
         var crmRepo = new FakeCrmRepository { LeadToReturn = lead };
         var customerRepo = new FakeCustomerRepository();
 
-        var handler = new ConvertLeadCommandHandler(crmRepo, new FakeActivityRepository(), customerRepo, companyRepo);
+        var handler = new ConvertLeadCommandHandler(crmRepo, new FakeActivityRepository(), customerRepo, companyRepo, new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
         var cmd = new ConvertLeadCommand(companyId, leadId, "C-01");
 
         // Act
@@ -68,7 +68,7 @@ public class ConvertLeadCommandHandlerTests
         var activityRepo = new FakeActivityRepository();
         var customerRepo = new FakeCustomerRepository();
 
-        var handler = new ConvertLeadCommandHandler(crmRepo, activityRepo, customerRepo, companyRepo);
+        var handler = new ConvertLeadCommandHandler(crmRepo, activityRepo, customerRepo, companyRepo, new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
         var cmd = new ConvertLeadCommand(companyId, leadId, "C-42");
 
         // Act
@@ -98,7 +98,7 @@ public class ConvertLeadCommandHandlerTests
         var lead = new Lead { Id = leadId, CompanyId = companyId, Status = LeadStatus.Open, LeadCode = "L-01", LeadName = "Test Lead" };
         var crmRepo = new FakeCrmRepository { LeadToReturn = lead };
 
-        var handler = new ConvertLeadCommandHandler(crmRepo, new FakeActivityRepository(), new FakeCustomerRepository(), companyRepo);
+        var handler = new ConvertLeadCommandHandler(crmRepo, new FakeActivityRepository(), new FakeCustomerRepository(), companyRepo, new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
         var cmd = new ConvertLeadCommand(companyId, leadId, "C-01");
 
         // Act
@@ -132,7 +132,7 @@ public class ConvertLeadCommandHandlerTests
         var crmRepo = new FakeCrmRepository { LeadToReturn = lead };
         var activityRepo = new FakeActivityRepository();
 
-        var handler = new ConvertLeadCommandHandler(crmRepo, activityRepo, new FakeCustomerRepository(), companyRepo);
+        var handler = new ConvertLeadCommandHandler(crmRepo, activityRepo, new FakeCustomerRepository(), companyRepo, new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
         var cmd = new ConvertLeadCommand(companyId, leadId, "C-43", ConvertedByUserId: callerId);
 
         // Act

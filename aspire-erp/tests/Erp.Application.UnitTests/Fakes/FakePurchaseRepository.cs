@@ -189,6 +189,18 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
         Guid purchaseInvoiceId, CancellationToken cancellationToken = default)
         => Task.FromResult(_invoices.FirstOrDefault(i => i.Id == purchaseInvoiceId));
 
+    public Task<IReadOnlyList<PurchaseInvoice>> GetOutstandingBySupplierAsync(
+        Guid companyId, Guid supplierId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<PurchaseInvoice>>(
+            _invoices
+                .Where(i => i.CompanyId == companyId
+                    && i.SupplierId == supplierId
+                    && i.OutstandingAmount > 0m
+                    && (i.Status == PurchaseInvoiceStatus.Unpaid || i.Status == PurchaseInvoiceStatus.PartiallyPaid))
+                .OrderBy(i => i.DueDate)
+                .ThenBy(i => i.Id)
+                .ToList());
+
     /// <summary>
     /// When set, the NEXT <c>UpdateInvoiceAsync</c> fails like the real repository does after a
     /// RowVersion mismatch; the flag resets itself so only one call fails.

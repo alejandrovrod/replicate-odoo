@@ -32,17 +32,20 @@ public sealed class CreateOpportunitySalesOrderCommandHandler
     private readonly ICrmActivityRepository _activityRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly ICommandHandler<CreateSalesOrderCommand, Result<SalesOrderDto>> _createSalesOrder;
+    private readonly ICurrencyRepository _currencies;
 
     public CreateOpportunitySalesOrderCommandHandler(
         ICrmRepository crmRepository,
         ICrmActivityRepository activityRepository,
         ICustomerRepository customerRepository,
-        ICommandHandler<CreateSalesOrderCommand, Result<SalesOrderDto>> createSalesOrder)
+        ICommandHandler<CreateSalesOrderCommand, Result<SalesOrderDto>> createSalesOrder,
+        ICurrencyRepository currencies)
     {
         _crmRepository = crmRepository;
         _activityRepository = activityRepository;
         _customerRepository = customerRepository;
         _createSalesOrder = createSalesOrder;
+        _currencies = currencies;
     }
 
     public async Task<Result<SalesOrderDto>> HandleAsync(
@@ -104,6 +107,11 @@ public sealed class CreateOpportunitySalesOrderCommandHandler
             var authorId = command.CreatedByUserId ?? opportunity.AssignedSalespersonId;
             if (authorId.HasValue && authorId.Value != Guid.Empty)
             {
+                // RM-09: the deal currency is a catalog FK now; resolve the display code with the
+                // legacy "USD" fallback (the note is informational, never posting logic).
+                var currencyCode = opportunity.CurrencyId.HasValue
+                    ? (await _currencies.GetByIdAsync(opportunity.CurrencyId.Value, cancellationToken))?.Code
+                    : null;
                 await _activityRepository.AddActivityAsync(new CRMActivity
                 {
                     Id = Guid.NewGuid(),
@@ -111,7 +119,7 @@ public sealed class CreateOpportunitySalesOrderCommandHandler
                     Type = CRMActivityType.Note,
                     Subject = $"Sales order {order.OrderNumber} created from this opportunity",
                     Content = $"Sales order {order.OrderNumber} created from opportunity "
-                        + $"{opportunity.OpportunityNumber} ({order.GrandTotal:0.00} {opportunity.Currency}). "
+                        + $"{opportunity.OpportunityNumber} ({order.GrandTotal:0.00} {currencyCode ?? "USD"}). "
                         + "No OpportunityId FK exists on SalesOrder: this note is the linkage.",
                     ActivityDate = DateTimeOffset.UtcNow,
                     CreatedByUserId = authorId.Value,

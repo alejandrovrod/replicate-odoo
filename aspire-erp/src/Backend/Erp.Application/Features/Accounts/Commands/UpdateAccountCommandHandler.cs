@@ -27,13 +27,15 @@ public sealed class UpdateAccountCommandHandler : ICommandHandler<UpdateAccountC
 
         try
         {
+            if (account.RowVersion is null || !account.RowVersion.AsSpan().SequenceEqual(command.RowVersion))
+            {
+                return Result<AccountDto>.Failure(
+                    "concurrency_conflict",
+                    $"The account '{account.AccountCode}' was modified by another user. Please refresh and try again.");
+            }
+
             account.AccountName = command.AccountName.Trim();
             account.IsActive = command.IsActive;
-            
-            if (command.RowVersion != null && command.RowVersion.Length > 0)
-            {
-                account.RowVersion = command.RowVersion;
-            }
 
             if (string.IsNullOrWhiteSpace(account.AccountName))
             {

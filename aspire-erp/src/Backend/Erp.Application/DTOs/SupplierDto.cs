@@ -9,11 +9,12 @@ public sealed record SupplierDto(
     string Name,
     string TaxId,
     Guid? DefaultPayableAccountId,
-    string BillingCurrency,
+    Guid? CurrencyId,
     int PaymentTermsDays,
     decimal OutstandingAmount,
     bool IsActive,
-    DateTimeOffset CreatedAt)
+    DateTimeOffset CreatedAt,
+    byte[]? RowVersion = null)
 {
     public static SupplierDto From(Supplier supplier) =>
         new(
@@ -22,9 +23,10 @@ public sealed record SupplierDto(
             supplier.Name,
             supplier.TaxId,
             supplier.DefaultPayableAccountId,
-            supplier.BillingCurrency,
+            supplier.CurrencyId,
             supplier.PaymentTermsDays,
             supplier.OutstandingAmount,
             supplier.IsActive,
-            supplier.CreatedAt);
+            supplier.CreatedAt,
+            supplier.RowVersion);
 }

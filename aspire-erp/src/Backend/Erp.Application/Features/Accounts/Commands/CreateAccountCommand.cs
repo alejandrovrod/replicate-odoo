@@ -21,6 +21,6 @@ public sealed record CreateAccountCommand(
     AccountRootType RootType,
     bool IsGroup,
     Guid? ParentAccountId,
-    string Currency = "USD",
+    Guid? CurrencyId = null,
     bool IsActive = true,
     AccountType? Type = null) : ICommand<Result<AccountDto>>;

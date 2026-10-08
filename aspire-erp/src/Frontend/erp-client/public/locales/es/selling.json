@@ -68,6 +68,10 @@
     "saving": "Guardando...",
     "errorRequired": "El nombre y el código son obligatorios.",
     "errorConflict": "Conflicto de concurrencia o código duplicado. Refresque e intente de nuevo.",
-    "errorGeneric": "Ocurrió un error al guardar."
+    "errorGeneric": "Ocurrió un error al guardar.",
+    "receivableAccountLabel": "Cuenta a Cobrar por Defecto",
+    "accountNone": "-- Seleccionar Cuenta --",
+    "currencyLabel": "Moneda",
+    "currencyNone": "-- Por defecto (USD) --"
   }
 }

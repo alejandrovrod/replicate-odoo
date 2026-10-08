@@ -26,6 +26,53 @@ public interface IBankRepository
     /// <summary>Gets a bank account by its ID (the handler rejects unknown or foreign accounts).</summary>
     Task<BankAccount?> GetAccountByIdAsync(Guid bankAccountId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Next gapless payment voucher number, e.g. 2026 -> "PAY-2026-00001" (Constitution III.4:
+    /// SELECT MAX(VoucherNo) WITH (UPDLOCK, HOLDLOCK) over dbo.PaymentEntry inside the AMBIENT
+    /// posting transaction; a rollback consumes no number).
+    /// </summary>
+    Task<string> NextPaymentVoucherNumberAsync(
+        Guid companyId, int year, CancellationToken cancellationToken = default);
+
+    /// <summary>Persists a Draft payment voucher with its allocation slices.</summary>
+    Task AddPaymentAsync(PaymentEntry payment, CancellationToken cancellationToken = default);
+
+    /// <summary>The payment voucher with its allocations, or null.</summary>
+    Task<PaymentEntry?> GetPaymentByIdAsync(Guid paymentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves status/amount transitions of an already-tracked payment. Translates EF's
+    /// <c>DbUpdateConcurrencyException</c> into <see cref="Exceptions.ConcurrencyConflictException"/>.
+    /// </summary>
+    Task UpdatePaymentAsync(PaymentEntry payment, CancellationToken cancellationToken = default);
+
+    /// <summary>Company payment vouchers, newest first (optional status/type filters).</summary>
+    Task<PagedResult<PaymentEntry>> GetPaymentsPagedAsync(
+        Guid companyId,
+        PagedRequest paging,
+        PaymentDocumentStatus? status,
+        PaymentType? paymentType,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Persists General Ledger lines of a payment posting (inside the ambient transaction).</summary>
+    Task AddGlEntriesAsync(IReadOnlyList<GLEntry> glEntries, CancellationToken cancellationToken = default);
+
+    /// <summary>Persists a new bank account master row.</summary>
+    Task AddAccountAsync(BankAccount account, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves mutations of an already-tracked bank account. Translates EF's
+    /// <c>DbUpdateConcurrencyException</c> (RowVersion WHERE clause matched 0 rows) into
+    /// <see cref="Exceptions.ConcurrencyConflictException"/>.
+    /// </summary>
+    Task UpdateAccountAsync(BankAccount account, CancellationToken cancellationToken = default);
+
+    /// <summary>Bank accounts of a company, ordered by name (master-data list read).</summary>
+    Task<PagedResult<BankAccount>> GetAccountsPagedAsync(
+        Guid companyId,
+        PagedRequest paging,
+        CancellationToken cancellationToken = default);
+
     /// <summary>All bank accounts of a company (tenant source for global rules).</summary>
     Task<IReadOnlyList<BankAccount>> GetAccountsByCompanyAsync(
         Guid companyId,

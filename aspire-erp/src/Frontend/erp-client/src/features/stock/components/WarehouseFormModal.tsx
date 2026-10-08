@@ -176,7 +176,7 @@ export function WarehouseFormModal({
               name="parentWarehouseId"
               value={formData.parentWarehouseId || ''}
               onChange={handleChange}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200"
             >
               <option value="">{t('warehouseForm.parentNone', '-- None --')}</option>
               {groupWarehouses.map((wh) => (
@@ -194,7 +194,7 @@ export function WarehouseFormModal({
               value={formData.accountId || ''}
               onChange={handleChange}
               disabled={accountsQuery.status !== 'success'}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
             >
               <option value="">
                 {accountsQuery.status !== 'success'

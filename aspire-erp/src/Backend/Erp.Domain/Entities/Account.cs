@@ -63,8 +63,13 @@ public class Account : ITenantEntity
     /// <summary>Parent in the COA tree; null for a root-level account.</summary>
     public Guid? ParentAccountId { get; set; }
 
-    /// <summary>ISO 4217 currency code (3 chars, plan.md 7.3).</summary>
-    public string Currency { get; set; } = "USD";
+    /// <summary>
+    /// Functional currency of the account (RM-09 FK to the global <see cref="Currency"/>
+    /// catalog); null falls back to "USD" at posting time for legacy rows.
+    /// </summary>
+    public Guid? CurrencyId { get; set; }
+
+    public Currency? Currency { get; set; }
 
     public bool IsActive { get; set; } = true;
 

@@ -28,12 +28,12 @@ GO
 -- Both are children of 1000 Assets, mirroring the 1310 Stock In Hand insert style.
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001320')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000001320', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1320', 'Work In Progress Stock', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000001320', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1320', 'Work In Progress Stock', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001330')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000001330', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1330', 'Finished Goods Stock', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000001330', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1330', 'Finished Goods Stock', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 1);
 GO
 
 -- --- WIP transit warehouse ------------------------------------------------------

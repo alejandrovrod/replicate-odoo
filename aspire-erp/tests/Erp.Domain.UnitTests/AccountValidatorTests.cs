@@ -22,8 +22,7 @@ public class AccountValidatorTests
         string name = "Cash and Bank",
         AccountRootType rootType = AccountRootType.Asset,
         bool isGroup = false,
-        Guid? parentId = null,
-        string currency = "USD") =>
+        Guid? parentId = null) =>
         new()
         {
             Id = id ?? Guid.NewGuid(),
@@ -33,7 +32,6 @@ public class AccountValidatorTests
             RootType = rootType,
             IsGroup = isGroup,
             ParentAccountId = parentId,
-            Currency = currency,
         };
 
     private static Account NewGroup(
@@ -52,7 +50,7 @@ public class AccountValidatorTests
     public void EnsureValidFields_EmptyCompany_ThrowsCompanyRequired()
     {
         var ex = Assert.Throws<AccountValidationException>(() =>
-            AccountValidator.EnsureValidFields(Guid.Empty, "1110", "Cash", AccountRootType.Asset, "USD"));
+            AccountValidator.EnsureValidFields(Guid.Empty, "1110", "Cash", AccountRootType.Asset));
 
         Assert.Equal(AccountErrorCodes.CompanyRequired, CodeOf(ex));
     }
@@ -61,7 +59,7 @@ public class AccountValidatorTests
     public void EnsureValidFields_MissingCode_ThrowsAccountCodeRequired()
     {
         var ex = Assert.Throws<AccountValidationException>(() =>
-            AccountValidator.EnsureValidFields(CompanyId, "   ", "Cash", AccountRootType.Asset, "USD"));
+            AccountValidator.EnsureValidFields(CompanyId, "   ", "Cash", AccountRootType.Asset));
 
         Assert.Equal(AccountErrorCodes.AccountCodeRequired, CodeOf(ex));
     }
@@ -70,7 +68,7 @@ public class AccountValidatorTests
     public void EnsureValidFields_CodeOver50Chars_ThrowsAccountCodeTooLong()
     {
         var ex = Assert.Throws<AccountValidationException>(() =>
-            AccountValidator.EnsureValidFields(CompanyId, new string('9', 51), "Cash", AccountRootType.Asset, "USD"));
+            AccountValidator.EnsureValidFields(CompanyId, new string('9', 51), "Cash", AccountRootType.Asset));
 
         Assert.Equal(AccountErrorCodes.AccountCodeTooLong, CodeOf(ex));
     }
@@ -79,7 +77,7 @@ public class AccountValidatorTests
     public void EnsureValidFields_MissingName_ThrowsAccountNameRequired()
     {
         var ex = Assert.Throws<AccountValidationException>(() =>
-            AccountValidator.EnsureValidFields(CompanyId, "1110", null, AccountRootType.Asset, "USD"));
+            AccountValidator.EnsureValidFields(CompanyId, "1110", null, AccountRootType.Asset));
 
         Assert.Equal(AccountErrorCodes.AccountNameRequired, CodeOf(ex));
     }
@@ -88,7 +86,7 @@ public class AccountValidatorTests
     public void EnsureValidFields_NameOver150Chars_ThrowsAccountNameTooLong()
     {
         var ex = Assert.Throws<AccountValidationException>(() =>
-            AccountValidator.EnsureValidFields(CompanyId, "1110", new string('n', 151), AccountRootType.Asset, "USD"));
+            AccountValidator.EnsureValidFields(CompanyId, "1110", new string('n', 151), AccountRootType.Asset));
 
         Assert.Equal(AccountErrorCodes.AccountNameTooLong, CodeOf(ex));
     }
@@ -99,24 +97,15 @@ public class AccountValidatorTests
     public void EnsureValidFields_UndefinedRootType_ThrowsInvalidRootType(int rawValue)
     {
         var ex = Assert.Throws<AccountValidationException>(() =>
-            AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", (AccountRootType)rawValue, "USD"));
+            AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", (AccountRootType)rawValue));
 
         Assert.Equal(AccountErrorCodes.InvalidRootType, CodeOf(ex));
     }
 
     [Fact]
-    public void EnsureValidFields_CurrencyOver3Chars_ThrowsCurrencyInvalid()
-    {
-        var ex = Assert.Throws<AccountValidationException>(() =>
-            AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, "USDX"));
-
-        Assert.Equal(AccountErrorCodes.CurrencyInvalid, CodeOf(ex));
-    }
-
-    [Fact]
     public void EnsureValidFields_ValidAccount_DoesNotThrow()
     {
-        AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash and Bank", AccountRootType.Asset, "USD");
+        AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash and Bank", AccountRootType.Asset);
     }
 
     // -------------------------------------------- account type rules (plan.md §7.3 Type, Task 1.1)
@@ -129,7 +118,7 @@ public class AccountValidatorTests
         // Type is persisted as a NAME string (NVARCHAR(50)); an out-of-range cast (e.g. a JSON
         // number outside the enum) must fail as a domain rule instead of writing garbage.
         var ex = Assert.Throws<AccountValidationException>(() =>
-            AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, "USD", (AccountType)rawValue));
+            AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, (AccountType)rawValue));
 
         Assert.Equal(AccountErrorCodes.InvalidAccountType, CodeOf(ex));
     }
@@ -137,7 +126,7 @@ public class AccountValidatorTests
     [Fact]
     public void EnsureValidFields_ValidAccountType_DoesNotThrow()
     {
-        AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, "USD", AccountType.Cash);
+        AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, AccountType.Cash);
     }
 
     [Fact]
@@ -145,7 +134,7 @@ public class AccountValidatorTests
     {
         // Backward compatibility (Task 1.1): the parameter is optional, so callers written before
         // the Type column existed validate the entity-level default (AccountType.Other).
-        AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset, "USD");
+        AccountValidator.EnsureValidFields(CompanyId, "1110", "Cash", AccountRootType.Asset);
     }
 
     [Fact]

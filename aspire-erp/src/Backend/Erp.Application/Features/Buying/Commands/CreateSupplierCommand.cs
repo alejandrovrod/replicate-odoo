@@ -12,6 +12,6 @@ public sealed record CreateSupplierCommand(
     string Name,
     string TaxId = "",
     Guid? DefaultPayableAccountId = null,
-    string BillingCurrency = "USD",
+    Guid? CurrencyId = null,
     int PaymentTermsDays = 30,
     bool IsActive = true) : ICommand<Result<SupplierDto>>;

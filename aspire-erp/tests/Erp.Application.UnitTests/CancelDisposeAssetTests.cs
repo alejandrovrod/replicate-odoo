@@ -55,7 +55,7 @@ public sealed class CancelDisposeAssetTests
             AccountName = "Main Operating",
             BankName = "First Bank",
             AccountNumber = "000123",
-            Currency = "USD",
+
             GLAccountId = _bankGlId,
             IsActive = true,
         });
@@ -72,7 +72,7 @@ public sealed class CancelDisposeAssetTests
             RootType = AccountRootType.Asset,
             IsGroup = false,
             IsActive = true,
-            Currency = "USD",
+
         };
 
     private CancelDisposeAssetCommandHandler Handler() => new(_companies, _accounts, _assets);

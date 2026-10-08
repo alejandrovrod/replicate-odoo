@@ -19,7 +19,13 @@ public class Company : ITenantEntity
 
     public string Name { get; set; } = string.Empty;
 
-    public string DefaultCurrency { get; set; } = "USD";
+    /// <summary>
+    /// Company's functional currency (RM-09 FK to the global <see cref="Currency"/> catalog);
+    /// null means "USD" for legacy rows.
+    /// </summary>
+    public Guid? CurrencyId { get; set; }
+
+    public Currency? Currency { get; set; }
 
     public string TaxId { get; set; } = string.Empty;
 
@@ -29,6 +35,21 @@ public class Company : ITenantEntity
     /// <see cref="EnsurePostingDateUnlocked"/> at every posting entry point.
     /// </summary>
     public DateOnly? FrozenAccountsDate { get; set; }
+
+    /// <summary>
+    /// Company-level default retained earnings (Equity) account for period closing vouchers
+    /// (spec R-13: closes the P&L and resets Income/Expense accounts to zero). FK to Account,
+    /// nullable because an existing company may not have one set yet.
+    /// </summary>
+    public Guid? DefaultRetainedEarningsAccountId { get; set; }
+
+    /// <summary>
+    /// Company-level default retained earnings (Equity) account code for display/selector
+    /// purposes when the FK is not resolved. Kept as a plain code (not an FK) to avoid circular
+    /// dependency with the Account -> Company mapping, same pattern as
+    /// <see cref="StockReceivedAccountCode"/>.
+    /// </summary>
+    public string? DefaultRetainedEarningsAccountCode { get; set; }
 
     /// <summary>
     /// Spec AC-04 / tasks.md 2.2: rejects a posting dated inside the closed fiscal period. The

@@ -38,6 +38,8 @@ const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys 
   'stock-items': { title: 'nav.route.stock', category: 'nav.category.stock' },
   'selling-customers': { title: 'nav.route.selling', category: 'nav.category.selling' },
   'buying-suppliers': { title: 'nav.route.buying', category: 'nav.category.buying' },
+  'accounting-currencies': { title: 'nav.item.accountingCurrencies', category: 'nav.category.accounting' },
+  'banking-accounts': { title: 'nav.item.bankingAccounts', category: 'nav.category.treasury' },
 }
 
 const FALLBACK_NAV = {

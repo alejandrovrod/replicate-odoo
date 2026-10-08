@@ -7,7 +7,7 @@ import type { AccountRootType, AccountTreeNode } from './types'
 import { useAccountTree } from './useAccountTree'
 import { AccountFormModal, type AccountFormData } from './components/AccountFormModal'
 import { apiClient } from '../../api/client'
-import { Plus, Edit2 } from 'lucide-react'
+import { Edit2 } from 'lucide-react'
 
 /** Depth indent in px. Padding (not margin/width) so column widths never move. */
 const INDENT_PX = 20
@@ -133,21 +133,27 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
       accountCode: node.code,
       accountName: node.name,
       rootType: node.rootType,
+      type: node.type,
       isGroup: node.isGroup,
       isActive: node.isActive,
-      // Parent ID and RowVersion aren't in the tree node currently, so we'd need to either fetch them 
-      // or assume they aren't needed for simple edits. Since it's automatic mode, I'll pass what we have.
-      // Actually, tree might not have rowVersion but we can do a simple PUT if backend allows or fetch it.
-      // Wait, UpdateAccountCommand takes RowVersion. If we don't have it, we might get concurrency error if it's required.
-      // Assuming empty row version works for first save if backend handles it, or we can fetch the account.
+      // The tree node carries the rowversion token so the PUT below can echo it
+      // back for optimistic concurrency (409 on stale token instead of lost update).
+      rowVersion: node.rowVersion,
     })
     setIsModalOpen(true)
   }
 
   const handleSaveAccount = async (data: AccountFormData) => {
     if (data.id) {
-      // Put
-      await apiClient.put(`/v1/accounts/${data.id}`, { ...data, rowVersion: data.rowVersion ? data.rowVersion : [] })
+      // PUT mirrors UpdateAccountCommand: only name + active travel, plus the
+      // original rowVersion token for the concurrency check.
+      await apiClient.put(`/v1/accounts/${data.id}`, {
+        id: data.id,
+        companyId: data.companyId,
+        accountName: data.accountName,
+        isActive: data.isActive,
+        rowVersion: data.rowVersion,
+      })
     } else {
       // Post
       await apiClient.post('/v1/accounts', data)
@@ -255,17 +261,16 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
             <X className="size-4" aria-hidden="true" />
           </button>
         ) : null}
-        <div className="ml-auto flex items-center">
-          <button
-            type="button"
-            onClick={handleCreate}
-            className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            {t('tree.newAccount', 'New Account')}
-          </button>
-        </div>
       </div>
+
+      <button
+        type="button"
+        onClick={handleCreate}
+        className="fixed bottom-8 right-8 z-50 flex items-center gap-2 rounded-full bg-sky-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-sky-600/20 transition-all hover:-translate-y-0.5 hover:bg-sky-700 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        {t('tree.newAccount', 'New Account')}
+      </button>
       <div className="w-full overflow-x-auto">
         <table className="w-full table-fixed border-collapse text-sm">
           <colgroup>

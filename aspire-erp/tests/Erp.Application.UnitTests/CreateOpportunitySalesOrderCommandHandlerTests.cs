@@ -39,7 +39,8 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
             new FakeCrmRepository { OpportunityToReturn = opp },
             activityRepo,
             new FakeCustomerRepository { CustomerToReturn = customer },
-            sales);
+            sales,
+            new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
 
         // Act
         var result = await handler.HandleAsync(
@@ -80,7 +81,8 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
             new FakeCrmRepository { OpportunityToReturn = opp, LeadToReturn = lead },
             new FakeActivityRepository(),
             new FakeCustomerRepository { CustomerToReturn = customer },
-            sales);
+            sales,
+            new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
 
         // Act
         var result = await handler.HandleAsync(
@@ -109,7 +111,8 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
             new FakeCrmRepository { OpportunityToReturn = opp },
             activityRepo,
             new FakeCustomerRepository { CustomerToReturn = customer },
-            new FakeCreateSalesOrder(SalesOrderDtoFor(companyId, customerId)));
+            new FakeCreateSalesOrder(SalesOrderDtoFor(companyId, customerId)),
+            new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
 
         // Act
         var result = await handler.HandleAsync(
@@ -145,7 +148,8 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
             new FakeCrmRepository { OpportunityToReturn = opp, LeadToReturn = lead },
             new FakeActivityRepository(),
             new FakeCustomerRepository(),
-            sales);
+            sales,
+            new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
 
         // Act
         var result = await handler.HandleAsync(
@@ -173,7 +177,8 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
             new FakeCrmRepository { OpportunityToReturn = opp },
             activityRepo,
             new FakeCustomerRepository(),
-            sales);
+            sales,
+            new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
 
         // Act
         var result = await handler.HandleAsync(
@@ -201,7 +206,8 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
             new FakeCrmRepository { OpportunityToReturn = opp },
             new FakeActivityRepository(),
             new FakeCustomerRepository { CustomerToReturn = customer },
-            sales);
+            sales,
+            new Erp.Application.UnitTests.Fakes.FakeCurrencyRepository());
 
         // Act: zero quantity fails the selling line rule inside the EXISTING handler.
         var result = await handler.HandleAsync(
@@ -225,7 +231,7 @@ public class CreateOpportunitySalesOrderCommandHandlerTests
             Status = OpportunityStatus.Won,
             OpportunityAmount = 15000m,
             Probability = 100m,
-            Currency = "USD",
+
             RowVersion = new byte[] { 1, 2, 3, 4 },
         };
 

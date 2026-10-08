@@ -2,12 +2,11 @@ import { Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ApiError } from '../../api/client'
 import { formatMoney, formatQty } from './format'
-import { flattenWarehouses, type Item, type WarehouseNode } from './types'
+import type { Item } from './types'
 import type { QueryStatus } from './useStockData'
 
 interface ItemListProps {
   items: Item[]
-  warehouses: WarehouseNode[]
   status: QueryStatus
   error: ApiError | null
   onReload: () => void
@@ -22,9 +21,8 @@ interface ItemListProps {
  * posted voucher makes the container reload this table - that is the "updated stock levels in
  * real time" acceptance case.
  */
-export function ItemList({ items, warehouses, status, error, onReload, onNewEntry }: ItemListProps) {
+export function ItemList({ items, status, error, onReload, onNewEntry }: ItemListProps) {
   const { t } = useTranslation('stock')
-  const leafWarehouses = flattenWarehouses(warehouses, true)
 
   if (status === 'error') {
     return (
@@ -77,7 +75,6 @@ export function ItemList({ items, warehouses, status, error, onReload, onNewEntr
             </tr>
           ) : (
             items.map((item) => {
-              const byWarehouse = new Map(item.stock.map((row) => [row.warehouseId, row]))
               const totalQty = item.stock.reduce((sum, row) => sum + row.qty, 0)
               const totalValue = item.stock.reduce((sum, row) => sum + row.value, 0)
 

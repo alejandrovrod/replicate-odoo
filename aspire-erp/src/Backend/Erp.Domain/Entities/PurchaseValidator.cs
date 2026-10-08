@@ -13,8 +13,12 @@ public static class PurchaseValidator
     public const int MaxNameLength = 150;
 
     /// <summary>Supplier field rules: required code (50) / name (150).</summary>
+    /// <remarks>
+    /// Currency travels as <c>CurrencyId</c> (RM-09 FK to the global catalog, validated for
+    /// existence by the command handler) - the ISO-format check was removed with the string column.
+    /// </remarks>
     /// <exception cref="PurchaseValidationException">An invariant was violated.</exception>
-    public static void EnsureValidSupplierFields(string? code, string? name, string? currency, int paymentTerms)
+    public static void EnsureValidSupplierFields(string? code, string? name, int paymentTerms)
     {
         if (string.IsNullOrWhiteSpace(code))
         {
@@ -42,12 +46,6 @@ public static class PurchaseValidator
             throw new PurchaseValidationException(
                 PurchaseErrorCodes.SupplierNameTooLong,
                 $"Supplier Name must not exceed {MaxNameLength} characters.");
-        }
-        if (string.IsNullOrWhiteSpace(currency) || currency.Length != 3)
-        {
-            throw new PurchaseValidationException(
-                PurchaseErrorCodes.InvalidCurrency,
-                "Billing Currency must be exactly 3 characters.");
         }
 
         if (paymentTerms < 0)

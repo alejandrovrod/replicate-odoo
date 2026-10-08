@@ -6,6 +6,7 @@ using Erp.Application.DTOs;
 using Erp.Application.Features.Accounts.Commands;
 using Erp.Application.Features.Accounts.Queries;
 using Erp.Domain.Entities;
+using Erp.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -30,15 +31,18 @@ namespace Erp.Api.Controllers.V1;
 public sealed class AccountsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IAccountRepository _accounts;
     private readonly IStringLocalizer<ErrorMessages> _errors;
     private readonly IStringLocalizer<CommonMessages> _common;
 
     public AccountsController(
         ISender sender,
+        IAccountRepository accounts,
         IStringLocalizer<ErrorMessages> errors,
         IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _accounts = accounts;
         _errors = errors;
         _common = common;
     }
@@ -135,6 +139,37 @@ public sealed class AccountsController : ControllerBase
         }
 
         return Ok(result.Value!);
+    }
+
+    /// <summary>Disables an account (sets IsActive = false). 200 with the updated account.</summary>
+    /// <param name="id">Account ID.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPut("{id}/disable")]
+    [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, false, cancellationToken);
+
+    /// <summary>Enables an account (sets IsActive = true). 200 with the updated account.</summary>
+    /// <param name="id">Account ID.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPut("{id}/enable")]
+    [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, true, cancellationToken);
+
+    private async Task<IActionResult> SetActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken)
+    {
+        var account = await _accounts.GetByIdAsync(id, cancellationToken);
+        if (account is null)
+        {
+            return Problem(StatusCodes.Status404NotFound, _common.Text("AccountNotFound"), id.ToString(), "account_not_found");
+        }
+
+        account.IsActive = isActive;
+        await _accounts.UpdateAsync(account, cancellationToken);
+        return Ok(AccountDto.From(account));
     }
 
     private ObjectResult Problem400(string title, string detail, string? code = null)

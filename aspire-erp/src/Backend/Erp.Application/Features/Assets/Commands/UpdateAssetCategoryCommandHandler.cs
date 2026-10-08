@@ -31,6 +31,11 @@ public sealed class UpdateAssetCategoryCommandHandler
                     AssetErrorCodes.CategoryNotFound,
                     $"Asset category '{command.Id}' was not found.");
 
+            if (category.RowVersion is null || !category.RowVersion.AsSpan().SequenceEqual(command.RowVersion))
+            {
+                throw new ConcurrencyConflictException(nameof(AssetCategory), category.Id);
+            }
+
             AssetValidator.EnsureValidCategoryName(command.CategoryName);
 
             await AssetAccountGuards.RequirePostableAccountAsync(

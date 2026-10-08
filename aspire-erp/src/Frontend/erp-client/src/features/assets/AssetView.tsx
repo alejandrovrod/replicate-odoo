@@ -8,9 +8,16 @@ import { Button } from '../../components/ui/Button'
 import { Calculator } from 'lucide-react'
 import { usePagination } from '../../lib/pagination'
 
+/** Status badge label keys (explicit map: template-literal keys are not type-safe). */
+const ASSET_STATUS_KEY = {
+  Draft: 'assets.status.draft',
+  Capitalized: 'assets.status.capitalized',
+  Sold: 'assets.status.sold',
+  Scrapped: 'assets.status.scrapped',
+} as const
+
 export function AssetView() {
   const { t } = useTranslation('assets')
-  
   const { page, pageSize, setPage } = usePagination(10)
   const { items, status, error, totalCount, pageNumber, reload } = useAssets(page, pageSize)
   
@@ -42,7 +49,7 @@ export function AssetView() {
         
         return (
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${colorClass}`}>
-            {t(`assets.status.${row.status.toLowerCase()}`, row.status)}
+            {t(ASSET_STATUS_KEY[row.status], row.status)}
           </span>
         )
       },

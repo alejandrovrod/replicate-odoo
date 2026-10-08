@@ -17,8 +17,9 @@ public sealed record AccountDto(
     AccountType Type,
     bool IsGroup,
     Guid? ParentAccountId,
-    string Currency,
-    bool IsActive)
+    Guid? CurrencyId,
+    bool IsActive,
+    byte[]? RowVersion = null)
 {
     public static AccountDto From(Account account) =>
         new(
@@ -30,6 +31,7 @@ public sealed record AccountDto(
             account.Type,
             account.IsGroup,
             account.ParentAccountId,
-            account.Currency,
-            account.IsActive);
+            account.CurrencyId,
+            account.IsActive,
+            account.RowVersion);
 }

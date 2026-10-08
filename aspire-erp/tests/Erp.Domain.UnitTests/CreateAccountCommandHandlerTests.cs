@@ -31,7 +31,7 @@ public class CreateAccountCommandHandlerTests
     public async Task Create_RootAccount_Succeeds_AndPersists()
     {
         var repository = new FakeAccountRepository();
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(RootCommand());
 
@@ -49,7 +49,7 @@ public class CreateAccountCommandHandlerTests
     public async Task Create_DuplicateCode_ReturnsDuplicateAccountCodeFailure()
     {
         var repository = new FakeAccountRepository { CodeExists = true };
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(RootCommand());
 
@@ -63,7 +63,7 @@ public class CreateAccountCommandHandlerTests
     {
         var parentId = Guid.NewGuid();
         var repository = new FakeAccountRepository { Ancestors = Array.Empty<Account>() };
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(
             new CreateAccountCommand(CompanyId, "1110", "Cash", AccountRootType.Asset, IsGroup: false, ParentAccountId: parentId));
@@ -77,7 +77,7 @@ public class CreateAccountCommandHandlerTests
     {
         var leaf = Group("1110", isGroup: false);
         var repository = new FakeAccountRepository { Ancestors = new[] { leaf } };
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(
             new CreateAccountCommand(CompanyId, "1111", "Cash", AccountRootType.Asset, IsGroup: false, ParentAccountId: leaf.Id));
@@ -92,7 +92,7 @@ public class CreateAccountCommandHandlerTests
     {
         var parent = Group("1000", AccountRootType.Asset);
         var repository = new FakeAccountRepository { Ancestors = new[] { parent } };
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(
             new CreateAccountCommand(CompanyId, "5110", "Rent", AccountRootType.Expense, IsGroup: false, ParentAccountId: parent.Id));
@@ -108,7 +108,7 @@ public class CreateAccountCommandHandlerTests
         // which the walk returns the same node twice (a stored cycle).
         var parent = Group("1000");
         var repository = new FakeAccountRepository { Ancestors = new[] { parent, parent } };
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(
             new CreateAccountCommand(CompanyId, "1110", "Cash", AccountRootType.Asset, IsGroup: false, ParentAccountId: parent.Id));
@@ -123,7 +123,7 @@ public class CreateAccountCommandHandlerTests
     {
         var parent = Group("1000");
         var repository = new FakeAccountRepository { Ancestors = new[] { parent } };
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(
             new CreateAccountCommand(CompanyId, " 1110 ", "Cash and Bank", AccountRootType.Asset, IsGroup: false, ParentAccountId: parent.Id));
@@ -138,7 +138,7 @@ public class CreateAccountCommandHandlerTests
     [Fact]
     public async Task Create_InvalidFields_ReturnsFieldFailure()
     {
-        var handler = new CreateAccountCommandHandler(new FakeAccountRepository());
+        var handler = new CreateAccountCommandHandler(new FakeAccountRepository(), new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(new CreateAccountCommand(CompanyId, "", "Cash", AccountRootType.Asset, IsGroup: false, ParentAccountId: null));
 
@@ -160,7 +160,7 @@ public class CreateAccountCommandHandlerTests
         // resolves the documented per-RootType default so Type NVARCHAR(50) NOT NULL is always
         // meaningful. The default must land BOTH on the persisted entity and the returned DTO.
         var repository = new FakeAccountRepository();
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(
             new CreateAccountCommand(CompanyId, "7000", "Root", rootType, IsGroup: true, ParentAccountId: null));
@@ -175,7 +175,7 @@ public class CreateAccountCommandHandlerTests
     public async Task Create_WithExplicitType_PersistsAndReturnsIt()
     {
         var repository = new FakeAccountRepository();
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(
             new CreateAccountCommand(CompanyId, "1115", "Petty Cash", AccountRootType.Asset, IsGroup: false, ParentAccountId: null, Type: AccountType.Cash));
@@ -189,7 +189,7 @@ public class CreateAccountCommandHandlerTests
     public async Task Create_WithUndefinedType_ReturnsInvalidAccountTypeFailure()
     {
         var repository = new FakeAccountRepository();
-        var handler = new CreateAccountCommandHandler(repository);
+        var handler = new CreateAccountCommandHandler(repository, new FakeCurrencyRepository());
 
         var result = await handler.HandleAsync(
             new CreateAccountCommand(CompanyId, "1116", "Bad Type", AccountRootType.Asset, IsGroup: false, ParentAccountId: null, Type: (AccountType)999));

@@ -4,12 +4,22 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Erp.Infrastructure.Data.Configurations;
 
-/// <summary>Payment voucher header (task 6.1): enum NAME type/status, rowversion token.</summary>
+/// <summary>
+/// Payment voucher header (task 6.1, spec R-12): enum NAME type/status/document-status,
+/// rowversion token, gapless voucher number and the PE-06 direction CHECK.
+/// </summary>
 public sealed class PaymentEntryConfiguration : IEntityTypeConfiguration<PaymentEntry>
 {
     public void Configure(EntityTypeBuilder<PaymentEntry> builder)
     {
-        builder.ToTable("PaymentEntry");
+        builder.ToTable("PaymentEntry", table =>
+        {
+            // Defense in depth for PE-06 (the application guard owns the rule; the database
+            // backstops it): Receive ↔ Customer, Pay ↔ Supplier.
+            table.HasCheckConstraint(
+                "CK_PaymentEntry_Direction",
+                "([PaymentType] = 'Receive' AND [PartyType] = 'Customer') OR ([PaymentType] = 'Pay' AND [PartyType] = 'Supplier')");
+        });
 
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id)
@@ -24,9 +34,25 @@ public sealed class PaymentEntryConfiguration : IEntityTypeConfiguration<Payment
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(p => p.PartyType)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
+
+        builder.Property(p => p.PartyId).IsRequired();
+
+        builder.Property(p => p.VoucherNo).HasMaxLength(30).IsRequired().HasDefaultValue("");
+
         builder.Property(p => p.PaymentDate).HasColumnType("date").IsRequired();
         builder.Property(p => p.PaidAmount).HasColumnType("decimal(18,4)").IsRequired();
+        builder.Property(p => p.UnallocatedAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
         builder.Property(p => p.ReferenceNumber).HasMaxLength(100);
+
+        builder.Property(p => p.DocumentStatus)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(PaymentDocumentStatus.Draft)
+            .IsRequired();
 
         builder.Property(p => p.Status)
             .HasConversion<string>()

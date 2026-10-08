@@ -10,9 +10,9 @@ namespace Erp.Application.Features.Selling.Commands;
 /// </summary>
 /// <remarks>
 /// Optional fields default to the plan.md §1 column defaults (CreditLimit 0.0000 = no credit
-/// control, BypassCreditLimitCheck 0, BillingCurrency 'USD', PaymentTermsDays 30); TaxId is NOT
+/// control, BypassCreditLimitCheck 0, PaymentTermsDays 30); TaxId is NOT
 /// NULL without a server default, so an omitted value becomes the empty string rather than
-/// failing the insert.
+/// failing the insert. CurrencyId is RM-09 (nullable FK, "USD" fallback at read time).
 /// </remarks>
 public sealed record CreateCustomerCommand(
     Guid CompanyId,
@@ -21,7 +21,7 @@ public sealed record CreateCustomerCommand(
     string TaxId = "",
     decimal CreditLimit = 0m,
     bool BypassCreditLimitCheck = false,
-    string BillingCurrency = "USD",
+    Guid? CurrencyId = null,
     int PaymentTermsDays = 30,
     Guid? DefaultReceivableAccountId = null,
     bool IsActive = true) : ICommand<Result<CustomerDto>>;

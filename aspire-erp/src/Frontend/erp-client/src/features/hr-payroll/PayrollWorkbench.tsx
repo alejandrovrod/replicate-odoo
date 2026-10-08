@@ -116,7 +116,7 @@ export function PayrollWorkbench({
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
-              <CalendarRange className="h-4 w-4 text-indigo-600" />
+              <CalendarRange className="h-4 w-4 text-sky-600" />
               {t('workbench.title')}
             </h3>
             <p className="text-xs text-slate-500">{t('workbench.subtitle')}</p>
@@ -155,7 +155,7 @@ export function PayrollWorkbench({
             type="button"
             disabled={isSubmitting || !companyId}
             onClick={() => submit()}
-            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
           >
             <BadgeDollarSign className="h-3.5 w-3.5" />
             {isSubmitting ? t('workbench.submitting') : t('workbench.submit')}

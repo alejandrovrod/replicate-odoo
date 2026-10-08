@@ -8,7 +8,6 @@ public static class OpportunityValidator
     public const int MaxFromLength = 20;
     public const int MaxPartyNameLength = 150;
     public const int MaxStageLength = 30;
-    public const int MaxCurrencyLength = 3;
     public const int MaxStatusLength = 30;
 
     public static void EnsureValidOpportunityFields(
@@ -18,8 +17,7 @@ public static class OpportunityValidator
         Guid partyId,
         string? partyName,
         decimal amount,
-        decimal probability,
-        string? currency)
+        decimal probability)
     {
         if (companyId == Guid.Empty)
         {
@@ -68,13 +66,6 @@ public static class OpportunityValidator
             throw new CRMValidationException(
                 CRMErrorCodes.InvalidProbabilityRange,
                 $"Probability must be between 0 and 100. Received {probability}.");
-        }
-
-        if (string.IsNullOrWhiteSpace(currency) || currency.Length > MaxCurrencyLength)
-        {
-            throw new CRMValidationException(
-                "crm_invalid_currency",
-                $"Currency must be a non-empty ISO 4217 code of at most {MaxCurrencyLength} characters.");
         }
     }
 }

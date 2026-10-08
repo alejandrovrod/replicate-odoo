@@ -18,7 +18,7 @@ public sealed class CreateCustomerCommandHandlerTests
     private readonly FakeCustomerRepository _customers = new();
     private readonly FakeAccountRepository _accounts = new();
 
-    private CreateCustomerCommandHandler CreateHandler() => new(_customers, _accounts);
+    private CreateCustomerCommandHandler CreateHandler() => new(_customers, _accounts, new FakeCurrencyRepository());
 
     [Fact]
     public async Task HandleAsync_ValidCustomer_PersistsTrimmedCustomerWithPlanDefaults()
@@ -33,7 +33,7 @@ public sealed class CreateCustomerCommandHandlerTests
         Assert.Equal("ACME Corp", result.Value.Name);
         Assert.Equal(5000m, result.Value.CreditLimit);
         Assert.Equal(0m, result.Value.OutstandingAmount); // starts at zero - only postings move it
-        Assert.Equal("USD", result.Value.BillingCurrency);
+        Assert.Null(result.Value.CurrencyId); // no currency linked - reads fall back to "USD"
         Assert.Equal(30, result.Value.PaymentTermsDays);
         Assert.False(result.Value.BypassCreditLimitCheck);
         Assert.True(result.Value.IsActive);

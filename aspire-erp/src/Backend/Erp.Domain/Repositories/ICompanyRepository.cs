@@ -11,4 +11,5 @@ public interface ICompanyRepository
 {
     /// <summary>The company with the given id, or null when it does not exist in this tenant.</summary>
     Task<Company?> GetByIdAsync(Guid companyId, CancellationToken cancellationToken = default);
+    Task UpdateCompanyAsync(Company company, CancellationToken cancellationToken = default);
 }

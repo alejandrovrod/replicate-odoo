@@ -71,7 +71,8 @@ public sealed class GetAccountTreeQueryHandler : IQueryHandler<GetAccountTreeQue
                 account.IsGroup,
                 account.IsActive,
                 account.Type,
-                childNodes ?? (IReadOnlyList<AccountTreeNodeDto>)Array.Empty<AccountTreeNodeDto>());
+                childNodes ?? (IReadOnlyList<AccountTreeNodeDto>)Array.Empty<AccountTreeNodeDto>(),
+                account.RowVersion);
         }
 
         var roots = new List<Account>();

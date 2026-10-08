@@ -5,8 +5,10 @@ using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
+using Erp.Application.Features.Payments.Queries;
 using Erp.Domain.Common;
 using Erp.Domain.Entities;
+using Erp.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -26,15 +28,18 @@ namespace Erp.Api.Controllers.V1;
 public sealed class SuppliersController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly ISupplierRepository _suppliers;
     private readonly IStringLocalizer<ErrorMessages> _errors;
     private readonly IStringLocalizer<CommonMessages> _common;
 
     public SuppliersController(
         ISender sender,
+        ISupplierRepository suppliers,
         IStringLocalizer<ErrorMessages> errors,
         IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _suppliers = suppliers;
         _errors = errors;
         _common = common;
     }
@@ -139,6 +144,77 @@ public sealed class SuppliersController : ControllerBase
         }
 
         return Ok(result.Value!);
+    }
+
+    /// <summary>Disables a supplier (sets IsActive = false).</summary>
+    [HttpPut("{id}/disable")]
+    [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, false, cancellationToken);
+
+    /// <summary>Enables a supplier (sets IsActive = true).</summary>
+    [HttpPut("{id}/enable")]
+    [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, true, cancellationToken);
+
+    private async Task<IActionResult> SetActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken)
+    {
+        var supplier = await _suppliers.GetByIdAsync(id, cancellationToken);
+        if (supplier is null)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("SupplierNotFound"),
+                _errors.Text("supplier_not_found"),
+                "supplier_not_found");
+        }
+
+        supplier.IsActive = isActive;
+        await _suppliers.UpdateAsync(supplier, cancellationToken);
+        return Ok(SupplierDto.From(supplier));
+    }
+
+    /// <summary>
+    /// Returns the supplier's open payables for the payment allocation grid (spec R-12):
+    /// bills with OutstandingAmount &gt; 0 and Unpaid/PartiallyPaid status, oldest due first.
+    /// </summary>
+    /// <param name="id">Supplier ID.</param>
+    /// <param name="companyId">Company that owns the bills (suppliers themselves are tenant-wide).</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("{id}/outstanding-invoices")]
+    [ProducesResponseType(typeof(IReadOnlyList<OutstandingInvoiceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetOutstandingInvoices(
+        Guid id,
+        [FromQuery] Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidSupplierId"),
+                _errors.Text("supplier_not_found"),
+                "supplier_not_found");
+        }
+
+        var supplier = await _suppliers.GetByIdAsync(id, cancellationToken);
+        if (supplier is null)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("SupplierNotFound"),
+                _errors.Text("supplier_not_found"),
+                "supplier_not_found");
+        }
+
+        var bills = await _sender.SendAsync(
+            new GetOutstandingPurchaseInvoicesQuery(companyId, id), cancellationToken);
+        return Ok(bills);
     }
 
     private ObjectResult Problem(int status, string title, string detail, string? code)

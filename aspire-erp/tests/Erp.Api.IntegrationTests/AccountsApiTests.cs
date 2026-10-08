@@ -71,7 +71,7 @@ public class AccountsApiTests : IClassFixture<ErpApiFactory>
             rootType = "Asset",
             isGroup = false,
             parentAccountId = (Guid?)null,
-            currency = "USD",
+            currencyId = new Guid("c0000000-0000-4000-8000-000000000001"),
             isActive = true,
             type = "Cash", // Task 1.1: optional Type round-trips through the DTO as "type"
         };

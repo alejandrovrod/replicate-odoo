@@ -23,7 +23,8 @@ public sealed record ItemDto(
     Guid? IncomeAccountId,
     Guid? ExpenseAccountId,
     bool IsActive,
-    IReadOnlyList<ItemStockDto> Stock)
+    IReadOnlyList<ItemStockDto> Stock,
+    byte[]? RowVersion = null)
 {
     public static ItemDto From(Item item, IReadOnlyList<ItemStockDto>? stock = null) =>
         new(
@@ -32,9 +33,10 @@ public sealed record ItemDto(
             item.ItemName,
             item.ValuationMethod,
             item.StockUomId,
-            null,
-            null,
+            item.IncomeAccountId,
+            item.ExpenseAccountId,
             item.IsActive,
-            stock ?? (IReadOnlyList<ItemStockDto>)Array.Empty<ItemStockDto>());
+            stock ?? (IReadOnlyList<ItemStockDto>)Array.Empty<ItemStockDto>(),
+            item.RowVersion);
 }
 

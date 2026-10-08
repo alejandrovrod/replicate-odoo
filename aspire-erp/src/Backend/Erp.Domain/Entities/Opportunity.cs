@@ -31,9 +31,15 @@ public class Opportunity : ITenantEntity
     /// <summary>Calculated automatically (Amount * Probability / 100)</summary>
     public decimal WeightedAmount => OpportunityAmount * (Probability / 100.0m);
 
-    public string Currency { get; set; } = "USD";
-    public DateOnly ExpectedClosingDate { get; set; }
+    /// <summary>
+    /// Deal currency (RM-09 FK to the global <see cref="Currency"/> catalog);
+    /// null means "USD" for legacy rows.
+    /// </summary>
+    public Guid? CurrencyId { get; set; }
 
+    public Currency? Currency { get; set; }
+
+    public DateOnly ExpectedClosingDate { get; set; }
     public string Status { get; set; } = OpportunityStatus.Open;
     public string? LossReason { get; set; }
     public Guid? AssignedSalespersonId { get; set; }

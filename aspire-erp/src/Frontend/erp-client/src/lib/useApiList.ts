@@ -41,7 +41,7 @@ export interface PagedList<T> {
  */
 export function useApiList<T>(
   path: string,
-  params: Record<string, string | number | undefined>,
+  params: Record<string, string | number | boolean | undefined>,
   enabled: boolean,
 ): PagedList<T> {
   const paramsKey = JSON.stringify(params)
@@ -53,7 +53,7 @@ export function useApiList<T>(
     if (!enabled) return undefined
 
     let cancelled = false
-    const query = JSON.parse(paramsKey) as Record<string, string | number>
+    const query = JSON.parse(paramsKey) as Record<string, string | number | boolean>
     apiClient.get<PagedResult<T>>(path, { params: query }).then(
       (response) => {
         if (!cancelled) setState({ key, attempt, status: 'success', data: response.data, error: null })
@@ -100,7 +100,7 @@ export interface TreeList<T> {
  */
 export function useApiTreeList<T>(
   path: string,
-  params: Record<string, string | number | undefined>,
+  params: Record<string, string | number | boolean | undefined>,
   enabled: boolean,
 ): TreeList<T> {
   const paramsKey = JSON.stringify(params)
@@ -112,7 +112,7 @@ export function useApiTreeList<T>(
     if (!enabled) return undefined
 
     let cancelled = false
-    const query = JSON.parse(paramsKey) as Record<string, string | number>
+    const query = JSON.parse(paramsKey) as Record<string, string | number | boolean>
     apiClient.get<T[]>(path, { params: query }).then(
       (response) => {
         if (!cancelled) setState({ key, attempt, status: 'success', data: response.data, error: null })

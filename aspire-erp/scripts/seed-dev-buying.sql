@@ -30,13 +30,13 @@ GO
 -- --- Buying accounts (Phase 4, tasks 4.3 / spec BY-01) ----------------------
 -- 1130 Input Tax Recoverable : Asset - the recoupable input tax the vendor bills.
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001130')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000001130', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1130', 'Input Tax Recoverable', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000001130', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '1130', 'Input Tax Recoverable', 'Asset', 0, 'a0000000-0000-4000-8000-000000001000', 1);
 
 -- 5120 Purchase Price Difference : Expense - variances between received and billed rates.
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000005120')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000005120', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5120', 'Purchase Price Difference', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000005120', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5120', 'Purchase Price Difference', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 1);
 GO
 
 -- --- Company buying posting defaults (decision D3, Task 4.3) ----------------

@@ -28,20 +28,20 @@ GO
 --      exist in seed-dev-coa.sql (verified: only 2110/2120 under 2000 Liabilities).
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000005130')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000005130', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5130', 'Salaries and Wages Expense', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000005130', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5130', 'Salaries and Wages Expense', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000002220')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000002220', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2220', 'Income Tax Payable', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000002220', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2220', 'Income Tax Payable', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000002225')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000002225', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2225', 'Social Security Payable', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000002225', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2225', 'Social Security Payable', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000002150')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
-    VALUES ('a0000000-0000-4000-8000-000000002150', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2150', 'Payroll Payable', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 'USD', 1);
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000002150', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '2150', 'Payroll Payable', 'Liability', 0, 'a0000000-0000-4000-8000-000000002000', 1);
 GO
 
 -- --- Company payroll default (decision D3, same code-not-FK shape as seed-dev-coa.sql) --

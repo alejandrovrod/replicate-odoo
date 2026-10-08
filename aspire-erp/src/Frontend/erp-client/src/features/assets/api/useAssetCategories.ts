@@ -57,11 +57,38 @@ export function useAssetCategories(page: number = 1, pageSize: number = 50) {
 }
 
 export async function createAssetCategory(data: Partial<AssetCategory>): Promise<AssetCategory> {
-  const response = await apiClient.post<AssetCategory>('/v1/AssetCategories', data)
+  const response = await apiClient.post<AssetCategory>('/v1/AssetCategories', {
+    companyId: data.companyId,
+    categoryName: data.categoryName,
+    fixedAssetAccountId: data.fixedAssetAccountId,
+    accumulatedDepreciationAccountId: data.accumulatedDepreciationAccountId,
+    depreciationExpenseAccountId: data.depreciationExpenseAccountId,
+    cwipAccountId: data.cwipAccountId ?? null,
+    gainOnDisposalAccountId: data.gainOnDisposalAccountId ?? null,
+    lossOnDisposalAccountId: data.lossOnDisposalAccountId ?? null,
+    isNonDepreciable: data.isNonDepreciable ?? false,
+  })
   return response.data
 }
 
+/**
+ * PUT body (mirrors `UpdateAssetCategoryCommand`): always carries the original
+ * `rowVersion` so a concurrent change resolves to 409 instead of silently winning.
+ */
 export async function updateAssetCategory(id: string, data: Partial<AssetCategory>): Promise<AssetCategory> {
-  const response = await apiClient.put<AssetCategory>(`/v1/AssetCategories/${id}`, data)
+  const response = await apiClient.put<AssetCategory>(`/v1/AssetCategories/${id}`, {
+    id,
+    companyId: data.companyId,
+    categoryName: data.categoryName,
+    fixedAssetAccountId: data.fixedAssetAccountId,
+    accumulatedDepreciationAccountId: data.accumulatedDepreciationAccountId,
+    depreciationExpenseAccountId: data.depreciationExpenseAccountId,
+    cwipAccountId: data.cwipAccountId ?? null,
+    gainOnDisposalAccountId: data.gainOnDisposalAccountId ?? null,
+    lossOnDisposalAccountId: data.lossOnDisposalAccountId ?? null,
+    isNonDepreciable: data.isNonDepreciable ?? false,
+    isActive: data.isActive ?? true,
+    rowVersion: data.rowVersion,
+  })
   return response.data
 }

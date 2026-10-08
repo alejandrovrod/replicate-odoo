@@ -248,6 +248,19 @@ public sealed class PurchaseRepository : IPurchaseRepository
         }
     }
 
+    public async Task<IReadOnlyList<PurchaseInvoice>> GetOutstandingBySupplierAsync(
+        Guid companyId,
+        Guid supplierId,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.PurchaseInvoices
+            .Where(i => i.CompanyId == companyId
+                && i.SupplierId == supplierId
+                && i.OutstandingAmount > 0m
+                && (i.Status == PurchaseInvoiceStatus.Unpaid || i.Status == PurchaseInvoiceStatus.PartiallyPaid))
+            .OrderBy(i => i.DueDate)
+            .ThenBy(i => i.Id)
+            .ToListAsync(cancellationToken);
+
     // ------------------------------------------------------------------------------------- reads
 
     public async Task<PurchaseOrder?> GetOrderByIdAsync(

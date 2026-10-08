@@ -483,8 +483,8 @@ public class BankStatementImportApiTests : IClassFixture<ErpApiFactory>
         await connection.OpenAsync();
 
         await using var command = new SqlCommand(
-            "INSERT INTO dbo.BankAccount (Id, TenantId, CompanyId, AccountName, BankName, AccountNumber, Currency, GLAccountId, LastReconciledBalance, IsActive) "
-            + "VALUES (@Id, @TenantId, @CompanyId, @Name, N'BN Test Bank', @Number, N'USD', @GlAccountId, 0, 1);",
+            "INSERT INTO dbo.BankAccount (Id, TenantId, CompanyId, AccountName, BankName, AccountNumber, GLAccountId, LastReconciledBalance, IsActive) "
+            + "VALUES (@Id, @TenantId, @CompanyId, @Name, N'BN Test Bank', @Number, @GlAccountId, 0, 1);",
             connection);
         command.Parameters.AddWithValue("@Id", id);
         command.Parameters.AddWithValue("@TenantId", ErpApiFactory.DevTenantId);

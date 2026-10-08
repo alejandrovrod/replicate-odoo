@@ -3,9 +3,10 @@ import { FileText, Truck, AlertCircle, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Pagination } from '../../components/ui/Pagination'
 import { useApiList } from '../../lib/useApiList'
-import { MAX_PAGE_SIZE, usePagination } from '../../lib/pagination'
+import { usePagination, MAX_PAGE_SIZE } from '../../lib/pagination'
 import { formatMoney } from '../../lib/format'
 import { useTenantStore } from '../../store/useTenantStore'
+import { Button } from '../../components/ui/Button'
 import { PurchaseReceiptModal } from './PurchaseReceiptModal'
 import { useNavigationStore } from '../../store/useNavigationStore'
 
@@ -63,34 +64,37 @@ export function BuyingOverview() {
     
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50 to-white p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
           <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => useNavigationStore.getState().setCurrentRoute('buying-suppliers')}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+            className="flex items-center gap-1.5"
           >
-            <Users className="h-4 w-4 text-indigo-600" />
+            <Users className="h-4 w-4" />
             {t('overview.manageSuppliers', 'Proveedores')}
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex items-center gap-1.5"
           >
-            <Truck className="h-4 w-4 text-indigo-600" />
+            <Truck className="h-4 w-4" />
             {t('overview.newReceipt')}
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center gap-1.5"
           >
             <FileText className="h-4 w-4" />
             {t('overview.newOrder')}
-          </button>
+          </Button>
         </div>
       </div>
 

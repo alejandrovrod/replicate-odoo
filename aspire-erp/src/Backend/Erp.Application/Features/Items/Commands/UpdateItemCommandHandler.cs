@@ -47,6 +47,8 @@ public sealed class UpdateItemCommandHandler : ICommandHandler<UpdateItemCommand
         item.ItemName = request.Name;
         item.ValuationMethod = request.ValuationMethod;
         item.StockUomId = request.BaseUOMId;
+        item.IncomeAccountId = request.IncomeAccountId;
+        item.ExpenseAccountId = request.ExpenseAccountId;
         item.IsActive = request.IsActive;
 
         await _repository.UpdateAsync(item, cancellationToken);

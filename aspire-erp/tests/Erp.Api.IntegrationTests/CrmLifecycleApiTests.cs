@@ -84,7 +84,7 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
             new
             {
                 customerCode,
-                defaultCurrency = "USD",
+                defaultCurrencyId = new Guid("c0000000-0000-4000-8000-000000000001"),
                 paymentTermsDays = 30,
                 opportunityAmount = 15000m,
                 opportunityProbability = 25m,
@@ -551,7 +551,7 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
             new
             {
                 customerCode = $"CRM-IT-{tag}-{suffix}-C1",
-                defaultCurrency = "USD",
+                defaultCurrencyId = new Guid("c0000000-0000-4000-8000-000000000001"),
                 paymentTermsDays = 30,
                 opportunityAmount = amount,
                 opportunityProbability = probability,

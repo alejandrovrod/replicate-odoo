@@ -84,5 +84,38 @@
     "done": "Done",
     "post": "Post voucher and reconcile",
     "posting": "Posting…"
+  },
+  "bankAccounts": {
+    "manageTitle": "Bank Accounts",
+    "manageSubtitle": "Manage your bank profiles and their GL links.",
+    "search": "Search bank accounts...",
+    "columns": {
+      "name": "Account Name",
+      "bank": "Bank",
+      "number": "Number",
+      "balance": "Balance",
+      "status": "Status"
+    },
+    "active": "Active",
+    "inactive": "Disabled"
+  },
+  "bankAccountForm": {
+    "titleNew": "New Bank Account",
+    "titleEdit": "Edit Bank Account",
+    "nameLabel": "Account Name *",
+    "bankLabel": "Bank *",
+    "numberLabel": "Account Number *",
+    "currencyLabel": "Currency",
+    "currencyNone": "-- Default (USD) --",
+    "glAccountLabel": "GL Account *",
+    "accountNone": "-- Select Account --",
+    "active": "Active",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "errorRequired": "Account name, bank and number are required.",
+    "errorGlRequired": "A GL account is required.",
+    "errorConflict": "Concurrency conflict. Please refresh and try again.",
+    "errorGeneric": "An error occurred while saving."
   }
 }

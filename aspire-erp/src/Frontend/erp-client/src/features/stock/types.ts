@@ -30,6 +30,8 @@ export interface Item {
   expenseAccountId: string | null
   isActive: boolean
   stock: ItemStock[]
+  /** Base64 rowversion token from GET; echoed back on PUT for optimistic concurrency. */
+  rowVersion?: string
 }
 
 /** One node of GET /api/v1/warehouses/tree. */

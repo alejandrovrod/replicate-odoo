@@ -25,6 +25,8 @@ export interface AccountTreeNode {
   isGroup: boolean
   isActive: boolean
   children: AccountTreeNode[]
+  /** Base64 rowversion token from GET; echoed back on PUT for optimistic concurrency. */
+  rowVersion?: string
 }
 
 /**

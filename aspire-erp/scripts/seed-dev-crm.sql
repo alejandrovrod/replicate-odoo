@@ -41,12 +41,12 @@ GO
 -- the spec CRM-01 arithmetic) so the dev pipeline board is non-empty.
 IF NOT EXISTS (SELECT 1 FROM dbo.Opportunity WHERE Id = 'c0000000-0000-4000-8000-000000000002')
 BEGIN
-    INSERT INTO dbo.Opportunity (Id, TenantId, CompanyId, OpportunityNumber, OpportunityFrom, PartyId, PartyName, Stage, OpportunityAmount, Probability, Currency, ExpectedClosingDate, Status, LossReason, AssignedSalespersonId)
+    INSERT INTO dbo.Opportunity (Id, TenantId, CompanyId, OpportunityNumber, OpportunityFrom, PartyId, PartyName, Stage, OpportunityAmount, Probability, ExpectedClosingDate, Status, LossReason, AssignedSalespersonId)
     VALUES ('c0000000-0000-4000-8000-000000000002',
             '11111111-1111-4111-8111-111111111111',
             '22222222-2222-4222-8222-222222222222',
             'OPP-2026-09901', 'Lead', 'c0000000-0000-4000-8000-000000000001', 'TechCorp',
-            'Qualification', 15000.00, 25.00, 'USD', '2027-06-30', 'Open', NULL, NULL);
+            'Qualification', 15000.00, 25.00, '2027-06-30', 'Open', NULL, NULL);
 END;
 GO
 

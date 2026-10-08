@@ -69,7 +69,7 @@ public interface IAssetsRepository
     Task UpdateAssetAsync(Asset asset, CancellationToken cancellationToken = default);
 
     /// <summary>Saves mutations of an already-tracked asset category (optimistic locking).</summary>
-    Task UpdateCategoryAsync(AssetCategory category, string originalRowVersion, CancellationToken cancellationToken = default);
+    Task UpdateCategoryAsync(AssetCategory category, byte[] originalRowVersion, CancellationToken cancellationToken = default);
 
     /// <summary>Saves booking/cancellation mutations of an already-tracked schedule line (Block B).</summary>
     Task UpdateScheduleAsync(AssetDepreciationSchedule line, CancellationToken cancellationToken = default);

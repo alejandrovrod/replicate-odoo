@@ -20,7 +20,11 @@ public sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAcco
         builder.Property(a => a.AccountName).HasMaxLength(100).IsRequired();
         builder.Property(a => a.BankName).HasMaxLength(100).IsRequired();
         builder.Property(a => a.AccountNumber).HasMaxLength(50).IsRequired();
-        builder.Property(a => a.Currency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
+        builder.Property(a => a.CurrencyId);
+
+        // Optimistic concurrency: store-generated rowversion token (coexists with the
+        // temporal history table - rowversion is a regular column, the period stays datetime2).
+        builder.Property(a => a.RowVersion).IsRowVersion();
         builder.Property(a => a.LastReconciledBalance)
             .HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
         builder.Property(a => a.LastReconciledDate).HasColumnType("date");
@@ -38,6 +42,13 @@ public sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAcco
             .WithMany()
             .HasForeignKey(a => a.GLAccountId)
             .HasConstraintName("FK_BankAccount_GLAccount")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RM-09: account currency link to the global Currency catalog (nullable for legacy rows).
+        builder.HasOne(a => a.Currency)
+            .WithMany()
+            .HasForeignKey(a => a.CurrencyId)
+            .HasConstraintName("FK_BankAccount_Currency")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(a => new { a.TenantId, a.CompanyId, a.AccountNumber })

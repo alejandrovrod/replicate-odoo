@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { AppShell } from './components/layout/AppShell'
 import { AccountTreeTable } from './features/accounting/AccountTreeTable'
+import { CurrenciesView } from './features/accounting/CurrenciesView'
 import { GeneralLedgerOverview } from './features/accounting/GeneralLedgerOverview'
 import { BankingOverview } from './features/banking/BankingOverview'
 import { BuyingOverview } from './features/buying/BuyingOverview'
@@ -16,6 +17,7 @@ import { AssetCategoryView } from './features/assets/AssetCategoryView'
 import { AssetView } from './features/assets/AssetView'
 import { CustomerView } from './features/selling/pages/CustomerView'
 import { SupplierView } from './features/buying/pages/SupplierView'
+import { BankAccountsView } from './features/banking/pages/BankAccountsView'
 import { useNavigationStore } from './store/useNavigationStore'
 import { useTenantStore } from './store/useTenantStore'
 
@@ -42,11 +44,15 @@ function App() {
 
       {currentRoute === 'accounting-journal' && <GeneralLedgerOverview />}
 
+      {currentRoute === 'accounting-currencies' && <CurrenciesView />}
+
       {currentRoute === 'assets-categories' && <AssetCategoryView />}
       
       {currentRoute === 'assets' && <AssetView />}
 
       {currentRoute === 'banking' && <BankingOverview />}
+
+      {currentRoute === 'banking-accounts' && <BankAccountsView />}
 
       {currentRoute === 'stock' && <StockOverview />}
 

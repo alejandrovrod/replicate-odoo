@@ -12,6 +12,7 @@ import { MAX_PAGE_SIZE } from '../../lib/pagination'
 import { useErpAction } from '../../lib/useErpAction'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { useTenantStore } from '../../store/useTenantStore'
+import { Button } from '../../components/ui/Button'
 import type { BankTransaction, RuleMatchSummary } from './types'
 
 const BankStatementImporter = lazy(() =>
@@ -121,23 +122,25 @@ export function BankingOverview() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setShowImporter((v) => !v)}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+            className="flex items-center gap-1.5"
           >
-            <UploadCloud className="h-4 w-4 text-sky-600" />
+            <UploadCloud className="h-4 w-4" />
             {t('overview.importStatement')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
             disabled={isRunningRules}
             onClick={() => runRules()}
-            className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-700 disabled:opacity-50"
+            className="flex items-center gap-1.5"
           >
             <Sparkles className="h-4 w-4" />
             {isRunningRules ? t('overview.running') : t('overview.runRules')}
-          </button>
+          </Button>
         </div>
       </div>
 

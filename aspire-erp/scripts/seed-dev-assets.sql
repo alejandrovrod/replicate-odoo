@@ -26,44 +26,44 @@ GO
 -- 5320 Loss on Asset Disposal (Expense)
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001510')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
     VALUES ('a0000000-0000-4000-8000-000000001510',
             '11111111-1111-4111-8111-111111111111',
             '22222222-2222-4222-8222-222222222222',
             '1510', 'Fixed Asset Equipment', 'Asset', 0,
-            'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+            'a0000000-0000-4000-8000-000000001000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000001520')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
     VALUES ('a0000000-0000-4000-8000-000000001520',
             '11111111-1111-4111-8111-111111111111',
             '22222222-2222-4222-8222-222222222222',
             '1520', 'Accumulated Depreciation', 'Asset', 0,
-            'a0000000-0000-4000-8000-000000001000', 'USD', 1);
+            'a0000000-0000-4000-8000-000000001000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000005310')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
     VALUES ('a0000000-0000-4000-8000-000000005310',
             '11111111-1111-4111-8111-111111111111',
             '22222222-2222-4222-8222-222222222222',
             '5310', 'Depreciation Expense', 'Expense', 0,
-            'a0000000-0000-4000-8000-000000005000', 'USD', 1);
+            'a0000000-0000-4000-8000-000000005000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000004220')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
     VALUES ('a0000000-0000-4000-8000-000000004220',
             '11111111-1111-4111-8111-111111111111',
             '22222222-2222-4222-8222-222222222222',
             '4220', 'Gain on Asset Disposal', 'Income', 0,
-            'a0000000-0000-4000-8000-000000004000', 'USD', 1);
+            'a0000000-0000-4000-8000-000000004000', 1);
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000005320')
-    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive)
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
     VALUES ('a0000000-0000-4000-8000-000000005320',
             '11111111-1111-4111-8111-111111111111',
             '22222222-2222-4222-8222-222222222222',
             '5320', 'Loss on Asset Disposal', 'Expense', 0,
-            'a0000000-0000-4000-8000-000000005000', 'USD', 1);
+            'a0000000-0000-4000-8000-000000005000', 1);
 GO
 
 -- --- Asset Category: IT Hardware ---------------------------------------------

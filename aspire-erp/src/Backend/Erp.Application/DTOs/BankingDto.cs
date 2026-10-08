@@ -81,3 +81,32 @@ public sealed record BankStatementImportDto(
     int TotalTransactions,
     int ImportedCount,
     int DuplicateCount);
+
+/// <summary>Bank account master payload for GET/POST/PUT /api/v1/bank-accounts.</summary>
+public sealed record BankAccountDto(
+    Guid Id,
+    Guid CompanyId,
+    string AccountName,
+    string BankName,
+    string AccountNumber,
+    Guid? CurrencyId,
+    Guid GLAccountId,
+    decimal LastReconciledBalance,
+    DateOnly? LastReconciledDate,
+    bool IsActive,
+    byte[]? RowVersion = null)
+{
+    public static BankAccountDto From(BankAccount account) =>
+        new(
+            account.Id,
+            account.CompanyId,
+            account.AccountName,
+            account.BankName,
+            account.AccountNumber,
+            account.CurrencyId,
+            account.GLAccountId,
+            account.LastReconciledBalance,
+            account.LastReconciledDate,
+            account.IsActive,
+            account.RowVersion);
+}

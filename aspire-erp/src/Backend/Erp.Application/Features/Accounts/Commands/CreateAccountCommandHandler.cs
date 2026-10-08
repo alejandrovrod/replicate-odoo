@@ -14,10 +14,12 @@ namespace Erp.Application.Features.Accounts.Commands;
 public sealed class CreateAccountCommandHandler : ICommandHandler<CreateAccountCommand, Result<AccountDto>>
 {
     private readonly IAccountRepository _accounts;
+    private readonly ICurrencyRepository _currencies;
 
-    public CreateAccountCommandHandler(IAccountRepository accounts)
+    public CreateAccountCommandHandler(IAccountRepository accounts, ICurrencyRepository currencies)
     {
         _accounts = accounts;
+        _currencies = currencies;
     }
 
     public async Task<Result<AccountDto>> HandleAsync(CreateAccountCommand command, CancellationToken cancellationToken = default)
@@ -37,8 +39,15 @@ public sealed class CreateAccountCommandHandler : ICommandHandler<CreateAccountC
                 command.AccountCode,
                 command.AccountName,
                 command.RootType,
-                command.Currency,
                 type);
+
+            if (command.CurrencyId.HasValue
+                && await _currencies.GetByIdAsync(command.CurrencyId.Value, cancellationToken) is null)
+            {
+                throw new AccountValidationException(
+                    CurrencyErrorCodes.CurrencyNotFound,
+                    $"Currency '{command.CurrencyId.Value}' was not found.");
+            }
 
             IReadOnlyList<Account> ancestors = Array.Empty<Account>();
 
@@ -67,7 +76,7 @@ public sealed class CreateAccountCommandHandler : ICommandHandler<CreateAccountC
                 Type = type,
                 IsGroup = command.IsGroup,
                 ParentAccountId = command.ParentAccountId,
-                Currency = command.Currency.Trim(),
+                CurrencyId = command.CurrencyId,
                 IsActive = command.IsActive,
 
                 // TenantId is intentionally NOT set: AppDbContext stamps CurrentTenantId on insert

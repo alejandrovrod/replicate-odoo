@@ -39,7 +39,6 @@ public class CustomersApiTests : IClassFixture<ErpApiFactory>, IDisposable
             taxId = "TAX-IT-1",
             creditLimit = 5000.00m,
             bypassCreditLimitCheck = false,
-            billingCurrency = "USD",
             paymentTermsDays = 30,
             isActive = true,
         });

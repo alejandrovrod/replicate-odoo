@@ -84,5 +84,38 @@
     "done": "Listo",
     "post": "Registrar comprobante y conciliar",
     "posting": "Registrando…"
+  },
+  "bankAccounts": {
+    "manageTitle": "Cuentas Bancarias",
+    "manageSubtitle": "Administre sus perfiles bancarios y sus vínculos contables.",
+    "search": "Buscar cuentas bancarias...",
+    "columns": {
+      "name": "Nombre de Cuenta",
+      "bank": "Banco",
+      "number": "Número",
+      "balance": "Saldo",
+      "status": "Estado"
+    },
+    "active": "Activa",
+    "inactive": "Deshabilitada"
+  },
+  "bankAccountForm": {
+    "titleNew": "Nueva Cuenta Bancaria",
+    "titleEdit": "Editar Cuenta Bancaria",
+    "nameLabel": "Nombre de Cuenta *",
+    "bankLabel": "Banco *",
+    "numberLabel": "Número de Cuenta *",
+    "currencyLabel": "Moneda",
+    "currencyNone": "-- Por defecto (USD) --",
+    "glAccountLabel": "Cuenta Contable *",
+    "accountNone": "-- Seleccionar Cuenta --",
+    "active": "Activa",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "errorRequired": "El nombre, el banco y el número son obligatorios.",
+    "errorGlRequired": "Se requiere una cuenta contable.",
+    "errorConflict": "Conflicto de concurrencia. Refresque e intente de nuevo.",
+    "errorGeneric": "Ocurrió un error al guardar."
   }
 }

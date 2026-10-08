@@ -51,7 +51,7 @@ public sealed class PostDueDepreciationsTests
             RootType = AccountRootType.Asset,
             IsGroup = false,
             IsActive = true,
-            Currency = "USD",
+
         };
 
     private PostDueDepreciationsCommandHandler Handler() => new(_companies, _accounts, _assets);

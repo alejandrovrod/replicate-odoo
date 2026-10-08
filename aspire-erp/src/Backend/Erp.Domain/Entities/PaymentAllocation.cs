@@ -3,9 +3,12 @@ using Erp.Domain.Common;
 namespace Erp.Domain.Entities;
 
 /// <summary>
-/// One slice of a <see cref="PaymentEntry"/> applied to a sales invoice. Part of the payment
-/// aggregate: created only through the guarded <see cref="PaymentEntry.Allocate"/> path so the
-/// anti-overpayment invariant (task 6.1) can never be bypassed.
+/// One slice of a <see cref="PaymentEntry"/> applied to exactly one invoice (spec R-12
+/// invariant PE-06): either a <c>SalesInvoice</c> (Receive leg) or a <c>PurchaseInvoice</c>
+/// (Pay leg), never both, enforced by <c>CK_PaymentAllocation_ExactlyOneInvoice</c> in
+/// addition to the application guard. Part of the payment aggregate: created only through
+/// the guarded <see cref="PaymentEntry.Allocate"/> path so the anti-overpayment invariant
+/// (PE-02) can never be bypassed.
 /// </summary>
 public sealed class PaymentAllocation : ITenantEntity
 {
@@ -18,10 +21,15 @@ public sealed class PaymentAllocation : ITenantEntity
 
     public PaymentEntry? PaymentEntry { get; set; }
 
-    /// <summary>Invoice this slice pays (table <c>SalesInvoice</c>).</summary>
-    public Guid SalesInvoiceId { get; set; }
+    /// <summary>Invoice this slice pays (table <c>SalesInvoice</c>); null on the Pay leg.</summary>
+    public Guid? SalesInvoiceId { get; set; }
 
     public SalesInvoice? SalesInvoice { get; set; }
+
+    /// <summary>Bill this slice pays (table <c>PurchaseInvoice</c>); null on the Receive leg.</summary>
+    public Guid? PurchaseInvoiceId { get; set; }
+
+    public PurchaseInvoice? PurchaseInvoice { get; set; }
 
     /// <summary>Allocated amount (decimal(18,4), strictly positive).</summary>
     public decimal AllocatedAmount { get; set; }

@@ -23,7 +23,7 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .HasDefaultValueSql("NEWSEQUENTIALID()");
 
         builder.Property(c => c.Name).HasMaxLength(150).IsRequired();
-        builder.Property(c => c.DefaultCurrency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
+        builder.Property(c => c.CurrencyId);
         builder.Property(c => c.TaxId).HasMaxLength(50).IsRequired();
 
         // Phase 3 additions (decision D2): the two plan.md §2 columns the initial migration
@@ -55,6 +55,14 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .HasConstraintName("FK_Company_Tenant")
             // plan.md §7.2's DDL specifies plain FK semantics (SQL Server default = NO ACTION);
             // EF's convention would silently turn this into ON DELETE CASCADE.
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RM-09: functional currency link to the global Currency catalog (nullable for legacy
+        // rows; plain FK semantics = SQL Server default NO ACTION).
+        builder.HasOne(c => c.Currency)
+            .WithMany()
+            .HasForeignKey(c => c.CurrencyId)
+            .HasConstraintName("FK_Company_Currency")
             .OnDelete(DeleteBehavior.Restrict);
 
         // Constitution Article IV.1: every index on a tenant-scoped table leads with TenantId.

@@ -14,7 +14,7 @@ public sealed class CreateSupplierCommandHandlerTests
 {
     private readonly FakeSupplierRepository _suppliers = new();
 
-    private CreateSupplierCommandHandler CreateHandler() => new(_suppliers);
+    private CreateSupplierCommandHandler CreateHandler() => new(_suppliers, new FakeCurrencyRepository());
 
     [Fact]
     public async Task HandleAsync_ValidSupplier_PersistsTrimmedSupplierAndReturnsDto()

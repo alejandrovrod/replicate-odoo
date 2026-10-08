@@ -87,6 +87,13 @@
       "accounting": "Accounting & Finance",
       "operations": "Operations"
     },
+    "folder": {
+      "masters": "Master Data",
+      "transactions": "Transactions",
+      "assets": "Fixed Assets",
+      "banking": "Banking & Rec",
+      "config": "Settings"
+    },
     "item": {
       "dashboard": "Dashboard",
       "accountingCoa": "Chart of Accounts",
@@ -99,7 +106,9 @@
       "selling": "Selling & POS",
       "buying": "Buying & Vendors",
       "hrPayroll": "HR & Payroll",
-      "crm": "CRM & Pipeline"
+      "crm": "CRM & Pipeline",
+      "accountingCurrencies": "Currencies",
+      "bankingAccounts": "Bank Accounts"
     },
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar"

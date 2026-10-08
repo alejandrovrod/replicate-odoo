@@ -57,8 +57,13 @@ public class Customer : ITenantEntity
     /// </summary>
     public bool BypassCreditLimitCheck { get; set; }
 
-    /// <summary>ISO 4217 billing currency (3 chars, default 'USD', plan.md §1).</summary>
-    public string BillingCurrency { get; set; } = "USD";
+    /// <summary>
+    /// Billing currency (RM-09 FK to the global <see cref="Currency"/> catalog, plan.md §1);
+    /// null means "USD" for legacy rows.
+    /// </summary>
+    public Guid? CurrencyId { get; set; }
+
+    public Currency? Currency { get; set; }
 
     /// <summary>Net payment terms in days (default 30, plan.md §1).</summary>
     public int PaymentTermsDays { get; set; } = 30;

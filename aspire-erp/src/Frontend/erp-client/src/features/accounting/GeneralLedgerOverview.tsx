@@ -81,7 +81,7 @@ export function GeneralLedgerOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-xl border border-sky-100 bg-sky-50/50 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50 to-white p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-900">{t('ledger.title')}</h2>
           <p className="mt-1 text-xs text-slate-600">{t('ledger.subtitle')}</p>

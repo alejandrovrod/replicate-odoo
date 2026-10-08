@@ -44,13 +44,20 @@ public sealed class OpportunityConfiguration : IEntityTypeConfiguration<Opportun
         builder.Property(o => o.OpportunityAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
         builder.Property(o => o.Probability).HasColumnType("decimal(5,2)").HasDefaultValue(10.00m).IsRequired();
         builder.Ignore(o => o.WeightedAmount);
-        builder.Property(o => o.Currency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
+        builder.Property(o => o.CurrencyId);
         builder.Property(o => o.Status).HasMaxLength(30).IsRequired().HasDefaultValue("Open");
 
         builder.HasOne(o => o.Company)
             .WithMany()
             .HasForeignKey(o => o.CompanyId)
             .HasConstraintName("FK_Opportunity_Company")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RM-09: deal currency link to the global Currency catalog (nullable for legacy rows).
+        builder.HasOne(o => o.Currency)
+            .WithMany()
+            .HasForeignKey(o => o.CurrencyId)
+            .HasConstraintName("FK_Opportunity_Currency")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(o => o.Activities)

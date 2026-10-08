@@ -23,7 +23,12 @@ public sealed class UpdateSupplierCommandHandler : ICommandHandler<UpdateSupplie
             return Result<SupplierDto>.Failure("supplier_not_found", "Supplier not found.");
         }
 
-
+        if (supplier.RowVersion is null || !supplier.RowVersion.AsSpan().SequenceEqual(request.RowVersion))
+        {
+            return Result<SupplierDto>.Failure(
+                "concurrency_conflict",
+                "The supplier was modified by another user.");
+        }
 
         if (supplier.Code != request.Code)
         {
@@ -38,7 +43,7 @@ public sealed class UpdateSupplierCommandHandler : ICommandHandler<UpdateSupplie
 
         supplier.Code = request.Code;
         supplier.Name = request.Name;
-        supplier.TaxId = request.TaxId;
+        supplier.TaxId = request.TaxId ?? string.Empty;
         
         supplier.PaymentTermsDays = request.PaymentTermsDays;
         

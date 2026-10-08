@@ -94,4 +94,11 @@ public interface IPurchaseRepository
     /// RowVersion mismatch into <see cref="ConcurrencyConflictException"/> like UpdateOrderAsync.
     /// </summary>
     Task UpdateInvoiceAsync(PurchaseInvoice invoice, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Open payables of one supplier (spec R-12 allocation grid): bills with
+    /// <c>OutstandingAmount &gt; 0</c> and <c>Status</c> Unpaid/PartiallyPaid, oldest due first.
+    /// </summary>
+    Task<IReadOnlyList<PurchaseInvoice>> GetOutstandingBySupplierAsync(
+        Guid companyId, Guid supplierId, CancellationToken cancellationToken = default);
 }

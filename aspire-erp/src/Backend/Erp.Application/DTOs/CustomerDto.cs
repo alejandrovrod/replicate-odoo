@@ -18,10 +18,11 @@ public sealed record CustomerDto(
     Guid? DefaultReceivableAccountId,
     decimal CreditLimit,
     bool BypassCreditLimitCheck,
-    string BillingCurrency,
+    Guid? CurrencyId,
     int PaymentTermsDays,
     decimal OutstandingAmount,
-    bool IsActive)
+    bool IsActive,
+    byte[]? RowVersion = null)
 {
     public static CustomerDto From(Customer customer) =>
         new(
@@ -33,8 +34,9 @@ public sealed record CustomerDto(
             customer.DefaultReceivableAccountId,
             customer.CreditLimit,
             customer.BypassCreditLimitCheck,
-            customer.BillingCurrency,
+            customer.CurrencyId,
             customer.PaymentTermsDays,
             customer.OutstandingAmount,
-            customer.IsActive);
+            customer.IsActive,
+            customer.RowVersion);
 }

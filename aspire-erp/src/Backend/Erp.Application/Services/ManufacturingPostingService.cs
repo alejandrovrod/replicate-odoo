@@ -459,7 +459,7 @@ public sealed class ManufacturingPostingService : IManufacturingPostingService
             Credit = Round4(credit),
             DebitInAccountCurrency = Round4(debit),
             CreditInAccountCurrency = Round4(credit),
-            AccountCurrency = account.Currency,
+            AccountCurrency = account.Currency?.Code ?? "USD",
             VoucherType = VoucherType,
             VoucherNo = string.Empty,
             VoucherId = Guid.Empty,

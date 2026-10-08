@@ -44,10 +44,10 @@ export function CrmOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-sky-50 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50 to-white p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-600 text-white shadow-xs">
               <Handshake className="h-4 w-4" />
             </span>
             <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
@@ -56,7 +56,7 @@ export function CrmOverview() {
         </div>
         <div className="text-right">
           <p className="text-xs font-medium text-slate-500">{t('overview.openLeads')}</p>
-          <p className="text-2xl font-bold text-emerald-700">{leadCount}</p>
+          <p className="text-2xl font-bold text-sky-700">{leadCount}</p>
         </div>
       </div>
 

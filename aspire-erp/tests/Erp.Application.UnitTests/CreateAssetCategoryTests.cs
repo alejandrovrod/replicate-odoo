@@ -59,7 +59,7 @@ public sealed class CreateAssetCategoryTests
             RootType = AccountRootType.Asset,
             IsGroup = false,
             IsActive = true,
-            Currency = "USD",
+
         };
 
     private CreateAssetCategoryCommandHandler Handler() => new(_companies, _accounts, _assets);
@@ -152,7 +152,7 @@ public sealed class CreateAssetCategoryTests
             AccountName = "Old Expense",
             IsGroup = false,
             IsActive = false,
-            Currency = "USD",
+
         });
 
         var result = await Handler().HandleAsync(
@@ -192,7 +192,7 @@ public sealed class CreateAssetCategoryTests
             AccountName = "Gains Group",
             IsGroup = true,
             IsActive = true,
-            Currency = "USD",
+
         });
 
         var result = await Handler().HandleAsync(
@@ -217,7 +217,7 @@ public sealed class CreateAssetCategoryTests
             AccountName = "Old Loss",
             IsGroup = false,
             IsActive = false,
-            Currency = "USD",
+
         });
 
         var result = await Handler().HandleAsync(

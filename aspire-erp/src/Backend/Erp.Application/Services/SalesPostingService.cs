@@ -493,7 +493,7 @@ public sealed class SalesPostingService : ISalesPostingService
             // 1:1 and snapshot the account currency (multi-currency restatement = spec AC-05, later).
             DebitInAccountCurrency = Round4(debit),
             CreditInAccountCurrency = Round4(credit),
-            AccountCurrency = account.Currency,
+            AccountCurrency = account.Currency?.Code ?? "USD",
 
             VoucherType = DeliveryVoucherType,
 

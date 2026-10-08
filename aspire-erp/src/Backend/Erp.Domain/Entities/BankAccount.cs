@@ -32,8 +32,13 @@ public sealed class BankAccount : ITenantEntity
     /// <summary>External account number (max 50 chars, plan.md §1).</summary>
     public string AccountNumber { get; set; } = string.Empty;
 
-    /// <summary>ISO 4217 currency (3 chars, default 'USD', plan.md §1).</summary>
-    public string Currency { get; set; } = "USD";
+    /// <summary>
+    /// Account currency (RM-09 FK to the global <see cref="Currency"/> catalog, plan.md §1);
+    /// null means "USD" for legacy rows.
+    /// </summary>
+    public Guid? CurrencyId { get; set; }
+
+    public Currency? Currency { get; set; }
 
     /// <summary>Liquid asset account in the Chart of Accounts (plan.md §1 FK_BankAccount_GLAccount).</summary>
     public Guid GLAccountId { get; set; }
@@ -48,4 +53,12 @@ public sealed class BankAccount : ITenantEntity
 
     /// <summary>Inactive accounts cannot receive new statement imports.</summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Optimistic concurrency token (SQL Server <c>rowversion</c>): EF puts the original value
+    /// in the UPDATE ... WHERE clause, so a concurrent change between load and save throws
+    /// <c>DbUpdateConcurrencyException</c> instead of silently winning.
+    /// Store-generated: never set from code.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = null!;
 }

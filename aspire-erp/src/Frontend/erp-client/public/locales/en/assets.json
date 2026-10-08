@@ -85,22 +85,23 @@
       "depreciationMethod": "Depreciation Method"
     },
     "schedule": {
-      "columns": {
-        "date": "Date",
-        "amount": "Amount",
-        "accumulated": "Accumulated",
-        "status": "Status"
-      },
-      "status": {
-        "scheduled": "Scheduled",
-        "booked": "Booked",
-        "cancelled": "Cancelled"
-      }
+      "date": "Date",
+      "amount": "Amount",
+      "accDep": "Accumulated",
+      "status": "Status"
     },
-    "capitalize": {
-      "btn": "Capitalize",
-      "success": "Asset capitalized successfully",
-      "error": "Error capitalizating asset"
+    "capitalize": "Capitalize Asset",
+    "capitalizeError": "Failed to capitalize asset: ",
+    "detailsTitle": "Asset Details",
+    "scheduleTitle": "Depreciation Schedule",
+    "noSchedule": "No depreciation schedule found.",
+    "fields": {
+      "purchaseDate": "Purchase Date",
+      "grossPurchaseAmount": "Gross Purchase Amount",
+      "salvageValue": "Salvage Value",
+      "depreciationMethod": "Depreciation Method",
+      "nbv": "Net Book Value",
+      "accumulatedDepreciation": "Accumulated Depreciation"
     }
   }
 }

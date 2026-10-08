@@ -18,7 +18,7 @@ export function CustomerView() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
 
   const columns: ColumnDef<Customer>[] = [
-    { header: t('customers.columns.code', 'Code'), accessor: 'customerCode' },
+    { header: t('customers.columns.code', 'Code'), accessor: 'code' },
     { header: t('customers.columns.name', 'Name'), accessor: 'name' },
     { header: t('customers.columns.taxId', 'Tax ID'), accessor: 'taxId' },
     {

@@ -315,12 +315,14 @@ public sealed class AssetsRepository : IAssetsRepository
         }
     }
 
-    public async Task UpdateCategoryAsync(AssetCategory category, string originalRowVersion, CancellationToken cancellationToken = default)
+    public async Task UpdateCategoryAsync(AssetCategory category, byte[] originalRowVersion, CancellationToken cancellationToken = default)
     {
         try
         {
-            // Note: UpdateCategoryAsync acts on an entity that is already attached/loaded by GetCategoryByIdAsync.
-            // EF Core tracking handles the fields and RowVersion.
+            // Optimistic concurrency: enforce the client-supplied token as the original value so
+            // a stale PUT conflicts instead of silently winning. The entity is already tracked
+            // from GetCategoryByIdAsync, so set the original RowVersion explicitly.
+            _dbContext.Entry(category).Property(c => c.RowVersion).OriginalValue = originalRowVersion;
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException ex)

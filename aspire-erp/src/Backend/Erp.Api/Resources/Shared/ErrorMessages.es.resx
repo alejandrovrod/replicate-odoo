@@ -91,6 +91,70 @@
   <data name="currency_invalid" xml:space="preserve">
     <value>Moneda inválida.</value>
   </data>
+  <data name="currency_code_required" xml:space="preserve">
+    <value>El código de moneda es obligatorio.</value>
+  </data>
+  <data name="currency_code_too_long" xml:space="preserve">
+    <value>El código de moneda no debe exceder 3 caracteres.</value>
+  </data>
+  <data name="currency_symbol_required" xml:space="preserve">
+    <value>El símbolo de moneda es obligatorio.</value>
+  </data>
+  <data name="currency_symbol_too_long" xml:space="preserve">
+    <value>El símbolo de moneda no debe exceder 10 caracteres.</value>
+  </data>
+  <data name="currency_fraction_name_too_long" xml:space="preserve">
+    <value>El nombre de la fracción no debe exceder 50 caracteres.</value>
+  </data>
+  <data name="currency_not_found" xml:space="preserve">
+    <value>Moneda no encontrada.</value>
+  </data>
+  <data name="payment_not_found" xml:space="preserve">
+    <value>Comprobante de pago no encontrado.</value>
+  </data>
+  <data name="invalid_paid_amount" xml:space="preserve">
+    <value>El monto pagado debe ser positivo.</value>
+  </data>
+  <data name="payment_conservation_violated" xml:space="preserve">
+    <value>El monto pagado debe igualar lo asignado más lo no asignado.</value>
+  </data>
+  <data name="payment_party_mismatch" xml:space="preserve">
+    <value>El tipo de pago, la contraparte y las facturas son inconsistentes.</value>
+  </data>
+  <data name="payment_invalid_transition" xml:space="preserve">
+    <value>La transición de estado del pago no está permitida.</value>
+  </data>
+  <data name="payment_already_cancelled" xml:space="preserve">
+    <value>El comprobante de pago ya está anulado.</value>
+  </data>
+  <data name="payment_reconciled_cannot_cancel" xml:space="preserve">
+    <value>Un pago conciliado no puede anularse hasta desconciliarlo.</value>
+  </data>
+  <data name="invalid_counterparty_account" xml:space="preserve">
+    <value>Ninguna cuenta de contraparte posteable resuelve este pago.</value>
+  </data>
+  <!-- Period closing voucher (spec R-13) -->
+  <data name="period_closing_not_found" xml:space="preserve">
+    <value>Comprobante de cierre periódico no encontrado.</value>
+  </data>
+  <data name="retained_earnings_account_not_found" xml:space="preserve">
+    <value>Cuenta de Ganancias Retenidas no encontrada.</value>
+  </data>
+  <data name="invalid_period_closing_amount" xml:space="preserve">
+    <value>Monto de cierre de período inválido.</value>
+  </data>
+  <data name="period_closing_conservation_violated" xml:space="preserve">
+    <value>La conservación del cierre de período no es válida: los débitos deben equal al total de créditos.</value>
+  </data>
+  <data name="period_closing_invalid_transition" xml:space="preserve">
+    <value>La transición de estado del cierre de período no está permitida.</value>
+  </data>
+  <data name="period_closing_already_cancelled" xml:space="preserve">
+    <value>El comprobante de cierre periódico ya está anulado.</value>
+  </data>
+  <data name="period_closing_reconciled_cannot_cancel" xml:space="preserve">
+    <value>Un cierre de período conciliado no puede anularse hasta desconciliarlo.</value>
+  </data>
   <data name="parent_not_found" xml:space="preserve">
     <value>Cuenta padre no encontrada.</value>
   </data>
@@ -111,6 +175,9 @@
   </data>
   <data name="duplicate_account_code" xml:space="preserve">
     <value>Ya existe una cuenta con este código.</value>
+  </data>
+  <data name="duplicate_currency_code" xml:space="preserve">
+    <value>Ya existe una moneda con este código.</value>
   </data>
   <!-- CRM (08-crm), incluidos los códigos que los controllers emiten como literales. -->
   <data name="crm_company_required" xml:space="preserve">
@@ -539,6 +606,9 @@
   </data>
   <data name="bank_name_required" xml:space="preserve">
     <value>El nombre del banco es obligatorio.</value>
+  </data>
+  <data name="bank_account_name_required" xml:space="preserve">
+    <value>El nombre de la cuenta bancaria es obligatorio.</value>
   </data>
   <data name="bank_account_number_required" xml:space="preserve">
     <value>El número de cuenta bancaria es obligatorio.</value>

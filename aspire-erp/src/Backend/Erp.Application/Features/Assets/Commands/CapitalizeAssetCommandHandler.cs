@@ -226,7 +226,7 @@ public sealed class CapitalizeAssetCommandHandler
             // 1:1 and snapshot the account currency (same shape as the stock postings).
             DebitInAccountCurrency = debit,
             CreditInAccountCurrency = credit,
-            AccountCurrency = account.Currency,
+            AccountCurrency = account.Currency?.Code ?? "USD",
 
             VoucherType = VoucherType,
             VoucherNo = asset.AssetCode,

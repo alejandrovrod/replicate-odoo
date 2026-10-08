@@ -13,10 +13,12 @@ namespace Erp.Application.Features.Buying.Commands;
 public sealed class CreateSupplierCommandHandler : ICommandHandler<CreateSupplierCommand, Result<SupplierDto>>
 {
     private readonly ISupplierRepository _suppliers;
+    private readonly ICurrencyRepository _currencies;
 
-    public CreateSupplierCommandHandler(ISupplierRepository suppliers)
+    public CreateSupplierCommandHandler(ISupplierRepository suppliers, ICurrencyRepository currencies)
     {
         _suppliers = suppliers;
+        _currencies = currencies;
     }
 
     public async Task<Result<SupplierDto>> HandleAsync(
@@ -25,7 +27,15 @@ public sealed class CreateSupplierCommandHandler : ICommandHandler<CreateSupplie
     {
         try
         {
-            PurchaseValidator.EnsureValidSupplierFields(command.Code, command.Name, command.BillingCurrency, command.PaymentTermsDays);
+            PurchaseValidator.EnsureValidSupplierFields(command.Code, command.Name, command.PaymentTermsDays);
+
+            if (command.CurrencyId.HasValue
+                && await _currencies.GetByIdAsync(command.CurrencyId.Value, cancellationToken) is null)
+            {
+                throw new PurchaseValidationException(
+                    CurrencyErrorCodes.CurrencyNotFound,
+                    $"Currency '{command.CurrencyId.Value}' was not found.");
+            }
 
             var code = command.Code.Trim();
 
@@ -44,7 +54,7 @@ public sealed class CreateSupplierCommandHandler : ICommandHandler<CreateSupplie
                 Name = command.Name.Trim(),
                 TaxId = command.TaxId.Trim(),
                 DefaultPayableAccountId = command.DefaultPayableAccountId,
-                BillingCurrency = command.BillingCurrency,
+                CurrencyId = command.CurrencyId,
                 PaymentTermsDays = command.PaymentTermsDays,
                 OutstandingAmount = 0.0000m,
                 IsActive = command.IsActive,

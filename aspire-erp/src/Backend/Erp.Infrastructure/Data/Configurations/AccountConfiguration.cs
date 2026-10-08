@@ -49,7 +49,8 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(a => a.IsGroup).HasDefaultValue(false);
         builder.Property(a => a.ParentAccountId);
 
-        builder.Property(a => a.Currency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
+        builder.Property(a => a.CurrencyId);
+
         builder.Property(a => a.IsActive).HasDefaultValue(true);
 
         // plan.md §7.3 FK_Account_Company: plain FK semantics = SQL Server default NO ACTION;
@@ -65,6 +66,14 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .WithMany(a => a.Children)
             .HasForeignKey(a => a.ParentAccountId)
             .HasConstraintName("FK_Account_Parent")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RM-09: functional currency link to the global Currency catalog (nullable for legacy
+        // rows; plain FK semantics = SQL Server default NO ACTION).
+        builder.HasOne(a => a.Currency)
+            .WithMany()
+            .HasForeignKey(a => a.CurrencyId)
+            .HasConstraintName("FK_Account_Currency")
             .OnDelete(DeleteBehavior.Restrict);
 
         // Constitution Article IV.1 + plan.md §7.3: TenantId leads the composite index.

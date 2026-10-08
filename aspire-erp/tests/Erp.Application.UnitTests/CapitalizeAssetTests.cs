@@ -65,7 +65,7 @@ public sealed class CapitalizeAssetTests
             RootType = AccountRootType.Asset,
             IsGroup = false,
             IsActive = true,
-            Currency = "USD",
+
         };
 
     private CapitalizeAssetCommandHandler Handler() => new(_companies, _accounts, _items, _assets);
@@ -328,7 +328,7 @@ public sealed class CapitalizeAssetTests
             AccountName = "Fixed Assets Group",
             IsGroup = true,
             IsActive = true,
-            Currency = "USD",
+
         });
 
         var category = SeedCategory();

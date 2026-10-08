@@ -15,7 +15,8 @@ public sealed record AssetCategoryDto(
     Guid? LossOnDisposalAccountId,
     bool IsNonDepreciable,
     bool IsActive,
-    DateTimeOffset CreatedAt)
+    DateTimeOffset CreatedAt,
+    byte[]? RowVersion = null)
 {
     public static AssetCategoryDto Build(AssetCategory category) =>
         new(
@@ -30,7 +31,8 @@ public sealed record AssetCategoryDto(
             category.LossOnDisposalAccountId,
             category.IsNonDepreciable,
             category.IsActive,
-            category.CreatedAt);
+            category.CreatedAt,
+            category.RowVersion);
 }
 
 /// <summary>One schedule line payload (Task 10.3).</summary>

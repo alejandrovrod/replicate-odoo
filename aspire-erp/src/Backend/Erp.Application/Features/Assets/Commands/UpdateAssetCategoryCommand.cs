@@ -15,4 +15,4 @@ public sealed record UpdateAssetCategoryCommand(
     Guid? LossOnDisposalAccountId,
     bool IsNonDepreciable,
     bool IsActive,
-    string RowVersion) : ICommand<Result<AssetCategoryDto>>;
+    byte[] RowVersion) : ICommand<Result<AssetCategoryDto>>;

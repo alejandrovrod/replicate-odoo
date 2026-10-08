@@ -31,9 +31,8 @@ export function ItemFormModal({
 }: ItemFormModalProps) {
   const { t } = useTranslation('stock')
   const [formData, setFormData] = useState<Partial<Item>>({
-    companyId,
     isActive: true,
-    valuationMethod: 'FIFO',
+    valuationMethod: 'Fifo',
   })
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -56,7 +55,7 @@ export function ItemFormModal({
     if (initialData) {
       setFormData(initialData)
     } else {
-      setFormData({ companyId, isActive: true, valuationMethod: 'FIFO' })
+      setFormData({ isActive: true, valuationMethod: 'Fifo' })
     }
   }, [initialData, companyId, isOpen])
 
@@ -114,108 +113,111 @@ export function ItemFormModal({
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="text-sm text-red-600">{error}</div>}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+            {error && <div className="text-sm text-red-600">{error}</div>}
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('itemForm.codeLabel', 'Item Code *')}</label>
+                <Input
+                  name="code"
+                  value={formData.code || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. IT-001"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('itemForm.nameLabel', 'Item Name *')}</label>
+                <Input
+                  name="name"
+                  value={formData.name || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. Laptop"
+                  required
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t('itemForm.codeLabel', 'Item Code *')}</label>
+              <label className="text-sm font-medium">{t('itemForm.uomLabel', 'Base UOM (GUID) *')}</label>
               <Input
-                name="code"
-                value={formData.code || ''}
+                name="baseUOMId"
+                value={formData.baseUOMId || ''}
                 onChange={handleChange}
-                placeholder="e.g. IT-001"
+                placeholder="e.g. uuid"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t('itemForm.nameLabel', 'Item Name *')}</label>
-              <Input
-                name="name"
-                value={formData.name || ''}
+              <label className="text-sm font-medium">{t('itemForm.valuationLabel', 'Valuation Method')}</label>
+              <select
+                name="valuationMethod"
+                value={formData.valuationMethod || 'Fifo'}
                 onChange={handleChange}
-                placeholder="e.g. Laptop"
-                required
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200"
+              >
+                <option value="Fifo">FIFO</option>
+                <option value="MovingAverage">Moving Average</option>
+                <option value="Lifo">LIFO</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('itemForm.incomeAccountLabel', 'Income Account')}</label>
+              <select
+                name="incomeAccountId"
+                value={formData.incomeAccountId || ''}
+                onChange={handleChange}
+                disabled={accountsQuery.status !== 'success'}
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
+              >
+                <option value="">{t('itemForm.accountNone', '-- None --')}</option>
+                {postingAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.code} — {account.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('itemForm.expenseAccountLabel', 'Expense/COGS Account')}</label>
+              <select
+                name="expenseAccountId"
+                value={formData.expenseAccountId || ''}
+                onChange={handleChange}
+                disabled={accountsQuery.status !== 'success'}
+                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
+              >
+                <option value="">{t('itemForm.accountNone', '-- None --')}</option>
+                {postingAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.code} — {account.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center space-x-2 pb-4">
+              <input
+                type="checkbox"
+                name="isActive"
+                checked={formData.isActive !== false}
+                onChange={handleChange}
+                id="isActiveItem"
+                className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-950"
               />
+              <label htmlFor="isActiveItem" className="text-sm font-medium">
+                {t('itemForm.active', 'Active')}
+              </label>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t('itemForm.uomLabel', 'Base UOM (GUID) *')}</label>
-            <Input
-              name="baseUOMId"
-              value={formData.baseUOMId || ''}
-              onChange={handleChange}
-              placeholder="e.g. uuid"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t('itemForm.valuationLabel', 'Valuation Method')}</label>
-            <select
-              name="valuationMethod"
-              value={formData.valuationMethod || 'FIFO'}
-              onChange={handleChange}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950"
-            >
-              <option value="FIFO">FIFO</option>
-              <option value="MovingAverage">Moving Average</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t('itemForm.incomeAccountLabel', 'Income Account')}</label>
-            <select
-              name="incomeAccountId"
-              value={formData.incomeAccountId || ''}
-              onChange={handleChange}
-              disabled={accountsQuery.status !== 'success'}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
-            >
-              <option value="">{t('itemForm.accountNone', '-- None --')}</option>
-              {postingAccounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.code} — {account.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">{t('itemForm.expenseAccountLabel', 'Expense/COGS Account')}</label>
-            <select
-              name="expenseAccountId"
-              value={formData.expenseAccountId || ''}
-              onChange={handleChange}
-              disabled={accountsQuery.status !== 'success'}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
-            >
-              <option value="">{t('itemForm.accountNone', '-- None --')}</option>
-              {postingAccounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.code} — {account.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="isActive"
-              checked={formData.isActive !== false}
-              onChange={handleChange}
-              id="isActiveItem"
-              className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-950"
-            />
-            <label htmlFor="isActiveItem" className="text-sm font-medium">
-              {t('itemForm.active', 'Active')}
-            </label>
-          </div>
-
-          <DialogFooter>
+          <DialogFooter className="pt-4 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={onClose}>
               {t('itemForm.cancel', 'Cancel')}
             </Button>

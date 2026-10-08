@@ -30,7 +30,11 @@ public class AppDbContext : DbContext
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
 
+    /// <summary>Global ISO currency catalog (RM-09): shared across tenants, no tenant filter.</summary>
+    public DbSet<Currency> Currencies => Set<Currency>();
+
     public DbSet<Company> Companies => Set<Company>();
+    public DbSet<PeriodClosingVoucher> PeriodClosingVouchers => Set<PeriodClosingVoucher>();
 
     public DbSet<Account> Accounts => Set<Account>();
 

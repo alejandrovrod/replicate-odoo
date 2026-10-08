@@ -22,11 +22,6 @@ export interface AccountDto {
   isActive: boolean
 }
 
-interface PaginatedResponse<T> {
-  items: T[]
-  totalCount: number
-}
-
 interface AssetCategoryFormModalProps {
   isOpen: boolean
   onClose: () => void
@@ -40,7 +35,7 @@ export function AssetCategoryFormModal({
   onSave,
   initialData,
 }: AssetCategoryFormModalProps) {
-  const { t, i18n } = useTranslation('assets')
+  const { t } = useTranslation('assets')
   const companyId = useTenantStore((state) => state.companyId)
   
   const [formData, setFormData] = useState<Partial<AssetCategory>>({
@@ -185,7 +180,7 @@ export function AssetCategoryFormModal({
               value={formData.fixedAssetAccountId || ''}
               onChange={handleChange}
               required
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
             >
               <option value="">{t('categoryForm.selectAccount', '-- Select Account --')}</option>
               {accounts.map(a => (
@@ -201,7 +196,7 @@ export function AssetCategoryFormModal({
               value={formData.accumulatedDepreciationAccountId || ''}
               onChange={handleChange}
               required
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
             >
               <option value="">{t('categoryForm.selectAccount', '-- Select Account --')}</option>
               {accounts.map(a => (
@@ -217,7 +212,7 @@ export function AssetCategoryFormModal({
               value={formData.depreciationExpenseAccountId || ''}
               onChange={handleChange}
               required
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
             >
               <option value="">{t('categoryForm.selectAccount', '-- Select Account --')}</option>
               {accounts.map(a => (
@@ -232,7 +227,7 @@ export function AssetCategoryFormModal({
               name="cwipAccountId"
               value={formData.cwipAccountId || ''}
               onChange={handleChange}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
             >
               <option value="">{t('categoryForm.selectAccount', '-- Select Account --')}</option>
               {accounts.map(a => (
@@ -247,7 +242,7 @@ export function AssetCategoryFormModal({
               name="gainOnDisposalAccountId"
               value={formData.gainOnDisposalAccountId || ''}
               onChange={handleChange}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
             >
               <option value="">{t('categoryForm.selectAccount', '-- Select Account --')}</option>
               {accounts.map(a => (
@@ -262,7 +257,7 @@ export function AssetCategoryFormModal({
               name="lossOnDisposalAccountId"
               value={formData.lossOnDisposalAccountId || ''}
               onChange={handleChange}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
             >
               <option value="">{t('categoryForm.selectAccount', '-- Select Account --')}</option>
               {accounts.map(a => (

@@ -31,6 +31,9 @@ using Erp.Application.Features.HrPayroll.Queries;
 using Erp.Application.Features.Warehouses.Commands;
 using Erp.Application.Features.Warehouses.Queries;
 using Erp.Application.Features.Catalogs;
+using Erp.Application.Features.Currencies.Commands;
+using Erp.Application.Features.Payments.Commands;
+using Erp.Application.Features.Payments.Queries;
 using Erp.Application.Services;
 using Erp.Domain.Common;
 using Erp.Domain.Repositories;
@@ -85,7 +88,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<ISender, Sender>();
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateAccountCommand, Result<AccountDto>>, CreateAccountCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateAccountCommand, Result<AccountDto>>, UpdateAccountCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetAccountTreeQuery, IReadOnlyList<AccountTreeNodeDto>>, GetAccountTreeQueryHandler>();
+
+// Global currency catalog (RM-09): shared ISO master, no tenant scope.
+builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+builder.Services.AddScoped<ICommandHandler<CreateCurrencyCommand, Result<CurrencyDto>>, CreateCurrencyCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateCurrencyCommand, Result<CurrencyDto>>, UpdateCurrencyCommandHandler>();
 
 // Stock & Inventory (Tasks 3.1-3.3): masters, the perpetual-inventory posting engine and the
 // Article VI.4 idempotency filter. Repositories stay in Erp.Infrastructure, handlers in
@@ -99,8 +108,10 @@ builder.Services.AddScoped<IIdempotencyRepository, IdempotencyRepository>();
 builder.Services.AddScoped<IStockPostingService, StockPostingService>();
 
 builder.Services.AddScoped<ICommandHandler<CreateItemCommand, Result<ItemDto>>, CreateItemCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateItemCommand, Result<ItemDto>>, UpdateItemCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetItemsQuery, PagedResult<ItemDto>>, GetItemsQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateWarehouseCommand, Result<WarehouseDto>>, CreateWarehouseCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateWarehouseCommand, Result<WarehouseDto>>, UpdateWarehouseCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetWarehousesQuery, IReadOnlyList<WarehouseTreeNodeDto>>, GetWarehousesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetFlatWarehousesQuery, PagedResult<WarehouseDto>>, GetFlatWarehousesQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateStockEntryCommand, Result<StockEntryPostingDto>>, CreateStockEntryCommandHandler>();
@@ -116,6 +127,7 @@ builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<IPurchasePostingService, PurchasePostingService>();
 
 builder.Services.AddScoped<ICommandHandler<CreateSupplierCommand, Result<SupplierDto>>, CreateSupplierCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateSupplierCommand, Result<SupplierDto>>, UpdateSupplierCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetSuppliersQuery, PagedResult<SupplierDto>>, GetSuppliersQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreatePurchaseOrderCommand, Result<PurchaseOrderDto>>, CreatePurchaseOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdatePurchaseOrderCommand, Result<PurchaseOrderDto>>, UpdatePurchaseOrderCommandHandler>();
@@ -132,6 +144,7 @@ builder.Services.AddScoped<IQueryHandler<GetPurchaseInvoicesQuery, PagedResult<P
 // composition root knows both (decision C2).
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateCustomerCommand, Result<CustomerDto>>, CreateCustomerCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateCustomerCommand, Result<CustomerDto>>, UpdateCustomerCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetCustomersQuery, PagedResult<CustomerDto>>, GetCustomersQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetCustomerByIdQuery, CustomerDto?>, GetCustomerByIdQueryHandler>();
 
@@ -193,6 +206,18 @@ builder.Services.AddScoped<ICommandHandler<ImportBankStatementCommand, Result<Ba
 // existing read-only IGLEntryRepository (zero GL writes - GLEntry is append-only).
 builder.Services.AddScoped<ICommandHandler<ApplyMatchingRulesCommand, Result<RuleMatchSummary>>, ApplyMatchingRulesCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateBankTransactionRuleCommand, Result<BankTransactionRuleDto>>, CreateBankTransactionRuleCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateBankAccountCommand, Result<BankAccountDto>>, CreateBankAccountCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateBankAccountCommand, Result<BankAccountDto>>, UpdateBankAccountCommandHandler>();
+
+// Payment entry & settlement (spec R-12): draft creation, idempotent submit posting with
+// gapless PAY- numbering, compensating cancel, and the allocation-grid reads.
+builder.Services.AddScoped<ICommandHandler<CreatePaymentEntryCommand, Result<PaymentEntryDto>>, CreatePaymentEntryCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitPaymentEntryCommand, Result<PaymentEntryDto>>, SubmitPaymentEntryCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelPaymentEntryCommand, Result<PaymentEntryDto>>, CancelPaymentEntryCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPaymentsQuery, PagedResult<PaymentEntryDto>>, GetPaymentsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPaymentDetailQuery, PaymentEntryDetailDto?>, GetPaymentDetailQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetOutstandingSalesInvoicesQuery, IReadOnlyList<OutstandingInvoiceDto>>, GetOutstandingSalesInvoicesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetOutstandingPurchaseInvoicesQuery, IReadOnlyList<OutstandingInvoiceDto>>, GetOutstandingPurchaseInvoicesQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<ReconcileBankTransactionCommand, Result<ReconciliationSummary>>, ReconcileBankTransactionCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UnreconcileBankTransactionCommand, Result<bool>>, UnreconcileBankTransactionCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateVoucherFromBankTransactionCommand, Result<JournalEntryDto>>, CreateVoucherFromBankTransactionCommandHandler>();
@@ -223,6 +248,7 @@ builder.Services.AddScoped<IQueryHandler<GetWorkOrdersQuery, PagedResult<WorkOrd
 // (depreciation runs, disposal) builds on the same composition.
 builder.Services.AddScoped<IAssetsRepository, AssetsRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateAssetCategoryCommand, Result<AssetCategoryDto>>, CreateAssetCategoryCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateAssetCategoryCommand, Result<AssetCategoryDto>>, UpdateAssetCategoryCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CapitalizeAssetCommand, Result<AssetCapitalizationDto>>, CapitalizeAssetCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<PostDueDepreciationsCommand, Result<DepreciationRunDto>>, PostDueDepreciationsCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DisposeAssetCommand, Result<AssetDisposalDto>>, DisposeAssetCommandHandler>();

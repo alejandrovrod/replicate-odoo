@@ -31,7 +31,13 @@ public class Supplier : ITenantEntity
 
     public Account? DefaultPayableAccount { get; set; }
 
-    public string BillingCurrency { get; set; } = "USD";
+    /// <summary>
+    /// Billing currency (RM-09 FK to the global <see cref="Currency"/> catalog);
+    /// null means "USD" for legacy rows.
+    /// </summary>
+    public Guid? CurrencyId { get; set; }
+
+    public Currency? Currency { get; set; }
 
     public int PaymentTermsDays { get; set; } = 30;
 
@@ -39,6 +45,14 @@ public class Supplier : ITenantEntity
 
     /// <summary>Inactive suppliers cannot be referenced by new purchase orders.</summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Optimistic concurrency token (SQL Server <c>rowversion</c>): EF puts the original value
+    /// in the UPDATE ... WHERE clause, so a concurrent change between load and save throws
+    /// <c>DbUpdateConcurrencyException</c> instead of silently winning.
+    /// Store-generated: never set from code.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = null!;
 
     public DateTimeOffset CreatedAt { get; set; }
 }

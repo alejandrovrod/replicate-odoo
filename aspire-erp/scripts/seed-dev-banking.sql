@@ -21,11 +21,11 @@ GO
 -- liquid-asset GL account the quick-voucher dialog credits for bank fees.
 IF NOT EXISTS (SELECT 1 FROM dbo.BankAccount WHERE Id = 'b0000000-0000-4000-8000-000000000001')
 BEGIN
-    INSERT INTO dbo.BankAccount (Id, TenantId, CompanyId, AccountName, BankName, AccountNumber, Currency, GLAccountId, LastReconciledBalance, IsActive)
+    INSERT INTO dbo.BankAccount (Id, TenantId, CompanyId, AccountName, BankName, AccountNumber, GLAccountId, LastReconciledBalance, IsActive)
     VALUES ('b0000000-0000-4000-8000-000000000001',
             '11111111-1111-4111-8111-111111111111',
             '22222222-2222-4222-8222-222222222222',
-            'Main Operating Account', 'JPMorgan Chase', '004920', 'USD',
+            'Main Operating Account', 'JPMorgan Chase', '004920',
             'a0000000-0000-4000-8000-000000001110', 0, 1);
 END;
 GO

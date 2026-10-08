@@ -7,6 +7,7 @@ using Erp.Application.Features.Assets.Commands;
 using Erp.Application.Features.Assets.Queries;
 using Erp.Domain.Common;
 using Erp.Domain.Entities;
+using Erp.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -26,15 +27,18 @@ namespace Erp.Api.Controllers.V1;
 public sealed class AssetCategoriesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IAssetsRepository _assets;
     private readonly IStringLocalizer<ErrorMessages> _errors;
     private readonly IStringLocalizer<CommonMessages> _common;
 
     public AssetCategoriesController(
         ISender sender,
+        IAssetsRepository assets,
         IStringLocalizer<ErrorMessages> errors,
         IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _assets = assets;
         _errors = errors;
         _common = common;
     }
@@ -128,6 +132,40 @@ public sealed class AssetCategoriesController : ControllerBase
 
         var categories = await _sender.SendAsync(new GetAssetCategoriesQuery(companyId, page, pageSize), cancellationToken);
         return Ok(categories);
+    }
+
+    /// <summary>Disables an asset category (sets IsActive = false).</summary>
+    [HttpPut("{id}/disable")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(AssetCategoryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Disable([FromRoute] Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, false, cancellationToken);
+
+    /// <summary>Enables an asset category (sets IsActive = true).</summary>
+    [HttpPut("{id}/enable")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(AssetCategoryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Enable([FromRoute] Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, true, cancellationToken);
+
+    private async Task<IActionResult> SetActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken)
+    {
+        var category = await _assets.GetCategoryByIdAsync(id, cancellationToken);
+        if (category is null)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("AssetCategoryRejected"),
+                _errors.Text(AssetErrorCodes.CategoryNotFound),
+                AssetErrorCodes.CategoryNotFound);
+        }
+
+        var originalRowVersion = category.RowVersion;
+        category.IsActive = isActive;
+        await _assets.UpdateCategoryAsync(category, originalRowVersion, cancellationToken);
+        return Ok(AssetCategoryDto.Build(category));
     }
 
     private ObjectResult Problem(int status, string title, string detail, string? code)

@@ -10,12 +10,34 @@ export function useItems(companyId: string, page = 1, pageSize = 50) {
 }
 
 export async function createItem(payload: Partial<Item>): Promise<Item> {
-  const response = await apiClient.post<Item>('/v1/items', payload)
+  const response = await apiClient.post<Item>('/v1/items', {
+    code: payload.code,
+    name: payload.name,
+    valuationMethod: payload.valuationMethod,
+    baseUOMId: payload.baseUOMId,
+    incomeAccountId: payload.incomeAccountId ?? null,
+    expenseAccountId: payload.expenseAccountId ?? null,
+    isActive: payload.isActive ?? true,
+  })
   return response.data
 }
 
+/**
+ * PUT body (mirrors `UpdateItemCommand`): always carries the original
+ * `rowVersion` so a concurrent change resolves to 409 instead of silently winning.
+ */
 export async function updateItem(id: string, payload: Partial<Item>): Promise<Item> {
-  const response = await apiClient.put<Item>(`/v1/items/${id}`, payload)
+  const response = await apiClient.put<Item>(`/v1/items/${id}`, {
+    id,
+    code: payload.code,
+    name: payload.name,
+    valuationMethod: payload.valuationMethod,
+    baseUOMId: payload.baseUOMId,
+    incomeAccountId: payload.incomeAccountId ?? null,
+    expenseAccountId: payload.expenseAccountId ?? null,
+    isActive: payload.isActive ?? true,
+    rowVersion: payload.rowVersion,
+  })
   return response.data
 }
 

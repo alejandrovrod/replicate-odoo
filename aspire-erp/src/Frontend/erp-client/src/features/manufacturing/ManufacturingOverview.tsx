@@ -5,6 +5,7 @@ import { ApiError } from '../../api/client'
 import { MAX_PAGE_SIZE } from '../../lib/pagination'
 import { useTenantStore } from '../../store/useTenantStore'
 import { useWorkOrders } from './useManufacturingData'
+import { Button } from '../../components/ui/Button'
 
 const BomEditor = lazy(() => import('./BomEditor').then((m) => ({ default: m.BomEditor })))
 const WorkOrdersBoard = lazy(() =>
@@ -79,22 +80,23 @@ export function ManufacturingOverview() {
   return (
     <div className="space-y-6">
       {/* Top Banner & Actions */}
-      <div className="flex flex-col gap-4 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-sky-50 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50 to-white p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-600 text-white shadow-xs">
               <Factory className="h-4 w-4" />
             </span>
             <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
           </div>
           <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={refresh}
-            className="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+            className="mt-2"
           >
             {t('overview.refresh')}
-          </button>
+          </Button>
         </div>
       </div>
 

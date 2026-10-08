@@ -28,14 +28,38 @@ public enum PaymentStatus
 }
 
 /// <summary>
-/// A payment voucher against a bank account. Allocations to sales invoices are guarded by
-/// <see cref="Allocate"/> (task 6.1 anti-overpayment invariant:
-/// <c>alreadyAllocated + amount &lt;= invoiceOutstanding</c>).
+/// Counterparty kind of a payment voucher (spec R-12 invariant PE-06): <c>Receive</c> settles
+/// a <c>Customer</c>, <c>Pay</c> settles a <c>Supplier</c>. Persisted as the enum NAME.
+/// </summary>
+public enum PaymentPartyType
+{
+    Customer,
+    Supplier,
+}
+
+/// <summary>
+/// Submittable lifecycle of a payment voucher (spec R-12 invariant PE-04): <c>Draft</c> (no GL
+/// impact) → <c>Submitted</c> (GL settled, gapless <c>VoucherNo</c>) → <c>Cancelled</c>
+/// (compensating reversal). Independent from <see cref="PaymentStatus"/>, which tracks BANK
+/// reconciliation (BN-03), not submission.
+/// </summary>
+public enum PaymentDocumentStatus
+{
+    Draft,
+    Submitted,
+    Cancelled,
+}
+
+/// <summary>
+/// A payment voucher against a bank account (spec R-12: closes the A/R and A/P loop left open
+/// by 05-banking staging). Allocations to invoices are guarded by <see cref="Allocate"/>
+/// (task 6.1 anti-overpayment invariant PE-02, extended to purchase bills:
+/// <c>alreadyAllocated + amount &lt;= invoiceOutstanding</c>), and the header obeys the
+/// conservation law PE-03 (<see cref="EnsureConservation"/>).
 /// </summary>
 /// <remarks>
 /// The invoice outstanding balance is taken as a VALUE parameter rather than a navigation
-/// because invoice submission lives in the deferred 03-selling scope: the invariant must hold
-/// without depending on that pipeline.
+/// because the invariant must hold without depending on the invoice pipelines.
 /// </remarks>
 public sealed class PaymentEntry : ITenantEntity
 {
@@ -52,14 +76,35 @@ public sealed class PaymentEntry : ITenantEntity
 
     public PaymentType PaymentType { get; set; }
 
+    /// <summary>Counterparty kind (PE-06): Customer for Receive, Supplier for Pay.</summary>
+    public PaymentPartyType PartyType { get; set; }
+
+    /// <summary>Counterparty id (Customer.Id or Supplier.Id, per <see cref="PartyType"/>).</summary>
+    public Guid PartyId { get; set; }
+
+    /// <summary>
+    /// Gapless fiscal number (<c>PAY-YYYY-NNNNN</c>, Constitution III.4): assigned inside the
+    /// posting transaction on first submit; empty while Draft.
+    /// </summary>
+    public string VoucherNo { get; set; } = string.Empty;
+
     /// <summary>Accounting date of the payment.</summary>
     public DateOnly PaymentDate { get; set; }
 
-    /// <summary>Paid amount (decimal(18,4)).</summary>
+    /// <summary>Paid amount (decimal(18,4), strictly positive).</summary>
     public decimal PaidAmount { get; set; }
+
+    /// <summary>
+    /// Money moved without invoice backing (PE-03: <c>PaidAmount − Σ allocations</c>, never
+    /// negative): a customer or supplier advance kept on the voucher for future allocation.
+    /// </summary>
+    public decimal UnallocatedAmount { get; set; }
 
     /// <summary>External reference (cheque / transfer number), if any.</summary>
     public string? ReferenceNumber { get; set; }
+
+    /// <summary>Submittable lifecycle (PE-04): Draft → Submitted → Cancelled.</summary>
+    public PaymentDocumentStatus DocumentStatus { get; set; } = PaymentDocumentStatus.Draft;
 
     public PaymentStatus Status { get; set; } = PaymentStatus.Unreconciled;
 
@@ -111,5 +156,112 @@ public sealed class PaymentEntry : ITenantEntity
                 invoiceOutstanding,
                 alreadyAllocated);
         }
+    }
+
+    /// <summary>
+    /// Payment conservation law (spec R-12 invariant PE-03): the paid amount must equal the
+    /// allocated slices plus the unallocated advance, and the advance is never negative.
+    /// </summary>
+    /// <exception cref="BankingValidationException">
+    /// <c>invalid_paid_amount</c> when the paid amount is not positive, or
+    /// <c>payment_conservation_violated</c> when the slices do not add up.
+    /// </exception>
+    public void EnsureConservation(IEnumerable<decimal> allocatedAmounts, decimal unallocatedAmount)
+    {
+        if (PaidAmount <= 0m)
+        {
+            throw new BankingValidationException(
+                BankingErrorCodes.InvalidPaidAmount,
+                $"Paid amount must be positive (received {PaidAmount:0.####}).");
+        }
+
+        var allocated = 0m;
+        foreach (var slice in allocatedAmounts)
+        {
+            allocated += slice;
+        }
+
+        if (unallocatedAmount < 0m || allocated + unallocatedAmount != PaidAmount)
+        {
+            throw new BankingValidationException(
+                BankingErrorCodes.PaymentConservationViolated,
+                $"Paid amount {PaidAmount:0.####} must equal allocated {allocated:0.####} "
+                + $"plus unallocated {unallocatedAmount:0.####} (unallocated is never negative).");
+        }
+    }
+
+    /// <summary>
+    /// Directional consistency (spec R-12 invariant PE-06): Receive ↔ Customer,
+    /// Pay ↔ Supplier. Called by the application guard before any row exists.
+    /// </summary>
+    /// <exception cref="BankingValidationException"><c>payment_party_mismatch</c>.</exception>
+    public void EnsureDirection()
+    {
+        var consistent = (PaymentType == PaymentType.Receive && PartyType == PaymentPartyType.Customer)
+            || (PaymentType == PaymentType.Pay && PartyType == PaymentPartyType.Supplier);
+
+        if (!consistent)
+        {
+            throw new BankingValidationException(
+                BankingErrorCodes.PaymentPartyMismatch,
+                $"PaymentType '{PaymentType}' requires PartyType "
+                + $"'{(PaymentType == PaymentType.Receive ? PaymentPartyType.Customer : PaymentPartyType.Supplier)}' "
+                + $"but was '{PartyType}'.");
+        }
+    }
+
+    /// <summary>
+    /// Lifecycle transition Draft → Submitted (spec R-12 invariant PE-04). The gapless
+    /// <see cref="VoucherNo"/> is assigned by the handler inside the numbering lock, before or
+    /// after this call - the guard only owns the state move.
+    /// </summary>
+    /// <exception cref="BankingValidationException"><c>payment_invalid_transition</c>.</exception>
+    public void Submit()
+    {
+        if (DocumentStatus != PaymentDocumentStatus.Draft)
+        {
+            throw new BankingValidationException(
+                BankingErrorCodes.PaymentInvalidTransition,
+                $"A payment voucher can only be submitted from Draft (was '{DocumentStatus}').");
+        }
+
+        DocumentStatus = PaymentDocumentStatus.Submitted;
+    }
+
+    /// <summary>
+    /// Lifecycle transition Submitted → Cancelled (spec R-12 invariant PE-05). The ledger
+    /// reversal is appended by the handler; reconciled vouchers (<see cref="ClearanceDate"/> set,
+    /// BN-06) cannot cancel until un-reconciled.
+    /// </summary>
+    /// <exception cref="BankingValidationException">
+    /// <c>payment_already_cancelled</c> when already cancelled,
+    /// <c>payment_reconciled_cannot_cancel</c> when reconciled, or
+    /// <c>payment_invalid_transition</c> from any other status.
+    /// </exception>
+    public void Cancel()
+    {
+        if (DocumentStatus == PaymentDocumentStatus.Cancelled)
+        {
+            throw new BankingValidationException(
+                BankingErrorCodes.PaymentAlreadyCancelled,
+                $"Payment voucher '{VoucherNo}' is already cancelled.");
+        }
+
+        if (DocumentStatus != PaymentDocumentStatus.Submitted)
+        {
+            throw new BankingValidationException(
+                BankingErrorCodes.PaymentInvalidTransition,
+                $"A payment voucher can only be cancelled from Submitted (was '{DocumentStatus}').");
+        }
+
+        if (ClearanceDate.HasValue)
+        {
+            throw new BankingValidationException(
+                BankingErrorCodes.PaymentReconciledCannotCancel,
+                $"Payment voucher '{VoucherNo}' is reconciled (clearance {ClearanceDate:yyyy-MM-dd}): "
+                + "un-reconcile it before cancelling.");
+        }
+
+        DocumentStatus = PaymentDocumentStatus.Cancelled;
     }
 }

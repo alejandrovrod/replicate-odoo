@@ -25,16 +25,27 @@ public sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.Property(s => s.Code).HasMaxLength(50).IsRequired();
         builder.Property(s => s.Name).HasMaxLength(150).IsRequired();
         builder.Property(s => s.TaxId).HasMaxLength(50).IsRequired().HasDefaultValue("");
-        builder.Property(s => s.BillingCurrency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
+        builder.Property(s => s.CurrencyId);
         builder.Property(s => s.PaymentTermsDays).IsRequired().HasDefaultValue(30);
         builder.Property(s => s.OutstandingAmount).HasPrecision(18, 4).IsRequired().HasDefaultValue(0.0000m);
         builder.Property(s => s.IsActive).HasDefaultValue(true);
+
+        // Optimistic concurrency (specs ST-06/BY-06): store-generated rowversion token.
+        builder.Property(s => s.RowVersion).IsRowVersion();
+
         builder.Property(s => s.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
-        builder.HasOne<Account>()
+        builder.HasOne(s => s.DefaultPayableAccount)
             .WithMany()
             .HasForeignKey(s => s.DefaultPayableAccountId)
             .HasConstraintName("FK_Supplier_Account")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RM-09: billing currency link to the global Currency catalog (nullable for legacy rows).
+        builder.HasOne(s => s.Currency)
+            .WithMany()
+            .HasForeignKey(s => s.CurrencyId)
+            .HasConstraintName("FK_Supplier_Currency")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(s => new { s.TenantId, s.Code })

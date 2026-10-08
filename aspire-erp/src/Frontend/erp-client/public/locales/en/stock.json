@@ -174,6 +174,10 @@
     "saving": "Saving...",
     "errorRequired": "Name and Code are required.",
     "errorConflict": "Concurrency conflict or duplicate code. Please refresh and try again.",
-    "errorGeneric": "An error occurred while saving."
+    "errorGeneric": "An error occurred while saving.",
+    "incomeAccountLabel": "Income Account",
+    "expenseAccountLabel": "Expense/COGS Account",
+    "accountNone": "-- None --",
+    "errorUomRequired": "A Base UOM is required."
   }
 }

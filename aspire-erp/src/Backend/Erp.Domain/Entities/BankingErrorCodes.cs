@@ -39,4 +39,29 @@ public static class BankingErrorCodes
     // On-the-fly voucher dialog (task 6.5)
     public const string ExpenseAccountNotFound = "expense_account_not_found";
     public const string BankGlAccountNotFound = "bank_gl_account_not_found";
+
+    // Payment entry & settlement (spec R-12)
+    public const string PaymentNotFound = "payment_not_found";
+    public const string InvalidPaidAmount = "invalid_paid_amount";
+    public const string PaymentConservationViolated = "payment_conservation_violated";
+    public const string PaymentPartyMismatch = "payment_party_mismatch";
+    public const string PaymentInvalidTransition = "payment_invalid_transition";
+    public const string PaymentAlreadyCancelled = "payment_already_cancelled";
+    public const string PaymentReconciledCannotCancel = "payment_reconciled_cannot_cancel";
+    public const string InvalidCounterpartyAccount = "invalid_counterparty_account";
+
+    // Period closing voucher (spec R-13)
+    public const string PeriodClosingNotFound = "period_closing_not_found";
+    public const string RetainedEarningsAccountNotFound = "retained_earnings_account_not_found";
+    public const string InvalidPeriodClosingAmount = "invalid_period_closing_amount";
+    public const string PeriodClosingConservationViolated = "period_closing_conservation_violated";
+    public const string PeriodClosingInvalidTransition = "period_closing_invalid_transition";
+    public const string PeriodClosingAlreadyCancelled = "period_closing_already_cancelled";
+    public const string PeriodClosingReconciledCannotCancel = "period_closing_reconciled_cannot_cancel";
+
+    // Bank account master (CRUD)
+    public const string BankAccountNameRequired = "bank_account_name_required";
+    public const string BankNameRequired = "bank_name_required";
+    public const string BankAccountNumberRequired = "bank_account_number_required";
+    public const string InvalidGlAccount = "invalid_gl_account";
 }

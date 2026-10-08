@@ -13,7 +13,7 @@ public record ConvertLeadCommand(
     Guid CompanyId,
     Guid LeadId,
     string CustomerCode,
-    string? DefaultCurrency = "USD",
+    Guid? DefaultCurrencyId = null,
     int PaymentTermsDays = 30,
     decimal OpportunityAmount = 0m,
     decimal OpportunityProbability = 25m,

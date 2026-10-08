@@ -214,7 +214,7 @@ public sealed class FakeAssetsRepository : IAssetsRepository
         return Task.CompletedTask;
     }
 
-    public Task UpdateCategoryAsync(AssetCategory category, string originalRowVersion, CancellationToken cancellationToken = default)
+    public Task UpdateCategoryAsync(AssetCategory category, byte[] originalRowVersion, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
     }

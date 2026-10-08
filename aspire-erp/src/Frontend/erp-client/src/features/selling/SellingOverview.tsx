@@ -3,6 +3,7 @@ import { FileText, ShoppingCart, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { PosCashierModal } from './PosCashierModal'
 import { useNavigationStore } from '../../store/useNavigationStore'
+import { Button } from '../../components/ui/Button'
 
 export function SellingOverview() {
   const { t } = useTranslation('selling')
@@ -15,35 +16,38 @@ export function SellingOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50 to-white p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-900">{t('overview.title')}</h2>
           <p className="mt-1 text-xs text-slate-600">{t('overview.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => useNavigationStore.getState().setCurrentRoute('selling-customers')}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+            className="flex items-center gap-1.5"
           >
-            <Users className="h-4 w-4 text-emerald-600" />
+            <Users className="h-4 w-4" />
             {t('overview.manageCustomers', 'Clientes')}
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex items-center gap-1.5"
           >
-            <FileText className="h-4 w-4 text-emerald-600" />
+            <FileText className="h-4 w-4" />
             {t('overview.newInvoice')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
             onClick={() => setIsPosOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
+            className="flex items-center gap-1.5"
           >
             <ShoppingCart className="h-4 w-4" />
             {t('overview.launchPos')}
-          </button>
+          </Button>
         </div>
       </div>
 

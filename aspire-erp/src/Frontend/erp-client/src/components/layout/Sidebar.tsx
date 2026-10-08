@@ -3,6 +3,7 @@ import {
   Boxes,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Factory,
   Handshake,
   Landmark,
@@ -13,22 +14,24 @@ import {
   Receipt,
   Truck,
   Users,
+  Folder,
 } from 'lucide-react'
-import type { ElementType } from 'react'
+import { type ElementType, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type NavRoute, useNavigationStore } from '../../store/useNavigationStore'
-import type { EnCommonKeys } from '../../types/i18n.generated'
 
 interface NavItem {
-  id: NavRoute
-  label: EnCommonKeys
+  id: string
+  route?: NavRoute
+  label: string
   icon: ElementType
   badge?: string
+  children?: NavItem[]
 }
 
 interface NavGroup {
   id: string
-  title: EnCommonKeys
+  title: string
   items: NavItem[]
 }
 
@@ -42,29 +45,68 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: 'overview',
     title: 'nav.group.overview',
-    items: [{ id: 'dashboard', label: 'nav.item.dashboard', icon: LayoutDashboard }],
+    items: [{ id: 'dashboard', route: 'dashboard', label: 'nav.item.dashboard', icon: LayoutDashboard }],
   },
   {
     id: 'accounting',
     title: 'nav.group.accounting',
     items: [
-      { id: 'accounting-coa', label: 'nav.item.accountingCoa', icon: ListTree },
-      { id: 'accounting-journal', label: 'nav.item.accountingJournal', icon: BookOpenCheck },
-      { id: 'assets', label: 'nav.item.assets', icon: Archive },
-      { id: 'assets-categories', label: 'nav.item.assetsCategories', icon: Layers },
-      { id: 'banking', label: 'nav.item.banking', icon: Landmark, badge: 'ERPNext' },
+      {
+        id: 'acc-masters',
+        label: 'nav.folder.masters',
+        icon: Folder,
+        children: [
+          { id: 'accounting-coa', route: 'accounting-coa', label: 'nav.item.accountingCoa', icon: ListTree },
+          { id: 'accounting-currencies', route: 'accounting-currencies', label: 'nav.item.accountingCurrencies', icon: Receipt },
+        ],
+      },
+      {
+        id: 'acc-transactions',
+        label: 'nav.folder.transactions',
+        icon: BookOpenCheck,
+        children: [
+          { id: 'accounting-journal', route: 'accounting-journal', label: 'nav.item.accountingJournal', icon: BookOpenCheck },
+        ],
+      },
+      {
+        id: 'acc-assets',
+        label: 'nav.folder.assets',
+        icon: Archive,
+        children: [
+          { id: 'assets', route: 'assets', label: 'nav.item.assets', icon: Archive },
+          { id: 'assets-categories', route: 'assets-categories', label: 'nav.item.assetsCategories', icon: Layers },
+        ],
+      },
+      {
+        id: 'acc-banking',
+        label: 'nav.folder.banking',
+        icon: Landmark,
+        children: [
+          { id: 'banking', route: 'banking', label: 'nav.item.banking', icon: Landmark, badge: 'ERPNext' },
+          { id: 'banking-accounts', route: 'banking-accounts', label: 'nav.item.bankingAccounts', icon: Landmark },
+        ],
+      },
+      {
+        id: 'acc-settings',
+        label: 'nav.folder.settings',
+        icon: Folder,
+        children: [
+          { id: 'accounting-settings', route: 'accounting-settings', label: 'nav.item.accountingSettings', icon: Folder },
+          { id: 'accounting-period-closing', route: 'accounting-period-closing', label: 'nav.item.periodClosing', icon: Archive },
+        ],
+      },
     ],
   },
   {
     id: 'operations',
     title: 'nav.group.operations',
     items: [
-      { id: 'stock', label: 'nav.item.stock', icon: Boxes },
-      { id: 'manufacturing', label: 'nav.item.manufacturing', icon: Factory, badge: 'ERPNext' },
-      { id: 'selling', label: 'nav.item.selling', icon: Receipt },
-      { id: 'buying', label: 'nav.item.buying', icon: Truck },
-      { id: 'hr-payroll', label: 'nav.item.hrPayroll', icon: Users, badge: 'ERPNext' },
-      { id: 'crm', label: 'nav.item.crm', icon: Handshake, badge: 'ERPNext' },
+      { id: 'stock', route: 'stock', label: 'nav.item.stock', icon: Boxes },
+      { id: 'manufacturing', route: 'manufacturing', label: 'nav.item.manufacturing', icon: Factory, badge: 'ERPNext' },
+      { id: 'selling', route: 'selling', label: 'nav.item.selling', icon: Receipt },
+      { id: 'buying', route: 'buying', label: 'nav.item.buying', icon: Truck },
+      { id: 'hr-payroll', route: 'hr-payroll', label: 'nav.item.hrPayroll', icon: Users, badge: 'ERPNext' },
+      { id: 'crm', route: 'crm', label: 'nav.item.crm', icon: Handshake, badge: 'ERPNext' },
     ],
   },
 ]
@@ -75,6 +117,82 @@ export function Sidebar() {
   const setCurrentRoute = useNavigationStore((state) => state.setCurrentRoute)
   const isSidebarCollapsed = useNavigationStore((state) => state.isSidebarCollapsed)
   const toggleSidebar = useNavigationStore((state) => state.toggleSidebar)
+
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
+    'acc-masters': true,
+    'acc-transactions': true,
+    'acc-assets': true,
+    'acc-banking': true,
+  })
+
+  const toggleFolder = (id: string) => {
+    setExpandedFolders((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const renderNavItem = (item: NavItem, depth = 0) => {
+    const Icon = item.icon
+    const isActive = item.route ? currentRoute === item.route : false
+    const hasChildren = item.children && item.children.length > 0
+    const isExpanded = expandedFolders[item.id]
+
+    // Determine padding based on depth
+    // depth 0: px-3 (12px)
+    // depth 1: pl-8 pr-3 (32px left padding)
+    const paddingLeftClass = depth > 0 && !isSidebarCollapsed ? 'pl-8 pr-3' : 'px-3'
+
+    return (
+      <li key={item.id} className="space-y-0.5 block">
+        <button
+          type="button"
+          onClick={() => {
+            if (hasChildren) {
+              if (!isSidebarCollapsed) toggleFolder(item.id)
+            } else if (item.route) {
+              setCurrentRoute(item.route)
+            }
+          }}
+          title={isSidebarCollapsed ? t(item.label as any) : undefined}
+          className={`group flex w-full items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors ${paddingLeftClass} ${
+            isActive
+              ? 'bg-sky-50 text-sky-700 shadow-xs'
+              : hasChildren
+                ? 'text-slate-700 hover:bg-slate-100'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <Icon
+            className={`h-5 w-5 shrink-0 transition-colors ${
+              isActive ? 'text-sky-600' : 'text-slate-400 group-hover:text-slate-600'
+            }`}
+          />
+          {!isSidebarCollapsed && (
+            <div className="flex flex-1 items-center justify-between overflow-hidden">
+              <span className="truncate">{t(item.label as any)}</span>
+              <div className="flex items-center gap-2">
+                {item.badge && (
+                  <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">
+                    {item.badge}
+                  </span>
+                )}
+                {hasChildren && (
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                      isExpanded ? 'rotate-180' : ''
+                    }`}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </button>
+        {hasChildren && !isSidebarCollapsed && isExpanded && (
+          <ul className="mt-1 space-y-0.5">
+            {item.children!.map((child) => renderNavItem(child, depth + 1))}
+          </ul>
+        )}
+      </li>
+    )
+  }
 
   return (
     <aside
@@ -112,45 +230,11 @@ export function Sidebar() {
           <div key={group.id} className="space-y-1">
             {!isSidebarCollapsed && (
               <h2 className="px-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-                {t(group.title)}
+                {t(group.title as any)}
               </h2>
             )}
             <ul className="space-y-1">
-              {group.items.map((item) => {
-                const Icon = item.icon
-                const isActive = currentRoute === item.id
-
-                return (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentRoute(item.id)}
-                      title={isSidebarCollapsed ? t(item.label) : undefined}
-                      className={`group flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'bg-sky-50 text-sky-700 shadow-xs'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
-                    >
-                      <Icon
-                        className={`h-5 w-5 shrink-0 transition-colors ${
-                          isActive ? 'text-sky-600' : 'text-slate-400 group-hover:text-slate-600'
-                        }`}
-                      />
-                      {!isSidebarCollapsed && (
-                        <div className="flex flex-1 items-center justify-between overflow-hidden">
-                          <span className="truncate">{t(item.label)}</span>
-                          {item.badge && (
-                            <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">
-                              {item.badge}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </button>
-                  </li>
-                )
-              })}
+              {group.items.map((item) => renderNavItem(item, 0))}
             </ul>
           </div>
         ))}

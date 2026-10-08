@@ -24,6 +24,10 @@ public sealed class AssetCategoryConfiguration : IEntityTypeConfiguration<AssetC
         builder.Property(c => c.CategoryName).HasMaxLength(100).IsRequired();
         builder.Property(c => c.IsNonDepreciable).HasDefaultValue(false);
         builder.Property(c => c.IsActive).HasDefaultValue(true);
+
+        // Optimistic concurrency (specs ST-06/BY-06): store-generated rowversion token.
+        builder.Property(c => c.RowVersion).IsRowVersion();
+
         builder.Property(c => c.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
         builder.HasOne(c => c.Company)

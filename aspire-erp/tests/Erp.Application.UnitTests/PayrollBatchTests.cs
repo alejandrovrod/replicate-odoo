@@ -105,7 +105,7 @@ public sealed class PayrollBatchTests
             RootType = AccountRootType.Asset,
             IsGroup = false,
             IsActive = true,
-            Currency = "USD",
+
         };
 
     private SalaryComponent SeedComponent(

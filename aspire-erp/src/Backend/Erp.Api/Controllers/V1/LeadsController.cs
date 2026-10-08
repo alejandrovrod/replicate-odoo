@@ -17,7 +17,7 @@ namespace Erp.Api.Controllers.V1;
 /// <summary>Lead conversion body: customer/opportunity terms for the convert route.</summary>
 public sealed record ConvertLeadRequest(
     string CustomerCode,
-    string? DefaultCurrency = "USD",
+    Guid? DefaultCurrencyId = null,
     int PaymentTermsDays = 30,
     decimal OpportunityAmount = 0m,
     decimal OpportunityProbability = 25m,
@@ -153,7 +153,7 @@ public sealed class LeadsController : ControllerBase
                 companyId,
                 id,
                 request.CustomerCode,
-                request.DefaultCurrency,
+                request.DefaultCurrencyId,
                 request.PaymentTermsDays,
                 request.OpportunityAmount,
                 request.OpportunityProbability,

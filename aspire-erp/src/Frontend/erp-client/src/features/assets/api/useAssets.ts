@@ -59,10 +59,10 @@ export function useAssets(page: number = 1, pageSize: number = 50) {
     if (!companyId) return
     setStatus('loading')
     try {
-      const data = await apiClient.get<PaginatedResponse<Asset>>(`/v1/Assets?companyId=${companyId}&page=${page}&pageSize=${pageSize}`)
-      setItems(data.items || [])
-      setTotalCount(data.totalCount || 0)
-      setPageNumber(data.page || 1)
+      const response = await apiClient.get<PaginatedResponse<Asset>>(`/v1/Assets?companyId=${companyId}&page=${page}&pageSize=${pageSize}`)
+      setItems(response.data.items || [])
+      setTotalCount(response.data.totalCount || 0)
+      setPageNumber(response.data.page || 1)
       setStatus('success')
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load assets'))
@@ -78,19 +78,22 @@ export function useAssets(page: number = 1, pageSize: number = 50) {
 }
 
 export async function getAssetDetail(id: string, companyId: string): Promise<AssetDetail> {
-  return apiClient.get<AssetDetail>(`/v1/Assets/${id}?companyId=${companyId}`)
+  const response = await apiClient.get<AssetDetail>(`/v1/Assets/${id}?companyId=${companyId}`)
+  return response.data
 }
 
 export async function runDepreciation(companyId: string, asOfDate: string): Promise<any> {
   const idempotencyKey = crypto.randomUUID()
-  return apiClient.post('/v1/Assets/depreciation-run', { companyId, asOfDate }, {
+  const response = await apiClient.post('/v1/Assets/depreciation-run', { companyId, asOfDate }, {
     headers: { 'Idempotency-Key': idempotencyKey }
   })
+  return response.data
 }
 
 export async function capitalizeAsset(id: string, companyId: string, capitalizationDate: string): Promise<any> {
   const idempotencyKey = crypto.randomUUID()
-  return apiClient.post(`/v1/Assets/${id}/capitalize`, { companyId, capitalizationDate }, {
+  const response = await apiClient.post(`/v1/Assets/${id}/capitalize`, { companyId, capitalizationDate }, {
     headers: { 'Idempotency-Key': idempotencyKey }
   })
+  return response.data
 }

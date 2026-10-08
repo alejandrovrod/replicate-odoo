@@ -85,22 +85,23 @@
       "depreciationMethod": "Método de Depreciación"
     },
     "schedule": {
-      "columns": {
-        "date": "Fecha",
-        "amount": "Monto",
-        "accumulated": "Acumulado",
-        "status": "Estado"
-      },
-      "status": {
-        "scheduled": "Programado",
-        "booked": "Contabilizado",
-        "cancelled": "Cancelado"
-      }
+      "date": "Fecha",
+      "amount": "Monto",
+      "accDep": "Acumulada",
+      "status": "Estado"
     },
-    "capitalize": {
-      "btn": "Capitalizar",
-      "success": "Activo capitalizado exitosamente",
-      "error": "Error capitalizando el activo"
+    "capitalize": "Capitalizar Activo",
+    "capitalizeError": "Error al capitalizar el activo: ",
+    "detailsTitle": "Detalles del Activo",
+    "scheduleTitle": "Plan de Depreciación",
+    "noSchedule": "No se encontró plan de depreciación.",
+    "fields": {
+      "purchaseDate": "Fecha de Compra",
+      "grossPurchaseAmount": "Monto Bruto de Compra",
+      "salvageValue": "Valor Residual",
+      "depreciationMethod": "Método de Depreciación",
+      "nbv": "Valor Neto en Libros",
+      "accumulatedDepreciation": "Depreciación Acumulada"
     }
   }
 }

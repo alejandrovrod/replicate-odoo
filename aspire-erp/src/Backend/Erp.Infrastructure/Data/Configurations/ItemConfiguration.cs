@@ -33,10 +33,25 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
 
         builder.Property(i => i.IsActive).HasDefaultValue(true);
 
+        builder.Property(i => i.IncomeAccountId);
+        builder.Property(i => i.ExpenseAccountId);
+
         builder.HasOne(i => i.StockUom)
             .WithMany()
             .HasForeignKey(i => i.StockUomId)
             .HasConstraintName("FK_Item_UOM")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(i => i.IncomeAccount)
+            .WithMany()
+            .HasForeignKey(i => i.IncomeAccountId)
+            .HasConstraintName("FK_Item_IncomeAccount")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(i => i.ExpenseAccount)
+            .WithMany()
+            .HasForeignKey(i => i.ExpenseAccountId)
+            .HasConstraintName("FK_Item_ExpenseAccount")
             .OnDelete(DeleteBehavior.Restrict);
 
 

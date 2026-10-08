@@ -16,7 +16,7 @@ export function SupplierView() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
 
   const columns: ColumnDef<Supplier>[] = [
-    { header: t('suppliers.columns.code', 'Code'), accessor: 'supplierCode' },
+    { header: t('suppliers.columns.code', 'Code'), accessor: 'code' },
     { header: t('suppliers.columns.name', 'Name'), accessor: 'name' },
     { header: t('suppliers.columns.taxId', 'Tax ID'), accessor: 'taxId' },
     {

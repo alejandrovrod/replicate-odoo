@@ -233,7 +233,6 @@ public class AdvanceOpportunityStageTests
             Status = OpportunityStatus.Open,
             OpportunityAmount = 50000m,
             Probability = probability,
-            Currency = "USD",
             LossReason = lossReason,
             RowVersion = new byte[] { 1, 2, 3, 4 }
         };

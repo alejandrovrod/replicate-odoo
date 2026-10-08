@@ -15,17 +15,20 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
     private readonly ICrmActivityRepository _activityRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly ICompanyRepository _companyRepository;
+    private readonly ICurrencyRepository _currencies;
 
     public ConvertLeadCommandHandler(
         ICrmRepository crmRepository,
         ICrmActivityRepository activityRepository,
         ICustomerRepository customerRepository,
-        ICompanyRepository companyRepository)
+        ICompanyRepository companyRepository,
+        ICurrencyRepository currencies)
     {
         _crmRepository = crmRepository;
         _activityRepository = activityRepository;
         _customerRepository = customerRepository;
         _companyRepository = companyRepository;
+        _currencies = currencies;
     }
 
     public async Task<Result<ConvertLeadResultDto>> HandleAsync(ConvertLeadCommand command, CancellationToken cancellationToken = default)
@@ -60,6 +63,14 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
             var closingDate = command.ExpectedClosingDate ?? DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30));
             var oppNumber = await _crmRepository.NextOpportunityNumberAsync(company.Id, closingDate.Year, cancellationToken);
 
+            if (command.DefaultCurrencyId.HasValue
+                && await _currencies.GetByIdAsync(command.DefaultCurrencyId.Value, cancellationToken) is null)
+            {
+                throw new CRMValidationException(
+                    CurrencyErrorCodes.CurrencyNotFound,
+                    $"Currency '{command.DefaultCurrencyId.Value}' was not found.");
+            }
+
             var resultDto = await _crmRepository.ExecuteInTransactionAsync(async token =>
             {
                 // 1. Create the Customer
@@ -72,7 +83,7 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
                     CustomerName = lead.OrganizationName ?? lead.LeadName,
                     TaxId = string.Empty,
                     CreditLimit = 0m,
-                    BillingCurrency = command.DefaultCurrency ?? "USD",
+                    CurrencyId = command.DefaultCurrencyId,
                     PaymentTermsDays = command.PaymentTermsDays,
                     IsActive = true
                 };
@@ -83,7 +94,6 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
                     customer.CustomerName,
                     customer.TaxId,
                     customer.CreditLimit,
-                    customer.BillingCurrency,
                     customer.PaymentTermsDays);
 
                 await _customerRepository.AddAsync(customer, token);
@@ -101,7 +111,7 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
                     Stage = OpportunityStage.Qualification,
                     OpportunityAmount = command.OpportunityAmount,
                     Probability = command.OpportunityProbability,
-                    Currency = command.DefaultCurrency ?? "USD",
+                    CurrencyId = command.DefaultCurrencyId,
                     ExpectedClosingDate = closingDate,
                     Status = OpportunityStatus.Open,
                     AssignedSalespersonId = lead.AssignedToUserId
@@ -114,8 +124,7 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
                     opportunity.PartyId,
                     opportunity.PartyName,
                     opportunity.OpportunityAmount,
-                    opportunity.Probability,
-                    opportunity.Currency);
+                    opportunity.Probability);
 
                 await _crmRepository.AddOpportunityAsync(opportunity, token);
 

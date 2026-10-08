@@ -16,4 +16,10 @@ public sealed class CompanyRepository : ICompanyRepository
 
     public Task<Company?> GetByIdAsync(Guid companyId, CancellationToken cancellationToken = default)
         => _dbContext.Companies.FirstOrDefaultAsync(c => c.Id == companyId, cancellationToken);
+
+    public async Task UpdateCompanyAsync(Company company, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Companies.Update(company);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

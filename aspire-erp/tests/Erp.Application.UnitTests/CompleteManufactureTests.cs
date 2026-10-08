@@ -120,7 +120,7 @@ public sealed class CompleteManufactureTests
             AccountName = name,
             IsActive = true,
             IsGroup = false,
-            Currency = "USD",
+
         };
 
     private Warehouse NewWarehouse(Guid id, string code, Guid accountId) =>

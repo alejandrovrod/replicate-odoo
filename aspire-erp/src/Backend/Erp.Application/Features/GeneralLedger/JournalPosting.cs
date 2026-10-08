@@ -99,7 +99,7 @@ internal static class JournalPosting
                 // amount 1:1 and snapshot the account currency (FX restatement = spec AC-05, later).
                 DebitInAccountCurrency = debit,
                 CreditInAccountCurrency = credit,
-                AccountCurrency = account.Currency,
+                AccountCurrency = account.Currency?.Code ?? "USD",
 
                 VoucherType = VoucherType,
                 VoucherNo = entry.VoucherNo,

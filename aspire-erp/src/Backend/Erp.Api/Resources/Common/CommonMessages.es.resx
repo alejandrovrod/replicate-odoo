@@ -69,6 +69,42 @@
   <data name="CustomerNotFound" xml:space="preserve">
     <value>Cliente no encontrado</value>
   </data>
+  <data name="CurrencyNotFound" xml:space="preserve">
+    <value>Moneda no encontrada</value>
+  </data>
+  <data name="CurrencyRejected" xml:space="preserve">
+    <value>Moneda rechazada</value>
+  </data>
+  <data name="CurrencyConflict" xml:space="preserve">
+    <value>Conflicto de moneda</value>
+  </data>
+  <data name="DuplicateCurrencyCode" xml:space="preserve">
+    <value>Código de moneda duplicado</value>
+  </data>
+  <data name="InvalidCurrencyId" xml:space="preserve">
+    <value>Id de moneda inválido</value>
+  </data>
+  <data name="InvalidBankAccount" xml:space="preserve">
+    <value>Cuenta bancaria inválida</value>
+  </data>
+  <data name="BankAccountRejected" xml:space="preserve">
+    <value>Cuenta bancaria rechazada</value>
+  </data>
+  <data name="BankAccountConflict" xml:space="preserve">
+    <value>Conflicto de cuenta bancaria</value>
+  </data>
+  <data name="InvalidPayment" xml:space="preserve">
+    <value>Pago inválido</value>
+  </data>
+  <data name="PaymentNotFound" xml:space="preserve">
+    <value>Pago no encontrado</value>
+  </data>
+  <data name="PaymentRejected" xml:space="preserve">
+    <value>Pago rechazado</value>
+  </data>
+  <data name="PaymentConflict" xml:space="preserve">
+    <value>Conflicto de pago</value>
+  </data>
   <data name="CustomerConflict" xml:space="preserve">
     <value>Conflicto de cliente</value>
   </data>

@@ -578,36 +578,36 @@ public class PayrollLifecycleApiTests : IClassFixture<ErpApiFactory>
     {
         await ExecuteAsync(
             "IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = @Id) "
-            + "INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive) "
+            + "INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive) "
             + "VALUES (@Id, @TenantId, @CompanyId, N'5130', N'Salaries and Wages Expense', N'Expense', 0, "
-            + "(SELECT Id FROM dbo.Account WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND AccountCode = N'5000'), N'USD', 1);",
+            + "(SELECT Id FROM dbo.Account WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND AccountCode = N'5000'), 1);",
             ("@Id", SalaryExpenseAccountId),
             ("@TenantId", ErpApiFactory.DevTenantId),
             ("@CompanyId", ErpApiFactory.DevCompanyId));
 
         await ExecuteAsync(
             "IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = @Id) "
-            + "INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive) "
+            + "INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive) "
             + "VALUES (@Id, @TenantId, @CompanyId, N'2220', N'Income Tax Payable', N'Liability', 0, "
-            + "(SELECT Id FROM dbo.Account WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND AccountCode = N'2000'), N'USD', 1);",
+            + "(SELECT Id FROM dbo.Account WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND AccountCode = N'2000'), 1);",
             ("@Id", TaxPayableAccountId),
             ("@TenantId", ErpApiFactory.DevTenantId),
             ("@CompanyId", ErpApiFactory.DevCompanyId));
 
         await ExecuteAsync(
             "IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = @Id) "
-            + "INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive) "
+            + "INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive) "
             + "VALUES (@Id, @TenantId, @CompanyId, N'2225', N'Social Security Payable', N'Liability', 0, "
-            + "(SELECT Id FROM dbo.Account WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND AccountCode = N'2000'), N'USD', 1);",
+            + "(SELECT Id FROM dbo.Account WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND AccountCode = N'2000'), 1);",
             ("@Id", PensionPayableAccountId),
             ("@TenantId", ErpApiFactory.DevTenantId),
             ("@CompanyId", ErpApiFactory.DevCompanyId));
 
         await ExecuteAsync(
             "IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = @Id) "
-            + "INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, Currency, IsActive) "
+            + "INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive) "
             + "VALUES (@Id, @TenantId, @CompanyId, N'2150', N'Payroll Payable', N'Liability', 0, "
-            + "(SELECT Id FROM dbo.Account WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND AccountCode = N'2000'), N'USD', 1);",
+            + "(SELECT Id FROM dbo.Account WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND AccountCode = N'2000'), 1);",
             ("@Id", PayrollPayableAccountId),
             ("@TenantId", ErpApiFactory.DevTenantId),
             ("@CompanyId", ErpApiFactory.DevCompanyId));
@@ -637,8 +637,8 @@ public class PayrollLifecycleApiTests : IClassFixture<ErpApiFactory>
     {
         var id = Guid.NewGuid();
         await ExecuteAsync(
-            "INSERT INTO dbo.BankAccount (Id, TenantId, CompanyId, AccountName, BankName, AccountNumber, Currency, GLAccountId, LastReconciledBalance, IsActive) "
-            + "VALUES (@Id, @TenantId, @CompanyId, @Name, N'HR Test Bank', @Number, N'USD', @GlAccountId, 0, 1);",
+            "INSERT INTO dbo.BankAccount (Id, TenantId, CompanyId, AccountName, BankName, AccountNumber, GLAccountId, LastReconciledBalance, IsActive) "
+            + "VALUES (@Id, @TenantId, @CompanyId, @Name, N'HR Test Bank', @Number, @GlAccountId, 0, 1);",
             ("@Id", id),
             ("@TenantId", ErpApiFactory.DevTenantId),
             ("@CompanyId", ErpApiFactory.DevCompanyId),

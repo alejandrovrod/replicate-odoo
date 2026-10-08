@@ -15,11 +15,16 @@ public sealed class CreateCustomerCommandHandler : ICommandHandler<CreateCustome
 {
     private readonly ICustomerRepository _customers;
     private readonly IAccountRepository _accounts;
+    private readonly ICurrencyRepository _currencies;
 
-    public CreateCustomerCommandHandler(ICustomerRepository customers, IAccountRepository accounts)
+    public CreateCustomerCommandHandler(
+        ICustomerRepository customers,
+        IAccountRepository accounts,
+        ICurrencyRepository currencies)
     {
         _customers = customers;
         _accounts = accounts;
+        _currencies = currencies;
     }
 
     public async Task<Result<CustomerDto>> HandleAsync(
@@ -38,8 +43,15 @@ public sealed class CreateCustomerCommandHandler : ICommandHandler<CreateCustome
                 command.CustomerName,
                 taxId,
                 command.CreditLimit,
-                command.BillingCurrency,
                 command.PaymentTermsDays);
+
+            if (command.CurrencyId.HasValue
+                && await _currencies.GetByIdAsync(command.CurrencyId.Value, cancellationToken) is null)
+            {
+                throw new CustomerValidationException(
+                    CurrencyErrorCodes.CurrencyNotFound,
+                    $"Currency '{command.CurrencyId.Value}' was not found.");
+            }
 
             var code = command.CustomerCode.Trim();
 
@@ -76,7 +88,7 @@ public sealed class CreateCustomerCommandHandler : ICommandHandler<CreateCustome
                 DefaultReceivableAccountId = command.DefaultReceivableAccountId,
                 CreditLimit = command.CreditLimit,
                 BypassCreditLimitCheck = command.BypassCreditLimitCheck,
-                BillingCurrency = command.BillingCurrency.Trim(),
+                CurrencyId = command.CurrencyId,
                 PaymentTermsDays = command.PaymentTermsDays,
                 IsActive = command.IsActive,
 

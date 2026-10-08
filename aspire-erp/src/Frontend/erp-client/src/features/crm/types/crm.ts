@@ -26,7 +26,8 @@ export interface OpportunityDto {
   opportunityAmount: number
   probability: number
   weightedAmount: number
-  currency: string
+  /** RM-09 FK to the currency catalog (null = legacy "USD" fallback). */
+  currencyId?: string | null
   lossReason: string | null
   /** Optimistic token as base64; echoed back verbatim on advance (CRM-06). */
   rowVersion: string

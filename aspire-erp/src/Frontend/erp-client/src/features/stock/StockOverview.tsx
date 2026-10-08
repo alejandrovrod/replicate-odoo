@@ -10,6 +10,7 @@ import { StockEntryModal } from './StockEntryModal'
 import { flattenWarehouses, type StockEntryPosting, type StockEntryType } from './types'
 import { useItems, useStockEntries, useWarehouses, useFlatWarehouses } from './useStockData'
 import { useNavigationStore } from '../../store/useNavigationStore'
+import { Button } from '../../components/ui/Button'
 
 const ENTRY_TYPE_BADGE: Record<StockEntryType, string> = {
   MaterialReceipt: 'bg-emerald-100 text-emerald-700',
@@ -137,14 +138,15 @@ export function StockOverview() {
           <h2 className="text-xl font-bold tracking-tight text-slate-900">{t('overview.title')}</h2>
           <p className="text-xs text-slate-500">{t('overview.subtitle')}</p>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="default"
+          size="sm"
           onClick={() => openModal(null)}
-          className="inline-flex items-center gap-1.5 rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          className="flex items-center gap-1.5"
         >
           <Plus className="size-4" aria-hidden="true" />
           {t('overview.newEntry')}
-        </button>
+        </Button>
       </div>
 
       {/* Post confirmation: proves the double-entry balance and that the reload happened */}
@@ -214,13 +216,14 @@ export function StockOverview() {
             <h3 className="text-base font-semibold text-slate-900">{t('warehouses.title')}</h3>
             <p className="mb-4 text-xs text-slate-500">{t('warehouses.subtitle')}</p>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => useNavigationStore.getState().setCurrentRoute('stock-warehouses')}
-            className="inline-flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="flex items-center gap-1.5"
           >
             {t('warehouses.manage', 'Administrar')}
-          </button>
+          </Button>
         </div>
         {gridWarehouses.length === 0 ? (
           <p className="text-sm text-slate-500">{t('warehouses.empty')}</p>
@@ -274,26 +277,27 @@ export function StockOverview() {
             <p className="text-xs text-slate-500">{t('items.subtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => useNavigationStore.getState().setCurrentRoute('stock-items')}
-              className="inline-flex items-center gap-1.5 rounded border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="flex items-center gap-1.5"
             >
               {t('items.manage', 'Administrar Artículos')}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => openModal(null)}
-              className="inline-flex items-center gap-1 rounded border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="flex items-center gap-1"
             >
               <Plus className="size-3" aria-hidden="true" />
               {t('overview.newEntry')}
-            </button>
+            </Button>
           </div>
         </div>
         <ItemList
           items={items}
-          warehouses={warehousesQuery.data}
           status={itemsQuery.status}
           error={itemsQuery.error}
           onReload={itemsQuery.reload}

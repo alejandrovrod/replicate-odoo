@@ -18,12 +18,12 @@ public static class CustomerValidator
     public const int MaxCodeLength = 50;
     public const int MaxNameLength = 150;
     public const int MaxTaxIdLength = 50;
-    public const int MaxCurrencyLength = 3;
 
     /// <summary>
     /// Customer field rules: owning company (plan.md §1 CompanyId NOT NULL), required code (50) /
-    /// name (150), TaxId at most 50 chars, a non-negative CreditLimit (CK_Customer_CreditLimit),
-    /// a 3-char billing currency and non-negative payment terms.
+    /// name (150), TaxId at most 50 chars, a non-negative CreditLimit (CK_Customer_CreditLimit)
+    /// and non-negative payment terms. Currency travels as <c>CurrencyId</c> (RM-09 FK, validated
+    /// for existence by the command handler).
     /// </summary>
     /// <exception cref="CustomerValidationException">An invariant was violated.</exception>
     public static void EnsureValidCustomerFields(
@@ -32,7 +32,6 @@ public static class CustomerValidator
         string? customerName,
         string? taxId,
         decimal creditLimit,
-        string? billingCurrency,
         int paymentTermsDays)
     {
         if (companyId == Guid.Empty)
@@ -82,13 +81,6 @@ public static class CustomerValidator
             throw new CustomerValidationException(
                 SellingErrorCodes.InvalidCreditLimit,
                 $"CreditLimit must not be negative (received {creditLimit:0.####}).");
-        }
-
-        if (string.IsNullOrWhiteSpace(billingCurrency) || billingCurrency.Length > MaxCurrencyLength)
-        {
-            throw new CustomerValidationException(
-                SellingErrorCodes.BillingCurrencyInvalid,
-                $"BillingCurrency must be a non-empty ISO 4217 code of at most {MaxCurrencyLength} characters.");
         }
 
         if (paymentTermsDays < 0)

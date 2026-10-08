@@ -88,6 +88,73 @@ public sealed class FakeBankRepository : IBankRepository
     public Task<BankAccount?> GetAccountByIdAsync(Guid bankAccountId, CancellationToken cancellationToken = default)
         => Task.FromResult(_accounts.FirstOrDefault(a => a.Id == bankAccountId));
 
+    /// <summary>Payment vouchers persisted by the R-12 handlers under test.</summary>
+    public IReadOnlyList<PaymentEntry> AddedPayments => _addedPayments;
+
+    private readonly List<PaymentEntry> _addedPayments = new();
+    private int _paymentSequence;
+
+    public Task<string> NextPaymentVoucherNumberAsync(
+        Guid companyId, int year, CancellationToken cancellationToken = default)
+        => Task.FromResult($"PAY-{year}-{++_paymentSequence:D5}");
+
+    public Task AddPaymentAsync(PaymentEntry payment, CancellationToken cancellationToken = default)
+    {
+        _addedPayments.Add(payment);
+        _entries.Add(payment);
+        return Task.CompletedTask;
+    }
+
+    public Task<PaymentEntry?> GetPaymentByIdAsync(Guid paymentId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_entries.FirstOrDefault(p => p.Id == paymentId));
+
+    public Task UpdatePaymentAsync(PaymentEntry payment, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
+
+    public Task<PagedResult<PaymentEntry>> GetPaymentsPagedAsync(
+        Guid companyId,
+        PagedRequest paging,
+        PaymentDocumentStatus? status,
+        PaymentType? paymentType,
+        CancellationToken cancellationToken = default)
+    {
+        var items = _entries
+            .Where(p => p.CompanyId == companyId
+                && (!status.HasValue || p.DocumentStatus == status.Value)
+                && (!paymentType.HasValue || p.PaymentType == paymentType.Value))
+            .OrderByDescending(p => p.PaymentDate)
+            .ThenByDescending(p => p.Id)
+            .ToList();
+        return Task.FromResult(new PagedResult<PaymentEntry>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
+
+    public Task AddGlEntriesAsync(IReadOnlyList<GLEntry> glEntries, CancellationToken cancellationToken = default)
+    {
+        _addedGl.AddRange(glEntries);
+        return Task.CompletedTask;
+    }
+
+    public BankAccount? AddedAccount { get; private set; }
+
+    public Task AddAccountAsync(BankAccount account, CancellationToken cancellationToken = default)
+    {
+        AddedAccount = account;
+        _accounts.Add(account);
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAccountAsync(BankAccount account, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
+
+    public Task<PagedResult<BankAccount>> GetAccountsPagedAsync(
+        Guid companyId,
+        PagedRequest paging,
+        CancellationToken cancellationToken = default)
+    {
+        var items = _accounts.Where(a => a.CompanyId == companyId).OrderBy(a => a.AccountName).ThenBy(a => a.Id).ToList();
+        return Task.FromResult(new PagedResult<BankAccount>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
+
     public Task<IReadOnlyList<BankAccount>> GetAccountsByCompanyAsync(
         Guid companyId,
         CancellationToken cancellationToken = default)

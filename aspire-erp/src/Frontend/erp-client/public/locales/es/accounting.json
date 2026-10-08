@@ -104,6 +104,34 @@
     "typeRevenue": "Ingresos",
     "typeExpense": "Egresos",
     "typeDepreciation": "Depreciación",
-    "typeRoundOff": "Redondeo"
+    "typeRoundOff": "Redondeo",
+    "currencyNone": "-- Por defecto (USD) --"
+  },
+  "currencies": {
+    "manageTitle": "Monedas",
+    "manageSubtitle": "Catálogo ISO global usado por todos los maestros monetarios.",
+    "search": "Buscar monedas...",
+    "columns": {
+      "code": "Código",
+      "symbol": "Símbolo",
+      "fraction": "Fracción",
+      "status": "Estado"
+    },
+    "active": "Activa",
+    "inactive": "Deshabilitada"
+  },
+  "currencyForm": {
+    "titleNew": "Nueva Moneda",
+    "titleEdit": "Editar Moneda",
+    "codeLabel": "Código *",
+    "symbolLabel": "Símbolo *",
+    "fractionLabel": "Nombre de Fracción",
+    "active": "Activa",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "errorRequired": "El código y el símbolo son obligatorios.",
+    "errorConflict": "Conflicto de concurrencia o código duplicado. Refresque e intente de nuevo.",
+    "errorGeneric": "Ocurrió un error al guardar."
   }
 }

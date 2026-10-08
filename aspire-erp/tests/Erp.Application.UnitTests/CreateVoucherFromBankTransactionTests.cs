@@ -68,7 +68,6 @@ public sealed class CreateVoucherFromBankTransactionTests
             Id = _companyId,
             TenantId = _tenantId,
             Name = "Acme",
-            DefaultCurrency = "USD",
             TaxId = "TAX",
         };
     }

@@ -40,12 +40,12 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 
         builder.Property(c => c.DefaultReceivableAccountId);
 
-        // plan.md §1 DDL defaults: CreditLimit 0.0000, BypassCreditLimitCheck 0, 'USD', 30 days,
-        // OutstandingAmount 0.0000, IsActive 1.
+        // plan.md §1 DDL defaults: CreditLimit 0.0000, BypassCreditLimitCheck 0, 30 days,
+        // OutstandingAmount 0.0000, IsActive 1. Currency is RM-09 (nullable FK, "USD" fallback).
         builder.Property(c => c.CreditLimit)
             .HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
         builder.Property(c => c.BypassCreditLimitCheck).HasDefaultValue(false);
-        builder.Property(c => c.BillingCurrency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
+        builder.Property(c => c.CurrencyId);
         builder.Property(c => c.PaymentTermsDays).HasDefaultValue(30);
         builder.Property(c => c.OutstandingAmount)
             .HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
@@ -63,6 +63,13 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .WithMany()
             .HasForeignKey(c => c.DefaultReceivableAccountId)
             .HasConstraintName("FK_Customer_Account")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RM-09: billing currency link to the global Currency catalog (nullable for legacy rows).
+        builder.HasOne(c => c.Currency)
+            .WithMany()
+            .HasForeignKey(c => c.CurrencyId)
+            .HasConstraintName("FK_Customer_Currency")
             .OnDelete(DeleteBehavior.Restrict);
 
         // Constitution Article IV.1 + plan.md §1: TenantId leads the composite index, which is

@@ -7,6 +7,7 @@ using Erp.Application.Features.Items.Commands;
 using Erp.Application.Features.Items.Queries;
 using Erp.Domain.Common;
 using Erp.Domain.Entities;
+using Erp.Domain.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -31,15 +32,18 @@ namespace Erp.Api.Controllers.V1;
 public sealed class ItemsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IItemRepository _items;
     private readonly IStringLocalizer<ErrorMessages> _errors;
     private readonly IStringLocalizer<CommonMessages> _common;
 
     public ItemsController(
         ISender sender,
+        IItemRepository items,
         IStringLocalizer<ErrorMessages> errors,
         IStringLocalizer<CommonMessages> common)
     {
         _sender = sender;
+        _items = items;
         _errors = errors;
         _common = common;
     }
@@ -153,6 +157,37 @@ public sealed class ItemsController : ControllerBase
         }
 
         return Ok(result.Value!);
+    }
+
+    /// <summary>Disables an item (sets IsActive = false).</summary>
+    [HttpPut("{id}/disable")]
+    [ProducesResponseType(typeof(ItemDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, false, cancellationToken);
+
+    /// <summary>Enables an item (sets IsActive = true).</summary>
+    [HttpPut("{id}/enable")]
+    [ProducesResponseType(typeof(ItemDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)
+        => await SetActiveAsync(id, true, cancellationToken);
+
+    private async Task<IActionResult> SetActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken)
+    {
+        var item = await _items.GetByIdAsync(id, cancellationToken);
+        if (item is null)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("ItemNotFound"),
+                _errors.Text("item_not_found"),
+                "item_not_found");
+        }
+
+        item.IsActive = isActive;
+        await _items.UpdateAsync(item, cancellationToken);
+        return Ok(ItemDto.From(item, []));
     }
 
     private ObjectResult Problem(int status, string title, string detail, string? code)

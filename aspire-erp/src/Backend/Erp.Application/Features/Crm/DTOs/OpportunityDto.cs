@@ -12,7 +12,7 @@ public sealed record OpportunityDto(
     decimal OpportunityAmount,
     decimal Probability,
     decimal WeightedAmount,
-    string Currency,
+    Guid? CurrencyId,
     string? LossReason,
     string RowVersion)
 {
@@ -26,7 +26,7 @@ public sealed record OpportunityDto(
             opportunity.OpportunityAmount,
             opportunity.Probability,
             opportunity.WeightedAmount,
-            opportunity.Currency,
+            opportunity.CurrencyId,
             opportunity.LossReason,
             opportunity.RowVersion is null || opportunity.RowVersion.Length == 0
                 ? string.Empty

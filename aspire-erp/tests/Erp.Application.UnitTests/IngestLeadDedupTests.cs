@@ -100,9 +100,8 @@ public class IngestLeadDedupTests
     {
         public Company? CompanyToReturn { get; set; }
         public Task<Company?> GetByIdAsync(Guid companyId, CancellationToken cancellationToken = default) => Task.FromResult(CompanyToReturn);
-        public Task<Company?> GetByTenantIdAsync(Guid tenantId, CancellationToken cancellationToken = default) => Task.FromResult(CompanyToReturn);
-        public Task AddAsync(Company company, CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task UpdateAsync(Company company, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpdateCompanyAsync(Company company, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task EnsurePostingDateInOpenYearAsync(Guid companyId, DateOnly postingDate, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class FakeCrmRepository : ICrmRepository

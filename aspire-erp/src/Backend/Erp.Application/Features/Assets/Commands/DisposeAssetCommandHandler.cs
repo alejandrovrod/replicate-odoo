@@ -83,6 +83,8 @@ public sealed class DisposeAssetCommandHandler
                 // tasks.md 2.2 / spec AC-04: hard fiscal period lock - before a single GLEntry or
                 // status flip, so a back-dated disposal modifies ZERO data.
                 company.EnsurePostingDateUnlocked(command.DisposalDate);
+                // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, command.DisposalDate, token);
 
                 // Proceeds-shape gate: cash-via-bank sales and $0 scraps only, never mixed. A
                 // negative proceeds figure is nonsense in both shapes.

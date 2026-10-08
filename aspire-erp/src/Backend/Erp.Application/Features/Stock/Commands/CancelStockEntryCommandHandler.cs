@@ -53,8 +53,14 @@ public sealed class CancelStockEntryCommandHandler : ICommandHandler<CancelStock
             try
             {
                 company.EnsurePostingDateUnlocked(entry.PostingDate);
+                // R-13 FC-04: cancelling into a closed year is refused — the close is immutable.
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, entry.PostingDate, token);
             }
             catch (FiscalPeriodLockedException ex)
+            {
+                return Result<bool>.Failure(ex.Code, ex.Message);
+            }
+            catch (FiscalClosingException ex)
             {
                 return Result<bool>.Failure(ex.Code, ex.Message);
             }

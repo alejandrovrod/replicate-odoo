@@ -35,6 +35,11 @@ public class PurchaseInvoice : ITenantEntity
     public Guid SupplierId { get; set; }
     public Supplier? Supplier { get; set; }
 
+    public Guid? CurrencyId { get; set; }
+    public Currency? Currency { get; set; }
+    public decimal ExchangeRate { get; set; } = 1m;
+
+
     /// <summary>Accounting date of the accrual reversal and the payable (GL lines).</summary>
     public DateOnly PostingDate { get; set; }
 

@@ -1,8 +1,8 @@
 # Functional Specification: Accounting & General Ledger (ERPNext Parity)
 
 **Module:** `01-accounting`  
-**Status:** CERTIFIED — scope amended 2026-10-04 after retro-verification (invariants AC-05/AC-06 and scenario AC-05 marked DEFERRED inline)  
-**Version:** 2.0.0  
+**Status:** CERTIFIED — scope amended 2026-10-04 after retro-verification; scope amended 2026-10-08 by R-13 (invariant AC-06 and scenario AC-05 now IMPLEMENTED, invariant AC-05 FX re-tracked to R-14)  
+**Version:** 2.1.0  
 **Methodology:** Domain-Driven Design (DDD) & GitHub Spec Kit  
 **Canonical Reference:** [ERPNext Accounting Documentation](https://docs.frappe.io/erpnext/accounting)  
 
@@ -47,12 +47,14 @@ The **Accounting Module** is the foundational core of the ERP. Every business op
 
 ### Invariant AC-05: Realized Foreign Exchange Gain/Loss
 > **DEFERRED — scope amendment 2026-10-04 (retro-verify):** no exchange-rate, settlement or FX posting path exists anywhere in the implementation, and no scenario exercises FX. Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+> **RE-TRACKED 2026-10-08 (S1):** still unimplemented — now owned by active change **R-14** (roadmap: multi-currency, realized FX on payment, unrealized via revaluation, ref `exchange_rate_revaluation`). This marker stays DEFERRED until R-14 archives.
 
 - When transactions settle in foreign currencies at differing exchange rates, variance must post automatically to the predefined `Exchange Gain/Loss Account`:
   $$\text{RealizedFX} = \text{PaymentAmount}_{\text{FC}} \times (\text{Rate}_{\text{Settlement}} - \text{Rate}_{\text{Original}})$$
 
 ### Invariant AC-06: Period Closing Balance Roll-Forward
-> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** no period-closing implementation exists (no fiscal-year handling, no closing voucher, account `3100 - Retained Earnings` is not even present in the seeded chart) and no test covers it. Out of the certified scope of this module; tracked as a carry-forward flag in this module's archive report.
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** _(superseded — see below)_ no period-closing implementation existed at that date.
+> **IMPLEMENTED 2026-10-08 by R-13** (archived `.specify/modules/archive/2026-10-08-13-fiscal-closing/`, verify PASS WITH WARNINGS): `FiscalYear` entity + lifecycle, `PeriodClosingVoucher` (Draft→Submitted→Cancelled, idempotent submit, reversal-only cancel), `PeriodClosingCalculator` (ΣD==ΣC ±0.0001), hard period lock in 21 posting pipelines, `3100 - Retained Earnings` seeded + company default. Back in certified scope.
 
 - At fiscal year close, net profit transfers to Retained Earnings:
   $$\Delta \text{RetainedEarnings} = \sum \text{IncomeBalances} - \sum \text{ExpenseBalances}$$
@@ -91,7 +93,8 @@ The **Accounting Module** is the foundational core of the ERP. Every business op
 - **And** no data is modified.
 
 ### Scenario AC-05: Period Closing Voucher (Year-End Close)
-> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** unimplemented and untested — no `FiscalYear`/`PeriodClosingVoucher` entity, handler or covering test exists. Out of the certified scope of this module; deferred together with invariants AC-05 (FX) and AC-06 (roll-forward) and tracked as a carry-forward flag in this module's archive report.
+> **DEFERRED — scope amendment 2026-10-04 (retro-verify):** _(superseded — see below)_ unimplemented at that date.
+> **IMPLEMENTED 2026-10-08 by R-13** (archived `.specify/modules/archive/2026-10-08-13-fiscal-closing/`): covered by Domain fixtures (profit 500k/380k→Cr retained 120k, loss, break-even), 30 Domain + 18 handler tests, and live-submit acceptance in `verify-report.md`. Back in certified scope.
 
 - **Given** Fiscal Year 2025 with total Revenue $500,000 and total Expenses $380,000 (Net Profit $120,000)
 - **When** the `PeriodClosingVoucher` is posted on `2025-12-31`

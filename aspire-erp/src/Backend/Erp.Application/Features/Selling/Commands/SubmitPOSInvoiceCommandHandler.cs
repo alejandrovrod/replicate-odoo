@@ -38,6 +38,8 @@ public sealed class SubmitPOSInvoiceCommandHandler : ICommandHandler<SubmitPOSIn
             if (company is null) return Result<SalesInvoiceDto>.Failure(SellingErrorCodes.CompanyNotFound, "Company not found.");
 
             company.EnsurePostingDateUnlocked(request.PostingDate);
+            // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+            await _companyRepository.EnsurePostingDateInOpenYearAsync(company.Id, request.PostingDate, token);
 
             var profile = await _posProfileRepository.GetByIdAsync(request.POSProfileId, token);
             if (profile is null || !profile.IsActive) return Result<SalesInvoiceDto>.Failure(SellingErrorCodes.POSProfileNotFound, "POS Profile not found or inactive.");

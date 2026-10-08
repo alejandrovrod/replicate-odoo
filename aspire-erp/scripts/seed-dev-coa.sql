@@ -62,6 +62,12 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000
     INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
     VALUES ('a0000000-0000-4000-8000-000000003000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '3000', 'Equity', 'Equity', 1, NULL, 1);
 
+-- 3100 Retained Earnings (spec R-13 / FC-03): the single Equity leaf every
+-- PeriodClosingVoucher credits on profit / debits on loss. Parent = 3000.
+IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000003100')
+    INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
+    VALUES ('a0000000-0000-4000-8000-000000003100', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '3100', 'Retained Earnings', 'Equity', 0, 'a0000000-0000-4000-8000-000000003000', 1);
+
 IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000000004000')
     INSERT INTO dbo.Account (Id, TenantId, CompanyId, AccountCode, AccountName, RootType, IsGroup, ParentAccountId, IsActive)
     VALUES ('a0000000-0000-4000-8000-000000004000', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '4000', 'Income', 'Income', 1, NULL, 1);
@@ -115,15 +121,19 @@ IF EXISTS (SELECT 1 FROM dbo.Company WHERE Id = '22222222-2222-4222-8222-2222222
     SET StockReceivedAccountCode = '2120',
         CogsAccountCode = '5210',
         DefaultReceivableAccountCode = '1120',
-        DefaultIncomeAccountCode = '4110'
+        DefaultIncomeAccountCode = '4110',
+        DefaultRetainedEarningsAccountId = 'a0000000-0000-4000-8000-000000003100',
+        DefaultRetainedEarningsAccountCode = '3100'
     WHERE Id = '22222222-2222-4222-8222-222222222222'
       AND (StockReceivedAccountCode IS NULL OR StockReceivedAccountCode <> '2120'
         OR CogsAccountCode IS NULL OR CogsAccountCode <> '5210'
         OR DefaultReceivableAccountCode IS NULL OR DefaultReceivableAccountCode <> '1120'
-        OR DefaultIncomeAccountCode IS NULL OR DefaultIncomeAccountCode <> '4110');
+        OR DefaultIncomeAccountCode IS NULL OR DefaultIncomeAccountCode <> '4110'
+        OR DefaultRetainedEarningsAccountId IS NULL
+        OR DefaultRetainedEarningsAccountCode IS NULL OR DefaultRetainedEarningsAccountCode <> '3100');
 GO
 
--- Verification: 5 roots + 8 children = 13 rows, all sharing one Tenant/Company.
+-- Verification: 5 roots + 9 children = 14 rows, all sharing one Tenant/Company.
 SELECT AccountCode, AccountName, RootType, IsGroup, ParentAccountId
 FROM dbo.Account
 WHERE TenantId = '11111111-1111-4111-8111-111111111111'

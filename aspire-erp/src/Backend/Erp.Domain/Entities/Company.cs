@@ -51,6 +51,9 @@ public class Company : ITenantEntity
     /// </summary>
     public string? DefaultRetainedEarningsAccountCode { get; set; }
 
+    public Guid? DefaultExchangeGainLossAccountId { get; set; }
+    public string? DefaultExchangeGainLossAccountCode { get; set; }
+
     /// <summary>
     /// Spec AC-04 / tasks.md 2.2: rejects a posting dated inside the closed fiscal period. The
     /// canonical plan.md §3 rule: <c>FrozenAccountsDate.HasValue &amp;&amp; postingDate &lt;=

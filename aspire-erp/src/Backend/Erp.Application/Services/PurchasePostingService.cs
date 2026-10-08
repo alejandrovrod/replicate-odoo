@@ -37,6 +37,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
     private readonly IItemRepository _items;
     private readonly IStockRepository _stock;
     private readonly IPurchaseRepository _purchases;
+    private readonly IExchangeRateRepository _exchangeRates;
 
     public PurchasePostingService(
         ICompanyRepository companies,
@@ -44,7 +45,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
         IWarehouseRepository warehouses,
         IItemRepository items,
         IStockRepository stock,
-        IPurchaseRepository purchases)
+        IPurchaseRepository purchases,
+        IExchangeRateRepository exchangeRates)
     {
         _companies = companies;
         _accounts = accounts;
@@ -52,6 +54,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
         _items = items;
         _stock = stock;
         _purchases = purchases;
+        _exchangeRates = exchangeRates;
     }
 
     // ------------------------------------------------------------------------ receipt (4.2)
@@ -75,6 +78,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
             // tasks.md 2.2 / spec AC-04: hard fiscal period lock - FIRST check, before any
             // GLEntry/StockLedgerEntry line is built, so a back-dated receipt modifies zero data.
             company.EnsurePostingDateUnlocked(request.PostingDate);
+            // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+            await _companies.EnsurePostingDateInOpenYearAsync(company.Id, request.PostingDate, token);
 
             var warehouse = await ResolveWarehouseAsync(request.WarehouseId, company.Id, token);
             var items = await LoadItemsAsync(request.Lines.Select(l => l.ItemId), token);
@@ -212,6 +217,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
             // tasks.md 2.2 / spec AC-04: hard fiscal period lock - FIRST check, before any
             // GLEntry line is built, so a back-dated invoice modifies zero data.
             company.EnsurePostingDateUnlocked(request.PostingDate);
+            // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+            await _companies.EnsurePostingDateInOpenYearAsync(company.Id, request.PostingDate, token);
 
             var receiptLineIds = request.Lines.Select(l => l.PurchaseReceiptLineId).Distinct().ToList();
             var receiptLines = await _purchases.GetReceiptLinesByIdsAsync(receiptLineIds, token);
@@ -286,6 +293,18 @@ public sealed class PurchasePostingService : IPurchasePostingService
                     $"An invoice with bill number '{request.BillNumber}' already exists for this company.");
             }
 
+            // --- FX Resolution
+            var exchangeRate = 1m;
+            if (request.CurrencyId.HasValue && company.CurrencyId.HasValue && request.CurrencyId != company.CurrencyId)
+            {
+                var rateRow = await _exchangeRates.GetLatestRateAsync(request.CurrencyId.Value, company.CurrencyId.Value, request.PostingDate, token);
+                if (rateRow == null)
+                {
+                    throw new PurchaseValidationException(FxErrorCodes.ExchangeRateMissing, $"Missing exchange rate for {request.CurrencyId.Value}");
+                }
+                exchangeRate = rateRow.Rate;
+            }
+
             // --- GL accounts (Constitution III.3 sanity BEFORE any write).
             var receivedAccount = await RequireAccountByCodeAsync(
                 company.Id, company.StockReceivedAccountCode, "Company.StockReceivedAccountCode", token);
@@ -311,7 +330,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 // tasks.md 4.3: debit the accrual for the billed quantities (zeroes it out).
                 AddGlLine(
                     glLines, request.PostingDate, company.Id, InvoiceVoucherType, receivedAccount,
-                    debit: interim, credit: 0m,
+                    debit: interim * exchangeRate, credit: 0m,
+                    debitInFC: interim, creditInFC: 0m,
                     remarks: $"PurchaseInvoice: {item.ItemCode} x{line.Qty:0.####} accrual clearance");
             }
 
@@ -327,7 +347,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 // spec BY-01: Debit Input Tax Recoverable.
                 AddGlLine(
                     glLines, request.PostingDate, company.Id, InvoiceVoucherType, taxAccount,
-                    debit: taxAmount, credit: 0m,
+                    debit: taxAmount * exchangeRate, credit: 0m,
+                    debitInFC: taxAmount, creditInFC: 0m,
                     remarks: "PurchaseInvoice: input tax recoverable");
             }
 
@@ -342,8 +363,10 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
                 AddGlLine(
                     glLines, request.PostingDate, company.Id, InvoiceVoucherType, priceDifferenceAccount,
-                    debit: variance > 0 ? variance : 0m,
-                    credit: variance < 0 ? -variance : 0m,
+                    debit: variance > 0 ? (variance * exchangeRate) : 0m,
+                    credit: variance < 0 ? (-variance * exchangeRate) : 0m,
+                    debitInFC: variance > 0 ? variance : 0m,
+                    creditInFC: variance < 0 ? -variance : 0m,
                     remarks: variance > 0
                         ? "PurchaseInvoice: price difference (billed above received)"
                         : "PurchaseInvoice: price difference (billed below received)");
@@ -354,7 +377,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
             // Gross payable: net billed + Input Tax (spec BY-01: Cr Accounts Payable $1,100.00).
             AddGlLine(
                 glLines, request.PostingDate, company.Id, InvoiceVoucherType, payableAccount,
-                debit: 0m, credit: grossTotal,
+                debit: 0m, credit: grossTotal * exchangeRate,
+                debitInFC: 0m, creditInFC: grossTotal,
                 remarks: "PurchaseInvoice: accounts payable");
 
             // Constitution III.1: balance must hold to four decimals BEFORE anything is saved.
@@ -371,6 +395,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 // Spec BY-05: a posted bill is born Unpaid so that cancellation has a
                 // valid transition (Unpaid -> Cancelled) to perform.
                 Status = PurchaseInvoiceStatus.Unpaid,
+                CurrencyId = request.CurrencyId,
+                ExchangeRate = exchangeRate,
                 NetTotal = payableTotal,
                 TaxTotal = taxAmount,
                 WithholdingTaxTotal = 0m,
@@ -658,7 +684,9 @@ public sealed class PurchasePostingService : IPurchasePostingService
         Account account,
         decimal debit,
         decimal credit,
-        string remarks) =>
+        string remarks,
+        decimal? debitInFC = null,
+        decimal? creditInFC = null) =>
         glLines.Add(new GLEntry
         {
             CompanyId = companyId,
@@ -673,8 +701,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
             // plan.md §2 account-currency pair: single-currency postings book the ledger amount
             // 1:1 and snapshot the account currency (multi-currency restatement = spec AC-05, later).
-            DebitInAccountCurrency = Round4(debit),
-            CreditInAccountCurrency = Round4(credit),
+            DebitInAccountCurrency = debitInFC ?? Round4(debit),
+            CreditInAccountCurrency = creditInFC ?? Round4(credit),
             AccountCurrency = account.Currency?.Code ?? "USD",
 
             VoucherType = voucherType,

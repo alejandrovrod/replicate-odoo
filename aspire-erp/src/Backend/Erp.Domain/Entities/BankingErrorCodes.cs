@@ -50,14 +50,9 @@ public static class BankingErrorCodes
     public const string PaymentReconciledCannotCancel = "payment_reconciled_cannot_cancel";
     public const string InvalidCounterpartyAccount = "invalid_counterparty_account";
 
-    // Period closing voucher (spec R-13)
-    public const string PeriodClosingNotFound = "period_closing_not_found";
-    public const string RetainedEarningsAccountNotFound = "retained_earnings_account_not_found";
-    public const string InvalidPeriodClosingAmount = "invalid_period_closing_amount";
-    public const string PeriodClosingConservationViolated = "period_closing_conservation_violated";
-    public const string PeriodClosingInvalidTransition = "period_closing_invalid_transition";
-    public const string PeriodClosingAlreadyCancelled = "period_closing_already_cancelled";
-    public const string PeriodClosingReconciledCannotCancel = "period_closing_reconciled_cannot_cancel";
+    // Period closing voucher (spec R-13) — RETIRED: superseded by the Accounting-owned
+    // FiscalClosingErrorCodes (spec §7 audit: single owner, snake_case). Kept as a pointer so
+    // future readers land on the new vocabulary instead of re-adding codes here.
 
     // Bank account master (CRUD)
     public const string BankAccountNameRequired = "bank_account_name_required";

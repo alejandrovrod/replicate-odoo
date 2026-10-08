@@ -80,6 +80,8 @@ public sealed class CancelPaymentEntryCommandHandler : ICommandHandler<CancelPay
                         $"Company '{payment.CompanyId}' was not found in this tenant.");
 
                 company.EnsurePostingDateUnlocked(payment.PaymentDate);
+                // R-13 FC-04: cancelling into a closed year is refused — the close is immutable.
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, payment.PaymentDate, token);
 
                 // PE-05: only a Submitted, un-reconciled voucher cancels (Draft/double-cancel → 409).
                 payment.Cancel();
@@ -104,8 +106,68 @@ public sealed class CancelPaymentEntryCommandHandler : ICommandHandler<CancelPay
                 // balanced voucher is balanced, but the guard proves it rather than assuming it).
                 DoubleEntryGuard.EnsureBalanced(reversalLines);
 
-                await RestoreSalesAllocationsAsync(payment, token);
-                await RestorePurchaseAllocationsAsync(payment, token);
+                var salesTotals = await RestoreSalesAllocationsAsync(payment, token);
+                var purchaseTotals = await RestorePurchaseAllocationsAsync(payment, token);
+
+                // FX: Realized Gain/Loss Plug Lines Reversal
+                var totalFxDiff = 0m;
+                if (payment.PartyType == PaymentPartyType.Customer)
+                {
+                    foreach (var (invId, data) in salesTotals)
+                    {
+                        totalFxDiff += FxCalculator.RealizedPerSlice(data.Total, payment.SettlementExchangeRate, data.InvoiceRate);
+                    }
+                }
+                else
+                {
+                    foreach (var (invId, data) in purchaseTotals)
+                    {
+                        totalFxDiff += payment.PaymentType == PaymentType.Receive
+                            ? FxCalculator.RealizedPerSlice(data.Total, payment.SettlementExchangeRate, data.InvoiceRate)
+                            : -FxCalculator.RealizedPerSlice(data.Total, payment.SettlementExchangeRate, data.InvoiceRate);
+                    }
+                }
+
+                if (totalFxDiff != 0m)
+                {
+                    if (string.IsNullOrWhiteSpace(company.DefaultExchangeGainLossAccountCode))
+                    {
+                        throw new BankingValidationException("invalid_exchange_gain_loss_account", "Company DefaultExchangeGainLossAccountCode is not configured.");
+                    }
+                    var fxAccounts = await _accounts.FindActiveLeafByCodeAsync(company.Id, company.DefaultExchangeGainLossAccountCode, token);
+                    if (fxAccounts.Count != 1)
+                    {
+                        throw new BankingValidationException("invalid_exchange_gain_loss_account", "Company DefaultExchangeGainLossAccountCode does not resolve to exactly one active leaf.");
+                    }
+                    var fxAccount = fxAccounts[0];
+
+                    // Original logic: totalFxDiff < 0 (Loss) -> Dr, totalFxDiff > 0 (Gain) -> Cr.
+                    // For reversal: Loss -> Cr, Gain -> Dr.
+                    var fxLine = new GLEntry
+                    {
+                        CompanyId = payment.CompanyId,
+                        PostingDate = payment.PaymentDate,
+                        AccountId = fxAccount.Id,
+                        Account = fxAccount,
+                        Debit = totalFxDiff > 0 ? totalFxDiff : 0m,
+                        Credit = totalFxDiff < 0 ? -totalFxDiff : 0m,
+                        DebitInAccountCurrency = totalFxDiff > 0 ? totalFxDiff : 0m,
+                        CreditInAccountCurrency = totalFxDiff < 0 ? -totalFxDiff : 0m,
+                        AccountCurrency = company.Currency?.Code ?? "USD",
+                        VoucherType = PaymentPosting.VoucherType,
+                        VoucherNo = payment.VoucherNo,
+                        VoucherId = payment.Id,
+                        PartyType = null,
+                        PartyId = null,
+                        CostCenterId = null,
+                        IsCancelled = true,
+                        Remarks = $"Reversal of {PaymentPosting.VoucherType} {payment.VoucherNo} (cancelled)"
+                    };
+                    reversalLines.Add(fxLine);
+                }
+                
+                // Re-assert balance
+                DoubleEntryGuard.EnsureBalanced(reversalLines);
 
                 await _banks.UpdatePaymentAsync(payment, token);
                 await _banks.AddGlEntriesAsync(reversalLines, token);
@@ -183,18 +245,19 @@ public sealed class CancelPaymentEntryCommandHandler : ICommandHandler<CancelPay
     /// Restores every Receive-leg invoice: outstanding and paid move back by the voucher totals
     /// and the status is recomputed (PE-05: Paid → back to PartiallyPaid/Unpaid).
     /// </summary>
-    private async Task RestoreSalesAllocationsAsync(
+    private async Task<Dictionary<Guid, (decimal Total, decimal InvoiceRate)>> RestoreSalesAllocationsAsync(
         PaymentEntry payment,
         CancellationToken cancellationToken)
     {
-        var totals = new Dictionary<Guid, decimal>();
+        var totals = new Dictionary<Guid, (decimal Total, decimal InvoiceRate)>();
+        var sums = new Dictionary<Guid, decimal>();
         foreach (var slice in payment.Allocations.Where(a => a.SalesInvoiceId.HasValue))
         {
-            totals.TryGetValue(slice.SalesInvoiceId!.Value, out var running);
-            totals[slice.SalesInvoiceId!.Value] = running + slice.AllocatedAmount;
+            sums.TryGetValue(slice.SalesInvoiceId!.Value, out var running);
+            sums[slice.SalesInvoiceId!.Value] = running + slice.AllocatedAmount;
         }
 
-        foreach (var (invoiceId, total) in totals)
+        foreach (var (invoiceId, total) in sums)
         {
             var invoice = await _salesInvoices.GetByIdAsync(invoiceId, cancellationToken)
                 ?? throw new BankingValidationException(
@@ -210,22 +273,25 @@ public sealed class CancelPaymentEntryCommandHandler : ICommandHandler<CancelPay
                     : SalesInvoiceStatus.PartiallyPaid;
 
             await _salesInvoices.UpdateAsync(invoice, cancellationToken);
+            totals[invoice.Id] = (total, invoice.ExchangeRate);
         }
+        return totals;
     }
 
     /// <summary>Pay-leg mirror of <see cref="RestoreSalesAllocationsAsync"/>.</summary>
-    private async Task RestorePurchaseAllocationsAsync(
+    private async Task<Dictionary<Guid, (decimal Total, decimal InvoiceRate)>> RestorePurchaseAllocationsAsync(
         PaymentEntry payment,
         CancellationToken cancellationToken)
     {
-        var totals = new Dictionary<Guid, decimal>();
+        var totals = new Dictionary<Guid, (decimal Total, decimal InvoiceRate)>();
+        var sums = new Dictionary<Guid, decimal>();
         foreach (var slice in payment.Allocations.Where(a => a.PurchaseInvoiceId.HasValue))
         {
-            totals.TryGetValue(slice.PurchaseInvoiceId!.Value, out var running);
-            totals[slice.PurchaseInvoiceId!.Value] = running + slice.AllocatedAmount;
+            sums.TryGetValue(slice.PurchaseInvoiceId!.Value, out var running);
+            sums[slice.PurchaseInvoiceId!.Value] = running + slice.AllocatedAmount;
         }
 
-        foreach (var (invoiceId, total) in totals)
+        foreach (var (invoiceId, total) in sums)
         {
             var bill = await _purchases.GetInvoiceByIdAsync(invoiceId, cancellationToken)
                 ?? throw new BankingValidationException(
@@ -240,6 +306,8 @@ public sealed class CancelPaymentEntryCommandHandler : ICommandHandler<CancelPay
                     : PurchaseInvoiceStatus.PartiallyPaid;
 
             await _purchases.UpdateInvoiceAsync(bill, cancellationToken);
+            totals[bill.Id] = (total, bill.ExchangeRate);
         }
+        return totals;
     }
 }

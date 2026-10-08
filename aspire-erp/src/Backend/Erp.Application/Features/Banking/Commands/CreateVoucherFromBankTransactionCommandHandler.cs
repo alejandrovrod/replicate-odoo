@@ -119,6 +119,8 @@ public sealed class CreateVoucherFromBankTransactionCommandHandler
                 // AC-04 first data gate, like every other posting engine: a back-dated statement
                 // line in a frozen period rejects before any row exists.
                 company.EnsurePostingDateUnlocked(transaction.TransactionDate);
+                // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, transaction.TransactionDate, token);
 
                 var expenseAccount = await RequireExpenseAccountAsync(
                     command.CompanyId, command.ExpenseAccountCode, token);

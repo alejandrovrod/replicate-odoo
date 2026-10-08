@@ -77,6 +77,8 @@ public sealed class CapitalizeAssetCommandHandler
                 // tasks.md 2.2 / spec AC-04: hard fiscal period lock - before a single GLEntry or
                 // schedule line is built, so a back-dated attempt modifies ZERO data.
                 company.EnsurePostingDateUnlocked(command.CapitalizationDate);
+                // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, command.CapitalizationDate, token);
 
                 var category = await _assets.GetCategoryByIdAsync(asset.AssetCategoryId, token)
                     ?? throw new AssetValidationException(

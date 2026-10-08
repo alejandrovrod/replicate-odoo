@@ -24,6 +24,11 @@ public sealed class SalesInvoice : ITenantEntity
     public Guid CustomerId { get; set; }
     public Customer? Customer { get; set; }
     
+    public Guid? CurrencyId { get; set; }
+    public Currency? Currency { get; set; }
+    public decimal ExchangeRate { get; set; } = 1m;
+
+    
     public DateOnly PostingDate { get; set; }
     public DateOnly DueDate { get; set; }
     

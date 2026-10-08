@@ -13,17 +13,20 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
     private readonly ICustomerRepository _customers;
     private readonly ICompanyRepository _companies;
     private readonly IAccountRepository _accounts;
+    private readonly IExchangeRateRepository _exchangeRates;
 
     public SubmitSalesInvoiceCommandHandler(
         ISalesInvoiceRepository salesInvoices,
         ICustomerRepository customers,
         ICompanyRepository companies,
-        IAccountRepository accounts)
+        IAccountRepository accounts,
+        IExchangeRateRepository exchangeRates)
     {
         _salesInvoices = salesInvoices;
         _customers = customers;
         _companies = companies;
         _accounts = accounts;
+        _exchangeRates = exchangeRates;
     }
 
     public async Task<Result<SalesInvoiceDto>> HandleAsync(SubmitSalesInvoiceCommand request, CancellationToken cancellationToken)
@@ -45,6 +48,8 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                 if (company is null) return Result<SalesInvoiceDto>.Failure(SellingErrorCodes.CompanyNotFound, "Company not found.");
 
                 company.EnsurePostingDateUnlocked(invoice.PostingDate);
+                // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, invoice.PostingDate, token);
 
                 var customer = await _customers.GetByIdAsync(invoice.CustomerId, token);
                 if (customer is null) return Result<SalesInvoiceDto>.Failure(SellingErrorCodes.CustomerNotFound, "Customer not found.");
@@ -55,6 +60,18 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                 // Update outstanding amount on customer
                 customer.OutstandingAmount += invoice.GrandTotal;
                 await _customers.UpdateAsync(customer, token);
+                // FX Resolution
+                if (invoice.CurrencyId.HasValue && company.CurrencyId.HasValue && invoice.CurrencyId != company.CurrencyId)
+                {
+                    var rateRow = await _exchangeRates.GetLatestRateAsync(invoice.CurrencyId.Value, company.CurrencyId.Value, invoice.PostingDate, token);
+                    if (rateRow == null)
+                        return Result<SalesInvoiceDto>.Failure(FxErrorCodes.ExchangeRateMissing, $"Missing rate for {invoice.CurrencyId}");
+                    invoice.ExchangeRate = rateRow.Rate;
+                }
+                else
+                {
+                    invoice.ExchangeRate = 1m;
+                }
 
                 invoice.Status = SalesInvoiceStatus.Unpaid;
                 invoice.OutstandingAmount = invoice.GrandTotal; // Just to be sure it matches
@@ -80,8 +97,11 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                     CompanyId = request.CompanyId,
                     PostingDate = invoice.PostingDate,
                     AccountId = receivableAccountId,
-                    Debit = invoice.GrandTotal,
+                    Debit = invoice.GrandTotal * invoice.ExchangeRate,
                     Credit = 0,
+                    DebitInAccountCurrency = invoice.GrandTotal,
+                    CreditInAccountCurrency = 0,
+                    AccountCurrency = invoice.Currency?.Code ?? "USD",
                     VoucherType = "Sales Invoice",
                     VoucherNo = invoice.InvoiceNumber,
                     VoucherId = invoice.Id,
@@ -106,7 +126,10 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                     PostingDate = invoice.PostingDate,
                     AccountId = incomeAccountId,
                     Debit = 0,
-                    Credit = invoice.NetTotal,
+                    Credit = invoice.NetTotal * invoice.ExchangeRate,
+                    DebitInAccountCurrency = 0,
+                    CreditInAccountCurrency = invoice.NetTotal,
+                    AccountCurrency = invoice.Currency?.Code ?? "USD",
                     VoucherType = "Sales Invoice",
                     VoucherNo = invoice.InvoiceNumber,
                     VoucherId = invoice.Id,

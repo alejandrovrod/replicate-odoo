@@ -31,6 +31,7 @@ public sealed class PostPurchaseInvoiceCommandHandler
                 command.CompanyId,
                 command.SupplierId,
                 command.BillNumber,
+                command.CurrencyId,
                 command.PostingDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 command.DueDate ?? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30),
                 command.TaxAmount,

@@ -292,6 +292,27 @@
   <data name="JournalEntryRejected" xml:space="preserve">
     <value>Asiento contable rechazado</value>
   </data>
+  <data name="InvalidFiscalYear" xml:space="preserve">
+    <value>Año fiscal inválido</value>
+  </data>
+  <data name="FiscalYearNotFound" xml:space="preserve">
+    <value>Año fiscal no encontrado</value>
+  </data>
+  <data name="FiscalYearConflict" xml:space="preserve">
+    <value>Conflicto de año fiscal</value>
+  </data>
+  <data name="FiscalYearRejected" xml:space="preserve">
+    <value>Año fiscal rechazado</value>
+  </data>
+  <data name="PeriodClosingNotFound" xml:space="preserve">
+    <value>Comprobante de cierre no encontrado</value>
+  </data>
+  <data name="PeriodClosingConflict" xml:space="preserve">
+    <value>Conflicto de comprobante de cierre</value>
+  </data>
+  <data name="PeriodClosingRejected" xml:space="preserve">
+    <value>Comprobante de cierre rechazado</value>
+  </data>
   <data name="InvalidDateRange" xml:space="preserve">
     <value>Rango de fechas inválido</value>
   </data>

@@ -73,6 +73,8 @@ public sealed class CancelPayrollCommandHandler
                 // tasks.md 2.2 / spec AC-04: hard fiscal period lock - before a single mirror
                 // line is built or a single status flips, so a back-dated cancel writes ZERO rows.
                 company.EnsurePostingDateUnlocked(postingDate);
+                // R-13 FC-04: cancelling into a closed year is refused — the close is immutable.
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, postingDate, token);
 
                 var accrualLines = await _hr.GetAccrualGlEntriesAsync(entry.Id, token);
                 if (accrualLines.Count == 0)

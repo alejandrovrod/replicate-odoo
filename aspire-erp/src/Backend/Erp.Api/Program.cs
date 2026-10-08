@@ -12,7 +12,9 @@ using Erp.Application.Features.Banking.Queries;
 using Erp.Application.Features.Buying.Commands;
 using Erp.Application.Features.Buying.Queries;
 using Erp.Application.Features.GeneralLedger.Commands;
+using Erp.Application.Features.GeneralLedger.PeriodClosing;
 using Erp.Application.Features.GeneralLedger.Queries;
+using Erp.Application.Features.FiscalClosing;
 using Erp.Application.Features.Items.Commands;
 using Erp.Application.Features.Items.Queries;
 using Erp.Application.Features.Selling.Commands;
@@ -34,6 +36,8 @@ using Erp.Application.Features.Catalogs;
 using Erp.Application.Features.Currencies.Commands;
 using Erp.Application.Features.Payments.Commands;
 using Erp.Application.Features.Payments.Queries;
+using Erp.Application.Features.ExchangeRates.Commands;
+using Erp.Application.Features.ExchangeRates.Queries;
 using Erp.Application.Services;
 using Erp.Domain.Common;
 using Erp.Domain.Repositories;
@@ -96,6 +100,19 @@ builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateCurrencyCommand, Result<CurrencyDto>>, CreateCurrencyCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdateCurrencyCommand, Result<CurrencyDto>>, UpdateCurrencyCommandHandler>();
 
+// Exchange Rates & Revaluations
+builder.Services.AddScoped<IExchangeRateRepository, ExchangeRateRepository>();
+builder.Services.AddScoped<IExchangeRateRevaluationRepository, ExchangeRateRevaluationRepository>();
+
+builder.Services.AddScoped<ICommandHandler<UpsertExchangeRateCommand, Result<UpsertExchangeRateResult>>, UpsertExchangeRateCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateExchangeRateRevaluationCommand, Result<CreateExchangeRateRevaluationResult>>, CreateExchangeRateRevaluationCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitExchangeRateRevaluationCommand, Result<SubmitExchangeRateRevaluationResult>>, SubmitExchangeRateRevaluationCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelExchangeRateRevaluationCommand, Result<CancelExchangeRateRevaluationResult>>, CancelExchangeRateRevaluationCommandHandler>();
+
+builder.Services.AddScoped<IQueryHandler<GetExchangeRateQuery, Result<GetExchangeRateResult>>, GetExchangeRateQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetExchangeRateRevaluationsQuery, Result<List<ExchangeRateRevaluationDto>>>, GetExchangeRateRevaluationsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetExchangeRateRevaluationDetailQuery, Result<ExchangeRateRevaluationDetailDto>>, GetExchangeRateRevaluationDetailQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetRevaluationPreviewQuery, Result<RevaluationPreviewDto>>, GetRevaluationPreviewQueryHandler>();
 // Stock & Inventory (Tasks 3.1-3.3): masters, the perpetual-inventory posting engine and the
 // Article VI.4 idempotency filter. Repositories stay in Erp.Infrastructure, handlers in
 // Erp.Application - only the composition root knows both (decision C2).
@@ -180,6 +197,22 @@ builder.Services.AddScoped<ICommandHandler<SubmitJournalEntryCommand, Result<Jou
 builder.Services.AddScoped<ICommandHandler<CancelJournalEntryCommand, Result<JournalEntryDto>>, CancelJournalEntryCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetJournalEntriesQuery, PagedResult<JournalEntryDto>>, GetJournalEntriesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetJournalEntryQuery, JournalEntryDto?>, GetJournalEntryQueryHandler>();
+
+// Fiscal Closing (R-13, spec 13-fiscal-closing): the fiscal-year master, the hardened closing
+// voucher pipeline (create Draft → submit atomic close → cancel by reversal) and the read-only
+// P&L preview. Same split as every other module: repositories in Erp.Infrastructure,
+// commands/queries/DTOs in Erp.Application - only the composition root knows both (decision C2).
+builder.Services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
+builder.Services.AddScoped<IPeriodClosingVoucherRepository, PeriodClosingVoucherRepository>();
+builder.Services.AddScoped<ICommandHandler<CreateFiscalYearCommand, Result<FiscalYearDto>>, CreateFiscalYearCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CloseFiscalYearCommand, Result<FiscalYearDto>>, CloseFiscalYearCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetFiscalYearsQuery, PagedResult<FiscalYearDto>>, GetFiscalYearsQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<CreatePeriodClosingVoucherCommand, Result<PeriodClosingVoucherDto>>, CreatePeriodClosingVoucherCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitPeriodClosingVoucherCommand, Result<PeriodClosingVoucherDto>>, SubmitPeriodClosingVoucherCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelPeriodClosingVoucherCommand, Result<PeriodClosingVoucherDto>>, CancelPeriodClosingVoucherCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPeriodClosingVouchersQuery, PagedResult<PeriodClosingVoucherDto>>, GetPeriodClosingVouchersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPeriodClosingVoucherDetailQuery, PeriodClosingVoucherDto?>, GetPeriodClosingVoucherDetailQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetUnclosedPLBalancesQuery, ClosingPreviewDto?>, GetUnclosedPLBalancesQueryHandler>();
 
 // Financial Reporting (tasks.md 2.5): the four read-only report queries over GLEntry. The ledger
 // repository exposes NO write path (Constitution III.2 - append-only ledger), so a report can

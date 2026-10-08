@@ -73,6 +73,8 @@ public sealed class CancelJournalEntryCommandHandler
                         $"Company '{entry.CompanyId}' was not found in this tenant.");
 
                 company.EnsurePostingDateUnlocked(entry.PostingDate);
+                // R-13 FC-04: cancelling into a closed year is refused — the close is immutable.
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, entry.PostingDate, token);
 
                 // spec AC-07: only a Submitted voucher cancels; Draft/Cancelled -> 409.
                 entry.Cancel();

@@ -26,6 +26,7 @@ public sealed class PurchasePostingServiceTests
     private readonly FakeItemRepository _items = new();
     private readonly FakeStockRepository _stock = new();
     private readonly FakePurchaseRepository _purchases = new();
+    private readonly FakeExchangeRateRepository _exchangeRates = new();
 
     private readonly Account _stockAccount;    // 1310 - Stock In Hand (warehouse asset)
     private readonly Account _receivedAccount; // 2120 - Stock Received But Not Billed (interim)
@@ -96,7 +97,7 @@ public sealed class PurchasePostingServiceTests
     }
 
     private PurchasePostingService CreateService() =>
-        new(_companies, _accounts, _warehouses, _items, _stock, _purchases);
+        new(_companies, _accounts, _warehouses, _items, _stock, _purchases, _exchangeRates);
 
     private Account NewAccount(string code, string name) =>
         new()
@@ -147,7 +148,7 @@ public sealed class PurchasePostingServiceTests
 
     private PurchaseInvoicePostingRequest NewInvoiceRequest(
         Guid receiptId, decimal taxAmount, params PurchaseInvoicePostingLine[] lines) =>
-        new(_companyId, _supplier.Id, "BILL-001", PostingDate, PostingDate.AddDays(30), taxAmount, lines);
+        new(_companyId, _supplier.Id, "BILL-001", null, PostingDate, PostingDate.AddDays(30), taxAmount, lines);
 
     // ------------------------------------------------------------------------ receipt (task 4.2)
 
@@ -369,7 +370,7 @@ public sealed class PurchasePostingServiceTests
 
         // First bill: 4 of the 10 units -> stays PartiallyReceived with 40% billed.
         var partial = await service.PostInvoiceAsync(new PurchaseInvoicePostingRequest(
-            _companyId, _supplier.Id, "BILL-PARTIAL-1", PostingDate, PostingDate.AddDays(30), 0m,
+            _companyId, _supplier.Id, "BILL-PARTIAL-1", null, PostingDate, PostingDate.AddDays(30), 0m,
             new[] { new PurchaseInvoicePostingLine(receiptLine.Id, receiptLine.ItemId, 4m, 100m) }));
 
         Assert.Equal(PurchaseOrderStatus.PartiallyReceived, partial.OrderStatus);
@@ -380,7 +381,7 @@ public sealed class PurchasePostingServiceTests
 
         // Second bill clears the remaining 6 units -> ONLY NOW the order completes.
         var final = await service.PostInvoiceAsync(new PurchaseInvoicePostingRequest(
-            _companyId, _supplier.Id, "BILL-PARTIAL-2", PostingDate, PostingDate.AddDays(30), 0m,
+            _companyId, _supplier.Id, "BILL-PARTIAL-2", null, PostingDate, PostingDate.AddDays(30), 0m,
             new[] { new PurchaseInvoicePostingLine(receiptLine.Id, receiptLine.ItemId, 6m, 100m) }));
 
         Assert.Equal(PurchaseOrderStatus.Completed, final.OrderStatus);
@@ -590,7 +591,7 @@ public sealed class PurchasePostingServiceTests
         _companies.Company!.FrozenAccountsDate = receipt.PostingDate;
 
         var request = new PurchaseInvoicePostingRequest(
-            _companyId, _supplier.Id, "INV-001", receipt.PostingDate, receipt.PostingDate.AddDays(30), 0m,
+            _companyId, _supplier.Id, "INV-001", null, receipt.PostingDate, receipt.PostingDate.AddDays(30), 0m,
             new[] { MatchLine(receipt.Lines.Single(), rate: 100m) });
 
         var ex = await Assert.ThrowsAsync<FiscalPeriodLockedException>(
@@ -618,7 +619,7 @@ public sealed class PurchasePostingServiceTests
         var receipt = _purchases.Receipts.Single();
 
         var invoiceRequest = new PurchaseInvoicePostingRequest(
-            _companyId, _supplier.Id, "INV-001", PostingDate, PostingDate.AddDays(30), 100m,
+            _companyId, _supplier.Id, "INV-001", null, PostingDate, PostingDate.AddDays(30), 100m,
             new[] { MatchLine(receipt.Lines.Single(), rate: 120m) });
         var invoicePosting = await service.PostInvoiceAsync(invoiceRequest);
 
@@ -632,5 +633,7 @@ public sealed class PurchasePostingServiceTests
             + $"D={invoicePosting.TotalDebit:0.0000}, C={invoicePosting.TotalCredit:0.0000}.");
     }
 }
+
+
 
 

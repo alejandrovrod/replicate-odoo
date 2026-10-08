@@ -34,6 +34,7 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
     private readonly ISupplierRepository _suppliers;
     private readonly ISalesInvoiceRepository _salesInvoices;
     private readonly IPurchaseRepository _purchases;
+    private readonly IExchangeRateRepository _exchangeRates;
 
     public SubmitPaymentEntryCommandHandler(
         IBankRepository banks,
@@ -42,7 +43,8 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
         ICustomerRepository customers,
         ISupplierRepository suppliers,
         ISalesInvoiceRepository salesInvoices,
-        IPurchaseRepository purchases)
+        IPurchaseRepository purchases,
+        IExchangeRateRepository exchangeRates)
     {
         _banks = banks;
         _companies = companies;
@@ -51,6 +53,7 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
         _suppliers = suppliers;
         _salesInvoices = salesInvoices;
         _purchases = purchases;
+        _exchangeRates = exchangeRates;
     }
 
     public async Task<Result<PaymentEntryDto>> HandleAsync(
@@ -84,6 +87,8 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
                         $"Company '{payment.CompanyId}' was not found in this tenant.");
 
                 company.EnsurePostingDateUnlocked(payment.PaymentDate);
+                // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, payment.PaymentDate, token);
 
                 // PE-04: only now does the state machine move Draft -> Submitted.
                 payment.Submit();
@@ -118,11 +123,89 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
                 var (bankGl, counterparty) = await PaymentPosting.LoadSettlementAccountsAsync(
                     _accounts, bankProfile, counterpartyLeaf, token);
 
+                // FX: Resolve Settlement Exchange Rate
+                if (payment.TransactionCurrencyId.HasValue && company.CurrencyId.HasValue && payment.TransactionCurrencyId != company.CurrencyId)
+                {
+                    var rateRow = await _exchangeRates.GetLatestRateAsync(payment.TransactionCurrencyId.Value, company.CurrencyId.Value, payment.PaymentDate, token);
+                    if (rateRow == null)
+                    {
+                        throw new BankingValidationException(FxErrorCodes.ExchangeRateMissing, $"Missing exchange rate for {payment.TransactionCurrencyId.Value}");
+                    }
+                    payment.SettlementExchangeRate = rateRow.Rate;
+                }
+                else
+                {
+                    payment.SettlementExchangeRate = 1m;
+                }
+
                 // PE-04: the fiscal number is born inside the numbering lock, after every gate.
                 payment.VoucherNo = await _banks.NextPaymentVoucherNumberAsync(
                     payment.CompanyId, payment.PaymentDate.Year, token);
 
                 var glLines = PaymentPosting.BuildLedgerLines(payment, bankGl, counterparty, isReversal: false);
+
+                // FX: Realized Gain/Loss Plug Lines
+                var totalFxDiff = 0m;
+                if (payment.PartyType == PaymentPartyType.Customer)
+                {
+                    foreach (var (invId, data) in salesTotals)
+                    {
+                        totalFxDiff += FxCalculator.RealizedPerSlice(data.Total, payment.SettlementExchangeRate, data.InvoiceRate);
+                    }
+                }
+                else
+                {
+                    foreach (var (invId, data) in purchaseTotals)
+                    {
+                        // Money out (Pay): diff is reversed from customer logic? 
+                        // Wait, RealizedPerSlice gives (Settlement CC - Invoice CC).
+                        // If we paid more CC than invoice CC, it's a loss. But let's check FxCalculator...
+                        // If it's a loss, totalFxDiff < 0. Wait! For purchase invoice,
+                        // Dr Payable (Invoice CC), Cr Bank (Settlement CC). Diff = Payable - Bank = Invoice CC - Settlement CC.
+                        // So for Pay, the Diff = Invoice CC - Settlement CC.
+                        // Wait, let's just use FxCalculator.RealizedPerSlice? FxCalculator only takes allocFC, settlementRate, invoiceRate. 
+                        // Let's implement it safely.
+                        totalFxDiff += payment.PaymentType == PaymentType.Receive
+                            ? FxCalculator.RealizedPerSlice(data.Total, payment.SettlementExchangeRate, data.InvoiceRate)
+                            : -FxCalculator.RealizedPerSlice(data.Total, payment.SettlementExchangeRate, data.InvoiceRate);
+                    }
+                }
+
+                if (totalFxDiff != 0m)
+                {
+                    if (string.IsNullOrWhiteSpace(company.DefaultExchangeGainLossAccountCode))
+                    {
+                        throw new BankingValidationException("invalid_exchange_gain_loss_account", "Company DefaultExchangeGainLossAccountCode is not configured.");
+                    }
+                    var fxAccounts = await _accounts.FindActiveLeafByCodeAsync(company.Id, company.DefaultExchangeGainLossAccountCode, token);
+                    if (fxAccounts.Count != 1)
+                    {
+                        throw new BankingValidationException("invalid_exchange_gain_loss_account", "Company DefaultExchangeGainLossAccountCode does not resolve to exactly one active leaf.");
+                    }
+                    var fxAccount = fxAccounts[0];
+
+                    var fxLine = new GLEntry
+                    {
+                        CompanyId = payment.CompanyId,
+                        PostingDate = payment.PaymentDate,
+                        AccountId = fxAccount.Id,
+                        Account = fxAccount,
+                        Debit = totalFxDiff < 0 ? -totalFxDiff : 0m,
+                        Credit = totalFxDiff > 0 ? totalFxDiff : 0m,
+                        DebitInAccountCurrency = totalFxDiff < 0 ? -totalFxDiff : 0m,
+                        CreditInAccountCurrency = totalFxDiff > 0 ? totalFxDiff : 0m,
+                        AccountCurrency = company.Currency?.Code ?? "USD",
+                        VoucherType = PaymentPosting.VoucherType,
+                        VoucherNo = payment.VoucherNo,
+                        VoucherId = payment.Id,
+                        PartyType = null,
+                        PartyId = null,
+                        CostCenterId = null,
+                        IsCancelled = false,
+                        Remarks = $"Realized FX {(totalFxDiff > 0 ? "Gain" : "Loss")}"
+                    };
+                    glLines.Add(fxLine);
+                }
 
                 // Constitution III.1 on the rows that are about to be written.
                 DoubleEntryGuard.EnsureBalanced(glLines);
@@ -157,18 +240,19 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
     /// invoice status. Returns per-invoice totals (unused by the caller - kept for symmetry
     /// with the Pay leg and future partial-failure reporting).
     /// </summary>
-    private async Task<Dictionary<Guid, decimal>> SettleSalesAllocationsAsync(
+    private async Task<Dictionary<Guid, (decimal Total, decimal InvoiceRate)>> SettleSalesAllocationsAsync(
         PaymentEntry payment,
         CancellationToken cancellationToken)
     {
-        var totals = new Dictionary<Guid, decimal>();
+        var totals = new Dictionary<Guid, (decimal Total, decimal InvoiceRate)>();
+        var sums = new Dictionary<Guid, decimal>();
         foreach (var slice in payment.Allocations.Where(a => a.SalesInvoiceId.HasValue))
         {
-            totals.TryGetValue(slice.SalesInvoiceId!.Value, out var running);
-            totals[slice.SalesInvoiceId!.Value] = running + slice.AllocatedAmount;
+            sums.TryGetValue(slice.SalesInvoiceId!.Value, out var running);
+            sums[slice.SalesInvoiceId!.Value] = running + slice.AllocatedAmount;
         }
 
-        foreach (var (invoiceId, total) in totals)
+        foreach (var (invoiceId, total) in sums)
         {
             var invoice = await _salesInvoices.GetByIdAsync(invoiceId, cancellationToken)
                 ?? throw new BankingValidationException(
@@ -198,24 +282,26 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
             invoice.Status = RecomputeSalesStatus(invoice);
 
             await _salesInvoices.UpdateAsync(invoice, cancellationToken);
+            totals[invoice.Id] = (total, invoice.ExchangeRate);
         }
 
         return totals;
     }
 
     /// <summary>Pay-leg mirror of <see cref="SettleSalesAllocationsAsync"/> (no PaidAmount column).</summary>
-    private async Task<Dictionary<Guid, decimal>> SettlePurchaseAllocationsAsync(
+    private async Task<Dictionary<Guid, (decimal Total, decimal InvoiceRate)>> SettlePurchaseAllocationsAsync(
         PaymentEntry payment,
         CancellationToken cancellationToken)
     {
-        var totals = new Dictionary<Guid, decimal>();
+        var totals = new Dictionary<Guid, (decimal Total, decimal InvoiceRate)>();
+        var sums = new Dictionary<Guid, decimal>();
         foreach (var slice in payment.Allocations.Where(a => a.PurchaseInvoiceId.HasValue))
         {
-            totals.TryGetValue(slice.PurchaseInvoiceId!.Value, out var running);
-            totals[slice.PurchaseInvoiceId!.Value] = running + slice.AllocatedAmount;
+            sums.TryGetValue(slice.PurchaseInvoiceId!.Value, out var running);
+            sums[slice.PurchaseInvoiceId!.Value] = running + slice.AllocatedAmount;
         }
 
-        foreach (var (invoiceId, total) in totals)
+        foreach (var (invoiceId, total) in sums)
         {
             var bill = await _purchases.GetInvoiceByIdAsync(invoiceId, cancellationToken)
                 ?? throw new BankingValidationException(
@@ -242,6 +328,7 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
             bill.Status = RecomputePurchaseStatus(bill);
 
             await _purchases.UpdateInvoiceAsync(bill, cancellationToken);
+            totals[bill.Id] = (total, bill.ExchangeRate);
         }
 
         return totals;

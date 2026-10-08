@@ -82,6 +82,8 @@ public sealed class PostDueDepreciationsCommandHandler
                 foreach (var line in due)
                 {
                     company.EnsurePostingDateUnlocked(line.ScheduleDate);
+                    // R-13 FC-04: a date inside a closed year fails the run with ZERO writes.
+                    await _companies.EnsurePostingDateInOpenYearAsync(company.Id, line.ScheduleDate, token);
                 }
 
                 var booked = new List<BookedLine>(due.Count);

@@ -102,6 +102,8 @@ public sealed class CancelPurchaseInvoiceCommandHandler
                         $"Company '{invoice.CompanyId}' was not found in this tenant.");
 
                 company.EnsurePostingDateUnlocked(invoice.PostingDate);
+                // R-13 FC-04: cancelling into a closed year is refused — the close is immutable.
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, invoice.PostingDate, token);
 
                 // spec BY-05: status gate FIRST, so a Draft bill reports the transition it
                 // cannot make (invalid_status_transition) instead of the missing-ledger code.
@@ -288,6 +290,8 @@ public sealed class CancelPurchaseInvoiceCommandHandler
         foreach (var receipt in receipts)
         {
             company.EnsurePostingDateUnlocked(receipt.PostingDate);
+            // R-13 FC-04: a frozen-by-close receipt period blocks the whole cancellation.
+            await _companies.EnsurePostingDateInOpenYearAsync(company.Id, receipt.PostingDate, token);
         }
 
         foreach (var receipt in receipts)

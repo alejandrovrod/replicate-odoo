@@ -51,6 +51,40 @@
   <data name="fiscal_period_locked" xml:space="preserve">
     <value>The fiscal period is closed for this posting date.</value>
   </data>
+  <!-- Fiscal Closing (R-13, spec §5). -->
+  <data name="fiscal_year_closed" xml:space="preserve">
+    <value>The fiscal year is closed and immutable: no voucher may be created, submitted or cancelled in it.</value>
+  </data>
+  <data name="fiscal_year_overlap" xml:space="preserve">
+    <value>The fiscal year overlaps an existing fiscal year of the same company.</value>
+  </data>
+  <data name="fiscal_year_not_found" xml:space="preserve">
+    <value>Fiscal year not found.</value>
+  </data>
+  <data name="closing_date_outside_fiscal_year" xml:space="preserve">
+    <value>The posting date falls outside the fiscal year.</value>
+  </data>
+  <data name="invalid_retained_earnings_account" xml:space="preserve">
+    <value>The retained earnings account must be an active non-group Equity leaf of the same company.</value>
+  </data>
+  <data name="closing_non_pl_account" xml:space="preserve">
+    <value>The closing engine attempted to close a non-Profit-and-Loss account.</value>
+  </data>
+  <data name="duplicate_closing_for_fiscal_year" xml:space="preserve">
+    <value>A submitted closing voucher already exists for this fiscal year.</value>
+  </data>
+  <data name="no_closing_balances" xml:space="preserve">
+    <value>The fiscal year has no Profit and Loss balances to close.</value>
+  </data>
+  <data name="period_closing_not_found" xml:space="preserve">
+    <value>Closing voucher not found.</value>
+  </data>
+  <data name="period_closing_invalid_transition" xml:space="preserve">
+    <value>The closing voucher cannot move from its current status to the requested status.</value>
+  </data>
+  <data name="period_closing_already_cancelled" xml:space="preserve">
+    <value>The closing voucher is already cancelled.</value>
+  </data>
   <data name="posting_to_group_account_prohibited" xml:space="preserve">
     <value>Group accounts cannot receive ledger entries.</value>
   </data>
@@ -775,5 +809,32 @@
   </data>
   <data name="already_reversed" xml:space="preserve">
     <value>The disposal has already been reversed.</value>
+  </data>
+  <data name="exchange_rate_invalid" xml:space="preserve">
+    <value>Exchange rate must be greater than zero.</value>
+  </data>
+  <data name="exchange_rate_missing" xml:space="preserve">
+    <value>No valid exchange rate was found for the given currency pair.</value>
+  </data>
+  <data name="exchange_rate_self_pair" xml:space="preserve">
+    <value>Cannot define an exchange rate for a currency against itself.</value>
+  </data>
+  <data name="invalid_exchange_gain_loss_account" xml:space="preserve">
+    <value>Invalid exchange gain/loss account configured.</value>
+  </data>
+  <data name="invalid_rounding_loss_allowance" xml:space="preserve">
+    <value>Rounding loss allowance must be positive.</value>
+  </data>
+  <data name="no_revaluation_gain_loss" xml:space="preserve">
+    <value>No gain or loss detected for revaluation.</value>
+  </data>
+  <data name="revaluation_already_cancelled" xml:space="preserve">
+    <value>The revaluation has already been cancelled.</value>
+  </data>
+  <data name="revaluation_future_date" xml:space="preserve">
+    <value>The revaluation posting date cannot be in the future.</value>
+  </data>
+  <data name="revaluation_invalid_transition" xml:space="preserve">
+    <value>The revaluation status transition is invalid.</value>
   </data>
 </root>

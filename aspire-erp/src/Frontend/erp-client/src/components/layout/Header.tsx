@@ -39,7 +39,11 @@ const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys 
   'selling-customers': { title: 'nav.route.selling', category: 'nav.category.selling' },
   'buying-suppliers': { title: 'nav.route.buying', category: 'nav.category.buying' },
   'accounting-currencies': { title: 'nav.item.accountingCurrencies', category: 'nav.category.accounting' },
+  'accounting-exchange-rates': { title: 'nav.item.accountingExchangeRates', category: 'nav.category.accounting' },
+  'accounting-fx-revaluations': { title: 'nav.item.accountingFxRevaluations', category: 'nav.category.accounting' },
   'banking-accounts': { title: 'nav.item.bankingAccounts', category: 'nav.category.treasury' },
+  'accounting-period-closing': { title: 'nav.item.periodClosing', category: 'nav.category.accounting' },
+  'accounting-settings': { title: 'nav.item.accountingSettings', category: 'nav.category.accounting' },
 }
 
 const FALLBACK_NAV = {

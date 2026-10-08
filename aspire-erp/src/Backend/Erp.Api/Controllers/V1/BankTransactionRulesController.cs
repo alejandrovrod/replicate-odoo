@@ -62,7 +62,6 @@ public sealed class BankTransactionRulesController : ControllerBase
         var rules = await _sender.SendAsync(
             new GetBankTransactionRulesQuery(companyId, page, pageSize), cancellationToken);
         return Ok(rules);
-        return Ok(rules);
     }
 
     /// <summary>Creates one heuristic matching rule (201 + the persisted rule).</summary>

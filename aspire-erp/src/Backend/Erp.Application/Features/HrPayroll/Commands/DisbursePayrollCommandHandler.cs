@@ -71,6 +71,8 @@ public sealed class DisbursePayrollCommandHandler
                 // tasks.md 2.2 / spec AC-04: hard fiscal period lock - before a single GLEntry
                 // line is built, so a back-dated disbursal modifies ZERO data.
                 company.EnsurePostingDateUnlocked(command.PostingDate);
+                // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, command.PostingDate, token);
 
                 var bankAccount = await _banks.GetAccountByIdAsync(command.BankAccountId, token)
                     ?? throw new HrValidationException(

@@ -103,6 +103,11 @@ public sealed class PaymentEntry : ITenantEntity
     /// <summary>External reference (cheque / transfer number), if any.</summary>
     public string? ReferenceNumber { get; set; }
 
+    public Guid? TransactionCurrencyId { get; set; }
+    public Currency? TransactionCurrency { get; set; }
+    public decimal SettlementExchangeRate { get; set; } = 1m;
+
+
     /// <summary>Submittable lifecycle (PE-04): Draft → Submitted → Cancelled.</summary>
     public PaymentDocumentStatus DocumentStatus { get; set; } = PaymentDocumentStatus.Draft;
 

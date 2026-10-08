@@ -76,6 +76,8 @@ public sealed class SubmitJournalEntryCommandHandler
                         $"Company '{entry.CompanyId}' was not found in this tenant.");
 
                 company.EnsurePostingDateUnlocked(entry.PostingDate);
+                // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, entry.PostingDate, token);
 
                 // spec AC-02 / plan.md §3 canonical logic: the DRAFT's own lines must balance.
                 entry.EnsureBalanced();

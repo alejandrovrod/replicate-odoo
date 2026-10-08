@@ -293,6 +293,27 @@
   <data name="JournalEntryRejected" xml:space="preserve">
     <value>Journal Entry Rejected</value>
   </data>
+  <data name="InvalidFiscalYear" xml:space="preserve">
+    <value>Invalid Fiscal Year</value>
+  </data>
+  <data name="FiscalYearNotFound" xml:space="preserve">
+    <value>Fiscal Year Not Found</value>
+  </data>
+  <data name="FiscalYearConflict" xml:space="preserve">
+    <value>Fiscal Year Conflict</value>
+  </data>
+  <data name="FiscalYearRejected" xml:space="preserve">
+    <value>Fiscal Year Rejected</value>
+  </data>
+  <data name="PeriodClosingNotFound" xml:space="preserve">
+    <value>Closing Voucher Not Found</value>
+  </data>
+  <data name="PeriodClosingConflict" xml:space="preserve">
+    <value>Closing Voucher Conflict</value>
+  </data>
+  <data name="PeriodClosingRejected" xml:space="preserve">
+    <value>Closing Voucher Rejected</value>
+  </data>
   <data name="InvalidDateRange" xml:space="preserve">
     <value>Invalid Date Range</value>
   </data>

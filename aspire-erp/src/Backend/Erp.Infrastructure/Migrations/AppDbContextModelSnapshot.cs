@@ -999,6 +999,12 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid?>("CurrencyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("DefaultExchangeGainLossAccountCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DefaultExchangeGainLossAccountId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("DefaultIncomeAccountCode")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1507,6 +1513,203 @@ namespace Erp.Infrastructure.Migrations
                                     .HasPeriodEnd("PeriodEnd")
                                     .HasColumnName("PeriodEnd");
                             }));
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.ExchangeRate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("FromCurrencyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Rate")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<DateOnly>("RateDate")
+                        .HasColumnType("date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<Guid>("ToCurrencyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromCurrencyId");
+
+                    b.HasIndex("ToCurrencyId");
+
+                    b.ToTable("ExchangeRates");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.ExchangeRateRevaluation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("DocumentStatus")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ExchangeGainLossAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("PostingDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("RoundingLossAllowance")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("VoucherNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("ExchangeGainLossAccountId");
+
+                    b.ToTable("ExchangeRateRevaluations");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.ExchangeRateRevaluationLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BalanceInBaseCurrency")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("BalanceInForeignCurrency")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<Guid>("CurrencyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CurrentExchangeRate")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<Guid>("ExchangeRateRevaluationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("GainLossAmount")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("NewExchangeRate")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("ExchangeRateRevaluationId");
+
+                    b.ToTable("ExchangeRateRevaluationLines");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.FiscalYear", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsClosed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("YearName")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "YearName")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_FY_Company_Year");
+
+                    b.HasIndex("TenantId", "CompanyId", "IsClosed")
+                        .HasDatabaseName("IX_FY_Tenant_Company_Closed");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("TenantId", "CompanyId", "IsClosed"), new[] { "StartDate", "EndDate" });
+
+                    b.ToTable("FiscalYears", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FY_ClosedAt", "(([IsClosed] = 0 AND [ClosedAt] IS NULL) OR ([IsClosed] = 1))");
+
+                            t.HasCheckConstraint("CK_FY_Dates", "[StartDate] < [EndDate]");
+                        });
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.GLEntry", b =>
@@ -2208,6 +2411,9 @@ namespace Erp.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<decimal>("SettlementExchangeRate")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -2216,6 +2422,9 @@ namespace Erp.Infrastructure.Migrations
                         .HasDefaultValue("Unreconciled");
 
                     b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("TransactionCurrencyId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("UnallocatedAmount")
@@ -2235,6 +2444,8 @@ namespace Erp.Infrastructure.Migrations
                     b.HasIndex("BankAccountId");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("TransactionCurrencyId");
 
                     b.HasIndex("TenantId", "CompanyId", "Status")
                         .HasDatabaseName("IX_PaymentEntry_Tenant_Company_Status");
@@ -2322,18 +2533,28 @@ namespace Erp.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
                     b.Property<string>("DocumentStatus")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateOnly>("PostingDate")
                         .HasColumnType("date");
@@ -2360,10 +2581,74 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId", "VoucherNo")
-                        .IsUnique();
+                    b.HasIndex("FiscalYearId");
 
-                    b.ToTable("PeriodClosingVouchers", (string)null);
+                    b.HasIndex("RetainedEarningsAccountId");
+
+                    b.HasIndex("CompanyId", "FiscalYearId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_One_Submitted_Close_Per_Year")
+                        .HasFilter("[DocumentStatus] = 'Submitted'");
+
+                    b.HasIndex("CompanyId", "VoucherNo")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_PCV_Company_VoucherNo");
+
+                    b.HasIndex("TenantId", "CompanyId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_PCV_Idempotency")
+                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+
+                    b.HasIndex("TenantId", "CompanyId", "DocumentStatus", "PostingDate")
+                        .HasDatabaseName("IX_PCV_Tenant_Company_Status_Date");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("TenantId", "CompanyId", "DocumentStatus", "PostingDate"), new[] { "FiscalYearId", "VoucherNo" });
+
+                    b.ToTable("PeriodClosingVouchers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PCV_Status", "[DocumentStatus] IN ('Draft','Submitted','Cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.PeriodClosingVoucherLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Credit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Debit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("VoucherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("VoucherId")
+                        .HasDatabaseName("IX_PCVL_Voucher");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("VoucherId"), new[] { "AccountId", "Debit", "Credit" });
+
+                    b.ToTable("PeriodClosingVoucherLines", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PCVL_NonNeg", "[Debit] >= 0 AND [Credit] >= 0 AND ([Debit] > 0 OR [Credit] > 0)");
+                        });
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoice", b =>
@@ -2386,8 +2671,14 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("datetimeoffset")
                         .HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
+                    b.Property<Guid?>("CurrencyId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateOnly>("DueDate")
                         .HasColumnType("date");
+
+                    b.Property<decimal>("ExchangeRate")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("GrandTotal")
                         .ValueGeneratedOnAdd()
@@ -2438,6 +2729,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasDefaultValue(0.0000m);
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CurrencyId");
 
                     b.HasIndex("SupplierId");
 
@@ -3027,11 +3320,17 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("datetimeoffset")
                         .HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
+                    b.Property<Guid?>("CurrencyId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateOnly>("DueDate")
                         .HasColumnType("date");
+
+                    b.Property<decimal>("ExchangeRate")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("GrandTotal")
                         .ValueGeneratedOnAdd()
@@ -3088,6 +3387,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CurrencyId");
 
                     b.HasIndex("CustomerId");
 
@@ -4375,6 +4676,82 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("Designation");
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.ExchangeRate", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Currency", "FromCurrency")
+                        .WithMany()
+                        .HasForeignKey("FromCurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Erp.Domain.Entities.Currency", "ToCurrency")
+                        .WithMany()
+                        .HasForeignKey("ToCurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FromCurrency");
+
+                    b.Navigation("ToCurrency");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.ExchangeRateRevaluation", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Erp.Domain.Entities.Account", "ExchangeGainLossAccount")
+                        .WithMany()
+                        .HasForeignKey("ExchangeGainLossAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
+
+                    b.Navigation("ExchangeGainLossAccount");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.ExchangeRateRevaluationLine", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Erp.Domain.Entities.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Erp.Domain.Entities.ExchangeRateRevaluation", "ExchangeRateRevaluation")
+                        .WithMany("Lines")
+                        .HasForeignKey("ExchangeRateRevaluationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Currency");
+
+                    b.Navigation("ExchangeRateRevaluation");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.FiscalYear", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("FK_FY_Company");
+
+                    b.Navigation("Company");
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.GLEntry", b =>
                 {
                     b.HasOne("Erp.Domain.Entities.Account", "Account")
@@ -4573,7 +4950,13 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_PaymentEntry_Company");
 
+                    b.HasOne("Erp.Domain.Entities.Currency", "TransactionCurrency")
+                        .WithMany()
+                        .HasForeignKey("TransactionCurrencyId");
+
                     b.Navigation("BankAccount");
+
+                    b.Navigation("TransactionCurrency");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.PayrollEntry", b =>
@@ -4586,6 +4969,57 @@ namespace Erp.Infrastructure.Migrations
                         .HasConstraintName("FK_PayrollEntry_Company");
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.PeriodClosingVoucher", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("FK_PCV_Company");
+
+                    b.HasOne("Erp.Domain.Entities.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("FK_PCV_FiscalYear");
+
+                    b.HasOne("Erp.Domain.Entities.Account", "RetainedEarningsAccount")
+                        .WithMany()
+                        .HasForeignKey("RetainedEarningsAccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("FK_PCV_Retained");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("RetainedEarningsAccount");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.PeriodClosingVoucherLine", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("FK_PCVL_Account");
+
+                    b.HasOne("Erp.Domain.Entities.PeriodClosingVoucher", "Voucher")
+                        .WithMany("Lines")
+                        .HasForeignKey("VoucherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_PCVL_Voucher");
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Voucher");
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoice", b =>
                 {
                     b.HasOne("Erp.Domain.Entities.Company", null)
@@ -4595,12 +5029,18 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_PurchaseInvoice_Company");
 
+                    b.HasOne("Erp.Domain.Entities.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId");
+
                     b.HasOne("Erp.Domain.Entities.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_PurchaseInvoice_Supplier");
+
+                    b.Navigation("Currency");
 
                     b.Navigation("Supplier");
                 });
@@ -4846,6 +5286,10 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.SalesInvoice", b =>
                 {
+                    b.HasOne("Erp.Domain.Entities.Currency", "Currency")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId");
+
                     b.HasOne("Erp.Domain.Entities.Customer", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
@@ -4858,6 +5302,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasForeignKey("SourceWarehouseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("FK_SalesInvoice_SourceWarehouse");
+
+                    b.Navigation("Currency");
 
                     b.Navigation("Customer");
 
@@ -5152,6 +5598,11 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("Children");
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.ExchangeRateRevaluation", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.JournalEntry", b =>
                 {
                     b.Navigation("Lines");
@@ -5170,6 +5621,11 @@ namespace Erp.Infrastructure.Migrations
             modelBuilder.Entity("Erp.Domain.Entities.PayrollEntry", b =>
                 {
                     b.Navigation("Slips");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.PeriodClosingVoucher", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoice", b =>

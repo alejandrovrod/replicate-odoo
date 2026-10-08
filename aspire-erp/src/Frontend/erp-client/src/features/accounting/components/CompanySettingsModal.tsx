@@ -28,6 +28,7 @@ export function CompanySettingsModal({
   onClose: () => void
 }) {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const companyId = useTenantStore((s) => s.companyId)
   const { nodes, status: accountsStatus } = useAccountTree(companyId || '')
 
@@ -135,7 +136,7 @@ export function CompanySettingsModal({
                   }
                   className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
                 >
-                  <option value="">-- {t('common.select', 'Select')} --</option>
+                  <option value="">-- {t('companySettings.selectPlaceholder', 'Select')} --</option>
                   {equityAccounts.map((acc) => (
                     <option key={acc.id} value={acc.id}>
                       {acc.code} - {acc.name}
@@ -150,10 +151,10 @@ export function CompanySettingsModal({
 
             <DialogFooter className="pt-4 border-t border-slate-100">
               <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
-                {t('action.cancel', 'Cancel')}
+                {tCommon('action.cancel')}
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? t('state.saving', 'Saving...') : t('action.save', 'Save')}
+                {saving ? tCommon('state.saving') : tCommon('action.save')}
               </Button>
             </DialogFooter>
           </form>

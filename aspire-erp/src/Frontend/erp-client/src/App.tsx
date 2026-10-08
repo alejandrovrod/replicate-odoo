@@ -3,6 +3,9 @@ import { AppShell } from './components/layout/AppShell'
 import { AccountTreeTable } from './features/accounting/AccountTreeTable'
 import { CurrenciesView } from './features/accounting/CurrenciesView'
 import { GeneralLedgerOverview } from './features/accounting/GeneralLedgerOverview'
+import { FiscalClosingView } from './features/accounting/components/FiscalClosingView'
+import { ExchangeRateList } from './features/accounting/components/ExchangeRateList'
+import { ExchangeRateRevaluationsView } from './features/accounting/components/ExchangeRateRevaluationsView'
 import { BankingOverview } from './features/banking/BankingOverview'
 import { BuyingOverview } from './features/buying/BuyingOverview'
 import { CrmOverview } from './features/crm/CrmOverview'
@@ -45,6 +48,12 @@ function App() {
       {currentRoute === 'accounting-journal' && <GeneralLedgerOverview />}
 
       {currentRoute === 'accounting-currencies' && <CurrenciesView />}
+
+      {currentRoute === 'accounting-period-closing' && <FiscalClosingView />}
+
+      {currentRoute === 'accounting-exchange-rates' && <ExchangeRateList />}
+
+      {currentRoute === 'accounting-fx-revaluations' && <ExchangeRateRevaluationsView />}
 
       {currentRoute === 'assets-categories' && <AssetCategoryView />}
       

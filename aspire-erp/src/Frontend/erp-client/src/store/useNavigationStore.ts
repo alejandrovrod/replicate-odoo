@@ -21,6 +21,8 @@ export type NavRoute =
   | 'buying-suppliers'
   | 'accounting-settings'
   | 'accounting-period-closing'
+  | 'accounting-exchange-rates'
+  | 'accounting-fx-revaluations'
 
 interface NavigationState {
   currentRoute: NavRoute
@@ -53,6 +55,8 @@ const parseHash = (): NavRoute => {
     'buying-suppliers',
     'accounting-settings',
     'accounting-period-closing',
+    'accounting-exchange-rates',
+    'accounting-fx-revaluations',
   ]
   return validRoutes.includes(hash as NavRoute) ? (hash as NavRoute) : 'accounting-coa'
 }

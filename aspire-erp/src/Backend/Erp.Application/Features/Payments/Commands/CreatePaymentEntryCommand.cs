@@ -23,5 +23,6 @@ public sealed record CreatePaymentEntryCommand(
     Guid BankAccountId,
     DateOnly PaymentDate,
     decimal PaidAmount,
+    Guid? TransactionCurrencyId,
     string? ReferenceNumber,
     IReadOnlyList<PaymentAllocationInput> Allocations) : ICommand<Result<PaymentEntryDto>>;

@@ -67,6 +67,8 @@ public sealed class StockPostingService : IStockPostingService
             // GLEntry or StockLedgerEntry line is built - so a back-dated attempt against a frozen
             // company modifies ZERO data (the exception unwinds the transaction).
             company.EnsurePostingDateUnlocked(request.PostingDate);
+            // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+            await _companies.EnsurePostingDateInOpenYearAsync(company.Id, request.PostingDate, token);
 
             var (sourceWarehouse, targetWarehouse) = await ResolveWarehousesAsync(request, token);
             var items = await LoadItemsAsync(request, token);

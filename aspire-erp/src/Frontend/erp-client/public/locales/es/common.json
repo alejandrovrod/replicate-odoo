@@ -108,7 +108,11 @@
       "hrPayroll": "RRHH y nómina",
       "crm": "CRM y pipeline",
       "accountingCurrencies": "Monedas",
-      "bankingAccounts": "Cuentas Bancarias"
+      "accountingExchangeRates": "Tasas de Cambio",
+      "accountingFxRevaluations": "Revaluaciones FX",
+      "bankingAccounts": "Cuentas Bancarias",
+      "periodClosing": "Cierre de período",
+      "accountingSettings": "Configuración contable"
     },
     "expandSidebar": "Expandir barra lateral",
     "collapseSidebar": "Contraer barra lateral"

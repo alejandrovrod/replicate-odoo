@@ -81,6 +81,8 @@ public sealed class SubmitPayrollRunCommandHandler
                 // tasks.md 2.2 / spec AC-04: hard fiscal period lock - BEFORE a single slip or
                 // GLEntry line is built, so a back-dated run modifies ZERO data.
                 company.EnsurePostingDateUnlocked(command.PostingDate);
+                // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, command.PostingDate, token);
 
                 var overrides = ValidateOverrides(command.PaymentDayOverrides);
 

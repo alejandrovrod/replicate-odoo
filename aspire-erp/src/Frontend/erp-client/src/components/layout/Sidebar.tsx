@@ -58,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
         children: [
           { id: 'accounting-coa', route: 'accounting-coa', label: 'nav.item.accountingCoa', icon: ListTree },
           { id: 'accounting-currencies', route: 'accounting-currencies', label: 'nav.item.accountingCurrencies', icon: Receipt },
+          { id: 'accounting-exchange-rates', route: 'accounting-exchange-rates', label: 'nav.item.accountingExchangeRates', icon: Receipt },
         ],
       },
       {
@@ -88,11 +89,12 @@ const NAV_GROUPS: NavGroup[] = [
       },
       {
         id: 'acc-settings',
-        label: 'nav.folder.settings',
+        label: 'nav.folder.config',
         icon: Folder,
         children: [
           { id: 'accounting-settings', route: 'accounting-settings', label: 'nav.item.accountingSettings', icon: Folder },
           { id: 'accounting-period-closing', route: 'accounting-period-closing', label: 'nav.item.periodClosing', icon: Archive },
+          { id: 'accounting-fx-revaluations', route: 'accounting-fx-revaluations', label: 'nav.item.accountingFxRevaluations', icon: Archive },
         ],
       },
     ],

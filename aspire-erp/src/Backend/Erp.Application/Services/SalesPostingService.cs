@@ -80,6 +80,8 @@ public sealed class SalesPostingService : ISalesPostingService
             // tasks.md 2.2 / spec AC-04: hard fiscal period lock - FIRST check, before any
             // GLEntry/StockLedgerEntry line is built, so a back-dated delivery modifies zero data.
             company.EnsurePostingDateUnlocked(request.PostingDate);
+            // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+            await _companies.EnsurePostingDateInOpenYearAsync(company.Id, request.PostingDate, token);
 
             var order = await _salesOrders.GetOrderByIdAsync(request.SalesOrderId, token)
                 ?? throw new SalesValidationException(

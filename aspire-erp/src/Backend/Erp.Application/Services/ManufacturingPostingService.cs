@@ -113,6 +113,8 @@ public sealed class ManufacturingPostingService : IManufacturingPostingService
             // tasks.md 2.2 / spec AC-04: hard fiscal period lock. Checked FIRST - before a single
             // GLEntry or StockLedgerEntry line is built - so a back-dated attempt modifies ZERO data.
             company.EnsurePostingDateUnlocked(request.PostingDate);
+            // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+            await _companies.EnsurePostingDateInOpenYearAsync(company.Id, request.PostingDate, token);
 
             var wipWarehouse = await RequireCompanyWarehouseAsync(order.WipWarehouseId, company.Id, "WIP transit", token);
             var targetWarehouse = await RequireCompanyWarehouseAsync(order.TargetWarehouseId, company.Id, "target (finished goods)", token);

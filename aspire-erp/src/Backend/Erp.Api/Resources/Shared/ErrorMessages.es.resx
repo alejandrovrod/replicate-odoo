@@ -51,6 +51,31 @@
   <data name="fiscal_period_locked" xml:space="preserve">
     <value>El período fiscal está cerrado para esta fecha de registro.</value>
   </data>
+  <!-- Cierres fiscales (R-13, spec §5). -->
+  <data name="fiscal_year_closed" xml:space="preserve">
+    <value>El año fiscal está cerrado y es inmutable: ningún comprobante puede crearse, registrarse ni anularse en él.</value>
+  </data>
+  <data name="fiscal_year_overlap" xml:space="preserve">
+    <value>El año fiscal se solapa con otro año fiscal existente de la misma empresa.</value>
+  </data>
+  <data name="fiscal_year_not_found" xml:space="preserve">
+    <value>Año fiscal no encontrado.</value>
+  </data>
+  <data name="closing_date_outside_fiscal_year" xml:space="preserve">
+    <value>La fecha de registro está fuera del año fiscal.</value>
+  </data>
+  <data name="invalid_retained_earnings_account" xml:space="preserve">
+    <value>La cuenta de resultados acumulados debe ser una cuenta hoja de Patrimonio, activa y de la misma empresa.</value>
+  </data>
+  <data name="closing_non_pl_account" xml:space="preserve">
+    <value>El motor de cierre intentó cerrar una cuenta que no es de resultados.</value>
+  </data>
+  <data name="duplicate_closing_for_fiscal_year" xml:space="preserve">
+    <value>Ya existe un comprobante de cierre registrado para este año fiscal.</value>
+  </data>
+  <data name="no_closing_balances" xml:space="preserve">
+    <value>El año fiscal no tiene saldos de resultados para cerrar.</value>
+  </data>
   <data name="posting_to_group_account_prohibited" xml:space="preserve">
     <value>Las cuentas de grupo no pueden recibir asientos contables.</value>
   </data>
@@ -137,23 +162,11 @@
   <data name="period_closing_not_found" xml:space="preserve">
     <value>Comprobante de cierre periódico no encontrado.</value>
   </data>
-  <data name="retained_earnings_account_not_found" xml:space="preserve">
-    <value>Cuenta de Ganancias Retenidas no encontrada.</value>
-  </data>
-  <data name="invalid_period_closing_amount" xml:space="preserve">
-    <value>Monto de cierre de período inválido.</value>
-  </data>
-  <data name="period_closing_conservation_violated" xml:space="preserve">
-    <value>La conservación del cierre de período no es válida: los débitos deben equal al total de créditos.</value>
-  </data>
   <data name="period_closing_invalid_transition" xml:space="preserve">
     <value>La transición de estado del cierre de período no está permitida.</value>
   </data>
   <data name="period_closing_already_cancelled" xml:space="preserve">
     <value>El comprobante de cierre periódico ya está anulado.</value>
-  </data>
-  <data name="period_closing_reconciled_cannot_cancel" xml:space="preserve">
-    <value>Un cierre de período conciliado no puede anularse hasta desconciliarlo.</value>
   </data>
   <data name="parent_not_found" xml:space="preserve">
     <value>Cuenta padre no encontrada.</value>
@@ -797,5 +810,32 @@
   </data>
   <data name="already_reversed" xml:space="preserve">
     <value>La baja ya fue revertida.</value>
+  </data>
+  <data name="exchange_rate_invalid" xml:space="preserve">
+    <value>El tipo de cambio debe ser mayor a cero.</value>
+  </data>
+  <data name="exchange_rate_missing" xml:space="preserve">
+    <value>No se encontró un tipo de cambio válido para el par de divisas dado.</value>
+  </data>
+  <data name="exchange_rate_self_pair" xml:space="preserve">
+    <value>No se puede definir un tipo de cambio de una divisa contra sí misma.</value>
+  </data>
+  <data name="invalid_exchange_gain_loss_account" xml:space="preserve">
+    <value>La cuenta de pérdidas y ganancias por diferencia de cambio configurada es inválida.</value>
+  </data>
+  <data name="invalid_rounding_loss_allowance" xml:space="preserve">
+    <value>La tolerancia para pérdida por redondeo debe ser positiva.</value>
+  </data>
+  <data name="no_revaluation_gain_loss" xml:space="preserve">
+    <value>No se detectó ganancia o pérdida para la revaluación.</value>
+  </data>
+  <data name="revaluation_already_cancelled" xml:space="preserve">
+    <value>La revaluación ya ha sido cancelada.</value>
+  </data>
+  <data name="revaluation_future_date" xml:space="preserve">
+    <value>La fecha de publicación de la revaluación no puede ser futura.</value>
+  </data>
+  <data name="revaluation_invalid_transition" xml:space="preserve">
+    <value>La transición de estado de la revaluación es inválida.</value>
   </data>
 </root>

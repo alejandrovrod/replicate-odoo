@@ -138,13 +138,21 @@ public static class PaymentPosting
             bankIsDebit = !bankIsDebit;
         }
 
-        var bankLine = NewLine(payment, bankGlAccount, bankIsDebit ? payment.PaidAmount : 0m, bankIsDebit ? 0m : payment.PaidAmount, isReversal);
-        var counterpartyLine = NewLine(payment, counterpartyAccount, bankIsDebit ? 0m : payment.PaidAmount, bankIsDebit ? payment.PaidAmount : 0m, isReversal);
+        var amountCC = payment.PaidAmount * payment.SettlementExchangeRate;
+        var amountFC = payment.PaidAmount;
+
+        var bankLine = NewLine(payment, bankGlAccount, 
+            bankIsDebit ? amountCC : 0m, bankIsDebit ? 0m : amountCC,
+            bankIsDebit ? amountFC : 0m, bankIsDebit ? 0m : amountFC, isReversal);
+            
+        var counterpartyLine = NewLine(payment, counterpartyAccount, 
+            bankIsDebit ? 0m : amountCC, bankIsDebit ? amountCC : 0m, 
+            bankIsDebit ? 0m : amountFC, bankIsDebit ? amountFC : 0m, isReversal);
 
         return new List<GLEntry> { bankLine, counterpartyLine };
     }
 
-    private static GLEntry NewLine(PaymentEntry payment, Account account, decimal debit, decimal credit, bool isReversal)
+    private static GLEntry NewLine(PaymentEntry payment, Account account, decimal debit, decimal credit, decimal debitFC, decimal creditFC, bool isReversal)
         => new()
         {
             CompanyId = payment.CompanyId,
@@ -157,8 +165,8 @@ public static class PaymentPosting
             Debit = debit,
             Credit = credit,
 
-            DebitInAccountCurrency = debit,
-            CreditInAccountCurrency = credit,
+            DebitInAccountCurrency = debitFC,
+            CreditInAccountCurrency = creditFC,
             AccountCurrency = account.Currency?.Code ?? "USD",
 
             VoucherType = VoucherType,

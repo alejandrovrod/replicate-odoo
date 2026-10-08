@@ -79,6 +79,8 @@ public sealed class CancelDisposeAssetCommandHandler
                         $"Company '{command.CompanyId}' was not found in this tenant.");
                 
                 company.EnsurePostingDateUnlocked(postingDate);
+                // R-13 FC-04: cancelling into a closed year is refused — the close is immutable.
+                await _companies.EnsurePostingDateInOpenYearAsync(company.Id, postingDate, token);
 
                 var reversalVoucherNo = await _assets.NextReversalVoucherNumberAsync(
                     company.Id, "RDS", postingDate.Year, token);

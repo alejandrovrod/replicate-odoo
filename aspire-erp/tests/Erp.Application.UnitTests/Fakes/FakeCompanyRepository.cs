@@ -10,5 +10,15 @@ public sealed class FakeCompanyRepository : ICompanyRepository
 
     public Task<Company?> GetByIdAsync(Guid companyId, CancellationToken cancellationToken = default)
         => Task.FromResult(Company);
+
+    public Task UpdateCompanyAsync(Company company, CancellationToken cancellationToken = default)
+    {
+        Company = company;
+        return Task.CompletedTask;
+    }
+
+    /// <summary>No-op: unit tests run without fiscal years (open calendar).</summary>
+    public Task EnsurePostingDateInOpenYearAsync(Guid companyId, DateOnly postingDate, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
 }
 

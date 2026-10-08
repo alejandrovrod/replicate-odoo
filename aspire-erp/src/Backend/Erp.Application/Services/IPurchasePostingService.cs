@@ -37,6 +37,7 @@ public sealed record PurchaseInvoicePostingRequest(
     Guid CompanyId,
     Guid SupplierId,
     string BillNumber,
+    Guid? CurrencyId,
     DateOnly PostingDate,
     DateOnly DueDate,
     decimal TaxAmount,

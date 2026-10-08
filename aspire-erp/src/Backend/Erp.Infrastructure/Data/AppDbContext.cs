@@ -34,7 +34,12 @@ public class AppDbContext : DbContext
     public DbSet<Currency> Currencies => Set<Currency>();
 
     public DbSet<Company> Companies => Set<Company>();
+    public DbSet<FiscalYear> FiscalYears => Set<FiscalYear>();
     public DbSet<PeriodClosingVoucher> PeriodClosingVouchers => Set<PeriodClosingVoucher>();
+    public DbSet<PeriodClosingVoucherLine> PeriodClosingVoucherLines => Set<PeriodClosingVoucherLine>();
+    public DbSet<ExchangeRate> ExchangeRates => Set<ExchangeRate>();
+    public DbSet<ExchangeRateRevaluation> ExchangeRateRevaluations => Set<ExchangeRateRevaluation>();
+    public DbSet<ExchangeRateRevaluationLine> ExchangeRateRevaluationLines => Set<ExchangeRateRevaluationLine>();
 
     public DbSet<Account> Accounts => Set<Account>();
 

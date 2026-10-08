@@ -21,6 +21,7 @@ public sealed record PostPurchaseInvoiceCommand(
     Guid CompanyId,
     Guid SupplierId,
     string BillNumber,
+    Guid? CurrencyId = null,
     DateOnly? DueDate = null,
     DateOnly? PostingDate = null,
     decimal TaxAmount = 0m,

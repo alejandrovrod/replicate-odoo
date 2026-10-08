@@ -22,4 +22,13 @@ public sealed class CompanyRepository : ICompanyRepository
         _dbContext.Companies.Update(company);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task EnsurePostingDateInOpenYearAsync(Guid companyId, DateOnly postingDate, CancellationToken cancellationToken = default)
+    {
+        var covering = await _dbContext.FiscalYears
+            .Where(x => x.CompanyId == companyId && x.StartDate <= postingDate && x.EndDate >= postingDate)
+            .OrderBy(x => x.StartDate)
+            .FirstOrDefaultAsync(cancellationToken);
+        covering?.EnsurePostingAllowed(postingDate);
+    }
 }

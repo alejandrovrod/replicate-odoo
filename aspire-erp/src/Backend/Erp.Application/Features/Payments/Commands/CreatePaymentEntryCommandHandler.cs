@@ -128,6 +128,7 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
                 ReferenceNumber = string.IsNullOrWhiteSpace(command.ReferenceNumber)
                     ? null
                     : command.ReferenceNumber.Trim(),
+                TransactionCurrencyId = command.TransactionCurrencyId,
                 DocumentStatus = PaymentDocumentStatus.Draft,
                 Status = PaymentStatus.Unreconciled,
                 Allocations = slices.Select(s => new PaymentAllocation

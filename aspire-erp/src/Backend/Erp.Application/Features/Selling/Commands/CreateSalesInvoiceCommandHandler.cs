@@ -30,6 +30,8 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
         if (company is null) return Result<SalesInvoiceDto>.Failure(SellingErrorCodes.CompanyNotFound, "Company not found.");
 
         company.EnsurePostingDateUnlocked(request.PostingDate);
+        // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
+        await _companies.EnsurePostingDateInOpenYearAsync(company.Id, request.PostingDate, cancellationToken);
 
         var customer = await _customers.GetByIdAsync(request.CustomerId, cancellationToken);
         if (customer is null) return Result<SalesInvoiceDto>.Failure(SellingErrorCodes.CustomerNotFound, "Customer not found.");

@@ -108,7 +108,11 @@
       "hrPayroll": "HR & Payroll",
       "crm": "CRM & Pipeline",
       "accountingCurrencies": "Currencies",
-      "bankingAccounts": "Bank Accounts"
+      "accountingExchangeRates": "Exchange Rates",
+      "accountingFxRevaluations": "FX Revaluations",
+      "bankingAccounts": "Bank Accounts",
+      "periodClosing": "Period Closing",
+      "accountingSettings": "Accounting Settings"
     },
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar"

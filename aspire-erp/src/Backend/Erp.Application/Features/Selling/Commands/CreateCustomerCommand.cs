@@ -24,4 +24,14 @@ public sealed record CreateCustomerCommand(
     Guid? CurrencyId = null,
     int PaymentTermsDays = 30,
     Guid? DefaultReceivableAccountId = null,
-    bool IsActive = true) : ICommand<Result<CustomerDto>>;
+    bool IsActive = true,
+    string CustomerType = "Company",
+    string CustomerGroup = "",
+    string Territory = "",
+    string BillingAddress = "",
+    string Phone = "",
+    string Email = "",
+    string ContactPerson = "",
+    string Website = "",
+    string PaymentTerms = "",
+    string CustomerDetails = "") : ICommand<Result<CustomerDto>>;

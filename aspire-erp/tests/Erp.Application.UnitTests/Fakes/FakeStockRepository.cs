@@ -9,7 +9,7 @@ namespace Erp.Application.UnitTests.Fakes;
 /// posting transaction simply executes its callback, and every persisted aggregate is captured so
 /// tests can assert on StockEntry / StockLedgerEntry / GLEntry rows without a database.
 /// </summary>
-public sealed class FakeStockRepository : IStockRepository
+public sealed class FakeStockRepository : IStockRepository, IStockLedgerReportRepository
 {
     private readonly List<StockLedgerEntry> _persistedLedger = new();
     private readonly List<StockEntry> _stockEntries = new();
@@ -30,6 +30,45 @@ public sealed class FakeStockRepository : IStockRepository
     public int TransactionCount { get; private set; }
 
     public void SeedLedger(params StockLedgerEntry[] entries) => _persistedLedger.AddRange(entries);
+
+    public Task<IReadOnlyList<StockLedgerEntry>> GetLedgerEntriesByCompanyAsync(
+        Guid companyId,
+        DateOnly from,
+        DateOnly to,
+        Guid? itemId,
+        Guid? warehouseId,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        // Company scoping is owned by the caller in fakes (seeded rows carry no company);
+        // filter by period/item/warehouse and chronological order like the real repository.
+        var query = _persistedLedger.Where(e => e.PostingDate >= from && e.PostingDate <= to);
+        if (itemId.HasValue)
+        {
+            query = query.Where(e => e.ItemId == itemId.Value);
+        }
+
+        if (warehouseId.HasValue)
+        {
+            query = query.Where(e => e.WarehouseId == warehouseId.Value);
+        }
+
+        return Task.FromResult<IReadOnlyList<StockLedgerEntry>>(
+            query.OrderBy(e => e.PostingDate).ThenBy(e => e.CreatedAt).ThenBy(e => e.Id)
+                .Take(Math.Clamp(take, 1, 5000))
+                .ToList());
+    }
+
+    public Task<(decimal Qty, decimal Value)> GetOpeningBalanceAsync(
+        Guid itemId,
+        Guid warehouseId,
+        DateOnly from,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = _persistedLedger.Where(
+            e => e.ItemId == itemId && e.WarehouseId == warehouseId && e.PostingDate < from);
+        return Task.FromResult((rows.Sum(e => e.QtyChange), rows.Sum(e => e.Amount)));
+    }
 
     public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default)
     {

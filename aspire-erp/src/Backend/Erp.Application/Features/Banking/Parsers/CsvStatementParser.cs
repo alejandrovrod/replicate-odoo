@@ -26,6 +26,10 @@ public sealed class CsvStatementParser : ICsvStatementParser
     private static readonly string[] CreditHeaders =
         ["credit", "deposit", "paidin", "paid_in"];
 
+    private static readonly string[] CurrencyHeaders = ["currency", "curr", "ccy", "currcode", "currencycode"];
+
+    private static readonly string[] TypeHeaders = ["type", "trntype", "transactiontype", "transaction_type"];
+
     public IReadOnlyList<ParsedStatementLine> Parse(string rawContent)
     {
         if (string.IsNullOrWhiteSpace(rawContent))
@@ -64,11 +68,13 @@ public sealed class CsvStatementParser : ICsvStatementParser
         }
 
         var referenceIndex = FindColumn(headers, ["reference", "referencenumber", "reference_number"]);
+        var currencyIndex = FindColumn(headers, CurrencyHeaders);
+        var typeIndex = FindColumn(headers, TypeHeaders);
 
         var lines = new List<ParsedStatementLine>(fileLines.Count - 1);
         for (var i = 1; i < fileLines.Count; i++)
         {
-            lines.Add(ParseRow(fileLines[i], i + 1, dateIndex, descriptionIndex, amountIndex, debitIndex, creditIndex, referenceIndex));
+            lines.Add(ParseRow(fileLines[i], i + 1, dateIndex, descriptionIndex, amountIndex, debitIndex, creditIndex, referenceIndex, currencyIndex, typeIndex));
         }
 
         return lines;
@@ -82,7 +88,9 @@ public sealed class CsvStatementParser : ICsvStatementParser
         int amountIndex,
         int debitIndex,
         int creditIndex,
-        int referenceIndex)
+        int referenceIndex,
+        int currencyIndex,
+        int typeIndex)
     {
         var cells = SplitRow(row);
 
@@ -141,7 +149,11 @@ public sealed class CsvStatementParser : ICsvStatementParser
             withdrawal,
             description,
             string.IsNullOrWhiteSpace(reference) ? null : reference,
-            TransactionId: null);
+            TransactionId: null,
+            Currency: currencyIndex >= 0 && !string.IsNullOrWhiteSpace(Cell(cells, currencyIndex))
+                ? Cell(cells, currencyIndex).Trim()
+                : "USD",
+            TransactionType: typeIndex >= 0 ? Cell(cells, typeIndex).Trim() : string.Empty);
     }
 
     private static int FindColumn(List<string> headers, string[] candidates)

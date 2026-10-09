@@ -140,4 +140,42 @@ public sealed class CreateCustomerCommandHandlerTests
         Assert.Equal(SellingErrorCodes.InvalidReceivableAccount, result.Error!.Code);
         Assert.Null(_customers.AddedCustomer);
     }
+
+    [Fact]
+    public async Task HandleAsync_ErpNextProfileFields_PersistTrimmedWithCompanyDefault()
+    {
+        var result = await CreateHandler().HandleAsync(
+            new CreateCustomerCommand(
+                CompanyId, "CUST-004", "ACME",
+                CustomerType: "  ",
+                CustomerGroup: " Retail ",
+                Territory: "North",
+                BillingAddress: "Av. Siempre Viva 123",
+                Phone: "+54 11 5555-5555",
+                Email: "billing@acme.com",
+                ContactPerson: "Jane Doe",
+                Website: "https://acme.com",
+                PaymentTerms: "Net 30",
+                CustomerDetails: "VIP buyer"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Company", result.Value!.CustomerType); // blank normalizes to ERPNext default
+        Assert.Equal("Retail", result.Value.CustomerGroup); // trimmed
+        Assert.Equal("North", result.Value.Territory);
+        Assert.Equal("+54 11 5555-5555", result.Value.Phone);
+        Assert.Equal("billing@acme.com", result.Value.Email);
+        Assert.Equal("VIP buyer", result.Value.CustomerDetails);
+        Assert.Equal("Retail", _customers.AddedCustomer!.CustomerGroup);
+    }
+
+    [Fact]
+    public async Task HandleAsync_OverlongProfileField_FailsWithFieldCode()
+    {
+        var result = await CreateHandler().HandleAsync(
+            new CreateCustomerCommand(CompanyId, "CUST-005", "ACME", Email: new string('a', 200)));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(SellingErrorCodes.EmailTooLong, result.Error!.Code);
+        Assert.Null(_customers.AddedCustomer);
+    }
 }

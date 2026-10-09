@@ -93,6 +93,16 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
                 // PE-04: only now does the state machine move Draft -> Submitted.
                 payment.Submit();
 
+                // ERPNext parity: internal-transfer settlement posts bank-to-bank legs, a
+                // pipeline Block C still has to wire - Draft capture is supported, posting
+                // is rejected with a stable code instead of half-settling.
+                if (payment.PaymentType == PaymentType.InternalTransfer)
+                {
+                    throw new BankingValidationException(
+                        BankingErrorCodes.PaymentInvalidTransition,
+                        "Internal transfer settlement is not supported yet - only Receive/Pay vouchers can be submitted.");
+                }
+
                 var bankProfile = await _banks.GetAccountByIdAsync(payment.BankAccountId, token);
                 if (bankProfile is null || bankProfile.CompanyId != payment.CompanyId)
                 {
@@ -137,6 +147,18 @@ public sealed class SubmitPaymentEntryCommandHandler : ICommandHandler<SubmitPay
                 {
                     payment.SettlementExchangeRate = 1m;
                 }
+
+                // ERPNext-parity snapshots (Phase 6): allocated/total/difference and the
+                // company-currency base amounts, frozen at posting time for the voucher face.
+                payment.TotalAllocatedAmount = payment.Allocations.Sum(a => a.AllocatedAmount);
+                payment.DifferenceAmount = payment.PaidAmount - payment.TotalAllocatedAmount - payment.UnallocatedAmount;
+                if (payment.TransactionCurrencyId.HasValue && company.CurrencyId.HasValue && payment.TransactionCurrencyId != company.CurrencyId)
+                {
+                    payment.SourceExchangeRate = payment.SettlementExchangeRate;
+                    payment.TargetExchangeRate = payment.SettlementExchangeRate;
+                }
+                payment.BasePaidAmount = payment.PaidAmount * payment.SourceExchangeRate;
+                payment.BaseReceivedAmount = payment.ReceivedAmount * payment.TargetExchangeRate;
 
                 // PE-04: the fiscal number is born inside the numbering lock, after every gate.
                 payment.VoucherNo = await _banks.NextPaymentVoucherNumberAsync(

@@ -25,4 +25,12 @@ public sealed record CreatePaymentEntryCommand(
     decimal PaidAmount,
     Guid? TransactionCurrencyId,
     string? ReferenceNumber,
-    IReadOnlyList<PaymentAllocationInput> Allocations) : ICommand<Result<PaymentEntryDto>>;
+    IReadOnlyList<PaymentAllocationInput> Allocations,
+    string PartyName = "",
+    string ModeOfPayment = "",
+    Guid? PaidFromAccountId = null,
+    Guid? PaidToAccountId = null,
+    DateOnly? ReferenceDate = null,
+    Guid? CostCenterId = null,
+    Guid? ProjectId = null,
+    string Remarks = "") : ICommand<Result<PaymentEntryDto>>;

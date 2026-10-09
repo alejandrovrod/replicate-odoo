@@ -7,14 +7,24 @@ public sealed record PaymentAllocationDto(
     Guid Id,
     Guid? SalesInvoiceId,
     Guid? PurchaseInvoiceId,
-    decimal AllocatedAmount)
+    decimal AllocatedAmount,
+    string ReferenceDocumentType = "",
+    Guid? ReferenceDocumentId = null,
+    decimal TotalAmount = 0m,
+    decimal OutstandingAmount = 0m,
+    decimal ExchangeRate = 1m)
 {
     public static PaymentAllocationDto From(PaymentAllocation allocation) =>
         new(
             allocation.Id,
             allocation.SalesInvoiceId,
             allocation.PurchaseInvoiceId,
-            allocation.AllocatedAmount);
+            allocation.AllocatedAmount,
+            allocation.ReferenceDocumentType,
+            allocation.ReferenceDocumentId,
+            allocation.TotalAmount,
+            allocation.OutstandingAmount,
+            allocation.ExchangeRate);
 }
 
 /// <summary>Payment voucher payload returned by GET/POST /api/v1/payment-entries (spec R-12).</summary>
@@ -33,7 +43,24 @@ public sealed record PaymentEntryDto(
     PaymentDocumentStatus DocumentStatus,
     PaymentStatus Status,
     DateOnly? ClearanceDate,
-    byte[]? RowVersion = null)
+    byte[]? RowVersion = null,
+    string PartyName = "",
+    string ModeOfPayment = "",
+    Guid? PaidFromAccountId = null,
+    string PaidFromAccountCurrency = "USD",
+    Guid? PaidToAccountId = null,
+    string PaidToAccountCurrency = "USD",
+    decimal SourceExchangeRate = 1m,
+    decimal BasePaidAmount = 0m,
+    decimal ReceivedAmount = 0m,
+    decimal TargetExchangeRate = 1m,
+    decimal BaseReceivedAmount = 0m,
+    decimal TotalAllocatedAmount = 0m,
+    decimal DifferenceAmount = 0m,
+    DateOnly? ReferenceDate = null,
+    Guid? CostCenterId = null,
+    Guid? ProjectId = null,
+    string Remarks = "")
 {
     public static PaymentEntryDto From(PaymentEntry payment) =>
         new(
@@ -51,7 +78,24 @@ public sealed record PaymentEntryDto(
             payment.DocumentStatus,
             payment.Status,
             payment.ClearanceDate,
-            payment.RowVersion);
+            payment.RowVersion,
+            payment.PartyName,
+            payment.ModeOfPayment,
+            payment.PaidFromAccountId,
+            payment.PaidFromAccountCurrency,
+            payment.PaidToAccountId,
+            payment.PaidToAccountCurrency,
+            payment.SourceExchangeRate,
+            payment.BasePaidAmount,
+            payment.ReceivedAmount,
+            payment.TargetExchangeRate,
+            payment.BaseReceivedAmount,
+            payment.TotalAllocatedAmount,
+            payment.DifferenceAmount,
+            payment.ReferenceDate,
+            payment.CostCenterId,
+            payment.ProjectId,
+            payment.Remarks);
 }
 
 /// <summary>Payment voucher detail: the header plus its allocation slices.</summary>

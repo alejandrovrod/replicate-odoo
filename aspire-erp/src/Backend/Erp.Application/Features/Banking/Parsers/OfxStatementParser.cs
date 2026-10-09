@@ -33,15 +33,21 @@ public sealed class OfxStatementParser : IOfxStatementParser
         }
 
         var lines = new List<ParsedStatementLine>(blocks.Count);
+        var currency = TagValue(string.Join('\n', fileLines), "CURDEF")?.Trim();
+        if (string.IsNullOrWhiteSpace(currency))
+        {
+            currency = "USD";
+        }
+
         foreach (var (body, lineNumber) in blocks)
         {
-            lines.Add(ParseBlock(body, lineNumber));
+            lines.Add(ParseBlock(body, lineNumber, currency));
         }
 
         return lines;
     }
 
-    private static ParsedStatementLine ParseBlock(string body, int lineNumber)
+    private static ParsedStatementLine ParseBlock(string body, int lineNumber, string currency)
     {
         var amountText = TagValue(body, "TRNAMT");
         if (amountText is null)
@@ -78,6 +84,7 @@ public sealed class OfxStatementParser : IOfxStatementParser
 
         var fitid = TagValue(body, "FITID")?.Trim();
         var reference = TagValue(body, "REFNUM")?.Trim() ?? TagValue(body, "CHECKNUM")?.Trim();
+        var transactionType = TagValue(body, "TRNTYPE")?.Trim() ?? string.Empty;
 
         return new ParsedStatementLine(
             lineNumber,
@@ -86,7 +93,9 @@ public sealed class OfxStatementParser : IOfxStatementParser
             Withdrawal: amount < 0m ? -amount : 0m,
             description,
             string.IsNullOrWhiteSpace(reference) ? null : reference,
-            string.IsNullOrWhiteSpace(fitid) ? null : fitid);
+            string.IsNullOrWhiteSpace(fitid) ? null : fitid,
+            currency,
+            transactionType);
     }
 
     /// <summary>

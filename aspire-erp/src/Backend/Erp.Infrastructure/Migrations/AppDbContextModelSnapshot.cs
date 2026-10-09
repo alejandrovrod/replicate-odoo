@@ -588,6 +588,27 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("BankAccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("BankPartyAccountNumber")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("BankPartyIban")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("BankPartyName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasDefaultValue("");
+
                     b.Property<DateOnly?>("ClearanceDate")
                         .HasColumnType("date");
 
@@ -615,6 +636,31 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal>("ExcludedFee")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("IncludedFee")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<bool>("IsRuleEvaluated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid?>("MatchedTransactionRuleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PartyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PartyType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("ReferenceNumber")
                         .HasMaxLength(100)
@@ -652,6 +698,18 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<string>("TransactionId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("");
+
+                    b.Property<decimal>("UnallocatedAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
 
                     b.Property<decimal>("Withdrawal")
                         .ValueGeneratedOnAdd()
@@ -1138,6 +1196,13 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<string>("BillingAddress")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasDefaultValue("");
+
                     b.Property<bool>("BypassCreditLimitCheck")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -1145,6 +1210,13 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContactPerson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasDefaultValue("");
 
                     b.Property<decimal>("CreditLimit")
                         .ValueGeneratedOnAdd()
@@ -1159,13 +1231,41 @@ namespace Erp.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("CustomerDetails")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("CustomerGroup")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
+
                     b.Property<string>("CustomerName")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("CustomerType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Company");
+
                     b.Property<Guid?>("DefaultReceivableAccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasDefaultValue("");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -1176,6 +1276,13 @@ namespace Erp.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0m);
+
+                    b.Property<string>("PaymentTerms")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
 
                     b.Property<int>("PaymentTermsDays")
                         .ValueGeneratedOnAdd()
@@ -1192,6 +1299,13 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("PeriodStart");
 
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -1205,6 +1319,20 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Territory")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("Website")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasDefaultValue("");
 
                     b.HasKey("Id");
 
@@ -2323,17 +2451,42 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<decimal>("AllocatedAmount")
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<decimal>("ExchangeRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,6)")
+                        .HasDefaultValue(1m);
+
+                    b.Property<decimal>("OutstandingAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<Guid>("PaymentEntryId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("PurchaseInvoiceId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ReferenceDocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReferenceDocumentType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("");
+
                     b.Property<Guid?>("SalesInvoiceId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
 
                     b.HasKey("Id");
 
@@ -2364,16 +2517,34 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("BankAccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("BasePaidAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("BaseReceivedAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<DateOnly?>("ClearanceDate")
                         .HasColumnType("date");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("CostCenterId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetimeoffset")
                         .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+                    b.Property<decimal>("DifferenceAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
 
                     b.Property<string>("DocumentStatus")
                         .IsRequired()
@@ -2382,11 +2553,45 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("Draft");
 
+                    b.Property<string>("ModeOfPayment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
+
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<string>("PaidFromAccountCurrency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("USD");
+
+                    b.Property<Guid?>("PaidFromAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PaidToAccountCurrency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("USD");
+
+                    b.Property<Guid?>("PaidToAccountId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("PartyId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PartyName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasDefaultValue("");
 
                     b.Property<string>("PartyType")
                         .IsRequired()
@@ -2401,9 +2606,27 @@ namespace Erp.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ReceivedAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateOnly?>("ReferenceDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("ReferenceNumber")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Remarks")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasDefaultValue("");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -2414,6 +2637,11 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<decimal>("SettlementExchangeRate")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("SourceExchangeRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,6)")
+                        .HasDefaultValue(1m);
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -2421,8 +2649,18 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("nvarchar(30)")
                         .HasDefaultValue("Unreconciled");
 
+                    b.Property<decimal>("TargetExchangeRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,6)")
+                        .HasDefaultValue(1m);
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalAllocatedAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
 
                     b.Property<Guid?>("TransactionCurrencyId")
                         .HasColumnType("uniqueidentifier");
@@ -2452,7 +2690,7 @@ namespace Erp.Infrastructure.Migrations
 
                     b.ToTable("PaymentEntry", null, t =>
                         {
-                            t.HasCheckConstraint("CK_PaymentEntry_Direction", "([PaymentType] = 'Receive' AND [PartyType] = 'Customer') OR ([PaymentType] = 'Pay' AND [PartyType] = 'Supplier')");
+                            t.HasCheckConstraint("CK_PaymentEntry_Direction", "([PaymentType] = 'Receive' AND [PartyType] = 'Customer') OR ([PaymentType] = 'Pay' AND [PartyType] IN ('Supplier', 'Employee')) OR ([PaymentType] = 'InternalTransfer')");
                         });
                 });
 

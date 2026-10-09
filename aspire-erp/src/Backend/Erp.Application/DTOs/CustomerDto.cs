@@ -22,7 +22,17 @@ public sealed record CustomerDto(
     int PaymentTermsDays,
     decimal OutstandingAmount,
     bool IsActive,
-    byte[]? RowVersion = null)
+    byte[]? RowVersion = null,
+    string CustomerType = "Company",
+    string CustomerGroup = "",
+    string Territory = "",
+    string BillingAddress = "",
+    string Phone = "",
+    string Email = "",
+    string ContactPerson = "",
+    string Website = "",
+    string PaymentTerms = "",
+    string CustomerDetails = "")
 {
     public static CustomerDto From(Customer customer) =>
         new(
@@ -38,5 +48,15 @@ public sealed record CustomerDto(
             customer.PaymentTermsDays,
             customer.OutstandingAmount,
             customer.IsActive,
-            customer.RowVersion);
+            customer.RowVersion,
+            customer.CustomerType,
+            customer.CustomerGroup,
+            customer.Territory,
+            customer.BillingAddress,
+            customer.Phone,
+            customer.Email,
+            customer.ContactPerson,
+            customer.Website,
+            customer.PaymentTerms,
+            customer.CustomerDetails);
 }

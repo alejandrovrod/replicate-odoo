@@ -12,6 +12,8 @@ namespace Erp.Application.Features.Banking.Parsers;
 /// <param name="Description">Statement narrative.</param>
 /// <param name="ReferenceNumber">Bank reference, when the format carries one.</param>
 /// <param name="TransactionId">Stable bank id (OFX FITID) for de-duplication; null when absent.</param>
+/// <param name="Currency">ISO 4217 statement currency ("USD" default; OFX CURDEF, optional CSV column).</param>
+/// <param name="TransactionType">Bank type code (OFX TRNTYPE); empty when the format carries none.</param>
 public sealed record ParsedStatementLine(
     int LineNumber,
     DateOnly TransactionDate,
@@ -19,4 +21,6 @@ public sealed record ParsedStatementLine(
     decimal Withdrawal,
     string Description,
     string? ReferenceNumber,
-    string? TransactionId);
+    string? TransactionId,
+    string Currency = "USD",
+    string TransactionType = "");

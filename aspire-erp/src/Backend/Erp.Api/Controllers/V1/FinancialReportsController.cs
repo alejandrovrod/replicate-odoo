@@ -227,6 +227,93 @@ public sealed class FinancialReportsController : ControllerBase
     }
 
     /// <summary>
+    /// Stock ledger (Kardex) for a period: chronological movement rows with running balances
+    /// per (item, warehouse), one opening row per pair (tasks.md 7.1, ERPNext stock_ledger
+    /// parity: In/Out/Balance qty, valuation rates, balance value, voucher provenance).
+    /// </summary>
+    /// <param name="companyId">Company that owns the warehouses.</param>
+    /// <param name="from">Inclusive first posting date (<c>yyyy-MM-dd</c>). REQUIRED.</param>
+    /// <param name="to">Inclusive last posting date (<c>yyyy-MM-dd</c>). REQUIRED.</param>
+    /// <param name="itemId">Optional single-item filter.</param>
+    /// <param name="warehouseId">Optional single-warehouse filter.</param>
+    /// <param name="take">Maximum movement rows (default 500, max 5000).</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("stock-ledger")]
+    [ProducesResponseType(typeof(StockLedgerReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetStockLedger(
+        [FromQuery] Guid companyId,
+        [FromQuery] string? from = null,
+        [FromQuery] string? to = null,
+        [FromQuery] Guid? itemId = null,
+        [FromQuery] Guid? warehouseId = null,
+        [FromQuery] int take = 500,
+        CancellationToken cancellationToken = default)
+    {
+        if (companyId == Guid.Empty)
+        {
+            return Problem400(
+                _common.Text("InvalidCompany"),
+                _errors.Text(FinancialReportErrorCodes.CompanyRequired),
+                FinancialReportErrorCodes.CompanyRequired);
+        }
+
+        if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
+        {
+            return Problem400(
+                _common.Text("MissingPeriod"),
+                _errors.Text(FinancialReportErrorCodes.DateRequired),
+                FinancialReportErrorCodes.DateRequired);
+        }
+
+        if (!DateOnly.TryParse(
+                from, CultureInfo.InvariantCulture, DateTimeStyles.None, out var fromDate)
+            || !DateOnly.TryParse(
+                to, CultureInfo.InvariantCulture, DateTimeStyles.None, out var toDate))
+        {
+            return Problem400(
+                _common.Text("InvalidPeriod"),
+                _errors.Text(FinancialReportErrorCodes.InvalidDate),
+                FinancialReportErrorCodes.InvalidDate);
+        }
+
+        var report = await _sender.SendAsync(
+            new GetStockLedgerReportQuery(companyId, fromDate, toDate, itemId, warehouseId, take),
+            cancellationToken);
+
+        return Ok(report);
+    }
+
+    /// <summary>
+    /// AR/AP aging as of a date: one row per open invoice with Invoiced / Paid / Outstanding
+    /// and the ERPNext due-date bucket (NotDue, 0-30, 31-60, 61-90, 90+), plus per-leg totals.
+    /// Drafts, paid and cancelled documents never appear.
+    /// </summary>
+    /// <param name="companyId">Company that owns the invoices.</param>
+    /// <param name="reportDate">Aging anchor date (<c>yyyy-MM-dd</c>). REQUIRED.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("aging")]
+    [ProducesResponseType(typeof(AgingReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAging(
+        [FromQuery] Guid companyId,
+        [FromQuery] string? reportDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var invalidPeriod = ValidatePeriod(companyId, reportDate, out var anchor);
+        if (invalidPeriod is not null)
+        {
+            return invalidPeriod;
+        }
+
+        var report = await _sender.SendAsync(
+            new GetAgingReportQuery(companyId, anchor),
+            cancellationToken);
+
+        return Ok(report);
+    }
+
+    /// <summary>
     /// Shared gate of the two snapshot statements: company must be present, the single cutoff date
     /// must be sent AND parseable. Returns null when the request is well-formed and hands the
     /// parsed cutoff back through <paramref name="cutoff"/>.

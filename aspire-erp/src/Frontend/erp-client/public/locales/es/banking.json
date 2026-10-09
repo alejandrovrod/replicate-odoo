@@ -116,6 +116,36 @@
     "errorRequired": "El nombre, el banco y el número son obligatorios.",
     "errorGlRequired": "Se requiere una cuenta contable.",
     "errorConflict": "Conflicto de concurrencia. Refresque e intente de nuevo.",
+    "errorGeneric": "Ocurri�� un error al guardar."
+  },
+  "paymentForm": {
+    "titleNew": "Nuevo Pago",
+    "sectionGeneral": "Comprobante",
+    "sectionAllocations": "Imputaciones",
+    "typeLabel": "Tipo de Pago",
+    "typeReceive": "Cobro",
+    "typePay": "Pago",
+    "partyLabel": "Contraparte *",
+    "bankLabel": "Cuenta Bancaria *",
+    "dateLabel": "Fecha de Pago *",
+    "amountLabel": "Monto Pagado *",
+    "modeLabel": "Medio de Pago",
+    "modePlaceholder": "Efectivo, Transferencia…",
+    "referenceLabel": "N.º Referencia",
+    "referencePlaceholder": "Cheque / n.º transferencia",
+    "remarksLabel": "Observaciones",
+    "allocatedOf": "imputado {{a}} de {{p}} (sin imputar {{u}})",
+    "pickPartyFirst": "Elija una contraparte para listar facturas abiertas.",
+    "loadingInvoices": "Cargando facturas abiertas…",
+    "noOpenInvoices": "Sin facturas abiertas — el total queda como anticipo.",
+    "outstanding": "pendiente {{o}}",
+    "cancel": "Cancelar",
+    "save": "Guardar Borrador",
+    "saving": "Guardando…",
+    "errorRequired": "La contraparte y la cuenta bancaria son obligatorias.",
+    "errorAmount": "El monto debe ser mayor a cero.",
+    "errorOverAllocated": "Lo imputado excede el monto pagado.",
     "errorGeneric": "Ocurrió un error al guardar."
   }
+}
 }

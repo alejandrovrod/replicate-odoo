@@ -20,7 +20,14 @@ export function CustomerView() {
   const columns: ColumnDef<Customer>[] = [
     { header: t('customers.columns.code', 'Code'), accessor: 'code' },
     { header: t('customers.columns.name', 'Name'), accessor: 'name' },
-    { header: t('customers.columns.taxId', 'Tax ID'), accessor: 'taxId' },
+    {
+      header: t('customers.columns.type', 'Type'),
+      accessor: (row) => row.customerType || 'Company',
+    },
+    {
+      header: t('customers.columns.phone', 'Phone'),
+      accessor: (row) => row.phone || '-',
+    },
     {
       header: t('customers.columns.creditLimit', 'Credit Limit'),
       accessor: (row) => row.creditLimit?.toLocaleString() || '-',

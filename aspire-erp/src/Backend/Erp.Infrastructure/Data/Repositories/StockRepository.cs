@@ -20,7 +20,7 @@ namespace Erp.Infrastructure.Data.Repositories;
 /// by TenantId itself because EF query filters do NOT apply to raw SQL, so leaving it out there
 /// would be a cross-tenant leak.
 /// </remarks>
-public sealed class StockRepository : IStockRepository
+public sealed class StockRepository : IStockRepository, IStockLedgerReportRepository
 {
     private readonly AppDbContext _dbContext;
 
@@ -283,6 +283,52 @@ public sealed class StockRepository : IStockRepository
         => await _dbContext.StockLedgerEntries
             .Where(e => e.VoucherNo == voucherNo)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<StockLedgerEntry>> GetLedgerEntriesByCompanyAsync(
+        Guid companyId,
+        DateOnly from,
+        DateOnly to,
+        Guid? itemId,
+        Guid? warehouseId,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.StockLedgerEntries
+            .Where(e => e.Warehouse!.CompanyId == companyId && e.PostingDate >= from && e.PostingDate <= to);
+
+        if (itemId.HasValue)
+        {
+            query = query.Where(e => e.ItemId == itemId.Value);
+        }
+
+        if (warehouseId.HasValue)
+        {
+            query = query.Where(e => e.WarehouseId == warehouseId.Value);
+        }
+
+        return await query
+            .Include(e => e.Item)
+            .Include(e => e.Warehouse)
+            .OrderBy(e => e.PostingDate)
+            .ThenBy(e => e.CreatedAt)
+            .ThenBy(e => e.Id)
+            .Take(Math.Clamp(take, 1, 5000))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<(decimal Qty, decimal Value)> GetOpeningBalanceAsync(
+        Guid itemId,
+        Guid warehouseId,
+        DateOnly from,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _dbContext.StockLedgerEntries
+            .Where(e => e.ItemId == itemId && e.WarehouseId == warehouseId && e.PostingDate < from)
+            .Select(e => new { e.QtyChange, e.Amount })
+            .ToListAsync(cancellationToken);
+
+        return (rows.Sum(r => r.QtyChange), rows.Sum(r => r.Amount));
+    }
 
     public async Task<IReadOnlyList<GLEntry>> GetGlEntriesByVoucherIdAsync(Guid voucherId, CancellationToken cancellationToken = default)
         => await _dbContext.GLEntries

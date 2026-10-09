@@ -118,10 +118,16 @@ public sealed class ImportBankStatementCommandHandler
                 TransactionDate = line.TransactionDate,
                 Deposit = line.Deposit,
                 Withdrawal = line.Withdrawal,
+                Currency = string.IsNullOrWhiteSpace(line.Currency) ? "USD" : line.Currency.Trim(),
                 Description = line.Description,
                 ReferenceNumber = line.ReferenceNumber,
                 TransactionId = line.TransactionId,
+                TransactionType = line.TransactionType ?? string.Empty,
                 Status = BankTransactionStatus.Unreconciled,
+                // Staging isolation (BN-01): import writes staging rows only, never GLEntry.
+                // The line arrives fully unallocated and unevaluated by the rules engine.
+                UnallocatedAmount = line.Deposit - line.Withdrawal,
+                IsRuleEvaluated = false,
                 CreatedAt = DateTimeOffset.UtcNow,
             }).ToList();
 

@@ -35,6 +35,39 @@ public class Customer : ITenantEntity
     /// <summary>Display name (max 150 chars, plan.md §1).</summary>
     public string CustomerName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// ERPNext parity (<c>customer_type</c>): "Company", "Individual" or "Partnership".
+    /// Required, defaults to "Company" (ERPNext default) when omitted.
+    /// </summary>
+    public string CustomerType { get; set; } = "Company";
+
+    /// <summary>ERPNext parity (<c>customer_group</c>): commercial segment, optional.</summary>
+    public string CustomerGroup { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>territory</c>): sales territory, optional.</summary>
+    public string Territory { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>primary_address</c>): billing address, optional.</summary>
+    public string BillingAddress { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>mobile_no</c>): phone, optional.</summary>
+    public string Phone { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>email_id</c>): email, optional.</summary>
+    public string Email { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>customer_primary_contact</c>): contact person, optional.</summary>
+    public string ContactPerson { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>website</c>): website, optional.</summary>
+    public string Website { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>payment_terms</c> template name): payment terms, optional.</summary>
+    public string PaymentTerms { get; set; } = string.Empty;
+
+    /// <summary>Internal notes about this customer, optional.</summary>
+    public string CustomerDetails { get; set; } = string.Empty;
+
     /// <summary>Tax identifier (max 50 chars, NOT NULL - empty string when the buyer has none, plan.md §1).</summary>
     public string TaxId { get; set; } = string.Empty;
 

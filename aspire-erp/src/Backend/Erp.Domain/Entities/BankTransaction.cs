@@ -64,6 +64,53 @@ public sealed class BankTransaction : ITenantEntity
     public decimal AllocatedAmount { get; set; }
 
     /// <summary>
+    /// ERPNext parity: amount not yet reconciled (Deposit/Withdrawal net − AllocatedAmount),
+    /// stamped on import and refreshed by every reconciliation.
+    /// </summary>
+    public decimal UnallocatedAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity (<c>transaction_type</c>): bank-provided type code (e.g. "NEFT", "POS",
+    /// "FEE"), empty when the file carries none.
+    /// </summary>
+    public string TransactionType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ERPNext parity (<c>party_type</c>): counterparty role pinned by reconciliation
+    /// ("Customer", "Supplier", "Employee"), null while unreconciled.
+    /// </summary>
+    public string? PartyType { get; set; }
+
+    /// <summary>ERPNext parity (<c>party</c>): counterparty row id, null while unreconciled.</summary>
+    public Guid? PartyId { get; set; }
+
+    /// <summary>ERPNext parity: counterparty name as reported by the bank.</summary>
+    public string BankPartyName { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>bank_party_account_number</c>): counterparty account number.</summary>
+    public string BankPartyAccountNumber { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity: counterparty IBAN, when the file carries one.</summary>
+    public string BankPartyIban { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ERPNext parity: whether the heuristic rules engine has evaluated this line (task 6.3).
+    /// Set by <c>ApplyMatchingRulesCommand</c> on every evaluated line, matched or not.
+    /// </summary>
+    public bool IsRuleEvaluated { get; set; }
+
+    /// <summary>
+    /// ERPNext parity: id of the rule that matched this line, if any (null on no-match).
+    /// </summary>
+    public Guid? MatchedTransactionRuleId { get; set; }
+
+    /// <summary>ERPNext parity: fee embedded in the line amount (default 0).</summary>
+    public decimal IncludedFee { get; set; }
+
+    /// <summary>ERPNext parity: fee charged on top of the line amount (default 0).</summary>
+    public decimal ExcludedFee { get; set; }
+
+    /// <summary>
     /// Date the line cleared. Stamped by reconciliation (invariant BN-03, Block B); null until then.
     /// </summary>
     public DateOnly? ClearanceDate { get; set; }

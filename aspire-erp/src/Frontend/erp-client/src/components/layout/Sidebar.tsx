@@ -45,7 +45,10 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: 'overview',
     title: 'nav.group.overview',
-    items: [{ id: 'dashboard', route: 'dashboard', label: 'nav.item.dashboard', icon: LayoutDashboard }],
+    items: [
+      { id: 'dashboard', route: 'dashboard', label: 'nav.item.dashboard', icon: LayoutDashboard },
+      { id: 'dashboard-reports', route: 'dashboard-reports', label: 'nav.item.dashboardReports', icon: BookOpenCheck },
+    ],
   },
   {
     id: 'accounting',
@@ -85,6 +88,7 @@ const NAV_GROUPS: NavGroup[] = [
         children: [
           { id: 'banking', route: 'banking', label: 'nav.item.banking', icon: Landmark, badge: 'ERPNext' },
           { id: 'banking-accounts', route: 'banking-accounts', label: 'nav.item.bankingAccounts', icon: Landmark },
+          { id: 'banking-payments', route: 'banking-payments', label: 'nav.item.bankingPayments', icon: Receipt },
         ],
       },
       {

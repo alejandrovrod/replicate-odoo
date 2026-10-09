@@ -20,7 +20,18 @@ public sealed record BankTransactionDto(
     string? SuggestedPartyType,
     Guid? SuggestedPartyId,
     Guid? SuggestedAccountId,
-    string? RowVersion)
+    string? RowVersion,
+    decimal UnallocatedAmount = 0m,
+    string TransactionType = "",
+    string? PartyType = null,
+    Guid? PartyId = null,
+    string BankPartyName = "",
+    string BankPartyAccountNumber = "",
+    string BankPartyIban = "",
+    bool IsRuleEvaluated = false,
+    Guid? MatchedTransactionRuleId = null,
+    decimal IncludedFee = 0m,
+    decimal ExcludedFee = 0m)
 {
     public static BankTransactionDto From(BankTransaction transaction) =>
         new(
@@ -40,7 +51,18 @@ public sealed record BankTransactionDto(
             transaction.SuggestedPartyType,
             transaction.SuggestedPartyId,
             transaction.SuggestedAccountId,
-            transaction.RowVersion is null ? null : Convert.ToBase64String(transaction.RowVersion));
+            transaction.RowVersion is null ? null : Convert.ToBase64String(transaction.RowVersion),
+            transaction.UnallocatedAmount,
+            transaction.TransactionType,
+            transaction.PartyType,
+            transaction.PartyId,
+            transaction.BankPartyName,
+            transaction.BankPartyAccountNumber,
+            transaction.BankPartyIban,
+            transaction.IsRuleEvaluated,
+            transaction.MatchedTransactionRuleId,
+            transaction.IncludedFee,
+            transaction.ExcludedFee);
 }
 
 /// <summary>Heuristic rule payload for GET/POST /api/v1/bank-transaction-rules (Block B/C).</summary>

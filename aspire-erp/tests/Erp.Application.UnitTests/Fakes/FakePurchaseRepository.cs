@@ -12,7 +12,7 @@ namespace Erp.Application.UnitTests.Fakes;
 /// every persisted aggregate is captured so tests can assert on PurchaseOrder / PurchaseReceipt /
 /// PurchaseInvoice rows without a database.
 /// </summary>
-public sealed class FakePurchaseRepository : IPurchaseRepository
+public sealed class FakePurchaseRepository : IPurchaseRepository, IPayableAgingRepository
 {
     private readonly List<PurchaseOrder> _orders = new();
     private readonly List<PurchaseReceipt> _receipts = new();
@@ -195,6 +195,18 @@ public sealed class FakePurchaseRepository : IPurchaseRepository
             _invoices
                 .Where(i => i.CompanyId == companyId
                     && i.SupplierId == supplierId
+                    && i.OutstandingAmount > 0m
+                    && (i.Status == PurchaseInvoiceStatus.Unpaid || i.Status == PurchaseInvoiceStatus.PartiallyPaid))
+                .OrderBy(i => i.DueDate)
+                .ThenBy(i => i.Id)
+                .ToList());
+
+    public Task<IReadOnlyList<PurchaseInvoice>> GetOpenPayablesByCompanyAsync(
+        Guid companyId, DateOnly reportDate, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<PurchaseInvoice>>(
+            _invoices
+                .Where(i => i.CompanyId == companyId
+                    && i.PostingDate <= reportDate
                     && i.OutstandingAmount > 0m
                     && (i.Status == PurchaseInvoiceStatus.Unpaid || i.Status == PurchaseInvoiceStatus.PartiallyPaid))
                 .OrderBy(i => i.DueDate)

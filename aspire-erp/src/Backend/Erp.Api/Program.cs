@@ -44,6 +44,7 @@ using Erp.Domain.Common;
 using Erp.Domain.Repositories;
 using Erp.Infrastructure.Data;
 using Erp.Infrastructure.Data.Repositories;
+using Erp.Infrastructure.Seeders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
@@ -229,12 +230,17 @@ builder.Services.AddScoped<IQueryHandler<GetGeneralLedgerQuery, GeneralLedgerRep
 builder.Services.AddScoped<IQueryHandler<GetTrialBalanceQuery, TrialBalanceReportDto>, GetTrialBalanceQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBalanceSheetQuery, BalanceSheetReportDto>, GetBalanceSheetQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetProfitAndLossQuery, ProfitAndLossReportDto>, GetProfitAndLossQueryHandler>();
-
+builder.Services.AddScoped<IStockLedgerReportRepository, StockRepository>();
+builder.Services.AddScoped<IReceivableAgingRepository, SalesInvoiceRepository>();
+builder.Services.AddScoped<IPayableAgingRepository, PurchaseRepository>();
+builder.Services.AddScoped<IQueryHandler<GetStockLedgerReportQuery, StockLedgerReportDto>, GetStockLedgerReportQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAgingReportQuery, AgingReportDto>, GetAgingReportQueryHandler>();
 // Banking & Reconciliation staging (tasks.md 6.1/6.2): the statement import engine and its
 // parsers. Same split as every other module: repository in Erp.Infrastructure, commands/parsers
 // in Erp.Application - only the composition root knows both (decision C2). NO GL dependency
 // anywhere on the import path (invariant BN-01 by construction).
 builder.Services.AddScoped<IBankRepository, BankRepository>();
+builder.Services.AddScoped<IBankTransactionRuleEvaluator, BankTransactionRuleEvaluator>();
 builder.Services.AddScoped<ICsvStatementParser, CsvStatementParser>();
 builder.Services.AddScoped<IOfxStatementParser, OfxStatementParser>();
 builder.Services.AddScoped<ICommandHandler<ImportBankStatementCommand, Result<BankStatementImportSummary>>, ImportBankStatementCommandHandler>();
@@ -364,6 +370,15 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dbContext.Database.Migrate();
+
+    // Selling Fase 5: every initialized company owns a Receivable leaf ("Deudores por
+    // Ventas") so the Customer receivable picker is never empty on new companies.
+    // Idempotent per company; runs alongside Migrate on every Development boot.
+    var companies = await dbContext.Companies.IgnoreQueryFilters().ToListAsync();
+    foreach (var bootstrappedCompany in companies)
+    {
+        await ReceivableAccountSeeder.SeedAsync(dbContext, bootstrappedCompany.Id, bootstrappedCompany.TenantId);
+    }
 }
 
 // Tenant pipeline first: resolution must run before the logging scope opens, because the scope

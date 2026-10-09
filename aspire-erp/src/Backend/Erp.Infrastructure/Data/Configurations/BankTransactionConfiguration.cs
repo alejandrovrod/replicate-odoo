@@ -44,6 +44,20 @@ public sealed class BankTransactionConfiguration : IEntityTypeConfiguration<Bank
             .HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
         builder.Property(t => t.ClearanceDate).HasColumnType("date");
 
+        // ERPNext-parity columns (Phase 6): counterparty/bank-party detail, fee split and
+        // the rules-engine audit trail; NOT NULL with defaults (non-destructive migration).
+        builder.Property(t => t.UnallocatedAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(t => t.TransactionType).HasMaxLength(50).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(t => t.PartyType).HasMaxLength(50);
+        builder.Property(t => t.PartyId);
+        builder.Property(t => t.BankPartyName).HasMaxLength(200).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(t => t.BankPartyAccountNumber).HasMaxLength(100).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(t => t.BankPartyIban).HasMaxLength(100).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(t => t.IsRuleEvaluated).HasDefaultValue(false);
+        builder.Property(t => t.MatchedTransactionRuleId);
+        builder.Property(t => t.IncludedFee).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(t => t.ExcludedFee).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+
         // Task 6.3 suggestion columns (scenario BN-02): pre-populated party/accounts of the
         // first matching rule. Nullable, no FK (party may be a customer/supplier/employee id) -
         // migration deferred to Block C with the rest of the Block B DDL deltas.

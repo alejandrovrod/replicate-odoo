@@ -22,6 +22,18 @@ public static class SellingErrorCodes
     public const string DuplicateCustomerCode = "duplicate_customer_code";
     public const string CustomerNotFound = "customer_not_found";
 
+    // Customer ERPNext-parity fields (length guards; see CustomerValidator)
+    public const string CustomerTypeTooLong = "customer_type_too_long";
+    public const string CustomerGroupTooLong = "customer_group_too_long";
+    public const string TerritoryTooLong = "territory_too_long";
+    public const string BillingAddressTooLong = "billing_address_too_long";
+    public const string PhoneTooLong = "phone_too_long";
+    public const string EmailTooLong = "email_too_long";
+    public const string ContactPersonTooLong = "contact_person_too_long";
+    public const string WebsiteTooLong = "website_too_long";
+    public const string PaymentTermsTooLong = "payment_terms_too_long";
+    public const string CustomerDetailsTooLong = "customer_details_too_long";
+
     /// <summary>
     /// Credit-limit breach (spec SL-02 / plan.md §2): the command is rejected with
     /// <see cref="Exceptions.CreditLimitExceededException"/> and this is the code carried into the

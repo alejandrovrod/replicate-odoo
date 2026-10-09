@@ -10,6 +10,7 @@ import { BankingOverview } from './features/banking/BankingOverview'
 import { BuyingOverview } from './features/buying/BuyingOverview'
 import { CrmOverview } from './features/crm/CrmOverview'
 import { DashboardOverview } from './features/dashboard/DashboardOverview'
+import { ReportsView } from './features/dashboard/pages/ReportsView'
 import { HrPayrollOverview } from './features/hr-payroll/HrPayrollOverview'
 import { ManufacturingOverview } from './features/manufacturing/ManufacturingOverview'
 import { SellingOverview } from './features/selling/SellingOverview'
@@ -24,6 +25,7 @@ import { SalesInvoicesView } from './features/selling/pages/SalesInvoicesView'
 import { SalesOrdersView } from './features/selling/pages/SalesOrdersView'
 import { SupplierView } from './features/buying/pages/SupplierView'
 import { BankAccountsView } from './features/banking/pages/BankAccountsView'
+import { PaymentsView } from './features/banking/pages/PaymentsView'
 import { useNavigationStore } from './store/useNavigationStore'
 import { useTenantStore } from './store/useTenantStore'
 import { AccountingSettingsView } from './features/accounting/AccountingSettingsView'
@@ -36,6 +38,8 @@ function App() {
   return (
     <AppShell>
       {currentRoute === 'dashboard' && <DashboardOverview />}
+
+      {currentRoute === 'dashboard-reports' && <ReportsView />}
 
       {currentRoute === 'accounting-coa' && (
         <div className="space-y-4">
@@ -68,6 +72,8 @@ function App() {
       {currentRoute === 'banking' && <BankingOverview />}
 
       {currentRoute === 'banking-accounts' && <BankAccountsView />}
+
+      {currentRoute === 'banking-payments' && <PaymentsView />}
 
       {currentRoute === 'stock' && <StockOverview />}
 

@@ -145,35 +145,39 @@ This document provides granular, atomic, testable tasks for human engineers and 
 
 ## Phase 6: Treasury, Payments & Banking Subsystem (ERPNext Parity)
 
-- [ ] **Task 6.1: Domain Models `PaymentEntry` and `PaymentAllocation`**
+- [x] **Task 6.1: Domain Models `PaymentEntry` and `PaymentAllocation`**
   - **Action:** Create `PaymentEntry` (PaymentType: Receive/Pay, PaidAmount, BankAccount) and `PaymentAllocation`.
   - **Acceptance:** Validates anti-overpayment invariant (`AllocatedAmount <= Invoice.OutstandingAmount`). Posting debits Bank, credits A/R, updates invoice balance, calculates realized FX gain/loss if currencies differ, and reserves surplus as Customer Advance.
+  - **Parity note (Phase 6 pass):** header enriched with ModeOfPayment, PartyName, PaidFrom/PaidTo (+currencies), Source/TargetExchangeRate, BasePaid/BaseReceived/Received amounts, TotalAllocated/Difference amounts, ReferenceDate, CostCenter/Project, Remarks; `InternalTransfer` + `Employee` members; slices snapshot ReferenceDocumentType/Id, Total/Outstanding, ExchangeRate. Migration `TreasuryErpNextParity`. Internal-transfer *settlement* deferred (Draft capture only).
 
-- [ ] **Task 6.2: Bank Statement Import & Staging Engine**
+- [x] **Task 6.2: Bank Statement Import & Staging Engine**
   - **Action:** Create `BankStatementImport` and `BankTransaction` entities. Implement parser services for CSV and OFX formats in `Erp.Application.Banking`.
   - **Acceptance:** Statement lines are imported directly into `BankTransaction` in `Unreconciled` status. Strictly enforces the **Staging Isolation Invariant**: zero accounting entries are posted to `GLEntry`.
+  - **Parity note (Phase 6 pass):** lines now stamp UnallocatedAmount, TransactionType (OFX TRNTYPE / optional CSV column), Currency (OFX CURDEF / optional CSV column), IsRuleEvaluated=false; parsers extended without breaking existing formats.
 
-- [ ] **Task 6.3: Heuristic Rules Engine (`BankTransactionRule`)**
+- [x] **Task 6.3: Heuristic Rules Engine (`BankTransactionRule`)**
   - **Action:** Implement `IBankTransactionRuleEvaluator` executing configured rules by priority against description regexes, substrings, and transaction amounts.
   - **Acceptance:** Auto-populates Party, Account, and marks transactions as `Matched` or triggers auto-voucher creation.
+  - **Parity note (Phase 6 pass):** `IBankTransactionRuleEvaluator` + `BankTransactionRuleEvaluator` (Application.Services, DI-registered) wrap the pure-domain `BankRuleMatcher`; the handler stamps IsRuleEvaluated/MatchedTransactionRuleId on every evaluated line.
 
-- [ ] **Task 6.4: Bank Reconciliation Service (`BankReconciliationTool`)**
+- [x] **Task 6.4: Bank Reconciliation Service (`BankReconciliationTool`)**
   - **Action:** Implement `ReconcileBankTransactionCommand` matching staging transactions against existing `PaymentEntry` or `GLEntry` records.
   - **Acceptance:** Updates `BankTransaction.Status` to `Reconciled`, stamps `ClearanceDate`, and verifies that the Bank Reconciliation Statement difference equals $0.00.
 
-- [ ] **Task 6.5: On-The-Fly Voucher Dialog Backend (`DialogManager`)**
+- [x] **Task 6.5: On-The-Fly Voucher Dialog Backend (`DialogManager`)**
   - **Action:** Implement `CreateVoucherFromBankTransactionCommand` to allow instant creation of Journal Entries or expense payments directly from an unmatched bank transaction line.
   - **Acceptance:** Creates balanced `GLEntry` and reconciles the bank line atomically in a single transaction.
 
-- [ ] **Task 6.6: React Banking Subsystem UI (SPA Parity)**
+- [x] **Task 6.6: React Banking Subsystem UI (SPA Parity)**
   - **Action:** Build `banking/src/App.tsx`, `BankStatementImporter.tsx` (drag-and-drop file upload with column mapping preview), `BankReconciliation.tsx` (dual-sided split comparison grid), and `VoucherQuickCreateDialog.tsx`.
   - **Acceptance:** Users can import statements, view matched suggestions, filter unreconciled transactions, open the quick voucher dialog, and reconcile in one click.
+  - **Parity note (Phase 6 pass):** added `PaymentsView` + `PaymentEntryList` (Table) + `PaymentEntryModal` (`max-w-3xl`, sections, open-invoice allocation grid) + `usePaymentEntries` hook, wired as `banking-payments` route; `BankTransaction` client mirror extended with the new staging fields.
 
 ---
 
 ## Phase 7: Financial Reporting & Executive Dashboard (ShadcnBlocks)
 
-- [ ] **Task 7.1: Financial Reporting CQRS Queries**
+- [x] **Task 7.1: Financial Reporting CQRS Queries**
   - **Action:** Implement queries:
     - `GetBalanceSheetQuery` (Assets = Liabilities + Equity)
     - `GetProfitAndLossQuery` (Revenue - COGS - Expenses = Net Profit)
@@ -181,10 +185,12 @@ This document provides granular, atomic, testable tasks for human engineers and 
     - `GetStockLedgerReportQuery` (Kardex valuation per warehouse/item)
     - `GetAgingReportQuery` (Receivables/Payables 0-30, 31-60, 61-90, 90+ days).
   - **Acceptance:** Balance Sheet balances; Trial Balance reports zero discrepancy.
+  - **Parity note (Phase 7 pass):** BS/P&L/TB pre-existed (GLEntry-aggregated, read-only). Added `GetStockLedgerReportQuery` (ERPNext `stock_ledger.py` columns: In/Out/Balance qty, valuation/balance value, voucher provenance + per-pair opening rows) and `GetAgingReportQuery` (ERPNext `accounts_receivable.py` columns: Invoiced/Paid/Outstanding, Age, NotDue/0-30/31-60/61-90/90+ buckets, per-leg totals), behind `GET FinancialReports/stock-ledger` + `/aging`. Read-only segregated contracts (`IStockLedgerReportRepository`, `IReceivableAgingRepository`, `IPayableAgingRepository`) implemented by the existing repos (dual-contract precedent) so handlers inject zero write surface. ERPNext structures extracted from frappe/erpnext `develop` (no `erpnext-docs` MCP server is connected in this environment; `call_mcp_tool` unavailable — raw GitHub sources used instead).
 
-- [ ] **Task 7.2: Integrate ShadcnBlocks Dashboard Template**
+- [x] **Task 7.2: Integrate ShadcnBlocks Dashboard Template**
   - **Action:** In `erp-client/src/features/dashboard`, implement `KpiCardsGrid`, `RevenueAreaChart`, and `RecentInvoicesList`.
   - **Acceptance:** Dashboard renders real-time data from backend with responsive design.
+  - **Parity note (Phase 7 pass):** `DashboardOverview` now live (MTD revenue/profit via P&L, AR/AP via aging, 6-month revenue-vs-expenses SVG area chart — hand-rolled, no Recharts dependency — plus live recent invoices); dedicated `ReportsView` (`dashboard-reports` route) with dense tables for Balance/P&L/Trial/Aging/Kardex, all `useTranslation`-driven en/es. No dark mode: the app has no `dark:` variant system, so premium-light Shadcn styling applies.
 
 ---
 

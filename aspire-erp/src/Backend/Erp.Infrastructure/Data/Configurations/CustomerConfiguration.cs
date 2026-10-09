@@ -38,6 +38,20 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.CustomerName).HasMaxLength(150).IsRequired();
         builder.Property(c => c.TaxId).HasMaxLength(50).IsRequired();
 
+        // ERPNext-parity profile columns: all NOT NULL with server defaults so the
+        // migration is non-destructive on existing rows (CustomerType keeps the
+        // ERPNext "Company" default, the rest default to the empty string).
+        builder.Property(c => c.CustomerType).HasMaxLength(50).IsRequired().HasDefaultValue("Company");
+        builder.Property(c => c.CustomerGroup).HasMaxLength(100).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(c => c.Territory).HasMaxLength(100).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(c => c.BillingAddress).HasMaxLength(500).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(c => c.Phone).HasMaxLength(50).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(c => c.Email).HasMaxLength(150).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(c => c.ContactPerson).HasMaxLength(150).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(c => c.Website).HasMaxLength(200).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(c => c.PaymentTerms).HasMaxLength(100).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(c => c.CustomerDetails).HasMaxLength(1000).IsRequired().HasDefaultValue(string.Empty);
+
         builder.Property(c => c.DefaultReceivableAccountId);
 
         // plan.md §1 DDL defaults: CreditLimit 0.0000, BypassCreditLimitCheck 0, 30 days,

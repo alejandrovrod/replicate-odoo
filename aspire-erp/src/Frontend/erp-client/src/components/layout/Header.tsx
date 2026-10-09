@@ -20,6 +20,7 @@ import { LanguageSelector } from './LanguageSelector'
  */
 const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys }> = {
   dashboard: { title: 'nav.route.dashboard', category: 'nav.category.dashboard' },
+  'dashboard-reports': { title: 'nav.item.dashboardReports', category: 'nav.category.dashboard' },
   'accounting-coa': { title: 'nav.route.accounting-coa', category: 'nav.category.accounting' },
   'accounting-journal': {
     title: 'nav.route.accounting-journal',
@@ -45,6 +46,7 @@ const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys 
   'accounting-exchange-rates': { title: 'nav.item.accountingExchangeRates', category: 'nav.category.accounting' },
   'accounting-fx-revaluations': { title: 'nav.item.accountingFxRevaluations', category: 'nav.category.accounting' },
   'banking-accounts': { title: 'nav.item.bankingAccounts', category: 'nav.category.treasury' },
+  'banking-payments': { title: 'nav.item.bankingPayments', category: 'nav.category.treasury' },
   'accounting-period-closing': { title: 'nav.item.periodClosing', category: 'nav.category.accounting' },
   'accounting-settings': { title: 'nav.item.accountingSettings', category: 'nav.category.accounting' },
 }

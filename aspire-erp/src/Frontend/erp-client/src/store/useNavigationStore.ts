@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 export type NavRoute =
   | 'dashboard'
+  | 'dashboard-reports'
   | 'accounting-coa'
   | 'accounting-journal'
   | 'accounting-currencies'
@@ -9,6 +10,7 @@ export type NavRoute =
   | 'assets-categories'
   | 'banking'
   | 'banking-accounts'
+  | 'banking-payments'
   | 'stock'
   | 'manufacturing'
   | 'selling'
@@ -39,6 +41,7 @@ const parseHash = (): NavRoute => {
   const hash = window.location.hash.replace(/^#\/?/, '')
   const validRoutes: NavRoute[] = [
     'dashboard',
+    'dashboard-reports',
     'accounting-coa',
     'accounting-journal',
     'accounting-currencies',
@@ -46,6 +49,7 @@ const parseHash = (): NavRoute => {
     'assets-categories',
     'banking',
     'banking-accounts',
+    'banking-payments',
     'stock',
     'manufacturing',
     'selling',

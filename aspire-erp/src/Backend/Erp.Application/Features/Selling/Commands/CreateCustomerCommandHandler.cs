@@ -37,13 +37,26 @@ public sealed class CreateCustomerCommandHandler : ICommandHandler<CreateCustome
             // omitted/null value to the empty string instead of letting the insert fail.
             var taxId = command.TaxId ?? string.Empty;
 
+            // ERPNext parity: an omitted CustomerType falls back to "Company" (ERPNext default).
+            var customerType = string.IsNullOrWhiteSpace(command.CustomerType) ? "Company" : command.CustomerType.Trim();
+
             CustomerValidator.EnsureValidCustomerFields(
                 command.CompanyId,
                 command.CustomerCode,
                 command.CustomerName,
                 taxId,
                 command.CreditLimit,
-                command.PaymentTermsDays);
+                command.PaymentTermsDays,
+                customerType,
+                command.CustomerGroup,
+                command.Territory,
+                command.BillingAddress,
+                command.Phone,
+                command.Email,
+                command.ContactPerson,
+                command.Website,
+                command.PaymentTerms,
+                command.CustomerDetails);
 
             if (command.CurrencyId.HasValue
                 && await _currencies.GetByIdAsync(command.CurrencyId.Value, cancellationToken) is null)
@@ -91,6 +104,16 @@ public sealed class CreateCustomerCommandHandler : ICommandHandler<CreateCustome
                 CurrencyId = command.CurrencyId,
                 PaymentTermsDays = command.PaymentTermsDays,
                 IsActive = command.IsActive,
+                CustomerType = customerType,
+                CustomerGroup = (command.CustomerGroup ?? string.Empty).Trim(),
+                Territory = (command.Territory ?? string.Empty).Trim(),
+                BillingAddress = (command.BillingAddress ?? string.Empty).Trim(),
+                Phone = (command.Phone ?? string.Empty).Trim(),
+                Email = (command.Email ?? string.Empty).Trim(),
+                ContactPerson = (command.ContactPerson ?? string.Empty).Trim(),
+                Website = (command.Website ?? string.Empty).Trim(),
+                PaymentTerms = (command.PaymentTerms ?? string.Empty).Trim(),
+                CustomerDetails = (command.CustomerDetails ?? string.Empty).Trim(),
 
                 // TenantId is intentionally NOT set: AppDbContext stamps CurrentTenantId on insert
                 // and throws when no tenant context exists (Constitution Article II.4, fail closed).

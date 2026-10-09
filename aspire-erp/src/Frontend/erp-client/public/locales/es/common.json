@@ -96,6 +96,7 @@
     },
     "item": {
       "dashboard": "Panel",
+      "dashboardReports": "Reportes financieros",
       "accountingCoa": "Plan de cuentas",
       "accountingJournal": "Libro mayor",
       "assets": "Activos Fijos",
@@ -116,6 +117,7 @@
       "accountingExchangeRates": "Tasas de Cambio",
       "accountingFxRevaluations": "Revaluaciones FX",
       "bankingAccounts": "Cuentas Bancarias",
+      "bankingPayments": "Pagos",
       "periodClosing": "Cierre de período",
       "accountingSettings": "Configuración contable"
     },

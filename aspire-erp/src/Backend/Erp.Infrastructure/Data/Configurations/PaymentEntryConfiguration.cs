@@ -15,10 +15,11 @@ public sealed class PaymentEntryConfiguration : IEntityTypeConfiguration<Payment
         builder.ToTable("PaymentEntry", table =>
         {
             // Defense in depth for PE-06 (the application guard owns the rule; the database
-            // backstops it): Receive ↔ Customer, Pay ↔ Supplier.
+            // backstops it): Receive ↔ Customer, Pay ↔ Supplier/Employee, InternalTransfer
+            // (ERPNext parity) carries no counterparty - PaidFrom/PaidTo own its legs.
             table.HasCheckConstraint(
                 "CK_PaymentEntry_Direction",
-                "([PaymentType] = 'Receive' AND [PartyType] = 'Customer') OR ([PaymentType] = 'Pay' AND [PartyType] = 'Supplier')");
+                "([PaymentType] = 'Receive' AND [PartyType] = 'Customer') OR ([PaymentType] = 'Pay' AND [PartyType] IN ('Supplier', 'Employee')) OR ([PaymentType] = 'InternalTransfer')");
         });
 
         builder.HasKey(p => p.Id);
@@ -47,6 +48,26 @@ public sealed class PaymentEntryConfiguration : IEntityTypeConfiguration<Payment
         builder.Property(p => p.PaidAmount).HasColumnType("decimal(18,4)").IsRequired();
         builder.Property(p => p.UnallocatedAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
         builder.Property(p => p.ReferenceNumber).HasMaxLength(100);
+
+        // ERPNext-parity columns (Phase 6): all NOT NULL with server defaults so the
+        // migration is non-destructive on existing rows.
+        builder.Property(p => p.PartyName).HasMaxLength(150).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(p => p.ModeOfPayment).HasMaxLength(100).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(p => p.PaidFromAccountId);
+        builder.Property(p => p.PaidFromAccountCurrency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
+        builder.Property(p => p.PaidToAccountId);
+        builder.Property(p => p.PaidToAccountCurrency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
+        builder.Property(p => p.SourceExchangeRate).HasColumnType("decimal(18,6)").HasDefaultValue(1m).IsRequired();
+        builder.Property(p => p.BasePaidAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(p => p.ReceivedAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(p => p.TargetExchangeRate).HasColumnType("decimal(18,6)").HasDefaultValue(1m).IsRequired();
+        builder.Property(p => p.BaseReceivedAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(p => p.TotalAllocatedAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(p => p.DifferenceAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(p => p.ReferenceDate).HasColumnType("date");
+        builder.Property(p => p.CostCenterId);
+        builder.Property(p => p.ProjectId);
+        builder.Property(p => p.Remarks).HasMaxLength(500).IsRequired().HasDefaultValue(string.Empty);
 
         builder.Property(p => p.DocumentStatus)
             .HasConversion<string>()

@@ -30,6 +30,14 @@ public sealed class PaymentAllocationConfiguration : IEntityTypeConfiguration<Pa
 
         builder.Property(a => a.AllocatedAmount).HasColumnType("decimal(18,4)").IsRequired();
 
+        // ERPNext-parity snapshot columns (Phase 6): denormalized reference + invoice
+        // figures at allocation time; NOT NULL with defaults (non-destructive migration).
+        builder.Property(a => a.ReferenceDocumentType).HasMaxLength(50).IsRequired().HasDefaultValue(string.Empty);
+        builder.Property(a => a.ReferenceDocumentId);
+        builder.Property(a => a.TotalAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(a => a.OutstandingAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(a => a.ExchangeRate).HasColumnType("decimal(18,6)").HasDefaultValue(1m).IsRequired();
+
         builder.HasOne(a => a.SalesInvoice)
             .WithMany()
             .HasForeignKey(a => a.SalesInvoiceId)

@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Infrastructure.Data.Repositories;
 
-public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
+public sealed class SalesInvoiceRepository : ISalesInvoiceRepository, IReceivableAgingRepository
 {
     private readonly AppDbContext _context;
 
@@ -57,6 +57,20 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
                 && i.CustomerId == customerId
                 && i.OutstandingAmount > 0m
                 && (i.Status == SalesInvoiceStatus.Unpaid || i.Status == SalesInvoiceStatus.PartiallyPaid))
+            .OrderBy(i => i.DueDate)
+            .ThenBy(i => i.Id)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<SalesInvoice>> GetOpenReceivablesByCompanyAsync(
+        Guid companyId,
+        DateOnly reportDate,
+        CancellationToken cancellationToken = default)
+        => await _context.SalesInvoices
+            .Where(i => i.CompanyId == companyId
+                && i.PostingDate <= reportDate
+                && i.OutstandingAmount > 0m
+                && (i.Status == SalesInvoiceStatus.Unpaid || i.Status == SalesInvoiceStatus.PartiallyPaid))
+            .Include(i => i.Customer)
             .OrderBy(i => i.DueDate)
             .ThenBy(i => i.Id)
             .ToListAsync(cancellationToken);

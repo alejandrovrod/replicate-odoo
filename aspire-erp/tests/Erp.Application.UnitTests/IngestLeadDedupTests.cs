@@ -79,8 +79,7 @@ public class IngestLeadDedupTests
     }
 
     [Fact]
-    public async Task HandleAsync_ShouldRejectUnknownCompany_BeforeDedupLookup()
-    {
+    public async Task HandleAsync_ShouldRejectUnknownCompany_BeforeDedupLookup() { var companyId = Guid.NewGuid();
         var repo = new FakeCrmRepository();
         var handler = new IngestLeadCommandHandler(repo, new FakeCompanyRepository { CompanyToReturn = null });
 

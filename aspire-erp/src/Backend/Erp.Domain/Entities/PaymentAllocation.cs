@@ -33,4 +33,31 @@ public sealed class PaymentAllocation : ITenantEntity
 
     /// <summary>Allocated amount (decimal(18,4), strictly positive).</summary>
     public decimal AllocatedAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity (<c>reference_doctype</c>): "SalesInvoice" or "PurchaseInvoice" -
+    /// denormalized from the FK leg for reporting without joins.
+    /// </summary>
+    public string ReferenceDocumentType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ERPNext parity: id of the referenced document (mirrors SalesInvoiceId/PurchaseInvoiceId
+    /// for the active leg).
+    /// </summary>
+    public Guid? ReferenceDocumentId { get; set; }
+
+    /// <summary>
+    /// ERPNext parity: invoice grand total at allocation time (snapshot for the allocation grid).
+    /// </summary>
+    public decimal TotalAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity: invoice outstanding at allocation time (the PE-02 cap snapshot).
+    /// </summary>
+    public decimal OutstandingAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity: invoice exchange rate at allocation time (snapshot for FX settlement).
+    /// </summary>
+    public decimal ExchangeRate { get; set; } = 1m;
 }

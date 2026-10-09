@@ -55,7 +55,7 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
             {
                 throw new BankingValidationException(
                     BankingErrorCodes.PaymentPartyMismatch,
-                    $"PartyType must be Customer or Supplier (was '{command.PartyType}').");
+                    $"PartyType must be Customer, Supplier or Employee (was '{command.PartyType}').");
             }
 
             _ = await _companies.GetByIdAsync(command.CompanyId, cancellationToken)
@@ -87,7 +87,19 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
             header.EnsureDirection();
 
             // The party must exist and belong to the company (PE-03 same-party rule root).
-            if (command.PartyType == PaymentPartyType.Customer)
+            // Employee advances (ERPNext parity) carry no master lookup: the PartyId is stored
+            // verbatim and settles through the company payable default at submit time.
+            // Internal transfers carry no counterparty at all: PaidFrom/PaidTo own the legs.
+            if (command.PaymentType == PaymentType.InternalTransfer)
+            {
+                if (!command.PaidFromAccountId.HasValue || !command.PaidToAccountId.HasValue)
+                {
+                    throw new BankingValidationException(
+                        BankingErrorCodes.PaymentPartyMismatch,
+                        "An internal transfer requires both PaidFromAccountId and PaidToAccountId.");
+                }
+            }
+            else if (command.PartyType == PaymentPartyType.Customer)
             {
                 var customer = await _customers.GetByIdAsync(command.PartyId, cancellationToken);
                 if (customer is null || customer.CompanyId != command.CompanyId)
@@ -96,8 +108,13 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
                         BankingErrorCodes.PaymentPartyMismatch,
                         $"Customer '{command.PartyId}' was not found in this company.");
                 }
+
+                if (string.IsNullOrWhiteSpace(command.PartyName))
+                {
+                    command = command with { PartyName = customer.CustomerName };
+                }
             }
-            else
+            else if (command.PartyType == PaymentPartyType.Supplier)
             {
                 var supplier = await _suppliers.GetByIdAsync(command.PartyId, cancellationToken);
                 if (supplier is null)
@@ -109,7 +126,15 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
             }
 
             // Per-line invoice gates (existence, company, party, status, PE-02 cap).
-            var slices = new List<(Guid? SalesId, Guid? PurchaseId, decimal Amount)>(command.Allocations.Count);
+            // Internal transfers allocate nothing: the whole amount moves between accounts.
+            if (command.PaymentType == PaymentType.InternalTransfer && command.Allocations.Count > 0)
+            {
+                throw new BankingValidationException(
+                    BankingErrorCodes.PaymentPartyMismatch,
+                    "An internal transfer cannot allocate to invoices.");
+            }
+
+            var slices = new List<(Guid? SalesId, Guid? PurchaseId, decimal Amount, string DocType, Guid DocId, decimal Total, decimal Outstanding, decimal Rate)>(command.Allocations.Count);
             foreach (var input in command.Allocations)
             {
                 slices.Add(await ValidateAllocationAsync(command, header, input, slices, cancellationToken));
@@ -131,12 +156,26 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
                 TransactionCurrencyId = command.TransactionCurrencyId,
                 DocumentStatus = PaymentDocumentStatus.Draft,
                 Status = PaymentStatus.Unreconciled,
+                PartyName = (command.PartyName ?? string.Empty).Trim(),
+                ModeOfPayment = (command.ModeOfPayment ?? string.Empty).Trim(),
+                PaidFromAccountId = command.PaidFromAccountId,
+                PaidToAccountId = command.PaidToAccountId,
+                ReceivedAmount = command.PaidAmount,
+                ReferenceDate = command.ReferenceDate,
+                CostCenterId = command.CostCenterId,
+                ProjectId = command.ProjectId,
+                Remarks = (command.Remarks ?? string.Empty).Trim(),
                 Allocations = slices.Select(s => new PaymentAllocation
                 {
                     Id = Guid.NewGuid(),
                     SalesInvoiceId = s.SalesId,
                     PurchaseInvoiceId = s.PurchaseId,
                     AllocatedAmount = s.Amount,
+                    ReferenceDocumentType = s.DocType,
+                    ReferenceDocumentId = s.DocId,
+                    TotalAmount = s.Total,
+                    OutstandingAmount = s.Outstanding,
+                    ExchangeRate = s.Rate,
                 }).ToList(),
             };
 
@@ -161,11 +200,11 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
     /// the invoice must be open (Unpaid/PartiallyPaid), company- and party-owned, and the
     /// running total for that invoice must respect the PE-02 cap.
     /// </summary>
-    private async Task<(Guid? SalesId, Guid? PurchaseId, decimal Amount)> ValidateAllocationAsync(
+    private async Task<(Guid? SalesId, Guid? PurchaseId, decimal Amount, string DocType, Guid DocId, decimal Total, decimal Outstanding, decimal Rate)> ValidateAllocationAsync(
         CreatePaymentEntryCommand command,
         PaymentEntry header,
         PaymentAllocationInput input,
-        IReadOnlyList<(Guid? SalesId, Guid? PurchaseId, decimal Amount)> accepted,
+        IReadOnlyList<(Guid? SalesId, Guid? PurchaseId, decimal Amount, string DocType, Guid DocId, decimal Total, decimal Outstanding, decimal Rate)> accepted,
         CancellationToken cancellationToken)
     {
         var isReceive = command.PaymentType == PaymentType.Receive;
@@ -209,7 +248,7 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
             var already = accepted.Where(s => s.SalesId == invoice.Id).Sum(s => s.Amount);
             header.Allocate(input.AllocatedAmount, invoice.OutstandingAmount, already);
 
-            return (invoice.Id, null, input.AllocatedAmount);
+            return (invoice.Id, null, input.AllocatedAmount, "SalesInvoice", invoice.Id, invoice.GrandTotal, invoice.OutstandingAmount, invoice.ExchangeRate);
         }
 
         {
@@ -228,7 +267,7 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
             var already = accepted.Where(s => s.PurchaseId == bill.Id).Sum(s => s.Amount);
             header.Allocate(input.AllocatedAmount, bill.OutstandingAmount, already);
 
-            return (null, bill.Id, input.AllocatedAmount);
+            return (null, bill.Id, input.AllocatedAmount, "PurchaseInvoice", bill.Id, bill.GrandTotal, bill.OutstandingAmount, bill.ExchangeRate);
         }
     }
 

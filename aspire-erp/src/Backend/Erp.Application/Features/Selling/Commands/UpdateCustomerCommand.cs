@@ -14,4 +14,14 @@ public sealed record UpdateCustomerCommand(
     int PaymentTermsDays,
     Guid? ReceivableAccountId,
     bool IsActive,
-    byte[] RowVersion) : ICommand<Result<CustomerDto>>;
+    byte[] RowVersion,
+    string? CustomerType = null,
+    string? CustomerGroup = null,
+    string? Territory = null,
+    string? BillingAddress = null,
+    string? Phone = null,
+    string? Email = null,
+    string? ContactPerson = null,
+    string? Website = null,
+    string? PaymentTerms = null,
+    string? CustomerDetails = null) : ICommand<Result<CustomerDto>>;

@@ -27,6 +27,17 @@ export interface BankTransaction {
   suggestedAccountId: string | null
   /** Optimistic token as base64; echoed back verbatim on reconcile/quick-voucher (BN-07). */
   rowVersion: string | null
+  unallocatedAmount: number
+  transactionType: string
+  partyType: string | null
+  partyId: string | null
+  bankPartyName: string
+  bankPartyAccountNumber: string
+  bankPartyIban: string
+  isRuleEvaluated: boolean
+  matchedTransactionRuleId: string | null
+  includedFee: number
+  excludedFee: number
 }
 
 /** Mirrors `BankStatementImportDto` (POST /api/v1/bank-statement-imports, BN-05 summary). */

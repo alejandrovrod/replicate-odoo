@@ -96,6 +96,7 @@
     },
     "item": {
       "dashboard": "Dashboard",
+      "dashboardReports": "Financial Reports",
       "accountingCoa": "Chart of Accounts",
       "accountingJournal": "General Ledger",
       "assets": "Fixed Assets",
@@ -116,6 +117,7 @@
       "accountingExchangeRates": "Exchange Rates",
       "accountingFxRevaluations": "FX Revaluations",
       "bankingAccounts": "Bank Accounts",
+      "bankingPayments": "Payments",
       "periodClosing": "Period Closing",
       "accountingSettings": "Accounting Settings"
     },

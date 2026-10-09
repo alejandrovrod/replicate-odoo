@@ -8,7 +8,7 @@ namespace Erp.Application.UnitTests.Fakes;
 /// In-memory <see cref="ISalesInvoiceRepository"/> (spec R-12): tests seed open invoices and
 /// assert on the outstanding/paid/status mutations the payment handlers perform.
 /// </summary>
-public sealed class FakeSalesInvoiceRepository : ISalesInvoiceRepository
+public sealed class FakeSalesInvoiceRepository : ISalesInvoiceRepository, IReceivableAgingRepository
 {
     private readonly List<SalesInvoice> _invoices = new();
 
@@ -58,6 +58,18 @@ public sealed class FakeSalesInvoiceRepository : ISalesInvoiceRepository
             _invoices
                 .Where(i => i.CompanyId == companyId
                     && i.CustomerId == customerId
+                    && i.OutstandingAmount > 0m
+                    && (i.Status == SalesInvoiceStatus.Unpaid || i.Status == SalesInvoiceStatus.PartiallyPaid))
+                .OrderBy(i => i.DueDate)
+                .ThenBy(i => i.Id)
+                .ToList());
+
+    public Task<IReadOnlyList<SalesInvoice>> GetOpenReceivablesByCompanyAsync(
+        Guid companyId, DateOnly reportDate, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<SalesInvoice>>(
+            _invoices
+                .Where(i => i.CompanyId == companyId
+                    && i.PostingDate <= reportDate
                     && i.OutstandingAmount > 0m
                     && (i.Status == SalesInvoiceStatus.Unpaid || i.Status == SalesInvoiceStatus.PartiallyPaid))
                 .OrderBy(i => i.DueDate)

@@ -21,7 +21,7 @@ namespace Erp.Infrastructure.Data.Repositories;
 /// (Constitution II.3 - the global query filter does it); the raw SQL voucher statements scope
 /// by TenantId themselves because EF query filters do NOT apply to raw SQL.
 /// </remarks>
-public sealed class PurchaseRepository : IPurchaseRepository
+public sealed class PurchaseRepository : IPurchaseRepository, IPayableAgingRepository
 {
     // Table names are compile-time constants interpolated into the raw SQL (a table name cannot
     // be parameterized); each public Next* method passes only its own literal.
@@ -257,6 +257,20 @@ public sealed class PurchaseRepository : IPurchaseRepository
                 && i.SupplierId == supplierId
                 && i.OutstandingAmount > 0m
                 && (i.Status == PurchaseInvoiceStatus.Unpaid || i.Status == PurchaseInvoiceStatus.PartiallyPaid))
+            .OrderBy(i => i.DueDate)
+            .ThenBy(i => i.Id)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<PurchaseInvoice>> GetOpenPayablesByCompanyAsync(
+        Guid companyId,
+        DateOnly reportDate,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.PurchaseInvoices
+            .Where(i => i.CompanyId == companyId
+                && i.PostingDate <= reportDate
+                && i.OutstandingAmount > 0m
+                && (i.Status == PurchaseInvoiceStatus.Unpaid || i.Status == PurchaseInvoiceStatus.PartiallyPaid))
+            .Include(i => i.Supplier)
             .OrderBy(i => i.DueDate)
             .ThenBy(i => i.Id)
             .ToListAsync(cancellationToken);

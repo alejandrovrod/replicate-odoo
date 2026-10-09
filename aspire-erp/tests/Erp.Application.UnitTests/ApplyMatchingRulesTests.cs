@@ -1,4 +1,5 @@
 using Erp.Application.Features.Banking.Commands;
+using Erp.Application.Services;
 using Erp.Application.UnitTests.Fakes;
 using Erp.Domain.Entities;
 using Xunit;
@@ -80,7 +81,7 @@ public sealed class ApplyMatchingRulesTests
             IsActive = isActive,
         };
 
-    private ApplyMatchingRulesCommandHandler Handler() => new(_bank);
+    private ApplyMatchingRulesCommandHandler Handler() => new(_bank, new BankTransactionRuleEvaluator());
 
     // ------------------------------------------------------------- BN-02 happy path
 

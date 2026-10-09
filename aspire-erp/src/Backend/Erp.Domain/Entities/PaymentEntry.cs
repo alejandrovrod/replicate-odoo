@@ -15,6 +15,13 @@ public enum PaymentType
 
     /// <summary>Money paid to a supplier or expense account (decreases the bank balance).</summary>
     Pay,
+
+    /// <summary>
+    /// ERPNext parity: bank-to-bank (or bank-to-cash) transfer between two accounts of the
+    /// company (<see cref="PaymentEntry.PaidFromAccountId"/> → <see cref="PaymentEntry.PaidToAccountId"/>).
+    /// Draft capture is supported; settlement posting is deferred (see tasks.md Phase 6 notes).
+    /// </summary>
+    InternalTransfer,
 }
 
 /// <summary>
@@ -29,12 +36,14 @@ public enum PaymentStatus
 
 /// <summary>
 /// Counterparty kind of a payment voucher (spec R-12 invariant PE-06): <c>Receive</c> settles
-/// a <c>Customer</c>, <c>Pay</c> settles a <c>Supplier</c>. Persisted as the enum NAME.
+/// a <c>Customer</c>, <c>Pay</c> settles a <c>Supplier</c> or an <c>Employee</c> advance.
+/// Persisted as the enum NAME.
 /// </summary>
 public enum PaymentPartyType
 {
     Customer,
     Supplier,
+    Employee,
 }
 
 /// <summary>
@@ -81,6 +90,78 @@ public sealed class PaymentEntry : ITenantEntity
 
     /// <summary>Counterparty id (Customer.Id or Supplier.Id, per <see cref="PartyType"/>).</summary>
     public Guid PartyId { get; set; }
+
+    /// <summary>ERPNext parity (<c>party_name</c>): counterparty display name snapshot.</summary>
+    public string PartyName { get; set; } = string.Empty;
+
+    /// <summary>ERPNext parity (<c>mode_of_payment</c>): Cash, Bank Draft, Wire Transfer, ...</summary>
+    public string ModeOfPayment { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ERPNext parity (<c>paid_from</c>): source GL account of the money. On Receive/Pay legs
+    /// this mirrors the bank profile's GL account; on Internal Transfer it is the explicit
+    /// source account. Null until set.
+    /// </summary>
+    public Guid? PaidFromAccountId { get; set; }
+
+    /// <summary>ERPNext parity: ISO currency of the paid-from account (default USD).</summary>
+    public string PaidFromAccountCurrency { get; set; } = "USD";
+
+    /// <summary>
+    /// ERPNext parity (<c>paid_to</c>): destination GL account of the money. Null until set.
+    /// </summary>
+    public Guid? PaidToAccountId { get; set; }
+
+    /// <summary>ERPNext parity: ISO currency of the paid-to account (default USD).</summary>
+    public string PaidToAccountCurrency { get; set; } = "USD";
+
+    /// <summary>
+    /// ERPNext parity (<c>source_exchange_rate</c>): transaction → paid-from currency rate.
+    /// 1 when single-currency; refreshed from the FX catalog on submit.
+    /// </summary>
+    public decimal SourceExchangeRate { get; set; } = 1m;
+
+    /// <summary>ERPNext parity (<c>base_paid_amount</c>): PaidAmount in company currency.</summary>
+    public decimal BasePaidAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity (<c>received_amount</c>): amount landing on the destination side, in
+    /// paid-to currency. Defaults to PaidAmount on create; refreshed on submit.
+    /// </summary>
+    public decimal ReceivedAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity (<c>target_exchange_rate</c>): transaction → paid-to currency rate.
+    /// 1 when single-currency; refreshed from the FX catalog on submit.
+    /// </summary>
+    public decimal TargetExchangeRate { get; set; } = 1m;
+
+    /// <summary>ERPNext parity (<c>base_received_amount</c>): ReceivedAmount in company currency.</summary>
+    public decimal BaseReceivedAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity: sum of allocation slices, snapshotted on submit (PE-03: equals
+    /// PaidAmount − UnallocatedAmount).
+    /// </summary>
+    public decimal TotalAllocatedAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity (<c>difference_amount</c>): PaidAmount − TotalAllocatedAmount −
+    /// UnallocatedAmount. Zero on a conserved voucher (PE-03); nonzero flags a data fix-up.
+    /// </summary>
+    public decimal DifferenceAmount { get; set; }
+
+    /// <summary>ERPNext parity (<c>reference_date</c>): date of the external reference, if any.</summary>
+    public DateOnly? ReferenceDate { get; set; }
+
+    /// <summary>ERPNext parity (<c>cost_center</c>): optional cost center dimension.</summary>
+    public Guid? CostCenterId { get; set; }
+
+    /// <summary>ERPNext parity (<c>project</c>): optional project dimension.</summary>
+    public Guid? ProjectId { get; set; }
+
+    /// <summary>ERPNext parity: free-text remarks on the voucher.</summary>
+    public string Remarks { get; set; } = string.Empty;
 
     /// <summary>
     /// Gapless fiscal number (<c>PAY-YYYY-NNNNN</c>, Constitution III.4): assigned inside the
@@ -196,14 +277,17 @@ public sealed class PaymentEntry : ITenantEntity
     }
 
     /// <summary>
-    /// Directional consistency (spec R-12 invariant PE-06): Receive ↔ Customer,
-    /// Pay ↔ Supplier. Called by the application guard before any row exists.
+    /// Directional consistency (spec R-12 invariant PE-06, extended for ERPNext parity):
+    /// Receive ↔ Customer, Pay ↔ Supplier/Employee, InternalTransfer ↔ any party (the
+    /// transfer carries no counterparty - PaidFrom/PaidTo own the legs). Called by the
+    /// application guard before any row exists.
     /// </summary>
     /// <exception cref="BankingValidationException"><c>payment_party_mismatch</c>.</exception>
     public void EnsureDirection()
     {
         var consistent = (PaymentType == PaymentType.Receive && PartyType == PaymentPartyType.Customer)
-            || (PaymentType == PaymentType.Pay && PartyType == PaymentPartyType.Supplier);
+            || (PaymentType == PaymentType.Pay && (PartyType == PaymentPartyType.Supplier || PartyType == PaymentPartyType.Employee))
+            || PaymentType == PaymentType.InternalTransfer;
 
         if (!consistent)
         {

@@ -23,6 +23,14 @@ interface CustomerFormModalProps {
   companyId: string
 }
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-2">
+      {children}
+    </h4>
+  )
+}
+
 export function CustomerFormModal({
   isOpen,
   onClose,
@@ -104,9 +112,12 @@ export function CustomerFormModal({
     }
   }
 
+  const selectClassName =
+    'flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50'
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {initialData ? t('customerForm.titleEdit', 'Edit Customer') : t('customerForm.titleNew', 'New Customer')}
@@ -117,7 +128,8 @@ export function CustomerFormModal({
           <div className="flex-1 overflow-y-auto pr-2 space-y-4">
             {error && <div className="text-sm text-red-600">{error}</div>}
 
-            <div className="space-y-4">
+            <SectionTitle>{t('customerForm.sectionGeneral', 'General')}</SectionTitle>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('customerForm.codeLabel', 'Customer Code *')}</label>
                 <Input
@@ -139,19 +151,103 @@ export function CustomerFormModal({
                   required
                 />
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.typeLabel', 'Customer Type')}</label>
+                <select name="customerType" value={formData.customerType || 'Company'} onChange={handleChange} className={selectClassName}>
+                  <option value="Company">{t('customerForm.type_Company', 'Company')}</option>
+                  <option value="Individual">{t('customerForm.type_Individual', 'Individual')}</option>
+                  <option value="Partnership">{t('customerForm.type_Partnership', 'Partnership')}</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.taxIdLabel', 'Tax ID')}</label>
+                <Input
+                  name="taxId"
+                  value={formData.taxId || ''}
+                  onChange={handleChange}
+                  placeholder="Optional Tax ID"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.groupLabel', 'Customer Group')}</label>
+                <Input
+                  name="customerGroup"
+                  value={formData.customerGroup || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. Retail"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.territoryLabel', 'Territory')}</label>
+                <Input
+                  name="territory"
+                  value={formData.territory || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. North"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('customerForm.taxIdLabel', 'Tax ID')}</label>
-              <Input
-                name="taxId"
-                value={formData.taxId || ''}
-                onChange={handleChange}
-                placeholder="Optional Tax ID"
-              />
+            <SectionTitle>{t('customerForm.sectionContact', 'Contact')}</SectionTitle>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.contactPersonLabel', 'Contact Person')}</label>
+                <Input
+                  name="contactPerson"
+                  value={formData.contactPerson || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. Jane Doe"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.phoneLabel', 'Phone')}</label>
+                <Input
+                  name="phone"
+                  value={formData.phone || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. +54 11 5555-5555"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.emailLabel', 'Email')}</label>
+                <Input
+                  name="email"
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. billing@acme.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.websiteLabel', 'Website')}</label>
+                <Input
+                  name="website"
+                  value={formData.website || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. https://acme.com"
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <label className="text-sm font-medium">{t('customerForm.billingAddressLabel', 'Billing Address')}</label>
+                <Input
+                  name="billingAddress"
+                  value={formData.billingAddress || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. Av. Siempre Viva 123, CABA"
+                />
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <SectionTitle>{t('customerForm.sectionBilling', 'Billing & Credit')}</SectionTitle>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('customerForm.creditLimitLabel', 'Credit Limit')}</label>
                 <Input
@@ -165,13 +261,23 @@ export function CustomerFormModal({
               </div>
 
               <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.paymentTermsLabel', 'Payment Terms')}</label>
+                <Input
+                  name="paymentTerms"
+                  value={formData.paymentTerms || ''}
+                  onChange={handleChange}
+                  placeholder="e.g. Net 30"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-sm font-medium">{t('customerForm.currencyLabel', 'Currency')}</label>
                 <select
                   name="currencyId"
                   value={formData.currencyId || ''}
                   onChange={handleChange}
                   disabled={currenciesQuery.status !== 'success'}
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
+                  className={selectClassName}
                 >
                   <option value="">{t('customerForm.currencyNone', '-- Default (USD) --')}</option>
                   {currenciesQuery.status === 'success' && currenciesQuery.items.map((c) => (
@@ -181,24 +287,34 @@ export function CustomerFormModal({
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('customerForm.receivableAccountLabel', 'Default Receivable Account')}</label>
-              <select
-                name="defaultReceivableAccountId"
-                value={formData.defaultReceivableAccountId || ''}
-                onChange={handleChange}
-                disabled={accountsStatus !== 'success'}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
-              >
-                <option value="">{t('customerForm.accountNone', '-- Select Account --')}</option>
-                {receivableAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.code} — {account.name}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('customerForm.receivableAccountLabel', 'Default Receivable Account')}</label>
+                <select
+                  name="defaultReceivableAccountId"
+                  value={formData.defaultReceivableAccountId || ''}
+                  onChange={handleChange}
+                  disabled={accountsStatus !== 'success'}
+                  className={selectClassName}
+                >
+                  <option value="">{t('customerForm.accountNone', '-- Select Account --')}</option>
+                  {receivableAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.code} — {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <label className="text-sm font-medium">{t('customerForm.detailsLabel', 'Internal Notes')}</label>
+                <Input
+                  name="customerDetails"
+                  value={formData.customerDetails || ''}
+                  onChange={handleChange}
+                  placeholder={t('customerForm.detailsPlaceholder', 'Internal notes about this customer')}
+                />
+              </div>
             </div>
 
             <div className="flex items-center space-x-2 pb-4">

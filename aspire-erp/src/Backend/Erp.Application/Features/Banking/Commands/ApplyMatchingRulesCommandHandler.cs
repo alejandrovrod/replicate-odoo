@@ -1,8 +1,8 @@
 using Erp.Application.Common;
+using Erp.Application.Services;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
-using Erp.Domain.Services;
 
 namespace Erp.Application.Features.Banking.Commands;
 
@@ -29,10 +29,12 @@ public sealed class ApplyMatchingRulesCommandHandler
     : ICommandHandler<ApplyMatchingRulesCommand, Result<RuleMatchSummary>>
 {
     private readonly IBankRepository _bank;
+    private readonly IBankTransactionRuleEvaluator _evaluator;
 
-    public ApplyMatchingRulesCommandHandler(IBankRepository bank)
+    public ApplyMatchingRulesCommandHandler(IBankRepository bank, IBankTransactionRuleEvaluator evaluator)
     {
         _bank = bank;
+        _evaluator = evaluator;
     }
 
     public async Task<Result<RuleMatchSummary>> HandleAsync(
@@ -53,12 +55,15 @@ public sealed class ApplyMatchingRulesCommandHandler
 
                 foreach (var transaction in transactions)
                 {
-                    var firing = rules.FirstOrDefault(rule =>
-                        (rule.BankAccountId is null || rule.BankAccountId == transaction.BankAccountId)
-                        && BankRuleMatcher.Evaluate(rule, transaction));
+                    var firing = _evaluator.FindFirstMatch(rules, transaction);
+
+                    // ERPNext-parity audit trail: every evaluated line is stamped, matched or not.
+                    transaction.IsRuleEvaluated = true;
+                    transaction.MatchedTransactionRuleId = firing?.Id;
 
                     if (firing is null)
                     {
+                        await _bank.UpdateTransactionAsync(transaction, token);
                         outcomes.Add(new RuleMatchOutcome(transaction.Id, false, null, null, false));
                         continue;
                     }

@@ -26,6 +26,7 @@ namespace Erp.Api.Controllers.V1;
 /// </remarks>
 [ApiController]
 [Route("api/v1/[controller]")]
+[Route("api/v1/payment-entries")]
 [Authorize(Policy = "TenantMember")]
 [Produces("application/json")]
 [Consumes("application/json")]

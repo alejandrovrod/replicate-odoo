@@ -373,11 +373,18 @@ if (app.Environment.IsDevelopment())
 
     // Selling Fase 5: every initialized company owns a Receivable leaf ("Deudores por
     // Ventas") so the Customer receivable picker is never empty on new companies.
-    // Idempotent per company; runs alongside Migrate on every Development boot.
+    // Idempotent per company; runs alongside Migrate on every Development boot. Each company
+    // gets its OWN scope with its tenant set: the seeder inserts tenant-stamped rows, which
+    // the fail-closed tenant guard would otherwise reject on the shared tenantless scope.
+    // Parallel boots (one WebApplicationFactory per test class) may race on the same company;
+    // the seeder converges on the unique index instead of crashing the boot.
     var companies = await dbContext.Companies.IgnoreQueryFilters().ToListAsync();
     foreach (var bootstrappedCompany in companies)
     {
-        await ReceivableAccountSeeder.SeedAsync(dbContext, bootstrappedCompany.Id, bootstrappedCompany.TenantId);
+        using var companyScope = app.Services.CreateScope();
+        companyScope.ServiceProvider.GetRequiredService<ITenantProvider>().SetCurrentTenantId(bootstrappedCompany.TenantId);
+        var companyContext = companyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await ReceivableAccountSeeder.SeedAsync(companyContext, bootstrappedCompany.Id, bootstrappedCompany.TenantId);
     }
 }
 

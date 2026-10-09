@@ -123,21 +123,21 @@ This document provides granular, atomic, testable tasks for human engineers and 
 
 ## Phase 5: Selling Cycle (Ventas & Clientes)
 
-- [ ] **Task 5.1: Domain Models `Customer`, `SalesOrder`, `DeliveryNote`, and `SalesInvoice`**
+- [x] **Task 5.1: Domain Models `Customer`, `SalesOrder`, `DeliveryNote`, and `SalesInvoice`**
   - **Action:** In `Erp.Domain`, implement `Customer`, `SalesOrder`, `DeliveryNote`, and `SalesInvoice`.
   - **Acceptance:** Three-way matching tracks `DeliveredQuantity` and `BilledQuantity` per order line.
 
-- [ ] **Task 5.2: Delivery Fulfillment & COGS Posting**
+- [x] **Task 5.2: Delivery Fulfillment & COGS Posting**
   - **Action:** Posting `DeliveryNote` deducts stock in `StockLedgerEntry` and creates General Ledger entry:
     - Debit: Cost of Goods Sold (COGS)
     - Credit: Stock In Hand.
   - **Acceptance:** Physical stock is deducted; COGS is recognized on fulfillment date.
 
-- [ ] **Task 5.3: Sales Invoice Posting & Credit Control**
+- [x] **Task 5.3: Sales Invoice Posting & Credit Control**
   - **Action:** Posting `SalesInvoice` verifies customer credit limit, generates sequential number (`SINV-2026-XXXX`), and posts balanced entries (Debit Accounts Receivable, Credit Revenue, Credit Tax).
   - **Acceptance:** Invariant $\sum \text{Debit} == \sum \text{Credit}$ verified; credit limit breach blocks invoice submission.
 
-- [ ] **Task 5.4: React Sales Studio UI**
+- [x] **Task 5.4: React Sales Studio UI**
   - **Action:** Build `SalesOrderList`, `DeliveryNoteModal`, and `InvoiceStudio` with live calculations in React.
   - **Acceptance:** Users can convert a Sales Order into a Delivery Note and Sales Invoice with 1 click.
 
@@ -196,10 +196,13 @@ This document provides granular, atomic, testable tasks for human engineers and 
 
 ## Phase 8: Verification, Security & Production Hardening
 
-- [ ] **Task 8.1: Multi-Tenant Adversarial Tests**
+- [x] **Task 8.1: Multi-Tenant Adversarial Tests**
   - **Action:** Write integration tests simulating 5 tenants submitting concurrent orders, invoices, and payments.
   - **Acceptance:** 100% of queries return strictly tenant-isolated records; zero leakage.
+  - **Evidence (Phase 8 pass):** `TenantIsolationAdversarialTests` (3/3 green, live SQL container): 5 tenants drive customer/supplier/order/invoice/payment drafts concurrently with IDENTICAL codes — every list returns exactly the caller's row; cross-tenant PK reads 404, forged company scopes answer empty, forged writes 4xx; direct-context wave proves the global filter (tenant B sees only own rows), TenantId retagging throws, tenantless inserts fail closed, and the filter-bypass backdoor finds all 5 rows. Draft-only, so no `LedgerMutating` serialization needed.
 
-- [ ] **Task 8.2: End-to-End Ledger Integrity Stress Test**
+- [x] **Task 8.2: End-to-End Ledger Integrity Stress Test**
   - **Action:** Execute automated script running complete procurement and sales cycles (PO -> Receipt -> Bill -> SO -> Delivery -> Invoice -> Payment).
   - **Acceptance:** Global sum of all `GLEntry` debits minus credits equals exactly `0.0000`; inventory valuation in GL matches physical stock ledger.
+  - **Evidence (Phase 8 pass):** `LedgerIntegrityStressTests` (3/3 green, `LedgerMutating` collection): full HTTP cycle on the dev company; Σ(D−C) over the run's five GL vouchers == 0.0000; GL stock legs (warehouse account resolved at runtime) == Kardex movement; invoice ends Paid with Outstanding 0. Run-scoped voucher filter keeps it deterministic under parallel suites; posted buy docs stay (append-only norm), sell docs cleaned by id.
+  - **Environment notes:** fixed a latent `ReceivableAccountSeeder` boot crash (tenantless scope on new-company inserts; now per-company tenant scopes + unique-index convergence) and reset a stuck `FrozenAccountsDate` (2026-10-08) left by an interrupted run, which was 409-blocking journal submits.

@@ -86,7 +86,22 @@ public static class ReceivableAccountSeeder
             IsActive = true,
         };
 
-        await context.Accounts.AddAsync(account, cancellationToken);
+        // Converge on concurrent boots: two hosts may both pass the existence check above
+        // for the same company; the unique index admits exactly one insert and the loser
+        // re-reads the winner instead of crashing the boot.
+        try
+        {
+            await context.Accounts.AddAsync(account, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            context.Entry(account).State = EntityState.Detached;
+            if (!await ExistsAsync(context, companyId, tenantId, cancellationToken))
+            {
+                throw;
+            }
+        }
 
         if (company is not null && string.IsNullOrWhiteSpace(company.DefaultReceivableAccountCode))
         {
@@ -95,4 +110,12 @@ public static class ReceivableAccountSeeder
 
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    private static async Task<bool> ExistsAsync(
+        AppDbContext context, Guid companyId, Guid tenantId, CancellationToken cancellationToken)
+        => await context.Accounts
+            .IgnoreQueryFilters()
+            .AnyAsync(
+                a => a.TenantId == tenantId && a.CompanyId == companyId && a.AccountCode == ReceivableAccountCode,
+                cancellationToken);
 }

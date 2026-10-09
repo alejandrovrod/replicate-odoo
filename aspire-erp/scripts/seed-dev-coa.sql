@@ -103,6 +103,39 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Account WHERE Id = 'a0000000-0000-4000-8000-000
     VALUES ('a0000000-0000-4000-8000-000000005210', '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '5210', 'Cost of Goods Sold', 'Expense', 0, 'a0000000-0000-4000-8000-000000005000', 1);
 GO
 
+-- --- Account Type backfill (Phase 8 hardening) --------------------------------
+-- Root cause: migrations run BEFORE these seed scripts, so migration
+-- 20261002195126_AddAccountTypeAndUniqueCode backfilled zero rows and every seeded
+-- account landed on the column DEFAULT 'Other'. Same CASE mapping as that migration
+-- (code overrides, else per-RootType default), plus the codes later seeds add:
+--   1320/1330 stock piles -> Stock, 2220 Income Tax Payable -> Tax,
+--   5310 Depreciation Expense -> Depreciation.
+-- Guarded to untouched rows only (idempotent, safe to re-run, never clobbers a
+-- deliberate Type change) - mirrors the migration's own WHERE clause.
+UPDATE dbo.Account
+SET [Type] = CASE AccountCode
+    WHEN N'1110' THEN N'Cash'
+    WHEN N'1120' THEN N'Receivable'
+    WHEN N'1130' THEN N'Tax'
+    WHEN N'1310' THEN N'Stock'
+    WHEN N'1320' THEN N'Stock'
+    WHEN N'1330' THEN N'Stock'
+    WHEN N'2110' THEN N'Payable'
+    WHEN N'2120' THEN N'Other'
+    WHEN N'2220' THEN N'Tax'
+    WHEN N'4110' THEN N'Revenue'
+    WHEN N'5210' THEN N'COGS'
+    WHEN N'5310' THEN N'Depreciation'
+    ELSE CASE RootType
+        WHEN N'Equity'  THEN N'Equity'
+        WHEN N'Income'  THEN N'Revenue'
+        WHEN N'Expense' THEN N'Expense'
+        ELSE N'Other'
+    END
+END
+WHERE [Type] = N'Other';
+GO
+
 -- --- Company posting defaults (decision D3 + module 03/04 consumers) --------
 -- Every value is an ACCOUNT CODE, not a FK: a Company -> Account FK would be
 -- circular (Account already references Company). The posting engine resolves

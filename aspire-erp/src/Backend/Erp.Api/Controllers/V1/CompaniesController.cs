@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Erp.Api.Controllers.V1;
 
 [ApiController]
-[Route("v1/companies")]
+[Route("api/v1/companies")]
 public class CompaniesController : ControllerBase
 {
     private readonly ISender _sender;
@@ -13,6 +13,13 @@ public class CompaniesController : ControllerBase
     public CompaniesController(ISender sender)
     {
         _sender = sender;
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> Get(Guid id)
+    {
+        var result = await _sender.SendAsync(new GetCompanyQuery(id));
+        return Ok(result);
     }
 
     [HttpPut("{id}")]

@@ -4,6 +4,7 @@ using Erp.Api.Filters;
 using Erp.Api.Middleware;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Application.Features.SystemBase.Companies;
 using Erp.Application.Features.Accounts.Commands;
 using Erp.Application.Features.Accounts.Queries;
 using Erp.Application.Features.Banking.Commands;
@@ -109,6 +110,7 @@ builder.Services.AddScoped<ICommandHandler<CreateExchangeRateRevaluationCommand,
 builder.Services.AddScoped<ICommandHandler<SubmitExchangeRateRevaluationCommand, Result<SubmitExchangeRateRevaluationResult>>, SubmitExchangeRateRevaluationCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelExchangeRateRevaluationCommand, Result<CancelExchangeRateRevaluationResult>>, CancelExchangeRateRevaluationCommandHandler>();
 
+builder.Services.AddScoped<IQueryHandler<GetExchangeRatesQuery, IReadOnlyList<ExchangeRateDto>>, GetExchangeRatesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetExchangeRateQuery, Result<GetExchangeRateResult>>, GetExchangeRateQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetExchangeRateRevaluationsQuery, Result<List<ExchangeRateRevaluationDto>>>, GetExchangeRateRevaluationsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetExchangeRateRevaluationDetailQuery, Result<ExchangeRateRevaluationDetailDto>>, GetExchangeRateRevaluationDetailQueryHandler>();
@@ -117,6 +119,8 @@ builder.Services.AddScoped<IQueryHandler<GetRevaluationPreviewQuery, Result<Reva
 // Article VI.4 idempotency filter. Repositories stay in Erp.Infrastructure, handlers in
 // Erp.Application - only the composition root knows both (decision C2).
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<IQueryHandler<GetCompanyQuery, Result<CompanyDto>>, GetCompanyQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateCompanyCommand, Result<CompanyDto>>, UpdateCompanyCommandHandler>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUomRepository, UomRepository>();
 builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
@@ -178,6 +182,8 @@ builder.Services.AddScoped<ISalesPostingService, SalesPostingService>();
 builder.Services.AddScoped<ICommandHandler<SubmitPOSInvoiceCommand, Result<SalesInvoiceDto>>, SubmitPOSInvoiceCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateSalesInvoiceCommand, Result<SalesInvoiceDto>>, CreateSalesInvoiceCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitSalesInvoiceCommand, Result<SalesInvoiceDto>>, SubmitSalesInvoiceCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalesInvoicesQuery, PagedResult<SalesInvoiceDto>>, GetSalesInvoicesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalesInvoiceByIdQuery, SalesInvoiceDto?>, GetSalesInvoiceByIdQueryHandler>();
 
 builder.Services.AddScoped<ICommandHandler<CreateSalesOrderCommand, Result<SalesOrderDto>>, CreateSalesOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitSalesOrderCommand, Result<SalesOrderDto>>, SubmitSalesOrderCommandHandler>();

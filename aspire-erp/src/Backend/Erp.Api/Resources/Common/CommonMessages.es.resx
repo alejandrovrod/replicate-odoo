@@ -129,6 +129,15 @@
   <data name="SalesInvoiceRejected" xml:space="preserve">
     <value>Factura de venta rechazada</value>
   </data>
+  <data name="SalesInvoiceNotFound" xml:space="preserve">
+    <value>Factura de venta no encontrada</value>
+  </data>
+  <data name="SalesInvoiceConflict" xml:space="preserve">
+    <value>Conflicto de factura de venta</value>
+  </data>
+  <data name="InvalidSalesInvoice" xml:space="preserve">
+    <value>Factura de venta inválida</value>
+  </data>
   <!-- Compartido: las carreras de concurrencia optimista aparecen en varios módulos. -->
   <data name="ConcurrentUpdateConflict" xml:space="preserve">
     <value>Conflicto de actualización concurrente</value>

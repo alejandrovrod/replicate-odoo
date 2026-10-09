@@ -1,9 +1,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
+using Erp.Infrastructure.Data.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Erp.Infrastructure.Data.Repositories;
@@ -66,6 +68,18 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository
             .Include(x => x.Customer)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
+
+    public async Task<PagedResult<SalesInvoice>> GetRecentByCompanyAsync(
+        Guid companyId,
+        PagedRequest paging,
+        CancellationToken cancellationToken = default)
+        => await _context.SalesInvoices
+            .Where(i => i.CompanyId == companyId)
+            .Include(i => i.Items)
+            .Include(i => i.Customer)
+            .OrderByDescending(i => i.CreatedAt)
+            .ThenByDescending(i => i.Id)
+            .ToPagedResultAsync(paging, cancellationToken);
 
     public async Task AddGlEntriesAsync(IReadOnlyList<GLEntry> entries, CancellationToken cancellationToken = default)
     {

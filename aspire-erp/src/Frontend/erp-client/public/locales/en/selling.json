@@ -8,7 +8,8 @@
     "subtitle": "Customer invoicing, credit limit validation, and high-speed cashier POS registers.",
     "newInvoice": "New Sales Invoice",
     "launchPos": "Launch POS Cashier",
-    "manageCustomers": "Manage Customers"
+    "manageCustomers": "Manage Customers",
+    "orders": "Orders"
   },
   "invoices": {
     "title": "Recent Sales Invoices",

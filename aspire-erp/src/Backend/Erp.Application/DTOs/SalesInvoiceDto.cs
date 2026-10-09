@@ -21,7 +21,32 @@ public sealed record SalesInvoiceDto(
     decimal PaidAmount,
     string RowVersion,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<SalesInvoiceItemDto> Items);
+    IReadOnlyList<SalesInvoiceItemDto> Items)
+{
+    public static SalesInvoiceDto Build(SalesInvoice invoice)
+    {
+        return new SalesInvoiceDto(
+            invoice.Id,
+            invoice.CompanyId,
+            invoice.InvoiceNumber,
+            invoice.CustomerId,
+            invoice.Customer?.CustomerName,
+            invoice.PostingDate,
+            invoice.DueDate,
+            invoice.Status,
+            invoice.IsPOS,
+            invoice.UpdateStock,
+            invoice.SourceWarehouseId,
+            invoice.NetTotal,
+            invoice.TaxTotal,
+            invoice.GrandTotal,
+            invoice.OutstandingAmount,
+            invoice.PaidAmount,
+            Convert.ToBase64String(invoice.RowVersion ?? Array.Empty<byte>()),
+            invoice.CreatedAt,
+            invoice.Items.Select(i => new SalesInvoiceItemDto(i.Id, i.ItemId, i.SalesOrderItemId, i.Quantity, i.Rate, i.Amount)).ToList());
+    }
+}
 
 public sealed record SalesInvoiceItemDto(
     Guid Id,

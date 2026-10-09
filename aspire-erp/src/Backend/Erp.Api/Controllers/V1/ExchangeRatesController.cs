@@ -17,9 +17,11 @@ public class ExchangeRatesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> Get([FromQuery] Guid from, [FromQuery] Guid to, [FromQuery] DateOnly date)
+    public async Task<IActionResult> Get([FromQuery] Guid? from, [FromQuery] Guid? to, [FromQuery] DateOnly? date)
     {
-        var result = await _sender.SendAsync(new GetExchangeRateQuery(from, to, date));
+        if (from.HasValue && to.HasValue && date.HasValue)
+        {
+            var result = await _sender.SendAsync(new GetExchangeRateQuery(from.Value, to.Value, date.Value));
         if (!result.IsSuccess)
         {
             return result.Error!.Code == "exchange_rate_missing" 
@@ -28,6 +30,12 @@ public class ExchangeRatesController : ControllerBase
         }
         return Ok(result.Value);
     }
+    else
+    {
+        var result = await _sender.SendAsync(new GetExchangeRatesQuery());
+        return Ok(result);
+    }
+}
 
     [HttpPost]
     public async Task<IActionResult> Upsert([FromBody] UpsertExchangeRateCommand command)

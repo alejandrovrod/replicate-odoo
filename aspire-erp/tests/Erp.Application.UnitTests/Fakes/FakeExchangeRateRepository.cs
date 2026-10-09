@@ -12,6 +12,11 @@ public sealed class FakeExchangeRateRepository : IExchangeRateRepository
         return Task.FromResult(Rates.FirstOrDefault(r => r.Id == id));
     }
 
+    public Task<IReadOnlyList<ExchangeRate>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<ExchangeRate>>(Rates.ToList());
+    }
+
     public Task<ExchangeRate?> GetLatestRateAsync(Guid fromCurrencyId, Guid toCurrencyId, DateOnly date, CancellationToken cancellationToken = default)
     {
         if (fromCurrencyId == toCurrencyId)

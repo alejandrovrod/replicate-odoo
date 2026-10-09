@@ -19,10 +19,14 @@ import { ItemView } from './features/stock/pages/ItemView'
 import { AssetCategoryView } from './features/assets/AssetCategoryView'
 import { AssetView } from './features/assets/AssetView'
 import { CustomerView } from './features/selling/pages/CustomerView'
+import { DeliveryNotesView } from './features/selling/pages/DeliveryNotesView'
+import { SalesInvoicesView } from './features/selling/pages/SalesInvoicesView'
+import { SalesOrdersView } from './features/selling/pages/SalesOrdersView'
 import { SupplierView } from './features/buying/pages/SupplierView'
 import { BankAccountsView } from './features/banking/pages/BankAccountsView'
 import { useNavigationStore } from './store/useNavigationStore'
 import { useTenantStore } from './store/useTenantStore'
+import { AccountingSettingsView } from './features/accounting/AccountingSettingsView'
 
 function App() {
   const { t } = useTranslation('accounting')
@@ -55,6 +59,8 @@ function App() {
 
       {currentRoute === 'accounting-fx-revaluations' && <ExchangeRateRevaluationsView />}
 
+      {currentRoute === 'accounting-settings' && <AccountingSettingsView />}
+
       {currentRoute === 'assets-categories' && <AssetCategoryView />}
       
       {currentRoute === 'assets' && <AssetView />}
@@ -74,6 +80,12 @@ function App() {
       {currentRoute === 'selling' && <SellingOverview />}
 
       {currentRoute === 'selling-customers' && <CustomerView />}
+
+      {currentRoute === 'selling-orders' && <SalesOrdersView />}
+
+      {currentRoute === 'selling-invoices' && <SalesInvoicesView />}
+
+      {currentRoute === 'selling-deliveries' && <DeliveryNotesView />}
 
       {currentRoute === 'buying' && <BuyingOverview />}
 

@@ -7,5 +7,7 @@ public interface IExchangeRateRepository
     Task<ExchangeRate?> GetLatestRateAsync(Guid fromCurrencyId, Guid toCurrencyId, DateOnly rateDate, CancellationToken cancellationToken = default);
     Task<ExchangeRate?> GetExactRateAsync(Guid fromCurrencyId, Guid toCurrencyId, DateOnly rateDate, CancellationToken cancellationToken = default);
     Task AddAsync(ExchangeRate exchangeRate, CancellationToken cancellationToken = default);
+    Task UpdateAsync(ExchangeRate exchangeRate, CancellationToken cancellationToken = default);
     Task<ExchangeRate?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ExchangeRate>> GetAllAsync(CancellationToken cancellationToken = default);
 }

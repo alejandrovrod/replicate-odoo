@@ -8,7 +8,8 @@
     "subtitle": "Facturación a clientes, validación de límite de crédito y cajas registradoras de alta velocidad.",
     "newInvoice": "Nueva factura de venta",
     "launchPos": "Abrir caja POS",
-    "manageCustomers": "Clientes"
+    "manageCustomers": "Clientes",
+    "orders": "Órdenes"
   },
   "invoices": {
     "title": "Facturas de venta recientes",

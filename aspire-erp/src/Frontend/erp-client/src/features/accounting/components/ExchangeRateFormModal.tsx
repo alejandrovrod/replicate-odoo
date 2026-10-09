@@ -30,7 +30,7 @@ export const ExchangeRateFormModal: React.FC<Props> = ({ onClose }) => {
             await upsertExchangeRate({
                 fromCurrencyId: fromCurrency,
                 toCurrencyId: toCurrency,
-                rateDate: new Date(rateDate).toISOString(),
+                rateDate: rateDate,
                 rate: parseFloat(rate)
             });
             onClose();

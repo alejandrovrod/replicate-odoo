@@ -39,6 +39,7 @@ public class UpsertExchangeRateCommandHandler : ICommandHandler<UpsertExchangeRa
             
             rate.Rate = request.Rate;
             rate.EnsureValid();
+            await _repository.UpdateAsync(rate, cancellationToken);
         }
 
         return Result<UpsertExchangeRateResult>.Success(new UpsertExchangeRateResult(rate.Id, rate.RowVersion));

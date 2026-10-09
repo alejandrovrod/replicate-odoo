@@ -130,6 +130,15 @@
   <data name="SalesInvoiceRejected" xml:space="preserve">
     <value>Sales Invoice Rejected</value>
   </data>
+  <data name="SalesInvoiceNotFound" xml:space="preserve">
+    <value>Sales Invoice Not Found</value>
+  </data>
+  <data name="SalesInvoiceConflict" xml:space="preserve">
+    <value>Sales Invoice Conflict</value>
+  </data>
+  <data name="InvalidSalesInvoice" xml:space="preserve">
+    <value>Invalid Sales Invoice</value>
+  </data>
   <!-- Shared: optimistic-concurrency races surface from many modules. -->
   <data name="ConcurrentUpdateConflict" xml:space="preserve">
     <value>Concurrent Update Conflict</value>

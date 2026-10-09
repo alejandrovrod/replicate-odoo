@@ -4,12 +4,14 @@ import { ExchangeRateFormModal } from './ExchangeRateFormModal';
 import { Button } from '../../../components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table';
 import { useTenantStore } from '../../../store/useTenantStore';
+import { useCurrencies } from '../api/useCurrencies';
 import { useTranslation } from 'react-i18next';
 
 export const ExchangeRateList: React.FC = () => {
     const { t } = useTranslation('accounting');
     const companyId = useTenantStore((s) => s.companyId);
     const { items: rates, status, reload } = useExchangeRates(companyId);
+    const { items: currencies } = useCurrencies();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     if (!companyId) return <div className="p-4">{t('missingTenant')}</div>;
@@ -33,14 +35,18 @@ export const ExchangeRateList: React.FC = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {rates.map((rate) => (
-                            <TableRow key={rate.id}>
-                                <TableCell>{new Date(rate.rateDate).toLocaleDateString()}</TableCell>
-                                <TableCell>{rate.fromCurrencyId}</TableCell>
-                                <TableCell>{rate.toCurrencyId}</TableCell>
-                                <TableCell className="text-right">{rate.rate.toFixed(6)}</TableCell>
-                            </TableRow>
-                        ))}
+                        {rates.map((rate) => {
+                            const fromCurr = currencies.find(c => c.id === rate.fromCurrencyId);
+                            const toCurr = currencies.find(c => c.id === rate.toCurrencyId);
+                            return (
+                                <TableRow key={rate.id}>
+                                    <TableCell>{new Date(rate.rateDate).toLocaleDateString()}</TableCell>
+                                    <TableCell>{fromCurr?.code || rate.fromCurrencyId}</TableCell>
+                                    <TableCell>{toCurr?.code || rate.toCurrencyId}</TableCell>
+                                    <TableCell className="text-right">{rate.rate.toFixed(6)}</TableCell>
+                                </TableRow>
+                            );
+                        })}
                         {rates.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center py-8 text-gray-500">{t('exchangeRate.empty')}</TableCell>

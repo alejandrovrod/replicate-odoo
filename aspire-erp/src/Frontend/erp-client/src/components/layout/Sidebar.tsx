@@ -105,7 +105,18 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'stock', route: 'stock', label: 'nav.item.stock', icon: Boxes },
       { id: 'manufacturing', route: 'manufacturing', label: 'nav.item.manufacturing', icon: Factory, badge: 'ERPNext' },
-      { id: 'selling', route: 'selling', label: 'nav.item.selling', icon: Receipt },
+      {
+        id: 'selling-folder',
+        label: 'nav.item.selling',
+        icon: Receipt,
+        children: [
+          { id: 'selling', route: 'selling', label: 'nav.item.sellingOverview', icon: Receipt },
+          { id: 'selling-customers', route: 'selling-customers', label: 'nav.item.sellingCustomers', icon: Users },
+          { id: 'selling-orders', route: 'selling-orders', label: 'nav.item.sellingOrders', icon: BookOpenCheck },
+          { id: 'selling-invoices', route: 'selling-invoices', label: 'nav.item.sellingInvoices', icon: Receipt },
+          { id: 'selling-deliveries', route: 'selling-deliveries', label: 'nav.item.sellingDeliveries', icon: Truck },
+        ],
+      },
       { id: 'buying', route: 'buying', label: 'nav.item.buying', icon: Truck },
       { id: 'hr-payroll', route: 'hr-payroll', label: 'nav.item.hrPayroll', icon: Users, badge: 'ERPNext' },
       { id: 'crm', route: 'crm', label: 'nav.item.crm', icon: Handshake, badge: 'ERPNext' },

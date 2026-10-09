@@ -6,7 +6,14 @@
   "missingTenant": "Sin organización/empresa seleccionada. Definí VITE_TENANT_ID y VITE_COMPANY_ID en .env.development.",
   "page": {
     "title": "Plan de cuentas",
-    "subtitle": "Taxonomía jerárquica del libro (Activo, Pasivo, Patrimonio, Ingresos, Gastos)."
+    "subtitle": "Taxonomía jerárquica del libro (Activo, Pasivo, Patrimonio, Ingresos, Gastos).",
+    "accountingSettings": {
+      "title": "Configuración Contable",
+      "subtitle": "Administrar configuración contable a nivel de empresa"
+    }
+  },
+  "action": {
+    "configure": "Configurar"
   },
   "tree": {
     "loading": "Cargando el plan de cuentas…",
@@ -109,6 +116,7 @@
   },
   "companySettings": {
     "title": "Configuración contable de la empresa",
+    "description": "Configurá la fecha de bloqueo de cuentas y la cuenta de resultados acumulados por defecto de la empresa.",
     "frozenDate": "Fecha de bloqueo contable (bloqueo duro del período)",
     "frozenDateHelp": "Los comprobantes con fecha igual o anterior a este día no pueden registrarse.",
     "retainedEarnings": "Cuenta de resultados acumulados por defecto",

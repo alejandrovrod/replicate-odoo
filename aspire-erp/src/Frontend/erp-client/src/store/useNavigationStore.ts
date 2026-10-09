@@ -18,6 +18,9 @@ export type NavRoute =
   | 'stock-warehouses'
   | 'stock-items'
   | 'selling-customers'
+  | 'selling-orders'
+  | 'selling-invoices'
+  | 'selling-deliveries'
   | 'buying-suppliers'
   | 'accounting-settings'
   | 'accounting-period-closing'
@@ -52,6 +55,9 @@ const parseHash = (): NavRoute => {
     'stock-warehouses',
     'stock-items',
     'selling-customers',
+    'selling-orders',
+    'selling-invoices',
+    'selling-deliveries',
     'buying-suppliers',
     'accounting-settings',
     'accounting-period-closing',

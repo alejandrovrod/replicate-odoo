@@ -65,10 +65,22 @@ public class ExchangeRateRepository : IExchangeRateRepository
     public async Task AddAsync(ExchangeRate exchangeRate, CancellationToken cancellationToken = default)
     {
         await _context.ExchangeRates.AddAsync(exchangeRate, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(ExchangeRate exchangeRate, CancellationToken cancellationToken = default)
+    {
+        _context.ExchangeRates.Update(exchangeRate);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<ExchangeRate?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.ExchangeRates.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ExchangeRate>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.ExchangeRates.OrderByDescending(x => x.RateDate).ToListAsync(cancellationToken);
     }
 }

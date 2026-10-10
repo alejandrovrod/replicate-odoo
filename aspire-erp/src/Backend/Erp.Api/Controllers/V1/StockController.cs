@@ -40,6 +40,7 @@ public sealed class StockController : ControllerBase
     /// <param name="companyId">Company that owns the inventory.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("summary")]
+    [Authorize(Policy = "permission:stock:read")]
     [ProducesResponseType(typeof(StockSummaryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetSummary(

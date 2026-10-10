@@ -47,6 +47,7 @@ public sealed class AssetCategoriesController : ControllerBase
     /// <param name="command">Category data (company, name, linked accounts).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:asset_category:write")]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(AssetCategoryDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -72,6 +73,7 @@ public sealed class AssetCategoriesController : ControllerBase
 
     /// <summary>Updates an existing asset category (Task 10.1 / RM-08).</summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = "permission:asset_category:write")]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(AssetCategoryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -113,6 +115,7 @@ public sealed class AssetCategoriesController : ControllerBase
     /// <param name="companyId">Company that owns the categories.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:asset_category:read")]
     [ProducesResponseType(typeof(PagedResult<AssetCategoryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
@@ -136,6 +139,7 @@ public sealed class AssetCategoriesController : ControllerBase
 
     /// <summary>Disables an asset category (sets IsActive = false).</summary>
     [HttpPut("{id}/disable")]
+    [Authorize(Policy = "permission:asset_category:write")]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(AssetCategoryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -144,6 +148,7 @@ public sealed class AssetCategoriesController : ControllerBase
 
     /// <summary>Enables an asset category (sets IsActive = true).</summary>
     [HttpPut("{id}/enable")]
+    [Authorize(Policy = "permission:asset_category:write")]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(AssetCategoryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

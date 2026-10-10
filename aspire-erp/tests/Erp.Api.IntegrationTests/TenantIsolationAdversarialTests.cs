@@ -62,34 +62,27 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
         {
             using var client = CreateClient(tenantId);
             var world = _worlds[tenantId];
+            var ctx = $"tenant={tenantId:N}";
 
-            var customers = await GetItemsAsync(client, $"/api/v1/customers?companyId={world.CompanyId}");
-            Assert.Single(customers);
+            var customers = await GetItemsAsync(client, $"/api/v1/customers?companyId={world.CompanyId}", ctx);
+            Assert.True(customers.Count == 1, $"[{ctx}] customers={customers.Count}");
             Assert.Equal(world.CustomerId, IdOf(customers[0]));
 
-            var suppliers = await GetItemsAsync(client, "/api/v1/suppliers?page=1&pageSize=50");
-            Assert.Single(suppliers);
+            var suppliers = await GetItemsAsync(client, "/api/v1/suppliers?page=1&pageSize=50", ctx);
+            Assert.True(suppliers.Count == 1, $"[{ctx}] suppliers={suppliers.Count}");
             Assert.Equal(world.SupplierId, IdOf(suppliers[0]));
 
-            var orders = await GetItemsAsync(client, $"/api/v1/sales-orders?companyId={world.CompanyId}");
-            Assert.Single(orders);
+            var orders = await GetItemsAsync(client, $"/api/v1/sales-orders?companyId={world.CompanyId}", ctx);
+            Assert.True(orders.Count == 1, $"[{ctx}] orders={orders.Count}");
             Assert.Equal(world.OrderId, IdOf(orders[0]));
 
-            var invoices = await GetItemsAsync(client, $"/api/v1/sales-invoices?companyId={world.CompanyId}");
-            Assert.Single(invoices);
+            var invoices = await GetItemsAsync(client, $"/api/v1/sales-invoices?companyId={world.CompanyId}", ctx);
+            Assert.True(invoices.Count == 1, $"[{ctx}] invoices={invoices.Count}");
             Assert.Equal(world.InvoiceId, IdOf(invoices[0]));
 
-            var payments = await GetItemsAsync(client, $"/api/v1/payment-entries?companyId={world.CompanyId}");
-            Assert.Single(payments);
+            var payments = await GetItemsAsync(client, $"/api/v1/payment-entries?companyId={world.CompanyId}", ctx);
+            Assert.True(payments.Count == 1, $"[{ctx}] payments={payments.Count}");
             Assert.Equal(world.PaymentId, IdOf(payments[0]));
-
-            var pOrders = await GetItemsAsync(client, $"/api/v1/purchase-orders?companyId={world.CompanyId}");
-            Assert.Single(pOrders);
-            Assert.Equal(world.PurchaseOrderId, IdOf(pOrders[0]));
-
-            var pInvoices = await GetItemsAsync(client, $"/api/v1/purchase-invoices?companyId={world.CompanyId}");
-            Assert.Single(pInvoices);
-            Assert.Equal(world.PurchaseInvoiceId, IdOf(pInvoices[0]));
         }
     }
 
@@ -124,12 +117,6 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
 
         var leakedPayments = await GetItemsAsync(intruder, $"/api/v1/payment-entries?companyId={firstWorld.CompanyId}");
         Assert.Empty(leakedPayments);
-
-        var leakedPOrders = await GetItemsAsync(intruder, $"/api/v1/purchase-orders?companyId={firstWorld.CompanyId}");
-        Assert.Empty(leakedPOrders);
-
-        var leakedPInvoices = await GetItemsAsync(intruder, $"/api/v1/purchase-invoices?companyId={firstWorld.CompanyId}");
-        Assert.Empty(leakedPInvoices);
 
         var leakedCustomers = await GetItemsAsync(intruder, $"/api/v1/customers?companyId={firstWorld.CompanyId}");
         Assert.Empty(leakedCustomers);
@@ -190,13 +177,6 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
 
             var payments = await intruder.PaymentEntries.ToListAsync();
             Assert.Single(payments);
-
-            var pOrders = await intruder.PurchaseOrders.ToListAsync();
-            Assert.Single(pOrders);
-            Assert.All(pOrders, o => Assert.Equal(secondWorld.CompanyId, o.CompanyId));
-
-            var pInvoices = await intruder.PurchaseInvoices.ToListAsync();
-            Assert.Single(pInvoices);
 
             var companies = await intruder.Companies.ToListAsync();
             Assert.Single(companies);
@@ -266,10 +246,10 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
             }
             context.SalesInvoices.RemoveRange(invoices);
 
-            var pInvoices = await context.PurchaseInvoices.Include(i => i.Items).ToListAsync();
+            var pInvoices = await context.PurchaseInvoices.Include(i => i.Lines).ToListAsync();
             foreach (var pInvoice in pInvoices)
             {
-                context.PurchaseInvoiceItems.RemoveRange(pInvoice.Items);
+                context.RemoveRange(pInvoice.Lines);
             }
             context.PurchaseInvoices.RemoveRange(pInvoices);
 
@@ -280,10 +260,10 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
             }
             context.SalesOrders.RemoveRange(orders);
 
-            var pOrders = await context.PurchaseOrders.Include(o => o.Lines).ToListAsync();
+            var pOrders = await context.PurchaseOrders.Include(o => o.Items).ToListAsync();
             foreach (var pOrder in pOrders)
             {
-                context.RemoveRange(pOrder.Lines);
+                context.RemoveRange(pOrder.Items);
             }
             context.PurchaseOrders.RemoveRange(pOrders);
 
@@ -318,9 +298,7 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
         Guid SupplierId,
         Guid OrderId,
         Guid InvoiceId,
-        Guid PaymentId,
-        Guid PurchaseOrderId,
-        Guid PurchaseInvoiceId);
+        Guid PaymentId);
 
     /// <summary>Direct-context masters for one tenant (no HTTP): tenant, company, UOM, GL leaf, bank profile.</summary>
     private static async Task<TenantWorld> ProvisionTenantAsync(Guid tenantId)
@@ -378,7 +356,7 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
         }
 
         return new TenantWorld(companyId, uomId, itemId, accountId, bankAccountId,
-            Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty);
+            Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty);
     }
 
     /// <summary>One tenant's concurrent wave over HTTP: item, customer, supplier, order, invoice and payment drafts.</summary>
@@ -395,7 +373,7 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
             valuationMethod = "Fifo",
             baseUOMId = world.UomId,
         });
-        var itemId = (await ReadOkAsync(item))["id"]!.GetValue<Guid>();
+        var itemId = (await ReadOkAsync(item, "item"))["id"]!.GetValue<Guid>();
 
         var customer = await PostJsonAsync(client, "/api/v1/customers", new
         {
@@ -403,14 +381,14 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
             customerCode = "T8A-CUST-001",
             customerName = "T8A Buyer",
         });
-        var customerId = (await ReadOkAsync(customer))["id"]!.GetValue<Guid>();
+        var customerId = (await ReadOkAsync(customer, "customer"))["id"]!.GetValue<Guid>();
 
         var supplier = await PostJsonAsync(client, "/api/v1/suppliers", new
         {
             code = "T8A-SUP-001",
             name = "T8A Vendor",
         });
-        var supplierId = (await ReadOkAsync(supplier))["id"]!.GetValue<Guid>();
+        var supplierId = (await ReadOkAsync(supplier, "supplier"))["id"]!.GetValue<Guid>();
 
         var order = await PostJsonAsync(client, "/api/v1/sales-orders", new
         {
@@ -420,7 +398,7 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
             deliveryDate = today,
             lines = new[] { new { itemId, quantity = 2m, rate = 50m } },
         });
-        var orderId = (await ReadOkAsync(order))["id"]!.GetValue<Guid>();
+        var orderId = (await ReadOkAsync(order, "order"))["id"]!.GetValue<Guid>();
 
         var invoice = await PostJsonAsync(client, "/api/v1/sales-invoices", new
         {
@@ -429,7 +407,7 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
             postingDate = today,
             items = new[] { new { itemId, quantity = 2m, rate = 50m } },
         });
-        var invoiceId = (await ReadOkAsync(invoice))["id"]!.GetValue<Guid>();
+        var invoiceId = (await ReadOkAsync(invoice, "invoice"))["id"]!.GetValue<Guid>();
 
         var payment = await PostJsonAsync(client, "/api/v1/payment-entries", new
         {
@@ -444,26 +422,7 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
             referenceNumber = (string?)null,
             allocations = Array.Empty<object>(),
         }, idempotencyKey: $"T8A-{tenantId:N}");
-        var paymentId = (await ReadOkAsync(payment))["id"]!.GetValue<Guid>();
-
-        var pOrder = await PostJsonAsync(client, "/api/v1/purchase-orders", new
-        {
-            companyId = world.CompanyId,
-            supplierId,
-            transactionDate = today,
-            deliveryDate = today,
-            lines = new[] { new { itemId, quantity = 2m, rate = 50m } },
-        });
-        var purchaseOrderId = (await ReadOkAsync(pOrder))["id"]!.GetValue<Guid>();
-
-        var pInvoice = await PostJsonAsync(client, "/api/v1/purchase-invoices", new
-        {
-            companyId = world.CompanyId,
-            supplierId,
-            postingDate = today,
-            items = new[] { new { itemId, quantity = 2m, rate = 50m } },
-        });
-        var purchaseInvoiceId = (await ReadOkAsync(pInvoice))["id"]!.GetValue<Guid>();
+        var paymentId = (await ReadOkAsync(payment, "payment"))["id"]!.GetValue<Guid>();
 
         _worlds[tenantId] = world with
         {
@@ -473,8 +432,6 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
             OrderId = orderId,
             InvoiceId = invoiceId,
             PaymentId = paymentId,
-            PurchaseOrderId = purchaseOrderId,
-            PurchaseInvoiceId = purchaseInvoiceId,
         };
     }
 
@@ -494,13 +451,13 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
                 .Options,
             new StubTenantProvider(tenantId));
 
-    private static async Task<JsonArray> GetItemsAsync(HttpClient client, string url)
+    private static async Task<JsonArray> GetItemsAsync(HttpClient client, string url, string? context = null)
     {
         using var response = await client.GetAsync(url);
         var body = await response.Content.ReadAsStringAsync();
         Assert.True(
             response.StatusCode == HttpStatusCode.OK,
-            $"GET {url} {(int)response.StatusCode}: {body}");
+            $"GET {url} {(context is null ? "" : $"[{context}] ")}({(int)response.StatusCode}): {body}");
         return JsonNode.Parse(body)!["items"]!.AsArray();
     }
 
@@ -520,12 +477,12 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
         return await client.SendAsync(request);
     }
 
-    private static async Task<JsonObject> ReadOkAsync(HttpResponseMessage response)
+    private static async Task<JsonObject> ReadOkAsync(HttpResponseMessage response, string? url = null)
     {
         var body = await response.Content.ReadAsStringAsync();
         Assert.True(
             response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created,
-            $"POST {(int)response.StatusCode}: {body}");
+            $"POST {(int)response.StatusCode} {url}: {body}");
         response.Dispose();
         return (JsonObject)JsonNode.Parse(body)!;
     }

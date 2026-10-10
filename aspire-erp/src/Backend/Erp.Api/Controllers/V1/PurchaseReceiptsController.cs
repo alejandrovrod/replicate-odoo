@@ -47,6 +47,7 @@ public sealed class PurchaseReceiptsController : ControllerBase
     /// <param name="limit">Maximum number of receipts to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:purchase_receipt:read")]
     [ProducesResponseType(typeof(PagedResult<PurchaseReceiptDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -80,6 +81,7 @@ public sealed class PurchaseReceiptsController : ControllerBase
     /// <param name="command">Receipt data (company, warehouse, optional order, posting date, lines).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:purchase_receipt:write")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PurchaseReceiptPostingDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

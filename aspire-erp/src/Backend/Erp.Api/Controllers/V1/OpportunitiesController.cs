@@ -65,6 +65,7 @@ public sealed class OpportunitiesController : ControllerBase
     /// <param name="stage">Optional stage filter (e.g. Negotiation).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:opportunity:read")]
     [ProducesResponseType(typeof(PagedResult<OpportunityDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
@@ -100,6 +101,7 @@ public sealed class OpportunitiesController : ControllerBase
     /// <param name="rowVersion">Optional optimistic token (base64) - a stale token fails fast.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/advance")]
+    [Authorize(Policy = "permission:opportunity:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(OpportunityDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -149,6 +151,7 @@ public sealed class OpportunitiesController : ControllerBase
     /// <param name="newProbability">Probability after re-opening (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/reopen")]
+    [Authorize(Policy = "permission:opportunity:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -192,6 +195,7 @@ public sealed class OpportunitiesController : ControllerBase
     /// <param name="request">Single order line (item/qty/rate) plus optional dates/author.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/create-sales-order")]
+    [Authorize(Policy = "permission:opportunity:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(SalesOrderDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

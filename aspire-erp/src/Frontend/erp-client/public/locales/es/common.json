@@ -130,7 +130,23 @@
     "company": "Empresa",
     "tenant": "Organización",
     "language": "Idioma",
-    "default": "Predeterminado"
+    "default": "Predeterminado",
+    "signedIn": "Sesión iniciada",
+    "systemManager": "System Manager",
+    "logout": "Cerrar sesión"
+  },
+  "auth": {
+    "subtitle": "Accedé a tu espacio de trabajo",
+    "email": "Correo",
+    "emailPlaceholder": "vos@empresa.com",
+    "password": "Contraseña",
+    "tenant": "ID de organización",
+    "tenantPlaceholder": "GUID de la organización",
+    "signIn": "Ingresar",
+    "signingIn": "Ingresando...",
+    "errorGeneric": "No se pudo ingresar. Verificá tus credenciales.",
+    "forbiddenTitle": "Sin acceso",
+    "forbiddenDetail": "Tu rol no incluye este módulo. Contactá a un administrador."
   },
   "validation": {
     "required": "Este campo es obligatorio",

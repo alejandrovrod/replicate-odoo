@@ -1,6 +1,7 @@
 using Erp.Application.Common;
 using Erp.Application.Features.Catalogs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Erp.Api.Controllers.V1;
 

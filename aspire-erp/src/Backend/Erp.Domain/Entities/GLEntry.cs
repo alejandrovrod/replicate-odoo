@@ -25,6 +25,15 @@ public class GLEntry : ITenantEntity
 
     public DateOnly PostingDate { get; set; }
 
+    /// <summary>Fiscal Year this entry belongs to. Critical for period closing.</summary>
+    public string? FiscalYear { get; set; }
+
+    /// <summary>True if this entry represents an opening balance from a previous fiscal year.</summary>
+    public bool IsOpening { get; set; }
+
+    /// <summary>True if this entry represents an advance payment.</summary>
+    public bool IsAdvance { get; set; }
+
     /// <summary>Posting (leaf) account this line hits. Must exist, be active and non-group (III.3).</summary>
     public Guid AccountId { get; set; }
 
@@ -82,6 +91,12 @@ public class GLEntry : ITenantEntity
     /// tags; declared now so the physical schema matches plan §2 from the first migration.
     /// </summary>
     public Guid? CostCenterId { get; set; }
+
+    /// <summary>Project dimension (plan.md §2). Used to track P&L per project.</summary>
+    public Guid? ProjectId { get; set; }
+
+    /// <summary>Exchange rate used at transaction time.</summary>
+    public decimal TransactionExchangeRate { get; set; } = 1.0m;
 
     /// <summary>
     /// True when this row IS a compensating reversal of a cancelled voucher (Constitution III.3 -

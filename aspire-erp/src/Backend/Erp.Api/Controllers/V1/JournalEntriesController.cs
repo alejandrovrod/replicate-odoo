@@ -70,6 +70,7 @@ public sealed class JournalEntriesController : ControllerBase
     /// <param name="limit">Maximum number of vouchers to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:journal_entry:read")]
     [ProducesResponseType(typeof(PagedResult<JournalEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -97,6 +98,7 @@ public sealed class JournalEntriesController : ControllerBase
     /// <param name="companyId">Company that owns the voucher.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:journal_entry:read")]
     [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -129,6 +131,7 @@ public sealed class JournalEntriesController : ControllerBase
     /// <param name="command">Voucher data (company, posting date, type, remark, lines).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:journal_entry:write")]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -177,6 +180,7 @@ public sealed class JournalEntriesController : ControllerBase
     /// <param name="request">Optional optimistic concurrency token.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/submit")]
+    [Authorize(Policy = "permission:journal_entry:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -214,6 +218,7 @@ public sealed class JournalEntriesController : ControllerBase
     /// <param name="request">Optional optimistic concurrency token.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "permission:journal_entry:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

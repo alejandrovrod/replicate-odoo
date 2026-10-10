@@ -47,6 +47,7 @@ public sealed class HrPayrollMastersController : ControllerBase
     /// <param name="companyId">Company that owns the employees.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("employees")]
+    [Authorize(Policy = "permission:employee:read")]
     [ProducesResponseType(typeof(PagedResult<EmployeeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Employees(
@@ -72,6 +73,7 @@ public sealed class HrPayrollMastersController : ControllerBase
     /// <param name="companyId">Company that owns the components.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("salary-components")]
+    [Authorize(Policy = "permission:salary_component:read")]
     [ProducesResponseType(typeof(PagedResult<SalaryComponentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Components(
@@ -97,6 +99,7 @@ public sealed class HrPayrollMastersController : ControllerBase
     /// <param name="companyId">Company that owns the structures.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("salary-structures")]
+    [Authorize(Policy = "permission:salary_structure:read")]
     [ProducesResponseType(typeof(PagedResult<SalaryStructureDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Structures(
@@ -122,6 +125,7 @@ public sealed class HrPayrollMastersController : ControllerBase
     /// <param name="companyId">Company that owns the assignments.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("structure-assignments")]
+    [Authorize(Policy = "permission:salary_structure:read")]
     [ProducesResponseType(typeof(PagedResult<SalaryStructureAssignmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Assignments(

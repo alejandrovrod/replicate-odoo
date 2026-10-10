@@ -63,6 +63,7 @@ public sealed class BankStatementImportsController : ControllerBase
     /// additionally guards double submission at the HTTP layer.
     /// </remarks>
     [HttpPost]
+    [Authorize(Policy = "permission:bank_statement_import:write")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(BankStatementImportDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

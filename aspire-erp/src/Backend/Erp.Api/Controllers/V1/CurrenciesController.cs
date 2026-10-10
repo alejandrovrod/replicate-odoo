@@ -46,6 +46,7 @@ public sealed class CurrenciesController : ControllerBase
     /// <param name="onlyActive">When true (default), only active currencies.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:currency:read")]
     [ProducesResponseType(typeof(IReadOnlyList<CurrencyDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(
         [FromQuery] bool onlyActive = true,
@@ -59,6 +60,7 @@ public sealed class CurrenciesController : ControllerBase
     /// <param name="id">Currency id.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:currency:read")]
     [ProducesResponseType(typeof(CurrencyDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -77,6 +79,7 @@ public sealed class CurrenciesController : ControllerBase
     /// <param name="command">Currency data (code, symbol, fraction name).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:currency:write")]
     [ProducesResponseType(typeof(CurrencyDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -113,6 +116,7 @@ public sealed class CurrenciesController : ControllerBase
     /// <param name="command">Updated currency data including RowVersion.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPut("{id}")]
+    [Authorize(Policy = "permission:currency:write")]
     [ProducesResponseType(typeof(CurrencyDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -158,6 +162,7 @@ public sealed class CurrenciesController : ControllerBase
 
     /// <summary>Disables a currency (sets IsActive = false).</summary>
     [HttpPut("{id}/disable")]
+    [Authorize(Policy = "permission:currency:write")]
     [ProducesResponseType(typeof(CurrencyDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
@@ -165,6 +170,7 @@ public sealed class CurrenciesController : ControllerBase
 
     /// <summary>Enables a currency (sets IsActive = true).</summary>
     [HttpPut("{id}/enable")]
+    [Authorize(Policy = "permission:currency:write")]
     [ProducesResponseType(typeof(CurrencyDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)

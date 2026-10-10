@@ -2,6 +2,7 @@ using Erp.Application.Common;
 using Erp.Application.Features.ExchangeRates.Commands;
 using Erp.Application.Features.ExchangeRates.Queries;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -17,6 +18,7 @@ public class ExchangeRatesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "permission:exchange_rate:read")]
     public async Task<IActionResult> Get([FromQuery] Guid? from, [FromQuery] Guid? to, [FromQuery] DateOnly? date)
     {
         if (from.HasValue && to.HasValue && date.HasValue)
@@ -38,6 +40,7 @@ public class ExchangeRatesController : ControllerBase
 }
 
     [HttpPost]
+    [Authorize(Policy = "permission:exchange_rate:write")]
     public async Task<IActionResult> Upsert([FromBody] UpsertExchangeRateCommand command)
     {
         var result = await _sender.SendAsync(command);

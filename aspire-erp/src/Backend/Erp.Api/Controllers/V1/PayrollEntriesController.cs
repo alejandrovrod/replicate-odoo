@@ -72,6 +72,7 @@ public sealed class PayrollEntriesController : ControllerBase
     /// <param name="request">Company, period, posting date and optional payment-day overrides.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("submit")]
+    [Authorize(Policy = "permission:payroll_entry:submit")]
     [IdempotencyKeyRequired]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(PayrollSubmitResultDto), StatusCodes.Status200OK)]
@@ -122,6 +123,7 @@ public sealed class PayrollEntriesController : ControllerBase
     /// <param name="rowVersion">Optional optimistic token (base64) - a stale token fails fast.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/disburse")]
+    [Authorize(Policy = "permission:payroll_entry:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PayrollEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -167,6 +169,7 @@ public sealed class PayrollEntriesController : ControllerBase
     /// <param name="rowVersion">Optional optimistic token (base64) - a stale token fails fast.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "permission:payroll_entry:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PayrollEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -204,6 +207,7 @@ public sealed class PayrollEntriesController : ControllerBase
     /// <param name="companyId">Company that owns the batches.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:payroll_entry:read")]
     [ProducesResponseType(typeof(PagedResult<PayrollEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
@@ -230,6 +234,7 @@ public sealed class PayrollEntriesController : ControllerBase
     /// <param name="companyId">Company that owns the entry.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:payroll_entry:read")]
     [ProducesResponseType(typeof(PayrollEntryDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

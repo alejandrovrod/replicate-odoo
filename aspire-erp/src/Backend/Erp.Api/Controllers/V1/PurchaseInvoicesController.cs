@@ -63,6 +63,7 @@ public sealed class PurchaseInvoicesController : ControllerBase
     /// <param name="limit">Maximum number of invoices to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:purchase_invoice:read")]
     [ProducesResponseType(typeof(PagedResult<PurchaseInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -100,6 +101,7 @@ public sealed class PurchaseInvoicesController : ControllerBase
     /// <param name="command">Invoice data (company, receipt, posting date, tax, lines).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:purchase_invoice:write")]
     [Consumes("application/json")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PurchaseInvoicePostingDto), StatusCodes.Status201Created)]
@@ -178,6 +180,7 @@ public sealed class PurchaseInvoicesController : ControllerBase
     /// <param name="request">Optional optimistic concurrency token.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "permission:purchase_invoice:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PurchaseInvoiceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

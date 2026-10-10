@@ -79,6 +79,7 @@ public sealed class BankTransactionsController : ControllerBase
 
     /// <summary>Returns the company's staging lines (optional account / status filter).</summary>
     [HttpGet]
+    [Authorize(Policy = "permission:bank_transaction:read")]
     [ProducesResponseType(typeof(PagedResult<BankTransactionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -112,6 +113,7 @@ public sealed class BankTransactionsController : ControllerBase
     /// staging lines (Unreconciled -&gt; Matched).
     /// </remarks>
     [HttpPost("run-rules")]
+    [Authorize(Policy = "permission:bank_transaction:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(RuleMatchSummary), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -154,6 +156,7 @@ public sealed class BankTransactionsController : ControllerBase
     /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4).
     /// </remarks>
     [HttpPost("{id:guid}/reconcile")]
+    [Authorize(Policy = "permission:bank_transaction:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(ReconciliationSummary), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -185,6 +188,7 @@ public sealed class BankTransactionsController : ControllerBase
     /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4).
     /// </remarks>
     [HttpPost("{id:guid}/unreconcile")]
+    [Authorize(Policy = "permission:bank_transaction:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -235,6 +239,7 @@ public sealed class BankTransactionsController : ControllerBase
     /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4).
     /// </remarks>
     [HttpPost("{id:guid}/quick-voucher")]
+    [Authorize(Policy = "permission:bank_transaction:write")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

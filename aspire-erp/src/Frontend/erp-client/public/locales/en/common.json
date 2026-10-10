@@ -130,7 +130,23 @@
     "company": "Company",
     "tenant": "Tenant",
     "language": "Language",
-    "default": "Default"
+    "default": "Default",
+    "signedIn": "Signed in",
+    "systemManager": "System Manager",
+    "logout": "Sign out"
+  },
+  "auth": {
+    "subtitle": "Sign in to your tenant workspace",
+    "email": "Email",
+    "emailPlaceholder": "you@company.com",
+    "password": "Password",
+    "tenant": "Tenant ID",
+    "tenantPlaceholder": "Tenant GUID for this workspace",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "errorGeneric": "Sign-in failed. Check your credentials.",
+    "forbiddenTitle": "No access",
+    "forbiddenDetail": "Your role does not include this module. Contact an administrator."
   },
   "validation": {
     "required": "This field is required",

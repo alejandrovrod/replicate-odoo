@@ -51,6 +51,7 @@ public sealed class StockEntriesController : ControllerBase
     /// <param name="limit">Maximum number of vouchers to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:stock_entry:read")]
     [ProducesResponseType(typeof(PagedResult<StockEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -84,6 +85,7 @@ public sealed class StockEntriesController : ControllerBase
     /// <param name="command">Voucher data (company, type, warehouse(s), posting date, lines).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:stock_entry:write")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(StockEntryPostingDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -135,6 +137,7 @@ public sealed class StockEntriesController : ControllerBase
     /// cancelled and appends compensating (negative) rows to the Kardex and General Ledger.
     /// </summary>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "permission:stock_entry:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

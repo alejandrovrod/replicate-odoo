@@ -44,6 +44,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// <param name="limit">Maximum number of orders to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:purchase_order:read")]
     [ProducesResponseType(typeof(PagedResult<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -69,6 +70,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// <param name="command">Order data (company, supplier, posting date, lines).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:purchase_order:write")]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(PurchaseOrderDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -110,6 +112,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated purchase order details.</returns>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "permission:purchase_order:write")]
     [ProducesResponseType(typeof(PurchaseOrderDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -193,6 +196,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// <param name="companyId">Company that owns the order.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/submit")]
+    [Authorize(Policy = "permission:purchase_order:submit")]
     [ProducesResponseType(typeof(PurchaseOrderDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]

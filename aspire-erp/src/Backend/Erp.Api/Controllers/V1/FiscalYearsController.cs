@@ -41,6 +41,7 @@ public sealed class FiscalYearsController : ControllerBase
 
     /// <summary>Creates one OPEN fiscal year (no overlap with the same company's years).</summary>
     [HttpPost]
+    [Authorize(Policy = "permission:fiscal_year:write")]
     [Consumes("application/json")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(FiscalYearDto), StatusCodes.Status201Created)]
@@ -72,6 +73,7 @@ public sealed class FiscalYearsController : ControllerBase
 
     /// <summary>Paged fiscal-year list with an optional <c>IsClosed</c> filter.</summary>
     [HttpGet]
+    [Authorize(Policy = "permission:fiscal_year:read")]
     [ProducesResponseType(typeof(PagedResult<FiscalYearDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(
         [FromQuery] Guid companyId,
@@ -87,6 +89,7 @@ public sealed class FiscalYearsController : ControllerBase
 
     /// <summary>Returns one fiscal year by id.</summary>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:fiscal_year:read")]
     [ProducesResponseType(typeof(FiscalYearDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
@@ -109,6 +112,7 @@ public sealed class FiscalYearsController : ControllerBase
     /// re-open does not exist.
     /// </summary>
     [HttpPost("{id:guid}/close")]
+    [Authorize(Policy = "permission:fiscal_year:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(FiscalYearDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

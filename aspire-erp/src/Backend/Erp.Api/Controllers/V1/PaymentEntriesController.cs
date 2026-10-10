@@ -48,6 +48,7 @@ public sealed class PaymentEntriesController : ControllerBase
 
     /// <summary>Returns the company's payment vouchers, newest first.</summary>
     [HttpGet]
+    [Authorize(Policy = "permission:payment_entry:read")]
     [ProducesResponseType(typeof(PagedResult<PaymentEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -74,6 +75,7 @@ public sealed class PaymentEntriesController : ControllerBase
 
     /// <summary>Returns one payment voucher with its allocation slices.</summary>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:payment_entry:read")]
     [ProducesResponseType(typeof(PaymentEntryDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -103,6 +105,7 @@ public sealed class PaymentEntriesController : ControllerBase
 
     /// <summary>Creates one Draft payment voucher (zero GL impact until submit).</summary>
     [HttpPost]
+    [Authorize(Policy = "permission:payment_entry:write")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PaymentEntryDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -128,6 +131,7 @@ public sealed class PaymentEntriesController : ControllerBase
 
     /// <summary>Submits a Draft voucher: gapless number, GL settlement, invoice settlement.</summary>
     [HttpPost("{id:guid}/submit")]
+    [Authorize(Policy = "permission:payment_entry:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PaymentEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -161,6 +165,7 @@ public sealed class PaymentEntriesController : ControllerBase
 
     /// <summary>Cancels a Submitted voucher via compensating reversal.</summary>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "permission:payment_entry:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PaymentEntryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

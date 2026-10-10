@@ -42,6 +42,7 @@ public sealed class BankTransactionRulesController : ControllerBase
 
     /// <summary>Returns every heuristic rule of the company (active and inactive).</summary>
     [HttpGet]
+    [Authorize(Policy = "permission:bank_transaction_rule:read")]
     [ProducesResponseType(typeof(PagedResult<BankTransactionRuleDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -66,6 +67,7 @@ public sealed class BankTransactionRulesController : ControllerBase
 
     /// <summary>Creates one heuristic matching rule (201 + the persisted rule).</summary>
     [HttpPost]
+    [Authorize(Policy = "permission:bank_transaction_rule:write")]
     [ProducesResponseType(typeof(BankTransactionRuleDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

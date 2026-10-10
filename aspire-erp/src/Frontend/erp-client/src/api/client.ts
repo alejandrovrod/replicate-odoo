@@ -1,11 +1,13 @@
 import axios, { type AxiosError } from 'axios'
 import { getTenantId } from '../store/useTenantStore'
+import { getAuthToken, useAuthStore } from '../store/useAuthStore'
 import { LANGUAGE_STORAGE_KEY, normalizeLanguage } from '../lib/i18n'
-
 /**
  * Single entry point for every network call (Constitution Article VII.3).
  *
  * - Injects `X-Tenant-ID` automatically from the tenant store.
+ * - Injects `Authorization: Bearer` from the auth store when logged in; a 401 response
+ *   clears the session (except on the login call itself) so the app returns to login.
  * - Normalizes RFC 7807 `ProblemDetails` failures into `ApiError`, so callers can branch on
  *   `status` / `code` instead of re-parsing response bodies.
  * - Talks to `/api` only: `vite.config.ts` proxies it to the Aspire API's HTTPS endpoint
@@ -46,6 +48,11 @@ apiClient.interceptors.request.use((config) => {
     config.headers['X-Tenant-ID'] = tenantId
   }
 
+  const token = getAuthToken()
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`
+  }
+
   // Spec 00-i18n F-07: the backend localizes ProblemDetails title/detail per Accept-Language.
   // Read the detector's cache directly rather than i18n.language so a request issued before
   // i18next finishes booting still carries the persisted choice.
@@ -69,6 +76,12 @@ apiClient.interceptors.response.use(
   (error: AxiosError<ProblemDetails>) => {
     const status = error.response?.status ?? 0
     const problem = error.response?.data
+
+    // Expired/revoked token: drop the session so the App gate returns to LoginScreen.
+    // The login endpoint itself is excluded (a 401 there just means bad credentials).
+    if (status === 401 && !error.config?.url?.includes('/v1/auth/login')) {
+      useAuthStore.getState().logout()
+    }
 
     // Request never reached a server (DNS, offline, CORS, aborted): surface it with status 0.
     if (status === 0) {

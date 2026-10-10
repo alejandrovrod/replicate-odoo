@@ -30,6 +30,11 @@ public class AppDbContext : DbContext
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
 
+    public DbSet<Erp.Domain.Entities.Security.User> Users => Set<Erp.Domain.Entities.Security.User>();
+    public DbSet<Erp.Domain.Entities.Security.Role> Roles => Set<Erp.Domain.Entities.Security.Role>();
+    public DbSet<Erp.Domain.Entities.Security.UserRole> UserRoles => Set<Erp.Domain.Entities.Security.UserRole>();
+    public DbSet<Erp.Domain.Entities.Security.DocTypePermission> DocTypePermissions => Set<Erp.Domain.Entities.Security.DocTypePermission>();
+
     /// <summary>Global ISO currency catalog (RM-09): shared across tenants, no tenant filter.</summary>
     public DbSet<Currency> Currencies => Set<Currency>();
 
@@ -49,17 +54,32 @@ public class AppDbContext : DbContext
 
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
 
+    public DbSet<Batch> Batches => Set<Batch>();
+    public DbSet<SerialNo> SerialNos => Set<SerialNo>();
+
     public DbSet<StockEntry> StockEntries => Set<StockEntry>();
 
     public DbSet<StockLedgerEntry> StockLedgerEntries => Set<StockLedgerEntry>();
 
     public DbSet<GLEntry> GLEntries => Set<GLEntry>();
 
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectTask> ProjectTasks => Set<ProjectTask>();
+
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
     public DbSet<Supplier> Suppliers => Set<Supplier>();
 
+    public DbSet<MaterialRequest> MaterialRequests => Set<MaterialRequest>();
+    public DbSet<MaterialRequestItem> MaterialRequestItems => Set<MaterialRequestItem>();
+
     public DbSet<Customer> Customers => Set<Customer>();
+
+    public DbSet<Quotation> Quotations => Set<Quotation>();
+    public DbSet<QuotationItem> QuotationItems => Set<QuotationItem>();
+
+    public DbSet<PricingRule> PricingRules => Set<PricingRule>();
+    public DbSet<TaxTemplate> TaxTemplates => Set<TaxTemplate>();
 
     public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
 

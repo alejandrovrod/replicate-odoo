@@ -51,6 +51,7 @@ public sealed class AssetsController : ControllerBase
     /// <param name="companyId">Company that owns the assets.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:asset:read")]
     [ProducesResponseType(typeof(PagedResult<AssetDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
@@ -77,6 +78,7 @@ public sealed class AssetsController : ControllerBase
     /// <param name="companyId">Company that owns the asset.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:asset:read")]
     [ProducesResponseType(typeof(AssetDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -121,6 +123,7 @@ public sealed class AssetsController : ControllerBase
     /// <param name="request">Company and capitalization date.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/capitalize")]
+    [Authorize(Policy = "permission:asset:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(AssetCapitalizationDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -164,6 +167,7 @@ public sealed class AssetsController : ControllerBase
     /// <param name="request">Company and as-of date.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("depreciation-run")]
+    [Authorize(Policy = "permission:asset:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(DepreciationRunDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -208,6 +212,7 @@ public sealed class AssetsController : ControllerBase
     /// <param name="request">Company, disposal date, proceeds and optional bank account.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/dispose")]
+    [Authorize(Policy = "permission:asset:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(AssetDisposalDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -255,6 +260,7 @@ public sealed class AssetsController : ControllerBase
     /// <param name="request">Company, optional posting date (defaults to disposal date), and RowVersion for concurrency.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/reverse-disposal")]
+    [Authorize(Policy = "permission:asset:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(AssetDisposalReversalDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

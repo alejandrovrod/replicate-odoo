@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Erp.Api.IntegrationTests;
 
@@ -93,6 +94,22 @@ public sealed class ErpApiFactory : WebApplicationFactory<Program>
         // The dev container/e2e scripts run Erp.Api in Development (OpenAPI mapping and the
         // Aspire /health + /alive endpoints are Development-only).
         builder.UseEnvironment("Development");
+
+        builder.ConfigureServices(services =>
+        {
+            services.AddAuthentication(TestAuthHandler.AuthenticationScheme)
+                .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthenticationScheme, options => { });
+
+            // Deterministic default: PostConfigure runs after EVERY Configure (including
+            // Program.cs), so the test scheme wins regardless of registration order - plain
+            // AddAuthentication here loses to Program.cs when the host applies it later.
+            services.PostConfigureAll<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
+            {
+                options.DefaultAuthenticateScheme = TestAuthHandler.AuthenticationScheme;
+                options.DefaultChallengeScheme = TestAuthHandler.AuthenticationScheme;
+                options.DefaultForbidScheme = TestAuthHandler.AuthenticationScheme;
+            });
+        });
     }
 
     protected override void Dispose(bool disposing)

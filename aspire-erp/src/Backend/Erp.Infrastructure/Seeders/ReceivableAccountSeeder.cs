@@ -86,21 +86,31 @@ public static class ReceivableAccountSeeder
             IsActive = true,
         };
 
-        // Converge on concurrent boots: two hosts may both pass the existence check above
-        // for the same company; the unique index admits exactly one insert and the loser
-        // re-reads the winner instead of crashing the boot.
+        // Converge on concurrent boots AND on tests that delete companies mid-boot: parallel
+        // hosts may all pass the existence checks above for the same company, and a test may
+        // drop that company before our insert lands. A 2601/2627 on THIS single-row insert
+        // proves another boot won; a 547 with the company gone means there is nothing left to
+        // seed. Both converge silently - anything else rethrows loudly.
+        // (A pre-check re-read would still lose: under read-committed the loser reads before
+        // the winner commits.)
         try
         {
             await context.Accounts.AddAsync(account, cancellationToken);
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             context.Entry(account).State = EntityState.Detached;
-            if (!await ExistsAsync(context, companyId, tenantId, cancellationToken))
+        }
+        catch (DbUpdateException ex) when (IsForeignKeyViolation(ex))
+        {
+            context.Entry(account).State = EntityState.Detached;
+            if (await CompanyExistsAsync(context, companyId, cancellationToken))
             {
                 throw;
             }
+
+            return;
         }
 
         if (company is not null && string.IsNullOrWhiteSpace(company.DefaultReceivableAccountCode))
@@ -108,14 +118,32 @@ public static class ReceivableAccountSeeder
             company.DefaultReceivableAccountCode = ReceivableAccountCode;
         }
 
-        await context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException) when (company is not null)
+        {
+            // The company vanished mid-boot (test teardown): nothing left to stamp.
+            context.Entry(company).State = EntityState.Detached;
+            if (await CompanyExistsAsync(context, companyId, cancellationToken))
+            {
+                throw;
+            }
+        }
     }
 
-    private static async Task<bool> ExistsAsync(
-        AppDbContext context, Guid companyId, Guid tenantId, CancellationToken cancellationToken)
-        => await context.Accounts
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is Microsoft.Data.SqlClient.SqlException sql
+            && (sql.Number == 2601 || sql.Number == 2627);
+
+    private static bool IsForeignKeyViolation(DbUpdateException ex) =>
+        ex.InnerException is Microsoft.Data.SqlClient.SqlException sql
+            && sql.Number == 547;
+
+    private static async Task<bool> CompanyExistsAsync(
+        AppDbContext context, Guid companyId, CancellationToken cancellationToken)
+        => await context.Companies
             .IgnoreQueryFilters()
-            .AnyAsync(
-                a => a.TenantId == tenantId && a.CompanyId == companyId && a.AccountCode == ReceivableAccountCode,
-                cancellationToken);
+            .AnyAsync(c => c.Id == companyId, cancellationToken);
 }

@@ -47,6 +47,7 @@ public sealed class WarehousesController : ControllerBase
     /// <param name="companyId">Company that owns the warehouse tree.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("tree")]
+    [Authorize(Policy = "permission:warehouse:read")]
     [ProducesResponseType(typeof(IReadOnlyList<WarehouseTreeNodeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetTree([FromQuery] Guid companyId, CancellationToken cancellationToken)
@@ -76,6 +77,7 @@ public sealed class WarehousesController : ControllerBase
     /// <param name="pageSize">Page size, 1..500 (default 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:warehouse:read")]
     [ProducesResponseType(typeof(PagedResult<WarehouseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
@@ -105,6 +107,7 @@ public sealed class WarehousesController : ControllerBase
     /// <param name="command">Warehouse data (company, code, name, stock account, parent).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:warehouse:write")]
     [ProducesResponseType(typeof(WarehouseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -141,6 +144,7 @@ public sealed class WarehousesController : ControllerBase
     /// <param name="command">Updated warehouse data including RowVersion.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPut("{id}")]
+    [Authorize(Policy = "permission:warehouse:write")]
     [ProducesResponseType(typeof(WarehouseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

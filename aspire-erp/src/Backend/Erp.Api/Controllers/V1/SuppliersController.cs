@@ -48,6 +48,7 @@ public sealed class SuppliersController : ControllerBase
     /// <param name="limit">Maximum number of suppliers to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:supplier:read")]
     [ProducesResponseType(typeof(PagedResult<SupplierDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(
         [FromQuery] int page = 1,
@@ -62,6 +63,7 @@ public sealed class SuppliersController : ControllerBase
     /// <param name="command">Supplier data (code, name, active flag).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:supplier:write")]
     [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -102,6 +104,7 @@ public sealed class SuppliersController : ControllerBase
     /// <param name="command">Updated supplier data including RowVersion.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPut("{id}")]
+    [Authorize(Policy = "permission:supplier:write")]
     [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -148,6 +151,7 @@ public sealed class SuppliersController : ControllerBase
 
     /// <summary>Disables a supplier (sets IsActive = false).</summary>
     [HttpPut("{id}/disable")]
+    [Authorize(Policy = "permission:supplier:write")]
     [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
@@ -155,6 +159,7 @@ public sealed class SuppliersController : ControllerBase
 
     /// <summary>Enables a supplier (sets IsActive = true).</summary>
     [HttpPut("{id}/enable")]
+    [Authorize(Policy = "permission:supplier:write")]
     [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)
@@ -185,6 +190,7 @@ public sealed class SuppliersController : ControllerBase
     /// <param name="companyId">Company that owns the bills (suppliers themselves are tenant-wide).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id}/outstanding-invoices")]
+    [Authorize(Policy = "permission:supplier:read")]
     [ProducesResponseType(typeof(IReadOnlyList<OutstandingInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

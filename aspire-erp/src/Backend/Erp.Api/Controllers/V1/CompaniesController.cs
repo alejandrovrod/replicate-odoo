@@ -1,6 +1,7 @@
 using Erp.Application.Common;
 using Erp.Application.Features.SystemBase.Companies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -16,6 +17,7 @@ public class CompaniesController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Policy = "permission:company:read")]
     public async Task<IActionResult> Get(Guid id)
     {
         var result = await _sender.SendAsync(new GetCompanyQuery(id));
@@ -23,6 +25,7 @@ public class CompaniesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "permission:company:write")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCompanyCommand command)
     {
         if (id != command.Id) return BadRequest();

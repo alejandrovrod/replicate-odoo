@@ -2,6 +2,7 @@ using Erp.Application.Common;
 using Erp.Application.Features.ExchangeRates.Commands;
 using Erp.Application.Features.ExchangeRates.Queries;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Erp.Api.Controllers.V1;
 
@@ -17,6 +18,7 @@ public class ExchangeRateRevaluationsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "permission:exchange_rate_revaluation:read")]
     public async Task<IActionResult> List([FromQuery] Guid companyId, [FromQuery] string? status)
     {
         var result = await _sender.SendAsync(new GetExchangeRateRevaluationsQuery(companyId, status));
@@ -24,6 +26,7 @@ public class ExchangeRateRevaluationsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:exchange_rate_revaluation:read")]
     public async Task<IActionResult> Detail(Guid id)
     {
         var result = await _sender.SendAsync(new GetExchangeRateRevaluationDetailQuery(id));
@@ -35,6 +38,7 @@ public class ExchangeRateRevaluationsController : ControllerBase
     }
 
     [HttpGet("preview")]
+    [Authorize(Policy = "permission:exchange_rate_revaluation:read")]
     public async Task<IActionResult> Preview([FromQuery] Guid companyId, [FromQuery] DateOnly postingDate, [FromQuery] decimal allowance, [FromQuery] Guid? fxAccountId)
     {
         var result = await _sender.SendAsync(new GetRevaluationPreviewQuery(companyId, postingDate, allowance, fxAccountId));
@@ -46,6 +50,7 @@ public class ExchangeRateRevaluationsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "permission:exchange_rate_revaluation:write")]
     public async Task<IActionResult> Create([FromHeader(Name = "Idempotency-Key")] string idempotencyKey, [FromBody] CreateExchangeRateRevaluationCommand command)
     {
         if (string.IsNullOrWhiteSpace(idempotencyKey))
@@ -60,6 +65,7 @@ public class ExchangeRateRevaluationsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/submit")]
+    [Authorize(Policy = "permission:exchange_rate_revaluation:submit")]
     public async Task<IActionResult> Submit(Guid id, [FromHeader(Name = "Idempotency-Key")] string idempotencyKey, [FromBody] SubmitExchangeRateRevaluationCommand command)
     {
         if (string.IsNullOrWhiteSpace(idempotencyKey))
@@ -74,6 +80,7 @@ public class ExchangeRateRevaluationsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "permission:exchange_rate_revaluation:cancel")]
     public async Task<IActionResult> Cancel(Guid id, [FromHeader(Name = "Idempotency-Key")] string idempotencyKey, [FromBody] CancelExchangeRateRevaluationCommand command)
     {
         if (string.IsNullOrWhiteSpace(idempotencyKey))

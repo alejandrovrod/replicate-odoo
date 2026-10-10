@@ -2,13 +2,19 @@ import {
   Bell,
   Building2,
   CheckCircle2,
+  ChevronDown,
+  KeyRound,
+  LogOut,
   Search,
   ShieldCheck,
   User,
+  UserCog,
 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type NavRoute, useNavigationStore } from '../../store/useNavigationStore'
 import { useTenantStore } from '../../store/useTenantStore'
+import { useAuthStore } from '../../store/useAuthStore'
 import type { EnCommonKeys } from '../../types/i18n.generated'
 import { LanguageSelector } from './LanguageSelector'
 
@@ -63,6 +69,22 @@ export function Header() {
   const companyId = useTenantStore((state) => state.companyId)
 
   const meta = ROUTE_NAV[currentRoute] ?? FALLBACK_NAV
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+  const isSystemManager = useAuthStore((state) => state.isSystemManager)()
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
@@ -122,10 +144,64 @@ export function Header() {
         </button>
 
         {/* User Profile */}
-        <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-600">
-            <User className="h-4 w-4" />
-          </div>
+        <div className="relative border-l border-slate-200 pl-3" ref={profileRef}>
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-lg p-1 text-left transition-colors hover:bg-slate-50"
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+          >
+            <div className="hidden flex-col items-end md:flex" title={user?.email ?? ''}>
+              <span className="max-w-36 truncate text-xs font-semibold text-slate-800">
+                {user?.fullName ?? '—'}
+              </span>
+              <span className="text-[10px] font-medium text-slate-400">
+                {isSystemManager ? t('header.systemManager', 'System Manager') : t('header.signedIn', 'Signed in')}
+              </span>
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-600">
+              <User className="h-4 w-4" />
+            </div>
+          </button>
+
+          {/* Dropdown Menu */}
+          {isProfileOpen && (
+            <div className="absolute right-0 top-full z-50 mt-1 flex w-48 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                onClick={() => {
+                  setIsProfileOpen(false)
+                  // TODO: Implement profile
+                }}
+              >
+                <UserCog className="h-4 w-4 text-slate-400" />
+                {t('header.myProfile', 'Mi Perfil')}
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                onClick={() => {
+                  setIsProfileOpen(false)
+                  // TODO: Implement password change
+                }}
+              >
+                <KeyRound className="h-4 w-4 text-slate-400" />
+                {t('header.changePassword', 'Cambiar Contraseña')}
+              </button>
+              <div className="border-t border-slate-100" />
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                onClick={() => {
+                  setIsProfileOpen(false)
+                  logout()
+                }}
+              >
+                <LogOut className="h-4 w-4 text-red-500" />
+                {t('header.logout', 'Cerrar Sesión')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

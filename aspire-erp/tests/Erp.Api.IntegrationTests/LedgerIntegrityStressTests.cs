@@ -195,7 +195,14 @@ public class LedgerIntegrityStressTests : IClassFixture<ErpApiFactory>, IDisposa
         // the shared IT-001 layers that concurrent suites consume (Phase 8 finding H3).
         // The item stays behind (receipt/bill lines reference it) like every posted master.
         _customerId = await CreateCustomerAsync(client);
-        _itemId = await CreateItemAsync(client);
+        var itemRes = await PostJsonAsync(client, "/api/v1/items", new
+        {
+            code = $"T8B-IT-{Guid.NewGuid():N}"[..16],
+            name = "T8B Stress Item",
+            valuationMethod = "Fifo",
+            baseUOMId = UomId,
+        });
+        _itemId = (await ReadCreatedAsync(itemRes, "Item POST"))["id"]!.GetValue<Guid>();
 
         // -- buy leg: PO (Draft → Submitted) ----------------------------------------
         var po = await PostJsonAsync(client, "/api/v1/purchaseorders", new

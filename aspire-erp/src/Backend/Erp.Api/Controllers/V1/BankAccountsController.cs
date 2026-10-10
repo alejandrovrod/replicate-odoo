@@ -49,6 +49,7 @@ public sealed class BankAccountsController : ControllerBase
     /// <param name="pageSize">Page size, 1..500 (default 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:bank_account:read")]
     [ProducesResponseType(typeof(PagedResult<BankAccountDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -79,6 +80,7 @@ public sealed class BankAccountsController : ControllerBase
     /// <param name="companyId">Company that owns the account.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:bank_account:read")]
     [ProducesResponseType(typeof(BankAccountDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -110,6 +112,7 @@ public sealed class BankAccountsController : ControllerBase
     /// <param name="command">Bank account data (company, names, number, GL account, currency).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:bank_account:write")]
     [ProducesResponseType(typeof(BankAccountDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
@@ -137,6 +140,7 @@ public sealed class BankAccountsController : ControllerBase
     /// <param name="command">Updated bank account data including RowVersion.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPut("{id}")]
+    [Authorize(Policy = "permission:bank_account:write")]
     [ProducesResponseType(typeof(BankAccountDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -182,6 +186,7 @@ public sealed class BankAccountsController : ControllerBase
 
     /// <summary>Disables a bank account (sets IsActive = false).</summary>
     [HttpPut("{id}/disable")]
+    [Authorize(Policy = "permission:bank_account:write")]
     [ProducesResponseType(typeof(BankAccountDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
@@ -189,6 +194,7 @@ public sealed class BankAccountsController : ControllerBase
 
     /// <summary>Enables a bank account (sets IsActive = true).</summary>
     [HttpPut("{id}/enable")]
+    [Authorize(Policy = "permission:bank_account:write")]
     [ProducesResponseType(typeof(BankAccountDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)

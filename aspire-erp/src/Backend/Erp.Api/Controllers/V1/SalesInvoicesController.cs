@@ -50,6 +50,7 @@ public sealed class SalesInvoicesController : ControllerBase
     /// <param name="pageSize">Page size (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:sales_invoice:read")]
     [ProducesResponseType(typeof(PagedResult<SalesInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -76,6 +77,7 @@ public sealed class SalesInvoicesController : ControllerBase
     /// <param name="companyId">Company that owns the invoice.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:sales_invoice:read")]
     [ProducesResponseType(typeof(SalesInvoiceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -112,6 +114,7 @@ public sealed class SalesInvoicesController : ControllerBase
     /// <param name="command">Invoice data (company, customer, posting date, lines).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:sales_invoice:write")]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(SalesInvoiceDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -140,6 +143,7 @@ public sealed class SalesInvoicesController : ControllerBase
     /// <param name="companyId">Company that owns the invoice.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/submit")]
+    [Authorize(Policy = "permission:sales_invoice:submit")]
     [ProducesResponseType(typeof(SalesInvoiceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

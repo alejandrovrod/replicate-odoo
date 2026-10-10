@@ -42,6 +42,7 @@ public sealed class BomsController : ControllerBase
     /// <param name="companyId">Company that owns the recipes.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:bom:read")]
     [ProducesResponseType(typeof(PagedResult<BomDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
@@ -68,6 +69,7 @@ public sealed class BomsController : ControllerBase
     /// <param name="companyId">Company that owns the recipe.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:bom:read")]
     [ProducesResponseType(typeof(BomDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

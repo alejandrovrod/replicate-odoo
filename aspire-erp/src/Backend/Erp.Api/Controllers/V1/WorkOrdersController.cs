@@ -51,6 +51,7 @@ public sealed class WorkOrdersController : ControllerBase
     /// <param name="command">Order data (company, item, BOM, quantity, warehouses, planned dates).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:work_order:write")]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(WorkOrderDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -83,6 +84,7 @@ public sealed class WorkOrdersController : ControllerBase
     /// <param name="companyId">Company that owns the order.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/submit")]
+    [Authorize(Policy = "permission:work_order:submit")]
     [ProducesResponseType(typeof(WorkOrderDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -137,6 +139,7 @@ public sealed class WorkOrdersController : ControllerBase
     /// <param name="companyId">Company that owns the orders.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:work_order:read")]
     [ProducesResponseType(typeof(PagedResult<WorkOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
@@ -173,6 +176,7 @@ public sealed class WorkOrdersController : ControllerBase
     /// <param name="postingDate">Accounting date of the transfer (defaults to today).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/transfer-to-wip")]
+    [Authorize(Policy = "permission:work_order:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(StockEntryPostingDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -221,6 +225,7 @@ public sealed class WorkOrdersController : ControllerBase
     /// <param name="postingDate">Accounting date of the manufacture (defaults to today).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/complete")]
+    [Authorize(Policy = "permission:work_order:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(StockEntryPostingDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -269,6 +274,7 @@ public sealed class WorkOrdersController : ControllerBase
     /// <param name="postingDate">Accounting date of the reversal (defaults to today).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "permission:work_order:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(WorkOrderDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

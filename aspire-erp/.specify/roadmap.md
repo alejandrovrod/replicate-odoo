@@ -66,14 +66,14 @@ Doctypes probed in `src/Backend` (class/record name search, excluding migrations
 | Accounting | Exchange Rate Revaluation | `erpnext/accounts/doctype/exchange_rate_revaluation` — verified | Missing |
 | Accounting | Tax Withholding Category | `erpnext/accounts/doctype/tax_withholding_category` — verified | Missing (hard-coded 0) |
 | Accounting | Sales/Purchase Taxes and Charges Template | to verify | Missing (tax forced to 0 in selling) |
-| Selling | Quotation | to verify | Missing |
-| Selling | Pricing Rule | to verify | Missing |
-| Buying | Material Request | to verify | Missing |
+| Selling | Quotation | to verify | Domain/API |
+| Selling | Pricing Rule | to verify | Domain/API |
+| Buying | Material Request | to verify | Domain/API |
 | Buying | Supplier Quotation | to verify | Missing |
-| Stock | Batch / Serial No | to verify | Missing |
+| Stock | Batch / Serial No | to verify | Domain/API |
 | Stock | Stock Reconciliation | to verify | Missing |
-| Projects | Project / Task / Timesheet | to verify | Missing |
-| HR | Attendance / Leave Application | to verify | Missing |
+| Projects | Project / Task / Timesheet | to verify | Domain/API |
+| HR | Attendance / Leave Application | to verify | Domain/API |
 | Platform | Role / DocType permissions | to verify (Frappe core) | Partial (1 `Role` type found) |
 | Platform | Workflow | to verify (Frappe core) | Missing |
 | Platform | Naming Series | to verify (Frappe core) | Missing |

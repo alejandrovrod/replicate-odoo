@@ -300,6 +300,36 @@
   <data name="customer_tax_id_too_long" xml:space="preserve">
     <value>El identificador fiscal del cliente supera la longitud máxima.</value>
   </data>
+  <data name="customer_type_too_long" xml:space="preserve">
+    <value>El tipo de cliente supera la longitud máxima.</value>
+  </data>
+  <data name="customer_group_too_long" xml:space="preserve">
+    <value>El grupo de cliente supera la longitud máxima.</value>
+  </data>
+  <data name="territory_too_long" xml:space="preserve">
+    <value>El territorio supera la longitud máxima.</value>
+  </data>
+  <data name="billing_address_too_long" xml:space="preserve">
+    <value>La dirección de facturación supera la longitud máxima.</value>
+  </data>
+  <data name="phone_too_long" xml:space="preserve">
+    <value>El teléfono supera la longitud máxima.</value>
+  </data>
+  <data name="email_too_long" xml:space="preserve">
+    <value>El correo supera la longitud máxima.</value>
+  </data>
+  <data name="contact_person_too_long" xml:space="preserve">
+    <value>La persona de contacto supera la longitud máxima.</value>
+  </data>
+  <data name="website_too_long" xml:space="preserve">
+    <value>El sitio web supera la longitud máxima.</value>
+  </data>
+  <data name="payment_terms_too_long" xml:space="preserve">
+    <value>Las condiciones de pago superan la longitud máxima.</value>
+  </data>
+  <data name="customer_details_too_long" xml:space="preserve">
+    <value>Los detalles del cliente superan la longitud máxima.</value>
+  </data>
   <data name="billing_currency_invalid" xml:space="preserve">
     <value>Moneda de facturación inválida.</value>
   </data>

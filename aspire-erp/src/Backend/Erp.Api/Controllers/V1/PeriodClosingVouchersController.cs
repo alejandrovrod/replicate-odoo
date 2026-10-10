@@ -44,6 +44,7 @@ public sealed class PeriodClosingVouchersController : ControllerBase
 
     /// <summary>Creates one <c>Draft</c> voucher bound to a fiscal year (no GL impact yet).</summary>
     [HttpPost]
+    [Authorize(Policy = "permission:period_closing_voucher:write")]
     [Consumes("application/json")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PeriodClosingVoucherDto), StatusCodes.Status201Created)]
@@ -85,6 +86,7 @@ public sealed class PeriodClosingVouchersController : ControllerBase
 
     /// <summary>Paged voucher list with fiscal-year + status filters.</summary>
     [HttpGet]
+    [Authorize(Policy = "permission:period_closing_voucher:read")]
     [ProducesResponseType(typeof(PagedResult<PeriodClosingVoucherDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(
         [FromQuery] Guid companyId,
@@ -102,6 +104,7 @@ public sealed class PeriodClosingVouchersController : ControllerBase
 
     /// <summary>Returns one closing voucher (header + derived lines).</summary>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:period_closing_voucher:read")]
     [ProducesResponseType(typeof(PeriodClosingVoucherDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
@@ -123,6 +126,7 @@ public sealed class PeriodClosingVouchersController : ControllerBase
     /// balance query. An empty year previews zero lines (submit itself rejects it, FC-12).
     /// </summary>
     [HttpGet("unclosed-balances")]
+    [Authorize(Policy = "permission:period_closing_voucher:read")]
     [ProducesResponseType(typeof(ClosingPreviewDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Preview(
@@ -145,6 +149,7 @@ public sealed class PeriodClosingVouchersController : ControllerBase
     /// commit returns the recorded success with zero new GL rows (FC-09).
     /// </summary>
     [HttpPost("{id:guid}/submit")]
+    [Authorize(Policy = "permission:period_closing_voucher:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PeriodClosingVoucherDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -177,6 +182,7 @@ public sealed class PeriodClosingVouchersController : ControllerBase
     /// Refused when the fiscal year is closed.
     /// </summary>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Policy = "permission:period_closing_voucher:cancel")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PeriodClosingVoucherDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

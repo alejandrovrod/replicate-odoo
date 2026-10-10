@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- ================================================================= -->
+  <!-- RFC 7807 ProblemDetails: generic titles                            -->
+  <!-- ================================================================= -->
+  <data name="Error_InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno en el servidor.</value>
+  </data>
+  <data name="Error_Validation" xml:space="preserve">
+    <value>Los datos enviados no son válidos.</value>
+  </data>
+  <data name="Error_DomainRule" xml:space="preserve">
+    <value>La solicitud no cumple las reglas de negocio.</value>
+  </data>
+  <data name="Error_Unauthorized" xml:space="preserve">
+    <value>No autorizado.</value>
+  </data>
+  <data name="Error_Forbidden" xml:space="preserve">
+    <value>No tienes permisos para realizar esta acción.</value>
+  </data>
+  <data name="Error_NotFound" xml:space="preserve">
+    <value>El recurso solicitado no fue encontrado.</value>
+  </data>
+  <data name="Error_Conflict" xml:space="preserve">
+    <value>La operación entra en conflicto con el estado actual del recurso.</value>
+  </data>
+  <data name="Error_TenantRequired" xml:space="preserve">
+    <value>Se requiere una organización (tenant) para esta operación.</value>
+  </data>
+  <data name="Error_RateLimited" xml:space="preserve">
+    <value>Demasiadas solicitudes. Intenta de nuevo en unos segundos.</value>
+  </data>
+  <data name="Error_NotFoundResource" xml:space="preserve">
+    <value>No se encontró el recurso '{0}' con el identificador '{1}'.</value>
+  </data>
+
+  <!-- Default codes used by the built-in exception types -->
+  <data name="not_found" xml:space="preserve">
+    <value>El recurso solicitado no fue encontrado.</value>
+  </data>
+  <data name="conflict" xml:space="preserve">
+    <value>La operación entra en conflicto con el estado actual del recurso.</value>
+  </data>
+  <data name="validation_failed" xml:space="preserve">
+    <value>Se produjeron uno o más errores de validación.</value>
+  </data>
+
+  <!-- ================================================================= -->
+  <!-- Domain rules: the error code is the localization key.              -->
+  <!-- ================================================================= -->
+  <data name="finance_book_not_found" xml:space="preserve">
+    <value>Perfil financiero no configurado.</value>
+  </data>
+  <data name="asset_not_found" xml:space="preserve">
+    <value>Activo no encontrado.</value>
+  </data>
+  <data name="employee_not_found" xml:space="preserve">
+    <value>Empleado destinatario no encontrado.</value>
+  </data>
+  <data name="maintenance_order_not_found" xml:space="preserve">
+    <value>Orden de mantenimiento no encontrada.</value>
+  </data>
+  <data name="asset_disposed" xml:space="preserve">
+    <value>El activo ha sido dado de baja; la operación solicitada no está permitida.</value>
+  </data>
+  <data name="already_disposed" xml:space="preserve">
+    <value>El activo ya tiene la baja registrada.</value>
+  </data>
+  <data name="has_posted_entries" xml:space="preserve">
+    <value>Existen cuotas devengadas; la operación solicitada no está permitida.</value>
+  </data>
+  <data name="manual_schedule_required" xml:space="preserve">
+    <value>El método Manual requiere ManualSchedule con cuotas personalizadas.</value>
+  </data>
+  <data name="negative_depreciation" xml:space="preserve">
+    <value>Las cuotas manuales no pueden ser negativas.</value>
+  </data>
+  <data name="no_future_periods" xml:space="preserve">
+    <value>No hay períodos futuros para recalcular desde la fecha efectiva.</value>
+  </data>
+  <data name="no_pending_periods" xml:space="preserve">
+    <value>No hay cuotas pendientes por devengar.</value>
+  </data>
+  <data name="negative_proceeds" xml:space="preserve">
+    <value>El monto de recuperación no puede ser negativo.</value>
+  </data>
+  <data name="already_assigned" xml:space="preserve">
+    <value>El activo ya tiene un custodio asignado. Usa TransferType=Transfer.</value>
+  </data>
+  <data name="order_not_completed" xml:space="preserve">
+    <value>Solo las órdenes en estado Completed o Verified pueden capitalizarse.</value>
+  </data>
+  <data name="already_capitalized" xml:space="preserve">
+    <value>La orden ya ha sido capitalizada.</value>
+  </data>
+  <data name="zero_capitalization" xml:space="preserve">
+    <value>El costo total a capitalizar debe ser mayor a cero.</value>
+  </data>
+  <data name="invalid_new_life" xml:space="preserve">
+    <value>La nueva vida útil debe ser mayor a 0.</value>
+  </data>
+  <data name="residual_exceeds_acquisition" xml:space="preserve">
+    <value>El valor residual no puede superar el costo de adquisición.</value>
+  </data>
+  <data name="invalid_useful_life" xml:space="preserve">
+    <value>La vida útil debe ser mayor a 0.</value>
+  </data>
+  <data name="invalid_frequency" xml:space="preserve">
+    <value>La frecuencia debe ser mayor a 0.</value>
+  </data>
+  <data name="frequency_mismatch" xml:space="preserve">
+    <value>La frecuencia debe dividir exactamente la vida útil en meses.</value>
+  </data>
+  <data name="rate_required" xml:space="preserve">
+    <value>El método WrittenDownValue requiere DepreciationRatePct.</value>
+  </data>
+  <data name="manual_frequency" xml:space="preserve">
+    <value>El método Manual requiere frecuencia mensual (1).</value>
+  </data>
+  <data name="invalid_impairment" xml:space="preserve">
+    <value>El deterioro (Impairment) debe ser un monto negativo.</value>
+  </data>
+  <data name="invalid_revaluation" xml:space="preserve">
+    <value>La revaluación debe ser un monto positivo.</value>
+  </data>
+  <data name="manual_recalc_not_supported" xml:space="preserve">
+    <value>El recálculo prospectivo no está soportado para el método Manual. Regenera el calendario completo.</value>
+  </data>
+  <data name="validation_error" xml:space="preserve">
+    <value>IdempotencyKey es obligatorio.</value>
+  </data>
+  <data name="invalid_mode" xml:space="preserve">
+    <value>El modo de operación del inventario no está configurado como Internal ni Hybrid.</value>
+  </data>
+  <data name="insufficient_stock" xml:space="preserve">
+    <value>Stock insuficiente para completar la operación.</value>
+  </data>
+  <data name="non_existent_stock_balance" xml:space="preserve">
+    <value>No se puede registrar una cantidad negativa para un saldo de inventario inexistente.</value>
+  </data>
+  <data name="warehouse_required" xml:space="preserve">
+    <value>Se requiere un almacén para agregar partes internas.</value>
+  </data>
+  <data name="invalid_inventory_mode" xml:space="preserve">
+    <value>El modo de operación del inventario no es válido. Valores permitidos: external, internal, hybrid.</value>
+  </data>
+  <data name="material_already_associated" xml:space="preserve">
+    <value>Este ítem de catálogo ya está asociado al activo como material.</value>
+  </data>
+  <data name="tenant_required" xml:space="preserve">
+    <value>Se requiere una organización (tenant) para esta operación.</value>
+  </data>
+  <data name="catalog_in_use" xml:space="preserve">
+    <value>El ítem de catálogo no se puede eliminar porque está en uso.</value>
+  </data>
+  <data name="asset_template_in_use" xml:space="preserve">
+    <value>La plantilla está siendo usada por activos existentes y no se puede eliminar.</value>
+  </data>
+  <data name="business_entity_type_in_use" xml:space="preserve">
+    <value>El tipo de entidad está siendo usado por plantillas existentes y no se puede eliminar.</value>
+  </data>
+  <data name="invalid_catalog" xml:space="preserve">
+    <value>Uno o más identificadores de catálogo son inválidos o no pertenecen a esta organización.</value>
+  </data>
+  <data name="invalid_template_schema" xml:space="preserve">
+    <value>El esquema de la plantilla no es válido.</value>
+  </data>
+  <data name="module_not_enabled" xml:space="preserve">
+    <value>El módulo no está habilitado en su plan actual.</value>
+  </data>
+  <data name="plan_limit_exceeded" xml:space="preserve">
+    <value>Se superó un límite de su plan.</value>
+  </data>
+
+  <!-- ================================================================= -->
+  <!-- Domain rules needing wording or arguments beyond the plain code    -->
+  <!-- ================================================================= -->
+  <data name="Domain.AssetDisposedSchedule" xml:space="preserve">
+    <value>No se puede generar el calendario de depreciación de un activo dado de baja.</value>
+  </data>
+  <data name="Domain.AssetDisposedPostDepreciation" xml:space="preserve">
+    <value>No se pueden devengar cuotas en un activo dado de baja.</value>
+  </data>
+  <data name="Domain.AssetDisposedValueAdjustment" xml:space="preserve">
+    <value>No se pueden registrar ajustes en un activo dado de baja.</value>
+  </data>
+  <data name="Domain.AssetDisposedCustodyTransfer" xml:space="preserve">
+    <value>No se pueden registrar transferencias en un activo dado de baja.</value>
+  </data>
+  <data name="Domain.AssetDisposedCapitalization" xml:space="preserve">
+    <value>No se puede capitalizar en un activo dado de baja.</value>
+  </data>
+  <data name="Domain.AssetDisposedConfigure" xml:space="preserve">
+    <value>No se puede configurar el perfil financiero de un activo dado de baja.</value>
+  </data>
+  <data name="Domain.HasPostedEntriesRegenerate" xml:space="preserve">
+    <value>Existen cuotas devengadas. Usa ForceRegenerate=true para regenerar (se eliminarán las cuotas futuras no devengadas).</value>
+  </data>
+  <data name="Domain.HasPostedEntriesDelete" xml:space="preserve">
+    <value>No se puede eliminar: existen cuotas devengadas.</value>
+  </data>
+  <data name="Domain.BelowResidual" xml:space="preserve">
+    <value>Período {0}: el valor neto ({1}) queda por debajo del residual ({2}).</value>
+  </data>
+  <data name="Domain.BelowResidualValue" xml:space="preserve">
+    <value>El ajuste reduciría el valor neto ({0}) por debajo del residual ({1}).</value>
+  </data>
+  <data name="Domain.ManualTotalMismatch" xml:space="preserve">
+    <value>La suma de las cuotas manuales ({0}) no coincide con la base depreciable ({1}).</value>
+  </data>
+  <data name="Domain.WarehouseRequired" xml:space="preserve">
+    <value>Se requiere un almacén para agregar partes internas. Orden: {0}</value>
+  </data>
+  <data name="Domain.InvalidInventoryMode" xml:space="preserve">
+    <value>El modo de operación '{0}' no es válido. Valores permitidos: external, internal, hybrid.</value>
+  </data>
+  <data name="Domain.InsufficientStock" xml:space="preserve">
+    <value>Stock insuficiente. Actual: {0}, solicitado: {1}.</value>
+  </data>
+  <data name="Domain.CatalogInUse" xml:space="preserve">
+    <value>El ítem de catálogo no se puede eliminar porque está en uso. {0}</value>
+  </data>
+  <data name="Domain.AssetTemplateInUse" xml:space="preserve">
+    <value>La plantilla está siendo usada por {0} activos.</value>
+  </data>
+  <data name="Domain.EntityTypeInUse" xml:space="preserve">
+    <value>No se puede eliminar el tipo de entidad: está siendo usado por {0} plantillas.</value>
+  </data>
+  <data name="Domain.InvalidCatalogIds" xml:space="preserve">
+    <value>Uno o más DefaultCatalogIds son inválidos o no pertenecen a esta organización.</value>
+  </data>
+  <data name="Domain.InvalidSchemaJson" xml:space="preserve">
+    <value>SchemaJson inválido: {0}</value>
+  </data>
+  <data name="Domain.ModuleNotEnabled" xml:space="preserve">
+    <value>El módulo '{0}' no está habilitado en su plan actual.</value>
+  </data>
+  <data name="Domain.PlanLimitExceeded" xml:space="preserve">
+    <value>Límite excedido para: {0}. {1}</value>
+  </data>
+
+  <!-- ================================================================= -->
+  <!-- Validation (FluentValidation / guards)                             -->
+  <!-- ================================================================= -->
+  <data name="Validation_NotEmpty" xml:space="preserve">
+    <value>'{PropertyName}' es obligatorio.</value>
+  </data>
+  <data name="Validation_GreaterThan" xml:space="preserve">
+    <value>'{PropertyName}' debe ser mayor que {ComparisonValue}.</value>
+  </data>
+</root>

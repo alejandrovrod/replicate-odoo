@@ -51,6 +51,7 @@ public sealed class AccountsController : ControllerBase
     /// <param name="companyId">Company that owns the COA.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("tree")]
+    [Authorize(Policy = "permission:account:read")]
     [ProducesResponseType(typeof(IReadOnlyList<AccountTreeNodeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetTree([FromQuery] Guid companyId, CancellationToken cancellationToken)
@@ -71,6 +72,7 @@ public sealed class AccountsController : ControllerBase
     /// <param name="command">Account data.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:account:write")]
     [ProducesResponseType(typeof(AccountDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -107,6 +109,7 @@ public sealed class AccountsController : ControllerBase
     /// <param name="command">Updated account data.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPut("{id}")]
+    [Authorize(Policy = "permission:account:write")]
     [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -145,6 +148,7 @@ public sealed class AccountsController : ControllerBase
     /// <param name="id">Account ID.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPut("{id}/disable")]
+    [Authorize(Policy = "permission:account:write")]
     [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
@@ -154,6 +158,7 @@ public sealed class AccountsController : ControllerBase
     /// <param name="id">Account ID.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPut("{id}/enable")]
+    [Authorize(Policy = "permission:account:write")]
     [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)

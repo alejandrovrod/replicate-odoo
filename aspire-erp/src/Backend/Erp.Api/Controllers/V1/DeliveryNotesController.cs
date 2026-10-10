@@ -61,6 +61,7 @@ public sealed class DeliveryNotesController : ControllerBase
     /// <param name="limit">Maximum number of notes to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:delivery_note:read")]
     [ProducesResponseType(typeof(PagedResult<DeliveryNoteDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -87,6 +88,7 @@ public sealed class DeliveryNotesController : ControllerBase
     /// <param name="companyId">Company that owns the note.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:delivery_note:read")]
     [ProducesResponseType(typeof(DeliveryNoteDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -127,6 +129,7 @@ public sealed class DeliveryNotesController : ControllerBase
     /// <param name="command">Delivery data (company, order, warehouse, posting date, lines).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:delivery_note:write")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(DeliveryNotePostingDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

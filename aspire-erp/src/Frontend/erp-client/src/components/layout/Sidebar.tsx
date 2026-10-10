@@ -19,6 +19,7 @@ import {
 import { type ElementType, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { type NavRoute, useNavigationStore } from '../../store/useNavigationStore'
+import { useAuthStore } from '../../store/useAuthStore'
 
 interface NavItem {
   id: string
@@ -27,6 +28,12 @@ interface NavItem {
   icon: ElementType
   badge?: string
   children?: NavItem[]
+  /**
+   * Backend DocType gate mirrored in the UI: [doctype, action?] (default action read).
+   * Items without a visible perm never render - the API enforces the same policy,
+   * so this is concealment, not security.
+   */
+  perm?: [string, string?]
 }
 
 interface NavGroup {
@@ -47,7 +54,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'nav.group.overview',
     items: [
       { id: 'dashboard', route: 'dashboard', label: 'nav.item.dashboard', icon: LayoutDashboard },
-      { id: 'dashboard-reports', route: 'dashboard-reports', label: 'nav.item.dashboardReports', icon: BookOpenCheck },
+      { id: 'dashboard-reports', route: 'dashboard-reports', label: 'nav.item.dashboardReports', icon: BookOpenCheck, perm: ['report'] },
     ],
   },
   {
@@ -59,9 +66,9 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'nav.folder.masters',
         icon: Folder,
         children: [
-          { id: 'accounting-coa', route: 'accounting-coa', label: 'nav.item.accountingCoa', icon: ListTree },
-          { id: 'accounting-currencies', route: 'accounting-currencies', label: 'nav.item.accountingCurrencies', icon: Receipt },
-          { id: 'accounting-exchange-rates', route: 'accounting-exchange-rates', label: 'nav.item.accountingExchangeRates', icon: Receipt },
+          { id: 'accounting-coa', route: 'accounting-coa', label: 'nav.item.accountingCoa', icon: ListTree, perm: ['account'] },
+          { id: 'accounting-currencies', route: 'accounting-currencies', label: 'nav.item.accountingCurrencies', icon: Receipt, perm: ['currency'] },
+          { id: 'accounting-exchange-rates', route: 'accounting-exchange-rates', label: 'nav.item.accountingExchangeRates', icon: Receipt, perm: ['exchange_rate'] },
         ],
       },
       {
@@ -69,7 +76,7 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'nav.folder.transactions',
         icon: BookOpenCheck,
         children: [
-          { id: 'accounting-journal', route: 'accounting-journal', label: 'nav.item.accountingJournal', icon: BookOpenCheck },
+          { id: 'accounting-journal', route: 'accounting-journal', label: 'nav.item.accountingJournal', icon: BookOpenCheck, perm: ['journal_entry'] },
         ],
       },
       {
@@ -77,8 +84,8 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'nav.folder.assets',
         icon: Archive,
         children: [
-          { id: 'assets', route: 'assets', label: 'nav.item.assets', icon: Archive },
-          { id: 'assets-categories', route: 'assets-categories', label: 'nav.item.assetsCategories', icon: Layers },
+          { id: 'assets', route: 'assets', label: 'nav.item.assets', icon: Archive, perm: ['asset'] },
+          { id: 'assets-categories', route: 'assets-categories', label: 'nav.item.assetsCategories', icon: Layers, perm: ['asset_category'] },
         ],
       },
       {
@@ -86,9 +93,9 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'nav.folder.banking',
         icon: Landmark,
         children: [
-          { id: 'banking', route: 'banking', label: 'nav.item.banking', icon: Landmark, badge: 'ERPNext' },
-          { id: 'banking-accounts', route: 'banking-accounts', label: 'nav.item.bankingAccounts', icon: Landmark },
-          { id: 'banking-payments', route: 'banking-payments', label: 'nav.item.bankingPayments', icon: Receipt },
+          { id: 'banking', route: 'banking', label: 'nav.item.banking', icon: Landmark, badge: 'ERPNext', perm: ['bank_transaction'] },
+          { id: 'banking-accounts', route: 'banking-accounts', label: 'nav.item.bankingAccounts', icon: Landmark, perm: ['bank_account'] },
+          { id: 'banking-payments', route: 'banking-payments', label: 'nav.item.bankingPayments', icon: Receipt, perm: ['payment_entry'] },
         ],
       },
       {
@@ -96,9 +103,9 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'nav.folder.config',
         icon: Folder,
         children: [
-          { id: 'accounting-settings', route: 'accounting-settings', label: 'nav.item.accountingSettings', icon: Folder },
-          { id: 'accounting-period-closing', route: 'accounting-period-closing', label: 'nav.item.periodClosing', icon: Archive },
-          { id: 'accounting-fx-revaluations', route: 'accounting-fx-revaluations', label: 'nav.item.accountingFxRevaluations', icon: Archive },
+          { id: 'accounting-settings', route: 'accounting-settings', label: 'nav.item.accountingSettings', icon: Folder, perm: ['company'] },
+          { id: 'accounting-period-closing', route: 'accounting-period-closing', label: 'nav.item.periodClosing', icon: Archive, perm: ['period_closing_voucher'] },
+          { id: 'accounting-fx-revaluations', route: 'accounting-fx-revaluations', label: 'nav.item.accountingFxRevaluations', icon: Archive, perm: ['exchange_rate_revaluation'] },
         ],
       },
     ],
@@ -107,23 +114,24 @@ const NAV_GROUPS: NavGroup[] = [
     id: 'operations',
     title: 'nav.group.operations',
     items: [
-      { id: 'stock', route: 'stock', label: 'nav.item.stock', icon: Boxes },
-      { id: 'manufacturing', route: 'manufacturing', label: 'nav.item.manufacturing', icon: Factory, badge: 'ERPNext' },
+      { id: 'stock', route: 'stock', label: 'nav.item.stock', icon: Boxes, perm: ['stock'] },
+      { id: 'manufacturing', route: 'manufacturing', label: 'nav.item.manufacturing', icon: Factory, badge: 'ERPNext', perm: ['work_order'] },
       {
         id: 'selling-folder',
         label: 'nav.item.selling',
         icon: Receipt,
         children: [
-          { id: 'selling', route: 'selling', label: 'nav.item.sellingOverview', icon: Receipt },
-          { id: 'selling-customers', route: 'selling-customers', label: 'nav.item.sellingCustomers', icon: Users },
-          { id: 'selling-orders', route: 'selling-orders', label: 'nav.item.sellingOrders', icon: BookOpenCheck },
-          { id: 'selling-invoices', route: 'selling-invoices', label: 'nav.item.sellingInvoices', icon: Receipt },
-          { id: 'selling-deliveries', route: 'selling-deliveries', label: 'nav.item.sellingDeliveries', icon: Truck },
+          { id: 'selling', route: 'selling', label: 'nav.item.sellingOverview', icon: Receipt, perm: ['sales_invoice'] },
+          { id: 'selling-customers', route: 'selling-customers', label: 'nav.item.sellingCustomers', icon: Users, perm: ['customer'] },
+          { id: 'selling-orders', route: 'selling-orders', label: 'nav.item.sellingOrders', icon: BookOpenCheck, perm: ['sales_order'] },
+          { id: 'selling-invoices', route: 'selling-invoices', label: 'nav.item.sellingInvoices', icon: Receipt, perm: ['sales_invoice'] },
+          { id: 'selling-deliveries', route: 'selling-deliveries', label: 'nav.item.sellingDeliveries', icon: Truck, perm: ['delivery_note'] },
         ],
       },
-      { id: 'buying', route: 'buying', label: 'nav.item.buying', icon: Truck },
-      { id: 'hr-payroll', route: 'hr-payroll', label: 'nav.item.hrPayroll', icon: Users, badge: 'ERPNext' },
-      { id: 'crm', route: 'crm', label: 'nav.item.crm', icon: Handshake, badge: 'ERPNext' },
+      { id: 'buying', route: 'buying', label: 'nav.item.buying', icon: Truck, perm: ['purchase_order'] },
+      { id: 'buying-suppliers', route: 'buying-suppliers', label: 'nav.item.buyingSuppliers', icon: Truck, perm: ['supplier'] },
+      { id: 'hr-payroll', route: 'hr-payroll', label: 'nav.item.hrPayroll', icon: Users, badge: 'ERPNext', perm: ['payroll_entry'] },
+      { id: 'crm', route: 'crm', label: 'nav.item.crm', icon: Handshake, badge: 'ERPNext', perm: ['lead'] },
     ],
   },
 ]
@@ -134,6 +142,15 @@ export function Sidebar() {
   const setCurrentRoute = useNavigationStore((state) => state.setCurrentRoute)
   const isSidebarCollapsed = useNavigationStore((state) => state.isSidebarCollapsed)
   const toggleSidebar = useNavigationStore((state) => state.toggleSidebar)
+  const hasPermission = useAuthStore((state) => state.hasPermission)
+
+  const isVisible = (item: NavItem): boolean => {
+    if (item.children) {
+      return item.children.some((child) => isVisible(child))
+    }
+    if (!item.perm) return true
+    return hasPermission(item.perm[0], item.perm[1] ?? 'read')
+  }
 
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
     'acc-masters': true,
@@ -147,6 +164,7 @@ export function Sidebar() {
   }
 
   const renderNavItem = (item: NavItem, depth = 0) => {
+    if (!isVisible(item)) return null
     const Icon = item.icon
     const isActive = item.route ? currentRoute === item.route : false
     const hasChildren = item.children && item.children.length > 0
@@ -204,7 +222,7 @@ export function Sidebar() {
         </button>
         {hasChildren && !isSidebarCollapsed && isExpanded && (
           <ul className="mt-1 space-y-0.5">
-            {item.children!.map((child) => renderNavItem(child, depth + 1))}
+            {item.children!.filter((child) => isVisible(child)).map((child) => renderNavItem(child, depth + 1))}
           </ul>
         )}
       </li>

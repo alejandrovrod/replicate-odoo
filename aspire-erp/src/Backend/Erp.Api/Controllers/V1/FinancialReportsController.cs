@@ -69,6 +69,7 @@ public sealed class FinancialReportsController : ControllerBase
     /// <param name="take">Maximum rows to return (default 500, max 5000).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("general-ledger")]
+    [Authorize(Policy = "permission:report:read")]
     [ProducesResponseType(typeof(GeneralLedgerReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetGeneralLedger(
@@ -121,6 +122,7 @@ public sealed class FinancialReportsController : ControllerBase
     /// <param name="asOfDate">Inclusive cutoff date (<c>yyyy-MM-dd</c>). REQUIRED.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("trial-balance")]
+    [Authorize(Policy = "permission:report:read")]
     [ProducesResponseType(typeof(TrialBalanceReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetTrialBalance(
@@ -151,6 +153,7 @@ public sealed class FinancialReportsController : ControllerBase
     /// <param name="asOfDate">Inclusive cutoff date (<c>yyyy-MM-dd</c>). REQUIRED.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("balance-sheet")]
+    [Authorize(Policy = "permission:report:read")]
     [ProducesResponseType(typeof(BalanceSheetReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetBalanceSheet(
@@ -182,6 +185,7 @@ public sealed class FinancialReportsController : ControllerBase
     /// <param name="to">Inclusive last posting date (<c>yyyy-MM-dd</c>). REQUIRED.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("profit-and-loss")]
+    [Authorize(Policy = "permission:report:read")]
     [ProducesResponseType(typeof(ProfitAndLossReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetProfitAndLoss(
@@ -239,6 +243,7 @@ public sealed class FinancialReportsController : ControllerBase
     /// <param name="take">Maximum movement rows (default 500, max 5000).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("stock-ledger")]
+    [Authorize(Policy = "permission:report:read")]
     [ProducesResponseType(typeof(StockLedgerReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetStockLedger(
@@ -293,6 +298,7 @@ public sealed class FinancialReportsController : ControllerBase
     /// <param name="reportDate">Aging anchor date (<c>yyyy-MM-dd</c>). REQUIRED.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("aging")]
+    [Authorize(Policy = "permission:report:read")]
     [ProducesResponseType(typeof(AgingReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAging(

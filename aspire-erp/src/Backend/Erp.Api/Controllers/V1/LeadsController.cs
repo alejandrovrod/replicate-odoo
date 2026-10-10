@@ -57,6 +57,7 @@ public sealed class LeadsController : ControllerBase
     /// <param name="limit">Maximum number of leads to return (defaults to 50).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:lead:read")]
     [ProducesResponseType(typeof(PagedResult<LeadDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> List(
@@ -92,6 +93,7 @@ public sealed class LeadsController : ControllerBase
     /// <param name="command">Lead data (company, code, name, contact, source, dedup key).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("ingest")]
+    [Authorize(Policy = "permission:lead:write")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(IngestLeadResultDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(IngestLeadResultDto), StatusCodes.Status200OK)]
@@ -128,6 +130,7 @@ public sealed class LeadsController : ControllerBase
     /// <param name="request">Customer/opportunity terms.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("{id:guid}/convert")]
+    [Authorize(Policy = "permission:lead:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(ConvertLeadResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

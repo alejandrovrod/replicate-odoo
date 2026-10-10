@@ -54,6 +54,7 @@ public sealed class ItemsController : ControllerBase
     /// <param name="companyId">Company whose warehouses bound the stock breakdown.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
+    [Authorize(Policy = "permission:item:read")]
     [ProducesResponseType(typeof(PagedResult<ItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get(
@@ -79,6 +80,7 @@ public sealed class ItemsController : ControllerBase
     /// <param name="command">Item data (code, name, valuation method, base UOM).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost]
+    [Authorize(Policy = "permission:item:write")]
     [ProducesResponseType(typeof(ItemDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -115,6 +117,7 @@ public sealed class ItemsController : ControllerBase
     /// <param name="command">Updated item data including RowVersion.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPut("{id}")]
+    [Authorize(Policy = "permission:item:write")]
     [ProducesResponseType(typeof(ItemDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -161,6 +164,7 @@ public sealed class ItemsController : ControllerBase
 
     /// <summary>Disables an item (sets IsActive = false).</summary>
     [HttpPut("{id}/disable")]
+    [Authorize(Policy = "permission:item:write")]
     [ProducesResponseType(typeof(ItemDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
@@ -168,6 +172,7 @@ public sealed class ItemsController : ControllerBase
 
     /// <summary>Enables an item (sets IsActive = true).</summary>
     [HttpPut("{id}/enable")]
+    [Authorize(Policy = "permission:item:write")]
     [ProducesResponseType(typeof(ItemDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)

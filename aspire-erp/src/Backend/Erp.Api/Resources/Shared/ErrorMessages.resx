@@ -299,6 +299,36 @@
   <data name="customer_tax_id_too_long" xml:space="preserve">
     <value>Customer tax id exceeds the maximum length.</value>
   </data>
+  <data name="customer_type_too_long" xml:space="preserve">
+    <value>Customer type exceeds the maximum length.</value>
+  </data>
+  <data name="customer_group_too_long" xml:space="preserve">
+    <value>Customer group exceeds the maximum length.</value>
+  </data>
+  <data name="territory_too_long" xml:space="preserve">
+    <value>Territory exceeds the maximum length.</value>
+  </data>
+  <data name="billing_address_too_long" xml:space="preserve">
+    <value>Billing address exceeds the maximum length.</value>
+  </data>
+  <data name="phone_too_long" xml:space="preserve">
+    <value>Phone exceeds the maximum length.</value>
+  </data>
+  <data name="email_too_long" xml:space="preserve">
+    <value>Email exceeds the maximum length.</value>
+  </data>
+  <data name="contact_person_too_long" xml:space="preserve">
+    <value>Contact person exceeds the maximum length.</value>
+  </data>
+  <data name="website_too_long" xml:space="preserve">
+    <value>Website exceeds the maximum length.</value>
+  </data>
+  <data name="payment_terms_too_long" xml:space="preserve">
+    <value>Payment terms exceed the maximum length.</value>
+  </data>
+  <data name="customer_details_too_long" xml:space="preserve">
+    <value>Customer details exceed the maximum length.</value>
+  </data>
   <data name="billing_currency_invalid" xml:space="preserve">
     <value>Invalid billing currency.</value>
   </data>

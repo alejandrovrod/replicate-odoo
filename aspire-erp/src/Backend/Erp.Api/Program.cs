@@ -344,15 +344,43 @@ builder.Services.AddScoped<IQueryHandler<GetCatalogByCodeQuery, List<CatalogItem
 // from DI (Constitution Article VI.4).
 builder.Services.AddScoped<IdempotencyFilter>();
 
-// Constitution Article VI.1: the TenantMember policy. Phase 2 has NO authentication task, so the
-// requirement is "TenantResolutionMiddleware resolved a tenant" (TenantMemberHandler). Add
-// RequireAuthenticatedUser() + membership checks when bearer auth lands; a requirement-only policy
-// needs no AddAuthentication registration and adds no auth packages (verified empirically).
+// JWT Bearer Auth for R3 (RBAC & User Identity)
+var jwtSecret = builder.Configuration["JwtSettings:Secret"] ?? "AspireErpSuperSecretKeyThatIsAtLeast32BytesLongForHS256!!!";
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = "AspireErp",
+        ValidAudience = "AspireErp",
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSecret))
+    };
+});
+
+// Constitution Article VI.1: the TenantMember policy & Phase R3 dynamic RBAC.
+// Phase 2 had NO authentication task, so the requirement was just "TenantResolutionMiddleware resolved a tenant" (TenantMemberHandler). 
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("TenantMember", policy => policy.AddRequirements(new TenantMemberRequirement()));
 });
 builder.Services.AddScoped<IAuthorizationHandler, TenantMemberHandler>();
+
+// Dynamic Permission Policy Provider for [Authorize(Policy = "permission:doctype:read")]
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationPolicyProvider, DocTypePermissionPolicyProvider>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, DocTypePermissionAuthorizationHandler>();
+
+// Security
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITokenGenerator, Erp.Infrastructure.Security.JwtTokenGenerator>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.LoginCommand, Result<Erp.Application.Features.Security.Commands.LoginResponseDto>>, Erp.Application.Features.Security.Commands.LoginCommandHandler>();
 
 var app = builder.Build();
 
@@ -386,6 +414,55 @@ if (app.Environment.IsDevelopment())
         var companyContext = companyScope.ServiceProvider.GetRequiredService<AppDbContext>();
         await ReceivableAccountSeeder.SeedAsync(companyContext, bootstrappedCompany.Id, bootstrappedCompany.TenantId);
     }
+
+    // Fase R3: seed the base RBAC matrix (roles + DocTypePermission rows) for every known
+    // tenant, same per-tenant-scope discipline as above. Tenants enumerate tenantless - the
+    // seeder only writes tenant-stamped rows inside the pinned scope.
+    var tenantIds = await dbContext.Companies.IgnoreQueryFilters()
+        .Select(c => c.TenantId)
+        .Distinct()
+        .ToListAsync();
+        
+    var devTenantId = Guid.Parse("11111111-1111-4111-8111-111111111111");
+    if (!tenantIds.Contains(devTenantId))
+    {
+        tenantIds.Add(devTenantId);
+    }
+    foreach (var tenantId in tenantIds)
+    {
+        using var tenantScope = app.Services.CreateScope();
+        tenantScope.ServiceProvider.GetRequiredService<ITenantProvider>().SetCurrentTenantId(tenantId);
+        var tenantContext = tenantScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await SecurityRoleSeeder.SeedAsync(tenantContext, tenantId);
+
+        // Seed demo user for testing
+        if (!await tenantContext.Users.AnyAsync(u => u.Email == "demo@example.com"))
+        {
+            var adminUser = new Erp.Domain.Entities.Security.User 
+            { 
+                Id = Guid.NewGuid(), 
+                TenantId = tenantId,
+                FullName = "System Admin", 
+                Email = "demo@example.com", 
+                PasswordHash = "demo"
+            };
+            tenantContext.Users.Add(adminUser);
+            
+            // Assign System Manager role
+            var sysManagerRole = await tenantContext.Roles.FirstOrDefaultAsync(r => r.Name == "System Manager");
+            if (sysManagerRole != null)
+            {
+                tenantContext.UserRoles.Add(new Erp.Domain.Entities.Security.UserRole 
+                { 
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    UserId = adminUser.Id, 
+                    RoleId = sysManagerRole.Id 
+                });
+            }
+            await tenantContext.SaveChangesAsync();
+        }
+    }
 }
 
 // Tenant pipeline first: resolution must run before the logging scope opens, because the scope
@@ -395,6 +472,7 @@ app.UseMiddleware<TenantLoggingScopeMiddleware>();
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

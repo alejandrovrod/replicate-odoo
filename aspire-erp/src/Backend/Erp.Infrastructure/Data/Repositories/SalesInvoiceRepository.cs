@@ -79,6 +79,7 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository, IReceivabl
     {
         return await _context.SalesInvoices
             .Include(x => x.Items)
+            .Include(x => x.Taxes)
             .Include(x => x.Customer)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
@@ -90,6 +91,7 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository, IReceivabl
         => await _context.SalesInvoices
             .Where(i => i.CompanyId == companyId)
             .Include(i => i.Items)
+            .Include(i => i.Taxes)
             .Include(i => i.Customer)
             .OrderByDescending(i => i.CreatedAt)
             .ThenByDescending(i => i.Id)

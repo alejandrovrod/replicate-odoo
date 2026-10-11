@@ -66,10 +66,19 @@ export function SalesInvoiceList({
             ) : (
               invoices.map((inv) => (
                 <TableRow key={inv.id} className="hover:bg-slate-50">
-                  <TableCell className="font-mono font-medium text-slate-900">{inv.invoiceNumber}</TableCell>
+                  <TableCell className="font-mono font-medium text-slate-900">
+                    {inv.invoiceNumber}
+                    {inv.isReturn && (
+                      <span className="ml-1.5 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-800">
+                        CN
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-slate-800">{inv.customerName ?? ''}</TableCell>
                   <TableCell className="font-mono text-slate-500">{inv.postingDate}</TableCell>
-                  <TableCell className="text-right font-mono font-bold text-slate-900">
+                  <TableCell
+                    className={`text-right font-mono font-bold ${inv.grandTotal < 0 ? 'text-rose-700' : 'text-slate-900'}`}
+                  >
                     {inv.grandTotal.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right font-mono text-slate-600">

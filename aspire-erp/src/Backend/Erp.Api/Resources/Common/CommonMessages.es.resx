@@ -375,4 +375,13 @@
   <data name="AssetCategoryRejected" xml:space="preserve">
     <value>Categoría de activo rechazada</value>
   </data>
+  <data name="Unauthorized" xml:space="preserve">
+    <value>No autorizado</value>
+  </data>
+  <data name="AccountLocked" xml:space="preserve">
+    <value>Cuenta bloqueada</value>
+  </data>
+  <data name="ProfileRejected" xml:space="preserve">
+    <value>Actualización de perfil rechazada</value>
+  </data>
 </root>

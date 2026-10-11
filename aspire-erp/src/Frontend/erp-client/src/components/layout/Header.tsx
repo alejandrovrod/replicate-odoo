@@ -26,6 +26,7 @@ import { LanguageSelector } from './LanguageSelector'
  */
 const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys }> = {
   dashboard: { title: 'nav.route.dashboard', category: 'nav.category.dashboard' },
+  profile: { title: 'profile.title', category: 'nav.fallbackCategory' },
   'dashboard-reports': { title: 'nav.item.dashboardReports', category: 'nav.category.dashboard' },
   'accounting-coa': { title: 'nav.route.accounting-coa', category: 'nav.category.accounting' },
   'accounting-journal': {
@@ -72,6 +73,7 @@ export function Header() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const isSystemManager = useAuthStore((state) => state.isSystemManager)()
+  const setCurrentRoute = useNavigationStore((state) => state.setCurrentRoute)
 
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -171,7 +173,7 @@ export function Header() {
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
                 onClick={() => {
                   setIsProfileOpen(false)
-                  // TODO: Implement profile
+                  setCurrentRoute('profile')
                 }}
               >
                 <UserCog className="h-4 w-4 text-slate-400" />
@@ -182,7 +184,7 @@ export function Header() {
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
                 onClick={() => {
                   setIsProfileOpen(false)
-                  // TODO: Implement password change
+                  setCurrentRoute('profile')
                 }}
               >
                 <KeyRound className="h-4 w-4 text-slate-400" />

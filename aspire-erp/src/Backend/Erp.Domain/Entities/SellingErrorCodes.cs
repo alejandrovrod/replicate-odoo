@@ -66,4 +66,14 @@ public static class SellingErrorCodes
     public const string POSProfileNotFound = "pos_profile_not_found";
     public const string ItemNotFound = "item_not_found";
     public const string ValidationFailed = "validation_failed";
+
+    // Sales taxes & global discounts (module 17-sales-taxes-discounts)
+    public const string InvalidDiscount = "invalid_discount";
+    public const string InvalidTaxRate = "invalid_tax_rate";
+    public const string InvalidTaxAccount = "invalid_tax_account";
+
+    // Sales returns & credit notes (module 18-sales-returns)
+    public const string ReturnAgainstRequired = "return_against_required";
+    public const string ReturnAgainstInvalid = "return_against_invalid";
+    public const string ReturnAmountExceeded = "return_amount_exceeded";
 }

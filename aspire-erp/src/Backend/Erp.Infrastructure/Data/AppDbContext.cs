@@ -31,6 +31,7 @@ public class AppDbContext : DbContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
 
     public DbSet<Erp.Domain.Entities.Security.User> Users => Set<Erp.Domain.Entities.Security.User>();
+    public DbSet<Erp.Domain.Entities.Security.UserRecoveryCode> UserRecoveryCodes => Set<Erp.Domain.Entities.Security.UserRecoveryCode>();
     public DbSet<Erp.Domain.Entities.Security.Role> Roles => Set<Erp.Domain.Entities.Security.Role>();
     public DbSet<Erp.Domain.Entities.Security.UserRole> UserRoles => Set<Erp.Domain.Entities.Security.UserRole>();
     public DbSet<Erp.Domain.Entities.Security.DocTypePermission> DocTypePermissions => Set<Erp.Domain.Entities.Security.DocTypePermission>();

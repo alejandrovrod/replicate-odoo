@@ -93,5 +93,33 @@
     "accountNone": "-- Seleccionar Cuenta --",
     "currencyLabel": "Moneda",
     "currencyNone": "-- Por defecto (USD) --"
+  },
+  "invoiceForm": {
+    "titleNew": "Nueva factura de venta",
+    "titleReturn": "Nueva nota de crédito",
+    "isReturn": "Es devolución (nota de crédito)",
+    "returnAgainstPlaceholder": "-- Factura original --",
+    "copyLines": "Copiar líneas",
+    "noEligible": "Aún no hay facturas emitidas para este cliente.",
+    "discountTitle": "Descuento global (sobre neto)",
+    "discountPct": "Porcentaje %",
+    "discountAmt": "Monto",
+    "taxesTitle": "Impuestos y cargos",
+    "addTax": "Agregar impuesto",
+    "noTaxes": "Sin impuestos: la factura solo contabiliza ingresos.",
+    "taxAccountPlaceholder": "-- Cuenta de pasivo --",
+    "totalNet": "Neto",
+    "totalDiscount": "Descuento",
+    "totalTax": "Impuestos",
+    "totalGrand": "Total",
+    "errorCustomer": "El cliente es obligatorio.",
+    "errorLines": "Agregue al menos una línea con artículo y cantidad distinta de cero.",
+    "errorReturnSign": "Las líneas de la nota de crédito deben tener cantidades negativas.",
+    "errorReturnAgainst": "Seleccione la factura original a acreditar.",
+    "errorPositiveQty": "Las cantidades deben ser mayores que cero.",
+    "errorTaxAccount": "Cada impuesto debe seleccionar una cuenta de pasivo.",
+    "errorTaxRate": "Las tasas deben estar entre 0 y 100.",
+    "errorDiscount": "Descuento inválido (0-100% y monto no negativo).",
+    "errorGeneric": "Ocurrió un error al guardar."
   }
 }

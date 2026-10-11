@@ -3912,6 +3912,16 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<DateOnly>("DueDate")
                         .HasColumnType("date");
 
@@ -3931,6 +3941,11 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<bool>("IsPOS")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsReturn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<decimal>("NetTotal")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,4)")
@@ -3948,6 +3963,9 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<DateOnly>("PostingDate")
                         .HasColumnType("date");
+
+                    b.Property<Guid?>("ReturnAgainstId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -3977,6 +3995,8 @@ namespace Erp.Infrastructure.Migrations
                     b.HasIndex("CurrencyId");
 
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("ReturnAgainstId");
 
                     b.HasIndex("SourceWarehouseId");
 
@@ -4019,6 +4039,39 @@ namespace Erp.Infrastructure.Migrations
                     b.HasIndex("SalesInvoiceId");
 
                     b.ToTable("SalesInvoiceItem", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.SalesInvoiceTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Rate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid>("SalesInvoiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TaxAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("SalesInvoiceId")
+                        .HasDatabaseName("IX_SalesInvoiceTax_SalesInvoiceId");
+
+                    b.ToTable("SalesInvoiceTax", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.SalesOrder", b =>
@@ -4224,6 +4277,14 @@ namespace Erp.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("AccessFailedCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("AuthenticatorKey")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -4232,6 +4293,9 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -4239,9 +4303,48 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("TwoFactorEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.Security.UserRecoveryCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_UserRecoveryCodes_UserId");
+
+                    b.ToTable("UserRecoveryCodes", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Security.UserRole", b =>
@@ -6210,6 +6313,12 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_SalesInvoice_Customer");
 
+                    b.HasOne("Erp.Domain.Entities.SalesInvoice", "ReturnAgainst")
+                        .WithMany()
+                        .HasForeignKey("ReturnAgainstId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_SalesInvoice_ReturnAgainst");
+
                     b.HasOne("Erp.Domain.Entities.Warehouse", "SourceWarehouse")
                         .WithMany()
                         .HasForeignKey("SourceWarehouseId")
@@ -6219,6 +6328,8 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("Currency");
 
                     b.Navigation("Customer");
+
+                    b.Navigation("ReturnAgainst");
 
                     b.Navigation("SourceWarehouse");
                 });
@@ -6239,6 +6350,27 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Item");
+
+                    b.Navigation("SalesInvoice");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.SalesInvoiceTax", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_SalesInvoiceTax_TaxAccount");
+
+                    b.HasOne("Erp.Domain.Entities.SalesInvoice", "SalesInvoice")
+                        .WithMany("Taxes")
+                        .HasForeignKey("SalesInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_SalesInvoiceTax_SalesInvoice");
+
+                    b.Navigation("Account");
 
                     b.Navigation("SalesInvoice");
                 });
@@ -6292,6 +6424,17 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.Security.UserRecoveryCode", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Security.User", "User")
+                        .WithMany("RecoveryCodes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Security.UserRole", b =>
@@ -6651,6 +6794,8 @@ namespace Erp.Infrastructure.Migrations
             modelBuilder.Entity("Erp.Domain.Entities.SalesInvoice", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Taxes");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.SalesOrder", b =>
@@ -6665,6 +6810,8 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.Security.User", b =>
                 {
+                    b.Navigation("RecoveryCodes");
+
                     b.Navigation("UserRoles");
                 });
 

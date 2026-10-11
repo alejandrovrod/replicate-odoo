@@ -118,40 +118,48 @@ public static class SecurityRoleSeeder
     /// <summary>Ensures the six roles and their permission rows for one tenant.</summary>
     public static async Task SeedAsync(AppDbContext context, Guid tenantId, CancellationToken cancellationToken = default)
     {
+        var roleIdMap = new Dictionary<Guid, Guid>();
+
         foreach (var role in Roles)
         {
-            var exists = await context.Roles
+            var existingRole = await context.Roles
                 .IgnoreQueryFilters()
-                .AnyAsync(r => r.TenantId == tenantId && r.Id == role.Id, cancellationToken);
-            if (!exists)
+                .FirstOrDefaultAsync(r => r.TenantId == tenantId && r.Name == role.Name, cancellationToken);
+            
+            if (existingRole == null)
             {
-                context.Roles.Add(new Role
+                existingRole = new Role
                 {
-                    Id = role.Id,
+                    Id = Guid.NewGuid(),
                     TenantId = tenantId,
                     Name = role.Name,
                     Description = role.Description,
                     IsSystemDefault = true,
-                });
+                };
+                context.Roles.Add(existingRole);
             }
+            
+            roleIdMap[role.Id] = existingRole.Id;
         }
 
         await SaveConvergingAsync(context, cancellationToken);
 
-        foreach (var (roleId, perms) in Matrix)
+        foreach (var (hardcodedRoleId, perms) in Matrix)
         {
+            var actualRoleId = roleIdMap[hardcodedRoleId];
             foreach (var perm in perms)
             {
                 var exists = await context.DocTypePermissions
                     .IgnoreQueryFilters()
-                    .AnyAsync(p => p.TenantId == tenantId && p.RoleId == roleId && p.DocType == perm.DocType, cancellationToken);
+                    .AnyAsync(p => p.TenantId == tenantId && p.RoleId == actualRoleId && p.DocType == perm.DocType, cancellationToken);
+                
                 if (!exists)
                 {
                     context.DocTypePermissions.Add(new DocTypePermission
                     {
                         Id = Guid.NewGuid(),
                         TenantId = tenantId,
-                        RoleId = roleId,
+                        RoleId = actualRoleId,
                         DocType = perm.DocType,
                         CanRead = perm.Read,
                         CanWrite = perm.Write,

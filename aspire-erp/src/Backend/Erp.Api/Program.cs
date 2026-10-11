@@ -382,6 +382,21 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenGenerator, Erp.Infrastructure.Security.JwtTokenGenerator>();
 builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.LoginCommand, Result<Erp.Application.Features.Security.Commands.LoginResponseDto>>, Erp.Application.Features.Security.Commands.LoginCommandHandler>();
 
+// User Profile & Security (module 15-user-profile): password change with brute-force lockout
+// plus MFA (TOTP + single-use backup codes). BCL-only services (no new NuGet packages -
+// Constitution I.3); handlers dispatch through the hand-rolled ISender (decision C2, no MediatR).
+builder.Services.AddScoped<Erp.Application.Services.IMfaChallengeTokenService, Erp.Infrastructure.Security.MfaChallengeTokenService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<ITotpService, TotpService>();
+builder.Services.AddScoped<IRecoveryCodeGenerator, RecoveryCodeGenerator>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.ChangePasswordCommand, Result<Unit>>, Erp.Application.Features.Security.Commands.ChangePasswordCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.EnableMfaCommand, Result<Erp.Application.Features.Security.Commands.EnableMfaResult>>, Erp.Application.Features.Security.Commands.EnableMfaCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.VerifyMfaCommand, Result<Unit>>, Erp.Application.Features.Security.Commands.VerifyMfaCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.GenerateBackupCodesCommand, Result<IReadOnlyList<string>>>, Erp.Application.Features.Security.Commands.GenerateBackupCodesCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.DisableMfaCommand, Result<Unit>>, Erp.Application.Features.Security.Commands.DisableMfaCommandHandler>();
+// Login MFA challenge (module 16-auth-login-mfa): step 2 redeems the password-proof ticket.
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.VerifyLoginMfaCommand, Result<Erp.Application.Features.Security.Commands.LoginResponseDto>>, Erp.Application.Features.Security.Commands.VerifyLoginMfaCommandHandler>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

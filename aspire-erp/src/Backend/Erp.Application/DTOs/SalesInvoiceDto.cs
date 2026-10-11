@@ -21,7 +21,14 @@ public sealed record SalesInvoiceDto(
     decimal PaidAmount,
     string RowVersion,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<SalesInvoiceItemDto> Items)
+    IReadOnlyList<SalesInvoiceItemDto> Items,
+    // Module 17 (taxes & global discount) + module 18 (returns): defaulted so the
+    // pre-existing positional constructions keep compiling; Build() always populates them.
+    decimal DiscountPercentage = 0m,
+    decimal DiscountAmount = 0m,
+    IReadOnlyList<SalesInvoiceTaxDto>? Taxes = null,
+    bool IsReturn = false,
+    Guid? ReturnAgainstId = null)
 {
     public static SalesInvoiceDto Build(SalesInvoice invoice)
     {
@@ -44,7 +51,12 @@ public sealed record SalesInvoiceDto(
             invoice.PaidAmount,
             Convert.ToBase64String(invoice.RowVersion ?? Array.Empty<byte>()),
             invoice.CreatedAt,
-            invoice.Items.Select(i => new SalesInvoiceItemDto(i.Id, i.ItemId, i.SalesOrderItemId, i.Quantity, i.Rate, i.Amount)).ToList());
+            invoice.Items.Select(i => new SalesInvoiceItemDto(i.Id, i.ItemId, i.SalesOrderItemId, i.Quantity, i.Rate, i.Amount)).ToList(),
+            invoice.DiscountPercentage,
+            invoice.DiscountAmount,
+            invoice.Taxes.Select(t => new SalesInvoiceTaxDto(t.Id, t.AccountId, t.Rate, t.TaxAmount)).ToList(),
+            invoice.IsReturn,
+            invoice.ReturnAgainstId);
     }
 }
 
@@ -55,3 +67,10 @@ public sealed record SalesInvoiceItemDto(
     decimal Quantity,
     decimal Rate,
     decimal Amount);
+
+/// <summary>One "Taxes and Charges" row as stored (module 17).</summary>
+public sealed record SalesInvoiceTaxDto(
+    Guid Id,
+    Guid AccountId,
+    decimal Rate,
+    decimal TaxAmount);

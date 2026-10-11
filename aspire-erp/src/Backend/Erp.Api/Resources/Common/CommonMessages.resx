@@ -376,4 +376,13 @@
   <data name="AssetCategoryRejected" xml:space="preserve">
     <value>Asset Category Rejected</value>
   </data>
+  <data name="Unauthorized" xml:space="preserve">
+    <value>Unauthorized</value>
+  </data>
+  <data name="AccountLocked" xml:space="preserve">
+    <value>Account Locked</value>
+  </data>
+  <data name="ProfileRejected" xml:space="preserve">
+    <value>Profile Update Rejected</value>
+  </data>
 </root>

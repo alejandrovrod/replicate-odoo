@@ -30,6 +30,7 @@ import { PaymentsView } from './features/banking/pages/PaymentsView'
 import { useNavigationStore, type NavRoute } from './store/useNavigationStore'
 import { useTenantStore } from './store/useTenantStore'
 import { AccountingSettingsView } from './features/accounting/AccountingSettingsView'
+import { ProfileScreen } from './features/profile/ProfileScreen'
 import { LoginScreen } from './components/auth/LoginScreen'
 import { RequirePermission } from './components/auth/RequirePermission'
 import { useAuthStore } from './store/useAuthStore'
@@ -107,6 +108,8 @@ function App() {
   return (
     <AppShell>
       {guard('dashboard', <DashboardOverview />)}
+      {/* Profile is intentionally ungated: every authenticated user owns their password + MFA. */}
+      {currentRoute === 'profile' ? <ProfileScreen /> : null}
       {guard('dashboard-reports', <ReportsView />)}
       {guard('accounting-coa', (
         <div className="space-y-4">

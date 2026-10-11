@@ -93,5 +93,33 @@
     "accountNone": "-- Select Account --",
     "currencyLabel": "Currency",
     "currencyNone": "-- Default (USD) --"
+  },
+  "invoiceForm": {
+    "titleNew": "New Sales Invoice",
+    "titleReturn": "New Credit Note",
+    "isReturn": "Is Return (Credit Note)",
+    "returnAgainstPlaceholder": "-- Original invoice --",
+    "copyLines": "Copy lines",
+    "noEligible": "No submitted invoices for this customer yet.",
+    "discountTitle": "Global Discount (on Net Total)",
+    "discountPct": "Percent %",
+    "discountAmt": "Amount",
+    "taxesTitle": "Taxes and Charges",
+    "addTax": "Add tax",
+    "noTaxes": "No taxes - the invoice posts revenue only.",
+    "taxAccountPlaceholder": "-- Liability account --",
+    "totalNet": "Net Total",
+    "totalDiscount": "Discount",
+    "totalTax": "Taxes",
+    "totalGrand": "Grand Total",
+    "errorCustomer": "Customer is required.",
+    "errorLines": "Add at least one line with item and non-zero quantity.",
+    "errorReturnSign": "Credit-note lines must carry negative quantities.",
+    "errorReturnAgainst": "Select the original invoice being credited.",
+    "errorPositiveQty": "Quantities must be greater than zero.",
+    "errorTaxAccount": "Every tax row must select a liability account.",
+    "errorTaxRate": "Tax rates must be between 0 and 100.",
+    "errorDiscount": "Discount is invalid (0-100% and non-negative amount).",
+    "errorGeneric": "An error occurred while saving."
   }
 }

@@ -46,7 +46,13 @@ public sealed class FakeSalesInvoiceRepository : ISalesInvoiceRepository, IRecei
     }
 
     public Task AddGlEntriesAsync(IReadOnlyList<GLEntry> entries, CancellationToken cancellationToken = default)
-        => Task.CompletedTask;
+    {
+        GlEntries.AddRange(entries);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>GL lines captured from the last postings (modules 17/18 balance assertions).</summary>
+    public List<GLEntry> GlEntries { get; } = new();
 
     public Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<CancellationToken, Task<TResult>> operation, CancellationToken cancellationToken = default)

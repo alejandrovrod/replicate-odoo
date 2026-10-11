@@ -868,4 +868,43 @@
   <data name="revaluation_invalid_transition" xml:space="preserve">
     <value>La transición de estado de la revaluación es inválida.</value>
   </data>
+  <data name="AUTH_INVALID_PASSWORD" xml:space="preserve">
+    <value>La contraseña actual es incorrecta.</value>
+  </data>
+  <data name="AUTH_PASSWORD_POLICY_VIOLATION" xml:space="preserve">
+    <value>La nueva contraseña no cumple las reglas de complejidad.</value>
+  </data>
+  <data name="AUTH_ACCOUNT_LOCKED" xml:space="preserve">
+    <value>La cuenta está bloqueada temporalmente por demasiados intentos fallidos.</value>
+  </data>
+  <data name="MFA_INVALID_CODE" xml:space="preserve">
+    <value>El código de verificación es incorrecto o ha expirado.</value>
+  </data>
+  <data name="MFA_NOT_ENABLED" xml:space="preserve">
+    <value>La autenticación multifactor no está activada para este usuario.</value>
+  </data>
+  <data name="AUTH_MFA_REQUIRED" xml:space="preserve">
+    <value>Se requiere la autenticación multifactor para completar el ingreso.</value>
+  </data>
+  <data name="AUTH_MFA_INVALID_CODE" xml:space="preserve">
+    <value>El código de dos factores es incorrecto o ha expirado.</value>
+  </data>
+  <data name="invalid_discount" xml:space="preserve">
+    <value>El descuento global no es válido.</value>
+  </data>
+  <data name="invalid_tax_rate" xml:space="preserve">
+    <value>La tasa de impuesto no es válida.</value>
+  </data>
+  <data name="invalid_tax_account" xml:space="preserve">
+    <value>La cuenta de impuesto no es válida.</value>
+  </data>
+  <data name="return_against_required" xml:space="preserve">
+    <value>La nota de crédito debe referenciar la factura original.</value>
+  </data>
+  <data name="return_against_invalid" xml:space="preserve">
+    <value>La factura original referenciada no es válida.</value>
+  </data>
+  <data name="return_amount_exceeded" xml:space="preserve">
+    <value>El total de la nota de crédito no puede exceder el total de la factura original.</value>
+  </data>
 </root>

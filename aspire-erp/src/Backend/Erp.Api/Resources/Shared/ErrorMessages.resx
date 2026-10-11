@@ -867,4 +867,43 @@
   <data name="revaluation_invalid_transition" xml:space="preserve">
     <value>The revaluation status transition is invalid.</value>
   </data>
+  <data name="AUTH_INVALID_PASSWORD" xml:space="preserve">
+    <value>The current password is incorrect.</value>
+  </data>
+  <data name="AUTH_PASSWORD_POLICY_VIOLATION" xml:space="preserve">
+    <value>The new password does not meet the complexity rules.</value>
+  </data>
+  <data name="AUTH_ACCOUNT_LOCKED" xml:space="preserve">
+    <value>The account is temporarily locked due to too many failed attempts.</value>
+  </data>
+  <data name="MFA_INVALID_CODE" xml:space="preserve">
+    <value>The verification code is incorrect or has expired.</value>
+  </data>
+  <data name="MFA_NOT_ENABLED" xml:space="preserve">
+    <value>Multi-factor authentication is not enabled for this user.</value>
+  </data>
+  <data name="AUTH_MFA_REQUIRED" xml:space="preserve">
+    <value>Multi-factor authentication is required to complete the sign-in.</value>
+  </data>
+  <data name="AUTH_MFA_INVALID_CODE" xml:space="preserve">
+    <value>The two-factor code is incorrect or has expired.</value>
+  </data>
+  <data name="invalid_discount" xml:space="preserve">
+    <value>The global discount is invalid.</value>
+  </data>
+  <data name="invalid_tax_rate" xml:space="preserve">
+    <value>The tax rate is invalid.</value>
+  </data>
+  <data name="invalid_tax_account" xml:space="preserve">
+    <value>The tax account is invalid.</value>
+  </data>
+  <data name="return_against_required" xml:space="preserve">
+    <value>A credit note must reference the original invoice.</value>
+  </data>
+  <data name="return_against_invalid" xml:space="preserve">
+    <value>The referenced original invoice is invalid.</value>
+  </data>
+  <data name="return_amount_exceeded" xml:space="preserve">
+    <value>The credit note total cannot exceed the original invoice total.</value>
+  </data>
 </root>

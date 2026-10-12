@@ -9,6 +9,7 @@ import {
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { ApiError } from '../../../api/client'
+import { translateErrorCode } from '../../../lib/translateErrorCode'
 import { useTranslation } from 'react-i18next'
 import { useBankAccounts } from '../api/useBankAccounts'
 import { useCustomers } from '../../selling/api/useCustomers'
@@ -49,7 +50,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export function PaymentEntryModal({ isOpen, onClose, onSave, companyId }: PaymentEntryModalProps) {
-  const { t } = useTranslation('banking')
+  const { t, i18n } = useTranslation('banking')
   const [paymentType, setPaymentType] = useState('Receive')
   const [partyId, setPartyId] = useState('')
   const [bankAccountId, setBankAccountId] = useState('')
@@ -173,7 +174,7 @@ export function PaymentEntryModal({ isOpen, onClose, onSave, companyId }: Paymen
       onClose()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message)
+        setError(translateErrorCode(i18n, err.code, err.message))
       } else if (err instanceof Error) {
         setError(err.message)
       } else {
@@ -210,7 +211,7 @@ export function PaymentEntryModal({ isOpen, onClose, onSave, companyId }: Paymen
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('paymentForm.partyLabel', isReceive ? 'Customer *' : 'Supplier *')}</label>
                 <select value={partyId} onChange={(e) => setPartyId(e.target.value)} className={selectClassName} required>
-                  <option value="">-- Select --</option>
+                  <option value="">{t('paymentForm.selectNone', '-- Select --')}</option>
                   {isReceive
                     ? customersQuery.items.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -227,7 +228,7 @@ export function PaymentEntryModal({ isOpen, onClose, onSave, companyId }: Paymen
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('paymentForm.bankLabel', 'Bank Account *')}</label>
                 <select value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)} className={selectClassName} required>
-                  <option value="">-- Select --</option>
+                  <option value="">{t('paymentForm.selectNone', '-- Select --')}</option>
                   {bankAccountsQuery.items.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.accountName} — {b.accountNumber}

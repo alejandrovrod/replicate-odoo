@@ -50,8 +50,8 @@ export function CurrenciesView() {
     reload()
   }
 
-  if (status === 'loading' && !items.length) return <div className="p-4">Loading currencies...</div>
-  if (error) return <div className="p-4 text-red-600">Error loading currencies: {error.message}</div>
+  if (status === 'loading' && !items.length) return <div className="p-4">{t('currencies.loading', 'Loading currencies...')}</div>
+  if (error) return <div className="p-4 text-red-600">{t('currencies.loadError', 'Error loading currencies: {{message}}', { message: error.message })}</div>
 
   return (
     <div className="p-4">

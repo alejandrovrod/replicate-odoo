@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Pagination } from '../../../components/ui/Pagination'
 import { Button } from '../../../components/ui/Button'
@@ -13,15 +14,16 @@ interface DeliveryNoteListProps {
 }
 
 export function DeliveryNoteList({ notes, totalCount, page, pageSize, onPageChange, onNew }: DeliveryNoteListProps) {
+  const { t } = useTranslation('selling')
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold text-slate-900">Delivery Notes</h3>
-          <p className="text-xs text-slate-500">Posted shipments: FIFO relief + COGS, no drafts.</p>
+          <h3 className="text-base font-semibold text-slate-900">{t('deliveries.title', 'Delivery Notes')}</h3>
+          <p className="text-xs text-slate-500">{t('deliveries.subtitle')}</p>
         </div>
         <Button size="sm" onClick={onNew}>
-          New Delivery
+          {t('deliveries.new', 'New Delivery')}
         </Button>
       </div>
 
@@ -29,17 +31,17 @@ export function DeliveryNoteList({ notes, totalCount, page, pageSize, onPageChan
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Voucher No</TableHead>
-              <TableHead>Posting Date</TableHead>
-              <TableHead className="text-right">Lines</TableHead>
-              <TableHead className="text-right">Total Qty</TableHead>
+              <TableHead>{t('deliveries.colVoucher', 'Voucher No')}</TableHead>
+              <TableHead>{t('deliveries.colDate', 'Posting Date')}</TableHead>
+              <TableHead className="text-right">{t('deliveries.colLines', 'Lines')}</TableHead>
+              <TableHead className="text-right">{t('deliveries.colQty', 'Total Qty')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {notes.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center text-slate-500">
-                  No delivery notes yet.
+                  {t('deliveries.empty', 'No delivery notes yet.')}
                 </TableCell>
               </TableRow>
             ) : (

@@ -48,7 +48,9 @@
     "stockedSkus_one": "{{count}} SKU en existencia",
     "stockedSkus_other": "{{count}} SKUs en existencia",
     "search": "Buscar...",
-    "manage": "Administrar"
+    "manage": "Administrar",
+    "viewLoading": "Cargando almacenes...",
+    "viewLoadError": "Error al cargar almacenes: {{message}}"
   },
   "warehouseForm": {
     "titleEdit": "Editar Almacén",
@@ -101,7 +103,11 @@
       "valuation": "Valoración",
       "status": "Estado"
     },
-    "manage": "Administrar Artículos"
+    "manage": "Administrar Artículos",
+    "valuationLifo": "LIFO",
+    "valuationMovingAverage": "Promedio móvil",
+    "viewLoading": "Cargando artículos...",
+    "viewLoadError": "Error al cargar artículos: {{message}}"
   },
   "movements": {
     "title": "Movimientos recientes",
@@ -137,7 +143,8 @@
     "posting": "Registrando…",
     "atomicHint": "Registra de forma atómica: renglones de Kardex + líneas equilibradas del libro mayor.",
     "rejected": "Registro rechazado",
-    "unexpectedTitle": "Error inesperado"
+    "unexpectedTitle": "Error inesperado",
+    "voucherHeader": "Encabezado del comprobante"
   },
   "entryType": {
     "MaterialReceipt": "Recepción de mercadería",
@@ -178,6 +185,12 @@
     "incomeAccountLabel": "Cuenta de Ingresos",
     "expenseAccountLabel": "Cuenta de Gastos/COGS",
     "accountNone": "-- Ninguna --",
-    "errorUomRequired": "Se requiere una UdM base."
+    "errorUomRequired": "Se requiere una UdM base.",
+    "valuationFifo": "FIFO",
+    "valuationMovingAverage": "Promedio móvil",
+    "valuationLifo": "LIFO",
+    "codePlaceholder": "p. ej. IT-001",
+    "namePlaceholder": "p. ej. Laptop",
+    "uomPlaceholder": "p. ej. uuid"
   }
 }

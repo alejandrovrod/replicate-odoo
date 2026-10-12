@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Pagination } from '../../../components/ui/Pagination'
 import { Button } from '../../../components/ui/Button'
+import { translateDocStatus } from '../../../lib/docStatus'
 import type { SalesOrder } from '../api/useSalesOrders'
 
 interface SalesOrderListProps {
@@ -24,15 +26,16 @@ export function SalesOrderList({
   onSubmit,
   submittingId,
 }: SalesOrderListProps) {
+  const { t, i18n } = useTranslation('selling')
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold text-slate-900">Sales Orders</h3>
-          <p className="text-xs text-slate-500">Draft → Submitted → PartiallyDelivered → Completed</p>
+          <h3 className="text-base font-semibold text-slate-900">{t('orders.title', 'Sales Orders')}</h3>
+          <p className="text-xs text-slate-500">{t('orders.subtitle')}</p>
         </div>
         <Button size="sm" onClick={onNew}>
-          New Order
+          {t('orders.new', 'New Order')}
         </Button>
       </div>
 
@@ -40,20 +43,20 @@ export function SalesOrderList({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Order No</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Delivery</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">Delivered</TableHead>
-              <TableHead className="text-right">Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead>{t('orders.colOrder', 'Order No')}</TableHead>
+              <TableHead>{t('orders.colCustomer', 'Customer')}</TableHead>
+              <TableHead>{t('orders.colDelivery', 'Delivery')}</TableHead>
+              <TableHead className="text-right">{t('orders.colTotal', 'Total')}</TableHead>
+              <TableHead className="text-right">{t('orders.colDelivered', 'Delivered')}</TableHead>
+              <TableHead className="text-right">{t('orders.colStatus', 'Status')}</TableHead>
+              <TableHead className="text-right">{t('orders.colAction', 'Action')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {orders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-slate-500">
-                  No sales orders yet.
+                  {t('orders.empty', 'No sales orders yet.')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -70,7 +73,7 @@ export function SalesOrderList({
                   </TableCell>
                   <TableCell className="text-right">
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-                      {o.status}
+                      {translateDocStatus(i18n, o.status)}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -81,7 +84,7 @@ export function SalesOrderList({
                         disabled={submittingId === o.id}
                         onClick={() => onSubmit(o)}
                       >
-                        {submittingId === o.id ? 'Submitting…' : 'Submit'}
+                        {submittingId === o.id ? t('orders.submitting', 'Submitting…') : t('orders.submit', 'Submit')}
                       </Button>
                     )}
                   </TableCell>

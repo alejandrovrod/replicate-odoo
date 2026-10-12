@@ -244,7 +244,7 @@ export function Sidebar() {
           {!isSidebarCollapsed && (
             <div className="flex flex-col">
               <span className="text-base font-bold tracking-tight text-slate-900">Aspire ERP</span>
-              <span className="text-xs font-medium text-sky-600">Enterprise Cloud</span>
+              <span className="text-xs font-medium text-sky-600">{t('sidebar.tagline', 'Enterprise Cloud')}</span>
             </div>
           )}
         </div>

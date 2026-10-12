@@ -45,8 +45,8 @@ export function ItemView() {
     reload()
   }
 
-  if (status === 'loading' && !items.length) return <div className="p-4">Loading items...</div>
-  if (error) return <div className="p-4 text-red-600">Error loading items: {error.message}</div>
+  if (status === 'loading' && !items.length) return <div className="p-4">{t('items.viewLoading', 'Loading items...')}</div>
+  if (error) return <div className="p-4 text-red-600">{t('items.viewLoadError', 'Error loading items: {{message}}', { message: error.message })}</div>
 
   return (
     <div className="p-4">

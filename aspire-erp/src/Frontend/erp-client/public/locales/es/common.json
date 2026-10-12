@@ -209,5 +209,29 @@
   "units": {
     "percent": "%",
     "pieces": "uds"
+  },
+  "docStatus": {
+    "Draft": "Borrador",
+    "Unpaid": "Impaga",
+    "PartiallyPaid": "Parcialmente pagada",
+    "Paid": "Pagada",
+    "Submitted": "Confirmada",
+    "PartiallyDelivered": "Parcialmente entregada",
+    "Completed": "Completada",
+    "Cancelled": "Anulada",
+    "Unreconciled": "No conciliado",
+    "Matched": "Coincidente",
+    "Reconciled": "Conciliado",
+    "Excluded": "Excluido",
+    "Asset": "Activo",
+    "Liability": "Pasivo",
+    "Equity": "Patrimonio",
+    "Income": "Ingreso",
+    "Expense": "Gasto",
+    "PartiallyReceived": "Parcialmente recibida",
+    "Booked": "Contabilizada"
+  },
+  "sidebar": {
+    "tagline": "Nube Empresarial"
   }
 }

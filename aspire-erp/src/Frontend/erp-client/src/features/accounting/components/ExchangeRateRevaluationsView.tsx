@@ -14,14 +14,14 @@ export const ExchangeRateRevaluationsView: React.FC = () => {
     const [error, setError] = useState('');
 
     if (!companyId) return <div className="p-4">{t('missingTenant')}</div>;
-    if (status === 'loading') return <div className="p-4">Loading...</div>;
+    if (status === 'loading') return <div className="p-4">{t('fxRevaluation.loading', 'Loading...')}</div>;
 
     const handleSubmit = async (id: string, rowVersion: string) => {
         try {
             await submitRevaluation(id, rowVersion);
             reload();
         } catch (e: any) {
-            setError(e.message || 'Failed to submit');
+            setError(e.message || t('fxRevaluation.submitError', 'Failed to submit'));
         }
     };
 
@@ -30,7 +30,7 @@ export const ExchangeRateRevaluationsView: React.FC = () => {
             await cancelRevaluation(id, rowVersion);
             reload();
         } catch (e: any) {
-            setError(e.message || 'Failed to cancel');
+            setError(e.message || t('fxRevaluation.cancelError', 'Failed to cancel'));
         }
     };
 

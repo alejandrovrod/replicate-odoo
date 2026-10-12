@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../../api/client'
+import { translateErrorCode } from '../../../lib/translateErrorCode'
 import { useTenantStore } from '../../../store/useTenantStore'
 import { usePagination } from '../../../lib/pagination'
 import { PaymentEntryList } from '../components/PaymentEntryList'
@@ -13,6 +15,7 @@ import {
 } from '../api/usePaymentEntries'
 
 export function PaymentsView() {
+  const { t, i18n } = useTranslation('banking')
   const companyId = useTenantStore((state) => state.companyId)
   const { page, pageSize, setPage } = usePagination(10)
   const { items, status, error, reload, totalCount, pageNumber } = usePaymentEntries(companyId, page, pageSize)
@@ -50,19 +53,23 @@ export function PaymentsView() {
       reload()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setActionError(err.message)
+        setActionError(translateErrorCode(i18n, err.code, err.message))
       } else if (err instanceof Error) {
         setActionError(err.message)
       } else {
-        setActionError(`Failed to ${action} payment.`)
+        setActionError(
+          action === 'submit'
+            ? t('payments.submitError', 'Failed to submit payment.')
+            : t('payments.cancelError', 'Failed to cancel payment.'),
+        )
       }
     } finally {
       setActingId(null)
     }
   }
 
-  if (status === 'loading' && items.length === 0) return <div className="p-4">Loading payments…</div>
-  if (error) return <div className="p-4 text-red-600">Error loading payments: {error.message}</div>
+  if (status === 'loading' && items.length === 0) return <div className="p-4">{t('payments.loading', 'Loading payments…')}</div>
+  if (error) return <div className="p-4 text-red-600">{t('payments.loadError', 'Error loading payments: {{message}}', { message: error.message })}</div>
 
   return (
     <div className="p-4 space-y-4">

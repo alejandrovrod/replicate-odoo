@@ -121,7 +121,10 @@
     "frozenDateHelp": "Los comprobantes con fecha igual o anterior a este día no pueden registrarse.",
     "retainedEarnings": "Cuenta de resultados acumulados por defecto",
     "retainedEarningsHelp": "Cuenta de patrimonio usada para los comprobantes de cierre.",
-    "selectPlaceholder": "Seleccionar"
+    "selectPlaceholder": "Seleccionar",
+    "loadError": "Error al cargar la configuración contable",
+    "saveError": "Error al guardar la configuración",
+    "loading": "Cargando…"
   },
   "currencies": {
     "manageTitle": "Monedas",
@@ -134,7 +137,9 @@
       "status": "Estado"
     },
     "active": "Activa",
-    "inactive": "Deshabilitada"
+    "inactive": "Deshabilitada",
+    "loading": "Cargando monedas...",
+    "loadError": "Error al cargar monedas: {{message}}"
   },
   "currencyForm": {
     "titleNew": "Nueva Moneda",
@@ -279,7 +284,9 @@
     "previewEmpty": "No se necesita revaluación para esta fecha.",
     "previewPrompt": "Haz clic en Generar Vista Previa para ver las cuentas afectadas.",
     "totalGainLoss": "Ganancia/Pérdida Total:",
-    "saveDraftBtn": "Guardar como Borrador"
+    "saveDraftBtn": "Guardar como Borrador",
+    "loading": "Cargando…",
+    "submitError": "No se pudo registrar",
+    "cancelError": "No se pudo anular"
   }
 }
-

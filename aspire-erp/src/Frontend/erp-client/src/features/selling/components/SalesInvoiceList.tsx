@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Pagination } from '../../../components/ui/Pagination'
 import { Button } from '../../../components/ui/Button'
+import { translateDocStatus } from '../../../lib/docStatus'
 import type { SalesInvoice } from '../api/useSalesInvoices'
 
 interface SalesInvoiceListProps {
@@ -31,15 +33,16 @@ export function SalesInvoiceList({
   onSubmit,
   submittingId,
 }: SalesInvoiceListProps) {
+  const { t, i18n } = useTranslation('selling')
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold text-slate-900">Sales Invoices</h3>
-          <p className="text-xs text-slate-500">Draft invoices submit to Unpaid (A/R + revenue).</p>
+          <h3 className="text-base font-semibold text-slate-900">{t('invoices.title')}</h3>
+          <p className="text-xs text-slate-500">{t('invoices.listSubtitle', 'Draft invoices submit to Unpaid (A/R + revenue).')}</p>
         </div>
         <Button size="sm" onClick={onNew}>
-          New Invoice
+          {t('invoices.new', 'New Invoice')}
         </Button>
       </div>
 
@@ -47,20 +50,20 @@ export function SalesInvoiceList({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Invoice No</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">Outstanding</TableHead>
-              <TableHead className="text-right">Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead>{t('invoices.colNumber')}</TableHead>
+              <TableHead>{t('invoices.colCustomer')}</TableHead>
+              <TableHead>{t('invoices.colDate')}</TableHead>
+              <TableHead className="text-right">{t('invoices.colTotal')}</TableHead>
+              <TableHead className="text-right">{t('invoices.colOutstanding')}</TableHead>
+              <TableHead className="text-right">{t('invoices.colStatus')}</TableHead>
+              <TableHead className="text-right">{t('orders.colAction', 'Action')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {invoices.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-slate-500">
-                  No sales invoices yet.
+                  {t('invoices.empty', 'No sales invoices yet.')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -70,7 +73,7 @@ export function SalesInvoiceList({
                     {inv.invoiceNumber}
                     {inv.isReturn && (
                       <span className="ml-1.5 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-800">
-                        CN
+                        {t('invoices.creditNote', 'CN')}
                       </span>
                     )}
                   </TableCell>
@@ -86,7 +89,7 @@ export function SalesInvoiceList({
                   </TableCell>
                   <TableCell className="text-right">
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClass(inv.status)}`}>
-                      {inv.status}
+                      {translateDocStatus(i18n, inv.status)}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -97,7 +100,7 @@ export function SalesInvoiceList({
                         disabled={submittingId === inv.id}
                         onClick={() => onSubmit(inv)}
                       >
-                        {submittingId === inv.id ? 'Submitting…' : 'Submit'}
+                        {submittingId === inv.id ? t('invoices.submitting', 'Submitting…') : t('invoices.submit', 'Submit')}
                       </Button>
                     )}
                   </TableCell>

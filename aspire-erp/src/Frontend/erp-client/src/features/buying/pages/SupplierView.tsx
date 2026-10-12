@@ -42,8 +42,8 @@ export function SupplierView() {
     reload()
   }
 
-  if (status === 'loading' && !items.length) return <div className="p-4">Loading suppliers...</div>
-  if (error) return <div className="p-4 text-red-600">Error loading suppliers: {error.message}</div>
+  if (status === 'loading' && !items.length) return <div className="p-4">{t('suppliers.loading', 'Loading suppliers...')}</div>
+  if (error) return <div className="p-4 text-red-600">{t('suppliers.loadError', 'Error loading suppliers: {{message}}', { message: error.message })}</div>
 
   return (
     <div className="p-4">

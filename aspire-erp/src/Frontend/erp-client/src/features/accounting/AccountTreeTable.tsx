@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTenantStore } from '../../store/useTenantStore'
 import { translateErrorCode } from '../../lib/translateErrorCode'
+import { translateDocStatus } from '../../lib/docStatus'
 import type { AccountRootType, AccountTreeNode } from './types'
 import { useAccountTree } from './useAccountTree'
 import { AccountFormModal, type AccountFormData } from './components/AccountFormModal'
@@ -343,7 +344,7 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
                       <span
                         className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${ROOT_TYPE_BADGE_CLASS[node.rootType] ?? 'bg-slate-100 text-slate-700'}`}
                       >
-                        {node.rootType}
+                        {translateDocStatus(i18n, node.rootType)}
                       </span>
                     </td>
                     <td className="px-2 text-slate-600">

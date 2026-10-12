@@ -52,7 +52,9 @@
       "status": "Estado"
     },
     "active": "Activo",
-    "inactive": "Inactivo"
+    "inactive": "Inactivo",
+    "loading": "Cargando proveedores...",
+    "loadError": "Error al cargar proveedores: {{message}}"
   },
   "supplierForm": {
     "titleNew": "Nuevo Proveedor",
@@ -70,6 +72,9 @@
     "payableAccountLabel": "Cuenta a Pagar por Defecto",
     "accountNone": "-- Seleccionar Cuenta --",
     "currencyLabel": "Moneda",
-    "currencyNone": "-- Por defecto (USD) --"
+    "currencyNone": "-- Por defecto (USD) --",
+    "codePlaceholder": "p. ej. SUP-001",
+    "namePlaceholder": "p. ej. Acme Corp",
+    "taxIdPlaceholder": "CUIT/RUT opcional"
   }
 }

@@ -233,7 +233,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Customer *</label>
+                <label className="text-sm font-medium">{t('form.customer', 'Customer *')}</label>
                 <select
                   value={customerId}
                   onChange={(e) => {
@@ -243,7 +243,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                   className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                   required
                 >
-                  <option value="">-- Select --</option>
+                  <option value="">{t('form.selectNone', '-- Select --')}</option>
                   {customersQuery.items.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.code} — {c.name}
@@ -252,7 +252,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Posting date *</label>
+                <label className="text-sm font-medium">{t('form.postingDate', 'Posting date *')}</label>
                 <Input type="date" value={postingDate} onChange={(e) => setPostingDate(e.target.value)} required />
               </div>
             </div>
@@ -300,7 +300,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Lines</label>
+                <label className="text-sm font-medium">{t('form.lines', 'Lines')}</label>
                 <Button
                   type="button"
                   variant="outline"
@@ -309,7 +309,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                     setLines((prev) => [...prev, { itemId: '', quantity: isReturn ? -1 : 1, rate: 0 }])
                   }
                 >
-                  Add line
+                  {t('form.addLine', 'Add line')}
                 </Button>
               </div>
               {lines.map((line, i) => (
@@ -319,7 +319,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                     onChange={(e) => updateLine(i, { itemId: e.target.value })}
                     className="col-span-6 flex h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                   >
-                    <option value="">-- Item --</option>
+                    <option value="">{t('form.selectItem', '-- Item --')}</option>
                     {itemsQuery.items.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.code} — {item.name}
@@ -331,7 +331,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                     step="0.0001"
                     value={line.quantity}
                     onChange={(e) => updateLine(i, { quantity: Number(e.target.value) })}
-                    placeholder="Qty"
+                    placeholder={t('form.qty', 'Qty')}
                     className="col-span-3"
                   />
                   <Input
@@ -340,7 +340,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                     step="0.0001"
                     value={line.rate}
                     onChange={(e) => updateLine(i, { rate: Number(e.target.value) })}
-                    placeholder="Rate"
+                    placeholder={t('form.rate', 'Rate')}
                     className="col-span-3"
                   />
                 </div>
@@ -466,10 +466,10 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
 
           <DialogFooter className="border-t border-slate-100 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('form.cancel', 'Cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving…' : 'Save'}
+              {isSubmitting ? t('form.saving', 'Saving…') : t('form.save', 'Save')}
             </Button>
           </DialogFooter>
         </form>

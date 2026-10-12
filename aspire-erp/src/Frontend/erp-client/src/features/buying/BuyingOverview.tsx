@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FileText, Truck, AlertCircle, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { translateDocStatus } from '../../lib/docStatus'
 import { Pagination } from '../../components/ui/Pagination'
 import { useApiList } from '../../lib/useApiList'
 import { usePagination, MAX_PAGE_SIZE } from '../../lib/pagination'
@@ -30,7 +31,7 @@ interface PurchaseOrder {
 }
 
 export function BuyingOverview() {
-  const { t } = useTranslation('buying')
+  const { t, i18n } = useTranslation('buying')
   const companyId = useTenantStore((state) => state.companyId)
   const paging = usePagination()
   const enabled = Boolean(companyId)
@@ -158,7 +159,7 @@ export function BuyingOverview() {
                                 : 'bg-sky-100 text-sky-800'
                         }`}
                       >
-                        {po.status}
+                        {translateDocStatus(i18n, po.status)}
                       </span>
                     </td>
                     <td className="py-3 text-right">

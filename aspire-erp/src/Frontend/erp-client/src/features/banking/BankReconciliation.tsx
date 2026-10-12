@@ -7,6 +7,7 @@ import { useApiList } from '../../lib/useApiList'
 import { usePagination } from '../../lib/pagination'
 import { useErpAction } from '../../lib/useErpAction'
 import { translateErrorCode } from '../../lib/translateErrorCode'
+import { translateDocStatus } from '../../lib/docStatus'
 import { formatQty } from '../../lib/format'
 import { useTenantStore } from '../../store/useTenantStore'
 import type { BankTransaction, BankTransactionStatus, ReconciliationSummary } from './types'
@@ -97,7 +98,7 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
 
   const { state: reconcileState, dispatch: confirmReconcile, isPending: isReconciling } =
     useErpAction<ReconciliationSummary, void>(async () => {
-      if (!selected) throw new Error('No staging line selected.')
+      if (!selected) throw new Error(t('recon.noSelection', 'No staging line selected.'))
       const response = await apiClient.post<ReconciliationSummary>(
         `/v1/bank-transactions/${selected.id}/reconcile`,
         { companyId, lines: toPayloadLines(), rowVersion: selected.rowVersion },
@@ -110,7 +111,7 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
 
   const { state: unreconcileState, dispatch: confirmUnreconcile, isPending: isUnreconciling } =
     useErpAction<unknown, void>(async () => {
-      if (!selected) throw new Error('No staging line selected.')
+      if (!selected) throw new Error(t('recon.noSelection', 'No staging line selected.'))
       const response = await apiClient.post(
         `/v1/bank-transactions/${selected.id}/unreconcile`,
         { companyId, rowVersion: selected.rowVersion },
@@ -135,7 +136,7 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
               aria-label={t('recon.statusFilter')}
             >
               {STATUS_FILTERS.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{translateDocStatus(i18n, s)}</option>
               ))}
             </select>
             <button
@@ -156,7 +157,7 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
           </div>
         ) : null}
         {!isLoading && !loadError && lines.length === 0 && (
-          <p className="mt-4 text-xs text-slate-500">{t('recon.emptyLines', { status: statusFilter.toLowerCase() })}</p>
+          <p className="mt-4 text-xs text-slate-500">{t('recon.emptyLines', { status: translateDocStatus(i18n, statusFilter).toLowerCase() })}</p>
         )}
 
         <ul className="mt-3 max-h-96 space-y-2 overflow-y-auto">
@@ -189,7 +190,7 @@ export function BankReconciliation({ refreshSignal }: { refreshSignal: number })
                     {formatQty(netAmount(line))} {line.currency}
                   </span>
                   <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-                    {line.status}
+                    {translateDocStatus(i18n, line.status)}
                     {line.suggestedPartyType ? ` · ${line.suggestedPartyType}` : ''}
                   </span>
                 </div>

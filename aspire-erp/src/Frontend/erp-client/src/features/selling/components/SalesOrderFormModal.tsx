@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../../components/ui/Dialog'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { ApiError } from '../../../api/client'
+import { translateErrorCode } from '../../../lib/translateErrorCode'
 import { useCustomers } from '../api/useCustomers'
 import { useItems } from '../../stock/useStockData'
 
@@ -29,6 +31,7 @@ function todayIso(): string {
 }
 
 export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: SalesOrderFormModalProps) {
+  const { t, i18n } = useTranslation('selling')
   const [customerId, setCustomerId] = useState('')
   const [transactionDate, setTransactionDate] = useState(todayIso())
   const [deliveryDate, setDeliveryDate] = useState(todayIso())
@@ -57,12 +60,12 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
     e.preventDefault()
     setError(null)
     if (!customerId) {
-      setError('Customer is required.')
+      setError(t('orderForm.errorCustomer', 'Customer is required.'))
       return
     }
     const validLines = lines.filter((l) => l.itemId && l.quantity > 0)
     if (validLines.length === 0) {
-      setError('Add at least one line with item and quantity > 0.')
+      setError(t('orderForm.errorLines', 'Add at least one line with item and quantity > 0.'))
       return
     }
     setIsSubmitting(true)
@@ -71,11 +74,11 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
       onClose()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message)
+        setError(translateErrorCode(i18n, err.code, err.message))
       } else if (err instanceof Error) {
         setError(err.message)
       } else {
-        setError('An error occurred while saving.')
+        setError(t('orderForm.errorGeneric', 'An error occurred while saving.'))
       }
     } finally {
       setIsSubmitting(false)
@@ -86,7 +89,7 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>New Sales Order</DialogTitle>
+          <DialogTitle>{t('orderForm.titleNew', 'New Sales Order')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
@@ -95,14 +98,14 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Customer *</label>
+                <label className="text-sm font-medium">{t('form.customer', 'Customer *')}</label>
                 <select
                   value={customerId}
                   onChange={(e) => setCustomerId(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                   required
                 >
-                  <option value="">-- Select --</option>
+                  <option value="">{t('form.selectNone', '-- Select --')}</option>
                   {customersQuery.items.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.code} — {c.name}
@@ -111,25 +114,25 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Order date *</label>
+                <label className="text-sm font-medium">{t('orderForm.orderDate', 'Order date *')}</label>
                 <Input type="date" value={transactionDate} onChange={(e) => setTransactionDate(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Delivery date *</label>
+                <label className="text-sm font-medium">{t('orderForm.deliveryDate', 'Delivery date *')}</label>
                 <Input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} required />
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Lines</label>
+                <label className="text-sm font-medium">{t('form.lines', 'Lines')}</label>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setLines((prev) => [...prev, { itemId: '', quantity: 1, rate: 0 }])}
                 >
-                  Add line
+                  {t('form.addLine', 'Add line')}
                 </Button>
               </div>
               {lines.map((line, i) => (
@@ -139,7 +142,7 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
                     onChange={(e) => updateLine(i, { itemId: e.target.value })}
                     className="col-span-6 flex h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                   >
-                    <option value="">-- Item --</option>
+                    <option value="">{t('form.selectItem', '-- Item --')}</option>
                     {itemsQuery.items.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.code} — {item.name}
@@ -152,7 +155,7 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
                     step="0.0001"
                     value={line.quantity}
                     onChange={(e) => updateLine(i, { quantity: Number(e.target.value) })}
-                    placeholder="Qty"
+                    placeholder={t('form.qty', 'Qty')}
                     className="col-span-3"
                   />
                   <Input
@@ -161,7 +164,7 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
                     step="0.0001"
                     value={line.rate}
                     onChange={(e) => updateLine(i, { rate: Number(e.target.value) })}
-                    placeholder="Rate"
+                    placeholder={t('form.rate', 'Rate')}
                     className="col-span-3"
                   />
                 </div>
@@ -171,10 +174,10 @@ export function SalesOrderFormModal({ isOpen, onClose, onSave, companyId }: Sale
 
           <DialogFooter className="pt-4 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('form.cancel', 'Cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving…' : 'Save'}
+              {isSubmitting ? t('form.saving', 'Saving…') : t('form.save', 'Save')}
             </Button>
           </DialogFooter>
         </form>

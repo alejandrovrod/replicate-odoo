@@ -113,7 +113,10 @@
     "frozenDateHelp": "Vouchers dated on or before this day cannot be posted.",
     "retainedEarnings": "Default Retained Earnings Account",
     "retainedEarningsHelp": "Equity account used for period closing vouchers.",
-    "selectPlaceholder": "Select"
+    "selectPlaceholder": "Select",
+    "loadError": "Error loading company settings",
+    "saveError": "Error saving settings",
+    "loading": "Loading..."
   },
   "currencies": {
     "manageTitle": "Currencies",
@@ -126,7 +129,9 @@
       "status": "Status"
     },
     "active": "Active",
-    "inactive": "Disabled"
+    "inactive": "Disabled",
+    "loading": "Loading currencies...",
+    "loadError": "Error loading currencies: {{message}}"
   },
   "currencyForm": {
     "titleNew": "New Currency",
@@ -271,7 +276,9 @@
     "previewEmpty": "No revaluation needed for this date.",
     "previewPrompt": "Click Generate Preview to see affected accounts.",
     "totalGainLoss": "Total Gain/Loss:",
-    "saveDraftBtn": "Save as Draft"
+    "saveDraftBtn": "Save as Draft",
+    "loading": "Loading...",
+    "submitError": "Failed to submit",
+    "cancelError": "Failed to cancel"
   }
 }
-

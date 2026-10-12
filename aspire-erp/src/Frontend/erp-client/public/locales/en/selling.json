@@ -19,7 +19,19 @@
     "colDate": "Date",
     "colTotal": "Total",
     "colOutstanding": "Outstanding",
-    "colStatus": "Status"
+    "colStatus": "Status",
+    "new": "New Invoice",
+    "submit": "Submit",
+    "submitting": "Submitting…",
+    "empty": "No sales invoices yet.",
+    "creditNote": "CN",
+    "loading": "Loading sales invoices…",
+    "loadError": "Error loading sales invoices: {{message}}",
+    "submitError": "Failed to submit invoice.",
+    "overviewEmpty": "No invoices yet — create one from Invoices.",
+    "overviewLoading": "Loading…",
+    "overviewError": "Error: {{message}}",
+    "listSubtitle": "Draft invoices submit to Unpaid (A/R + revenue)."
   },
   "pos": {
     "title": "Products",
@@ -56,7 +68,9 @@
       "status": "Status"
     },
     "active": "Active",
-    "inactive": "Disabled"
+    "inactive": "Disabled",
+    "loading": "Loading customers...",
+    "loadError": "Error loading customers: {{message}}"
   },
   "customerForm": {
     "titleNew": "New Customer",
@@ -121,5 +135,69 @@
     "errorTaxRate": "Tax rates must be between 0 and 100.",
     "errorDiscount": "Discount is invalid (0-100% and non-negative amount).",
     "errorGeneric": "An error occurred while saving."
+  },
+  "orders": {
+    "title": "Sales Orders",
+    "subtitle": "Draft → Submitted → PartiallyDelivered → Completed",
+    "colOrder": "Order No",
+    "colCustomer": "Customer",
+    "colDelivery": "Delivery",
+    "colTotal": "Total",
+    "colDelivered": "Delivered",
+    "colStatus": "Status",
+    "colAction": "Action",
+    "empty": "No sales orders yet.",
+    "new": "New Order",
+    "submit": "Submit",
+    "submitting": "Submitting…",
+    "loading": "Loading sales orders…",
+    "loadError": "Error loading sales orders: {{message}}",
+    "submitError": "Failed to submit order."
+  },
+  "deliveries": {
+    "title": "Delivery Notes",
+    "subtitle": "Posted shipments: FIFO relief + COGS, no drafts.",
+    "colVoucher": "Voucher No",
+    "colDate": "Posting Date",
+    "colLines": "Lines",
+    "colQty": "Total Qty",
+    "empty": "No delivery notes yet.",
+    "new": "New Delivery",
+    "loading": "Loading delivery notes…",
+    "loadError": "Error loading delivery notes: {{message}}",
+    "postError": "Failed to post delivery note."
+  },
+  "form": {
+    "customer": "Customer *",
+    "postingDate": "Posting date *",
+    "lines": "Lines",
+    "addLine": "Add line",
+    "selectNone": "-- Select --",
+    "selectItem": "-- Item --",
+    "qty": "Qty",
+    "rate": "Rate",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…"
+  },
+  "orderForm": {
+    "titleNew": "New Sales Order",
+    "orderDate": "Order date *",
+    "deliveryDate": "Delivery date *",
+    "errorCustomer": "Customer is required.",
+    "errorLines": "Add at least one line with item and quantity > 0.",
+    "errorGeneric": "An error occurred while saving."
+  },
+  "deliveryForm": {
+    "titleNew": "New Delivery Note",
+    "salesOrder": "Sales order *",
+    "warehouse": "Warehouse *",
+    "linesPending": "Lines (pending = ordered − delivered)",
+    "pending": "pending {{count}}",
+    "post": "Post",
+    "posting": "Posting…",
+    "errorRequired": "Order and warehouse are required.",
+    "errorLines": "Enter a quantity > 0 for at least one line.",
+    "errorGeneric": "An error occurred while posting."
   }
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../../api/client'
 import { useTenantStore } from '../../../store/useTenantStore'
 import { usePagination } from '../../../lib/pagination'
@@ -7,6 +8,7 @@ import { DeliveryNoteFormModal } from '../components/DeliveryNoteFormModal'
 import { postDeliveryNote, useDeliveryNotes } from '../api/useDeliveryNotes'
 
 export function DeliveryNotesView() {
+  const { t } = useTranslation('selling')
   const companyId = useTenantStore((state) => state.companyId)
   const { page, pageSize, setPage } = usePagination(10)
   const { items, status, error, reload, totalCount, pageNumber } = useDeliveryNotes(companyId, page, pageSize)
@@ -29,14 +31,14 @@ export function DeliveryNotesView() {
       } else if (err instanceof Error) {
         setActionError(err.message)
       } else {
-        setActionError('Failed to post delivery note.')
+        setActionError(t('deliveries.postError', 'Failed to post delivery note.'))
       }
       throw err
     }
   }
 
-  if (status === 'loading' && items.length === 0) return <div className="p-4">Loading delivery notes…</div>
-  if (error) return <div className="p-4 text-red-600">Error loading delivery notes: {error.message}</div>
+  if (status === 'loading' && items.length === 0) return <div className="p-4">{t('deliveries.loading', 'Loading delivery notes…')}</div>
+  if (error) return <div className="p-4 text-red-600">{t('deliveries.loadError', 'Error loading delivery notes: {{message}}', { message: error.message })}</div>
 
   return (
     <div className="p-4 space-y-4">

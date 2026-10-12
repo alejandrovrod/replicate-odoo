@@ -50,7 +50,7 @@ export function CompanySettingsModal({
       const res = await apiClient.get<CompanySettings>(`/v1/companies/${companyId}`)
       setSettings(res.data)
     } catch (err: any) {
-      setError(err.message || 'Error loading company settings')
+      setError(err.message || t('companySettings.loadError', 'Error loading company settings'))
     } finally {
       setLoading(false)
     }
@@ -82,7 +82,7 @@ export function CompanySettingsModal({
       })
       onClose()
     } catch (err: any) {
-      setError(err.message || 'Error saving settings')
+      setError(err.message || t('companySettings.saveError', 'Error saving settings'))
     } finally {
       setSaving(false)
     }
@@ -100,7 +100,7 @@ export function CompanySettingsModal({
         </DialogHeader>
 
         {loading || !settings ? (
-          <div className="py-8 text-center text-slate-500">Loading...</div>
+          <div className="py-8 text-center text-slate-500">{t('companySettings.loading', 'Loading...')}</div>
         ) : (
           <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden min-h-0">
             <div className="flex-1 overflow-y-auto pr-2 space-y-4">

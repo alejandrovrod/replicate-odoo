@@ -48,8 +48,8 @@ export function BankAccountsView() {
     reload()
   }
 
-  if (status === 'loading' && !items.length) return <div className="p-4">Loading bank accounts...</div>
-  if (error) return <div className="p-4 text-red-600">Error loading bank accounts: {error.message}</div>
+  if (status === 'loading' && !items.length) return <div className="p-4">{t('bankAccounts.loading', 'Loading bank accounts...')}</div>
+  if (error) return <div className="p-4 text-red-600">{t('bankAccounts.loadError', 'Error loading bank accounts: {{message}}', { message: error.message })}</div>
 
   return (
     <div className="p-4">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getAssetDetail, type AssetDetail, capitalizeAsset } from './api/useAssets'
 import { useTenantStore } from '../../store/useTenantStore'
+import { translateDocStatus } from '../../lib/docStatus'
 import { Button } from '../../components/ui/Button'
 import { ArrowLeft, Play, Settings2 } from 'lucide-react'
 
@@ -10,8 +11,16 @@ interface AssetDetailViewProps {
   onBack: () => void
 }
 
+/** Status badge label keys (explicit map: template-literal keys are not type-safe - mirrors AssetView). */
+const ASSET_STATUS_KEY = {
+  Draft: 'assets.status.draft',
+  Capitalized: 'assets.status.capitalized',
+  Sold: 'assets.status.sold',
+  Scrapped: 'assets.status.scrapped',
+} as const
+
 export function AssetDetailView({ assetId, onBack }: AssetDetailViewProps) {
-  const { t } = useTranslation('assets')
+  const { t, i18n } = useTranslation('assets')
   const companyId = useTenantStore((state) => state.companyId)
   
   const [detail, setDetail] = useState<AssetDetail | null>(null)
@@ -27,7 +36,7 @@ export function AssetDetailView({ assetId, onBack }: AssetDetailViewProps) {
       const data = await getAssetDetail(assetId, companyId)
       setDetail(data)
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load asset details'))
+      setError(err instanceof Error ? err : new Error(t('assets.loadError', 'Failed to load asset details')))
     } finally {
       setLoading(false)
     }
@@ -72,7 +81,7 @@ export function AssetDetailView({ assetId, onBack }: AssetDetailViewProps) {
             <p className="text-sm text-slate-500">{asset.assetCode}</p>
           </div>
           <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
-            {asset.status}
+            {t(ASSET_STATUS_KEY[asset.status as keyof typeof ASSET_STATUS_KEY] ?? 'assets.status.draft', asset.status)}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -152,7 +161,7 @@ export function AssetDetailView({ assetId, onBack }: AssetDetailViewProps) {
                             line.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
                             'bg-slate-100 text-slate-800'
                           }`}>
-                            {line.status}
+                            {translateDocStatus(i18n, line.status)}
                           </span>
                         </td>
                       </tr>

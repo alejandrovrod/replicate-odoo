@@ -124,7 +124,7 @@ export function ItemFormModal({
                   name="code"
                   value={formData.code || ''}
                   onChange={handleChange}
-                  placeholder="e.g. IT-001"
+                  placeholder={t('itemForm.codePlaceholder', 'e.g. IT-001')}
                   required
                 />
               </div>
@@ -135,7 +135,7 @@ export function ItemFormModal({
                   name="name"
                   value={formData.name || ''}
                   onChange={handleChange}
-                  placeholder="e.g. Laptop"
+                  placeholder={t('itemForm.namePlaceholder', 'e.g. Laptop')}
                   required
                 />
               </div>
@@ -147,7 +147,7 @@ export function ItemFormModal({
                 name="baseUOMId"
                 value={formData.baseUOMId || ''}
                 onChange={handleChange}
-                placeholder="e.g. uuid"
+                placeholder={t('itemForm.uomPlaceholder', 'e.g. uuid')}
                 required
               />
             </div>
@@ -160,9 +160,9 @@ export function ItemFormModal({
                 onChange={handleChange}
                 className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200"
               >
-                <option value="Fifo">FIFO</option>
-                <option value="MovingAverage">Moving Average</option>
-                <option value="Lifo">LIFO</option>
+                <option value="Fifo">{t('itemForm.valuationFifo', 'FIFO')}</option>
+                <option value="MovingAverage">{t('itemForm.valuationMovingAverage', 'Moving Average')}</option>
+                <option value="Lifo">{t('itemForm.valuationLifo', 'LIFO')}</option>
               </select>
             </div>
 

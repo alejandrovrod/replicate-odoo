@@ -123,7 +123,7 @@ export function SupplierFormModal({
                   name="code"
                   value={formData.code || ''}
                   onChange={handleChange}
-                  placeholder="e.g. SUP-001"
+                  placeholder={t('supplierForm.codePlaceholder', 'e.g. SUP-001')}
                   required
                 />
               </div>
@@ -134,7 +134,7 @@ export function SupplierFormModal({
                   name="name"
                   value={formData.name || ''}
                   onChange={handleChange}
-                  placeholder="e.g. Acme Corp"
+                  placeholder={t('supplierForm.namePlaceholder', 'e.g. Acme Corp')}
                   required
                 />
               </div>
@@ -147,7 +147,7 @@ export function SupplierFormModal({
                   name="taxId"
                   value={formData.taxId || ''}
                   onChange={handleChange}
-                  placeholder="Optional Tax ID"
+                  placeholder={t('supplierForm.taxIdPlaceholder', 'Optional Tax ID')}
                 />
               </div>
 

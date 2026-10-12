@@ -6,10 +6,11 @@ import { useNavigationStore } from '../../store/useNavigationStore'
 import { useTenantStore } from '../../store/useTenantStore'
 import { Button } from '../../components/ui/Button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/Table'
+import { translateDocStatus } from '../../lib/docStatus'
 import { useSalesInvoices } from './api/useSalesInvoices'
 
 export function SellingOverview() {
-  const { t } = useTranslation('selling')
+  const { t, i18n } = useTranslation('selling')
   const [isPosOpen, setIsPosOpen] = useState(false)
   const companyId = useTenantStore((state) => state.companyId)
   const { items, status, error } = useSalesInvoices(companyId, 1, 5)
@@ -48,8 +49,8 @@ export function SellingOverview() {
         <h3 className="text-base font-semibold text-slate-900">{t('invoices.title')}</h3>
         <p className="text-xs text-slate-500 mb-4">{t('invoices.subtitle')}</p>
 
-        {status === 'loading' && <div className="text-xs text-slate-500">Loading…</div>}
-        {error && <div className="text-xs text-red-600">Error: {error.message}</div>}
+        {status === 'loading' && <div className="text-xs text-slate-500">{t('invoices.overviewLoading', 'Loading…')}</div>}
+        {error && <div className="text-xs text-red-600">{t('invoices.overviewError', 'Error: {{message}}', { message: error.message })}</div>}
         {status !== 'loading' && !error && (
           <Table>
             <TableHeader>
@@ -66,7 +67,7 @@ export function SellingOverview() {
               {items.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-slate-500">
-                    No invoices yet — create one from Invoices.
+                    {t('invoices.overviewEmpty', 'No invoices yet — create one from Invoices.')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -93,7 +94,7 @@ export function SellingOverview() {
                                 : 'bg-rose-100 text-rose-800'
                         }`}
                       >
-                        {inv.status}
+                        {translateDocStatus(i18n, inv.status)}
                       </span>
                     </TableCell>
                   </TableRow>

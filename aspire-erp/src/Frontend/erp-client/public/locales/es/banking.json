@@ -50,7 +50,8 @@
     "unreconcile": "Desconciliar",
     "reverting": "Revirtiendo…",
     "quickVoucher": "Comprobante rápido",
-    "noBrowserHint": "Todavía no hay explorador de registros de pago: pegá un id de PaymentEntry (o un id de comprobante contable registrado) por tramo."
+    "noBrowserHint": "Todavía no hay explorador de registros de pago: pegá un id de PaymentEntry (o un id de comprobante contable registrado) por tramo.",
+    "noSelection": "Ninguna línea de staging seleccionada."
   },
   "importer": {
     "title": "Importar extracto bancario",
@@ -97,7 +98,9 @@
       "status": "Estado"
     },
     "active": "Activa",
-    "inactive": "Deshabilitada"
+    "inactive": "Deshabilitada",
+    "loading": "Cargando cuentas bancarias...",
+    "loadError": "Error al cargar cuentas bancarias: {{message}}"
   },
   "bankAccountForm": {
     "titleNew": "Nueva Cuenta Bancaria",
@@ -116,7 +119,10 @@
     "errorRequired": "El nombre, el banco y el número son obligatorios.",
     "errorGlRequired": "Se requiere una cuenta contable.",
     "errorConflict": "Conflicto de concurrencia. Refresque e intente de nuevo.",
-    "errorGeneric": "Ocurri�� un error al guardar."
+    "errorGeneric": "Ocurri�� un error al guardar.",
+    "namePlaceholder": "p. ej. Cuenta operativa principal",
+    "bankPlaceholder": "p. ej. Banco Nación",
+    "numberPlaceholder": "p. ej. 004920"
   },
   "paymentForm": {
     "titleNew": "Nuevo Pago",
@@ -145,7 +151,31 @@
     "errorRequired": "La contraparte y la cuenta bancaria son obligatorias.",
     "errorAmount": "El monto debe ser mayor a cero.",
     "errorOverAllocated": "Lo imputado excede el monto pagado.",
-    "errorGeneric": "Ocurrió un error al guardar."
+    "errorGeneric": "Ocurrió un error al guardar.",
+    "selectNone": "-- Seleccionar --"
+  },
+  "payments": {
+    "title": "Pagos",
+    "subtitle": "Borrador → Enviado (GL + imputación) → Anulado por reversión.",
+    "colVoucher": "N.º comprobante",
+    "colType": "Tipo",
+    "colDate": "Fecha",
+    "colPaid": "Pagado",
+    "colUnallocated": "Sin imputar",
+    "colStatus": "Estado",
+    "colActions": "Acciones",
+    "empty": "Aún no hay pagos.",
+    "new": "Nuevo pago",
+    "submit": "Enviar",
+    "submitting": "…",
+    "cancel": "Anular",
+    "draftBadge": "— borrador —",
+    "typeReceive": "Cobro",
+    "typePay": "Pago",
+    "typeTransfer": "Transferencia interna",
+    "loading": "Cargando pagos…",
+    "loadError": "Error al cargar pagos: {{message}}",
+    "submitError": "No se pudo enviar el pago.",
+    "cancelError": "No se pudo anular el pago."
   }
-}
 }

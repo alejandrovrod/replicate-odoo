@@ -102,6 +102,7 @@
       "depreciationMethod": "Método de Depreciación",
       "nbv": "Valor Neto en Libros",
       "accumulatedDepreciation": "Depreciación Acumulada"
-    }
+    },
+    "loadError": "No se pudieron cargar los detalles del activo"
   }
 }

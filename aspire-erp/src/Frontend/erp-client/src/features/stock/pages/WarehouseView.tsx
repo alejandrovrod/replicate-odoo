@@ -88,8 +88,8 @@ export function WarehouseView() {
     }
   }
 
-  if (loading) return <div className="p-4">Loading warehouses...</div>
-  if (error) return <div className="p-4 text-red-600">Error loading warehouses: {error.message}</div>
+  if (loading) return <div className="p-4">{t('warehouses.viewLoading', 'Loading warehouses...')}</div>
+  if (error) return <div className="p-4 text-red-600">{t('warehouses.viewLoadError', 'Error loading warehouses: {{message}}', { message: error.message })}</div>
 
   return (
     <div className="p-4">

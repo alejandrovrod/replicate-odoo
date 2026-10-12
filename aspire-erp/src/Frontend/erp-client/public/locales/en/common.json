@@ -209,5 +209,29 @@
   "units": {
     "percent": "%",
     "pieces": "pcs"
+  },
+  "docStatus": {
+    "Draft": "Draft",
+    "Unpaid": "Unpaid",
+    "PartiallyPaid": "Partially paid",
+    "Paid": "Paid",
+    "Submitted": "Submitted",
+    "PartiallyDelivered": "Partially delivered",
+    "Completed": "Completed",
+    "Cancelled": "Cancelled",
+    "Unreconciled": "Unreconciled",
+    "Matched": "Matched",
+    "Reconciled": "Reconciled",
+    "Excluded": "Excluded",
+    "Asset": "Asset",
+    "Liability": "Liability",
+    "Equity": "Equity",
+    "Income": "Income",
+    "Expense": "Expense",
+    "PartiallyReceived": "Partially received",
+    "Booked": "Booked"
+  },
+  "sidebar": {
+    "tagline": "Enterprise Cloud"
   }
 }

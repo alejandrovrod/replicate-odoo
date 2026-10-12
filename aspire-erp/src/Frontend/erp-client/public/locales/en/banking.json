@@ -50,7 +50,8 @@
     "unreconcile": "Un-reconcile",
     "reverting": "Reverting…",
     "quickVoucher": "Quick voucher",
-    "noBrowserHint": "No payment-entry browser exists yet: paste a PaymentEntry id (or a posted GL voucher id) per slice."
+    "noBrowserHint": "No payment-entry browser exists yet: paste a PaymentEntry id (or a posted GL voucher id) per slice.",
+    "noSelection": "No staging line selected."
   },
   "importer": {
     "title": "Import bank statement",
@@ -97,7 +98,9 @@
       "status": "Status"
     },
     "active": "Active",
-    "inactive": "Disabled"
+    "inactive": "Disabled",
+    "loading": "Loading bank accounts...",
+    "loadError": "Error loading bank accounts: {{message}}"
   },
   "bankAccountForm": {
     "titleNew": "New Bank Account",
@@ -116,7 +119,10 @@
     "errorRequired": "Account name, bank and number are required.",
     "errorGlRequired": "A GL account is required.",
     "errorConflict": "Concurrency conflict. Please refresh and try again.",
-    "errorGeneric": "An error occurred while saving."
+    "errorGeneric": "An error occurred while saving.",
+    "namePlaceholder": "e.g. Main Operating Account",
+    "bankPlaceholder": "e.g. JPMorgan Chase",
+    "numberPlaceholder": "e.g. 004920"
   },
   "paymentForm": {
     "titleNew": "New Payment Entry",
@@ -145,6 +151,31 @@
     "errorRequired": "Party and bank account are required.",
     "errorAmount": "Paid amount must be greater than zero.",
     "errorOverAllocated": "Allocated amount exceeds the paid amount.",
-    "errorGeneric": "An error occurred while saving."
+    "errorGeneric": "An error occurred while saving.",
+    "selectNone": "-- Select --"
+  },
+  "payments": {
+    "title": "Payment Entries",
+    "subtitle": "Draft → Submitted (GL + invoice settlement) → Cancelled by reversal.",
+    "colVoucher": "Voucher No",
+    "colType": "Type",
+    "colDate": "Date",
+    "colPaid": "Paid",
+    "colUnallocated": "Unallocated",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "empty": "No payment entries yet.",
+    "new": "New Payment",
+    "submit": "Submit",
+    "submitting": "…",
+    "cancel": "Cancel",
+    "draftBadge": "— draft —",
+    "typeReceive": "Receive",
+    "typePay": "Pay",
+    "typeTransfer": "Internal Transfer",
+    "loading": "Loading payments…",
+    "loadError": "Error loading payments: {{message}}",
+    "submitError": "Failed to submit payment.",
+    "cancelError": "Failed to cancel payment."
   }
 }

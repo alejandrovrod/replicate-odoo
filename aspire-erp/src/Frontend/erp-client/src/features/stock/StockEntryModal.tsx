@@ -171,7 +171,7 @@ export function StockEntryModal({
 
         <div className="space-y-4 px-6 py-4">
           <fieldset className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <legend className="sr-only">Voucher header</legend>
+            <legend className="sr-only">{t('entry.voucherHeader', 'Voucher header')}</legend>
 
             <label className="block text-xs font-medium text-slate-600">
               {t('entry.type')}

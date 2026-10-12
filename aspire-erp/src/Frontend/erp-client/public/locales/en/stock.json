@@ -48,7 +48,9 @@
     "stockedSkus_one": "{{count}} SKU on hand",
     "stockedSkus_other": "{{count}} SKUs on hand",
     "search": "Search...",
-    "manage": "Manage"
+    "manage": "Manage",
+    "viewLoading": "Loading warehouses...",
+    "viewLoadError": "Error loading warehouses: {{message}}"
   },
   "warehouseForm": {
     "titleNew": "New Warehouse",
@@ -101,7 +103,11 @@
       "valuation": "Valuation",
       "status": "Status"
     },
-    "manage": "Manage Items"
+    "manage": "Manage Items",
+    "valuationLifo": "LIFO",
+    "valuationMovingAverage": "Moving Average",
+    "viewLoading": "Loading items...",
+    "viewLoadError": "Error loading items: {{message}}"
   },
   "movements": {
     "title": "Recent Movements",
@@ -137,7 +143,8 @@
     "posting": "Posting…",
     "atomicHint": "Posts atomically: Kardex rows + balanced General Ledger lines.",
     "rejected": "Posting rejected",
-    "unexpectedTitle": "Unexpected Error"
+    "unexpectedTitle": "Unexpected Error",
+    "voucherHeader": "Voucher header"
   },
   "entryType": {
     "MaterialReceipt": "Material Receipt",
@@ -178,6 +185,12 @@
     "incomeAccountLabel": "Income Account",
     "expenseAccountLabel": "Expense/COGS Account",
     "accountNone": "-- None --",
-    "errorUomRequired": "A Base UOM is required."
+    "errorUomRequired": "A Base UOM is required.",
+    "valuationFifo": "FIFO",
+    "valuationMovingAverage": "Moving Average",
+    "valuationLifo": "LIFO",
+    "codePlaceholder": "e.g. IT-001",
+    "namePlaceholder": "e.g. Laptop",
+    "uomPlaceholder": "e.g. uuid"
   }
 }

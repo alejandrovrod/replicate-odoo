@@ -104,7 +104,13 @@ export function ItemList({ items, status, error, onReload, onNewEntry }: ItemLis
                   </td>
                   <td className="px-3">
                       <span className="inline-flex items-center rounded bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                        {item.valuationMethod === 'Fifo' ? t('items.fifo') : item.valuationMethod}
+                        {item.valuationMethod === 'Fifo'
+                          ? t('items.fifo')
+                          : item.valuationMethod === 'Lifo'
+                            ? t('items.valuationLifo', 'LIFO')
+                            : item.valuationMethod === 'MovingAverage'
+                              ? t('items.valuationMovingAverage', 'Moving Average')
+                              : item.valuationMethod}
                       </span>
                   </td>
 

@@ -129,7 +129,7 @@ export function BankAccountFormModal({
                 name="accountName"
                 value={formData.accountName || ''}
                 onChange={handleChange}
-                placeholder="e.g. Main Operating Account"
+                placeholder={t('bankAccountForm.namePlaceholder', 'e.g. Main Operating Account')}
                 required
               />
             </div>
@@ -140,7 +140,7 @@ export function BankAccountFormModal({
                 name="bankName"
                 value={formData.bankName || ''}
                 onChange={handleChange}
-                placeholder="e.g. JPMorgan Chase"
+                placeholder={t('bankAccountForm.bankPlaceholder', 'e.g. JPMorgan Chase')}
                 required
               />
             </div>
@@ -151,7 +151,7 @@ export function BankAccountFormModal({
                 name="accountNumber"
                 value={formData.accountNumber || ''}
                 onChange={handleChange}
-                placeholder="e.g. 004920"
+                placeholder={t('bankAccountForm.numberPlaceholder', 'e.g. 004920')}
                 required
               />
             </div>

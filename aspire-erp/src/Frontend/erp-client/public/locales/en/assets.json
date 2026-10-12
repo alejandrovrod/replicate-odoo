@@ -102,6 +102,7 @@
       "depreciationMethod": "Depreciation Method",
       "nbv": "Net Book Value",
       "accumulatedDepreciation": "Accumulated Depreciation"
-    }
+    },
+    "loadError": "Failed to load asset details"
   }
 }

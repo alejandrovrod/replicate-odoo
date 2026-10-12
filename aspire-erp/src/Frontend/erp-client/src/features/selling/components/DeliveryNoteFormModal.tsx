@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../../components/ui/Dialog'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { ApiError } from '../../../api/client'
+import { translateErrorCode } from '../../../lib/translateErrorCode'
 import { useSalesOrders } from '../api/useSalesOrders'
 import { useFlatWarehouses } from '../../stock/useStockData'
 
@@ -23,6 +25,7 @@ function todayIso(): string {
 }
 
 export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: DeliveryNoteFormModalProps) {
+  const { t, i18n } = useTranslation('selling')
   const [salesOrderId, setSalesOrderId] = useState('')
   const [warehouseId, setWarehouseId] = useState('')
   const [postingDate, setPostingDate] = useState(todayIso())
@@ -66,7 +69,7 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
     e.preventDefault()
     setError(null)
     if (!salesOrderId || !warehouseId || !selectedOrder) {
-      setError('Order and warehouse are required.')
+      setError(t('deliveryForm.errorRequired', 'Order and warehouse are required.'))
       return
     }
     const lines = selectedOrder.lines
@@ -77,7 +80,7 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
       }))
       .filter((l) => l.qty > 0)
     if (lines.length === 0) {
-      setError('Enter a quantity > 0 for at least one line.')
+      setError(t('deliveryForm.errorLines', 'Enter a quantity > 0 for at least one line.'))
       return
     }
     setIsSubmitting(true)
@@ -86,11 +89,11 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
       onClose()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setError(err.message)
+        setError(translateErrorCode(i18n, err.code, err.message))
       } else if (err instanceof Error) {
         setError(err.message)
       } else {
-        setError('An error occurred while posting.')
+        setError(t('deliveryForm.errorGeneric', 'An error occurred while posting.'))
       }
     } finally {
       setIsSubmitting(false)
@@ -101,7 +104,7 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>New Delivery Note</DialogTitle>
+          <DialogTitle>{t('deliveryForm.titleNew', 'New Delivery Note')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
@@ -110,14 +113,14 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Sales order *</label>
+                <label className="text-sm font-medium">{t('deliveryForm.salesOrder', 'Sales order *')}</label>
                 <select
                   value={salesOrderId}
                   onChange={(e) => setSalesOrderId(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                   required
                 >
-                  <option value="">-- Select --</option>
+                  <option value="">{t('form.selectNone', '-- Select --')}</option>
                   {deliverableOrders.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.orderNumber} — {o.customerName || o.customerCode}
@@ -126,14 +129,14 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Warehouse *</label>
+                <label className="text-sm font-medium">{t('deliveryForm.warehouse', 'Warehouse *')}</label>
                 <select
                   value={warehouseId}
                   onChange={(e) => setWarehouseId(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                   required
                 >
-                  <option value="">-- Select --</option>
+                  <option value="">{t('form.selectNone', '-- Select --')}</option>
                   {warehousesQuery.items.map((w) => (
                     <option key={w.id} value={w.id}>
                       {w.code} — {w.name}
@@ -142,21 +145,21 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Posting date *</label>
+                <label className="text-sm font-medium">{t('form.postingDate', 'Posting date *')}</label>
                 <Input type="date" value={postingDate} onChange={(e) => setPostingDate(e.target.value)} required />
               </div>
             </div>
 
             {selectedOrder && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Lines (pending = ordered − delivered)</label>
+                <label className="text-sm font-medium">{t('deliveryForm.linesPending', 'Lines (pending = ordered − delivered)')}</label>
                 {selectedOrder.lines.map((line) => {
                   const pending = Math.max(0, line.quantity - line.deliveredQuantity)
                   return (
                     <div key={line.id} className="grid grid-cols-12 gap-2 items-center">
                       <span className="col-span-7 text-sm text-slate-700">
                         {line.itemCode} — {line.itemName}
-                        <span className="ml-2 font-mono text-xs text-slate-500">pending {pending.toLocaleString()}</span>
+                        <span className="ml-2 font-mono text-xs text-slate-500">{t('deliveryForm.pending', 'pending {{count}}', { count: pending })}</span>
                       </span>
                       <Input
                         type="number"
@@ -178,10 +181,10 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
 
           <DialogFooter className="pt-4 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('form.cancel', 'Cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Posting…' : 'Post'}
+              {isSubmitting ? t('deliveryForm.posting', 'Posting…') : t('deliveryForm.post', 'Post')}
             </Button>
           </DialogFooter>
         </form>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../../api/client'
 import { useTenantStore } from '../../../store/useTenantStore'
 import { usePagination } from '../../../lib/pagination'
@@ -7,6 +8,7 @@ import { SalesOrderFormModal } from '../components/SalesOrderFormModal'
 import { createSalesOrder, submitSalesOrder, useSalesOrders, type SalesOrder } from '../api/useSalesOrders'
 
 export function SalesOrdersView() {
+  const { t } = useTranslation('selling')
   const companyId = useTenantStore((state) => state.companyId)
   const { page, pageSize, setPage } = usePagination(10)
   const { items, status, error, reload, totalCount, pageNumber } = useSalesOrders(companyId, page, pageSize)
@@ -37,15 +39,15 @@ export function SalesOrdersView() {
       } else if (err instanceof Error) {
         setActionError(err.message)
       } else {
-        setActionError('Failed to submit order.')
+        setActionError(t('orders.submitError', 'Failed to submit order.'))
       }
     } finally {
       setSubmittingId(null)
     }
   }
 
-  if (status === 'loading' && items.length === 0) return <div className="p-4">Loading sales orders…</div>
-  if (error) return <div className="p-4 text-red-600">Error loading sales orders: {error.message}</div>
+  if (status === 'loading' && items.length === 0) return <div className="p-4">{t('orders.loading', 'Loading sales orders…')}</div>
+  if (error) return <div className="p-4 text-red-600">{t('orders.loadError', 'Error loading sales orders: {{message}}', { message: error.message })}</div>
 
   return (
     <div className="p-4 space-y-4">

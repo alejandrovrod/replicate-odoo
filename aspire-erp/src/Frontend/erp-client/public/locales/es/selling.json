@@ -19,7 +19,19 @@
     "colDate": "Fecha",
     "colTotal": "Total",
     "colOutstanding": "Pendiente",
-    "colStatus": "Estado"
+    "colStatus": "Estado",
+    "new": "Nueva factura",
+    "submit": "Enviar",
+    "submitting": "Enviando…",
+    "empty": "Aún no hay facturas de venta.",
+    "creditNote": "NC",
+    "loading": "Cargando facturas de venta…",
+    "loadError": "Error al cargar facturas de venta: {{message}}",
+    "submitError": "No se pudo enviar la factura.",
+    "overviewEmpty": "Aún no hay facturas — creá una desde Facturas.",
+    "overviewLoading": "Cargando…",
+    "overviewError": "Error: {{message}}",
+    "listSubtitle": "Los borradores se envían a Impaga (CxC + ingresos)."
   },
   "pos": {
     "title": "Productos",
@@ -56,7 +68,9 @@
       "status": "Estado"
     },
     "active": "Activo",
-    "inactive": "Inactivo"
+    "inactive": "Inactivo",
+    "loading": "Cargando clientes...",
+    "loadError": "Error al cargar clientes: {{message}}"
   },
   "customerForm": {
     "titleNew": "Nuevo Cliente",
@@ -121,5 +135,69 @@
     "errorTaxRate": "Las tasas deben estar entre 0 y 100.",
     "errorDiscount": "Descuento inválido (0-100% y monto no negativo).",
     "errorGeneric": "Ocurrió un error al guardar."
+  },
+  "orders": {
+    "title": "Órdenes de venta",
+    "subtitle": "Borrador → Confirmada → Parcialmente entregada → Completada",
+    "colOrder": "N.º orden",
+    "colCustomer": "Cliente",
+    "colDelivery": "Entrega",
+    "colTotal": "Total",
+    "colDelivered": "Entregado",
+    "colStatus": "Estado",
+    "colAction": "Acción",
+    "empty": "Aún no hay órdenes de venta.",
+    "new": "Nueva orden",
+    "submit": "Enviar",
+    "submitting": "Enviando…",
+    "loading": "Cargando órdenes de venta…",
+    "loadError": "Error al cargar órdenes de venta: {{message}}",
+    "submitError": "No se pudo enviar la orden."
+  },
+  "deliveries": {
+    "title": "Remitos",
+    "subtitle": "Entregas contabilizadas: descarga FIFO + COGS, sin borradores.",
+    "colVoucher": "N.º comprobante",
+    "colDate": "Fecha de emisión",
+    "colLines": "Líneas",
+    "colQty": "Cantidad total",
+    "empty": "Aún no hay remitos.",
+    "new": "Nuevo remito",
+    "loading": "Cargando remitos…",
+    "loadError": "Error al cargar remitos: {{message}}",
+    "postError": "No se pudo contabilizar el remito."
+  },
+  "form": {
+    "customer": "Cliente *",
+    "postingDate": "Fecha de emisión *",
+    "lines": "Líneas",
+    "addLine": "Agregar línea",
+    "selectNone": "-- Seleccionar --",
+    "selectItem": "-- Artículo --",
+    "qty": "Cant.",
+    "rate": "Precio",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando…"
+  },
+  "orderForm": {
+    "titleNew": "Nueva orden de venta",
+    "orderDate": "Fecha de orden *",
+    "deliveryDate": "Fecha de entrega *",
+    "errorCustomer": "El cliente es obligatorio.",
+    "errorLines": "Agregue al menos una línea con artículo y cantidad mayor que cero.",
+    "errorGeneric": "Ocurrió un error al guardar."
+  },
+  "deliveryForm": {
+    "titleNew": "Nuevo remito",
+    "salesOrder": "Orden de venta *",
+    "warehouse": "Almacén *",
+    "linesPending": "Líneas (pendiente = pedidas − entregadas)",
+    "pending": "pendiente {{count}}",
+    "post": "Contabilizar",
+    "posting": "Contabilizando…",
+    "errorRequired": "La orden y el almacén son obligatorios.",
+    "errorLines": "Ingrese una cantidad mayor que cero en al menos una línea.",
+    "errorGeneric": "Ocurrió un error al contabilizar."
   }
 }

@@ -62,5 +62,15 @@ public sealed class FakeAccountRepository : IAccountRepository
         CancellationToken cancellationToken = default)
         => Task.FromResult(
             AccountsByCodeMap.TryGetValue(accountCode, out var mapped) ? mapped : AccountsByCode);
+
+    public bool HasChildren { get; set; }
+
+    public bool HasGlEntries { get; set; }
+
+    public Task<bool> HasChildrenAsync(Guid accountId, CancellationToken cancellationToken = default)
+        => Task.FromResult(HasChildren || _accounts.Any(a => a.ParentAccountId == accountId));
+
+    public Task<bool> HasGlEntriesAsync(Guid accountId, CancellationToken cancellationToken = default)
+        => Task.FromResult(HasGlEntries);
 }
 

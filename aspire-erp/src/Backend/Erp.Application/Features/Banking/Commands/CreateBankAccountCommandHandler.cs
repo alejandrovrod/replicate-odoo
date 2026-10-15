@@ -35,16 +35,28 @@ public sealed class CreateBankAccountCommandHandler : ICommandHandler<CreateBank
     {
         try
         {
-            BankAccountGuards.EnsureValidFields(
-                command.CompanyId,
-                command.AccountName,
-                command.BankName,
-                command.AccountNumber);
-
-            _ = await _companies.GetByIdAsync(command.CompanyId, cancellationToken)
+            var company = await _companies.GetByIdAsync(command.CompanyId, cancellationToken)
                 ?? throw new BankingValidationException(
                     BankingErrorCodes.CompanyNotFound,
                     $"Company '{command.CompanyId}' was not found in this tenant.");
+
+            // bank-catalog spec §4: optional catalog link. Unknown/inactive/wrong-country ->
+            // bank_not_found; empty BankName autocompletes from the official catalog name;
+            // no link -> free-text BankName validated exactly as before (BNK-G3).
+            Bank? catalogBank = null;
+            if (command.BankId.HasValue)
+            {
+                catalogBank = await BankAccountGuards.RequireCatalogBankAsync(
+                    _banks, command.BankId.Value, company.CountryCode, cancellationToken);
+            }
+
+            var bankName = BankAccountGuards.ResolveBankDisplayName(command.BankName, catalogBank);
+
+            BankAccountGuards.EnsureValidFields(
+                command.CompanyId,
+                command.AccountName,
+                bankName,
+                command.AccountNumber);
 
             await BankAccountGuards.RequirePostableGlAccountAsync(
                 _accounts, command.GLAccountId, command.CompanyId, cancellationToken);
@@ -62,7 +74,8 @@ public sealed class CreateBankAccountCommandHandler : ICommandHandler<CreateBank
                 Id = Guid.NewGuid(),
                 CompanyId = command.CompanyId,
                 AccountName = command.AccountName.Trim(),
-                BankName = command.BankName.Trim(),
+                BankName = bankName.Trim(),
+                BankId = command.BankId,
                 AccountNumber = command.AccountNumber.Trim(),
                 GLAccountId = command.GLAccountId,
                 CurrencyId = command.CurrencyId,

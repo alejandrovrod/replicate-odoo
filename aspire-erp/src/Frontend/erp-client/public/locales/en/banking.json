@@ -124,6 +124,16 @@
     "bankPlaceholder": "e.g. JPMorgan Chase",
     "numberPlaceholder": "e.g. 004920"
   },
+  "bankCatalog": {
+    "searchPlaceholder": "e.g. 012 or BBVA",
+    "loading": "Loading bank catalog…",
+    "loadError": "Could not load the bank catalog: {{message}}",
+    "retry": "Retry",
+    "noResults": "No banks found.",
+    "useCustom": "No catalog match — “{{name}}” will be saved as a manual bank.",
+    "freeTextHint": "You can still type the bank name manually — it will be saved as free text.",
+    "clearSelection": "Clear bank selection"
+  },
   "paymentForm": {
     "titleNew": "New Payment Entry",
     "sectionGeneral": "Voucher",

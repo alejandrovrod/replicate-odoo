@@ -22,4 +22,14 @@ public static class AccountErrorCodes
     public const string RootTypeMismatch = "root_type_mismatch";
     public const string CycleDetected = "cycle_detected";
     public const string DuplicateAccountCode = "duplicate_account_code";
+    public const string AccountNotFound = "account_not_found";
+
+    /// <summary>A group account with children cannot be converted into a leaf (posting) account.</summary>
+    public const string GroupHasChildren = "group_has_children";
+
+    /// <summary>A leaf account with posted GL entries cannot become a non-posting group account.</summary>
+    public const string AccountHasTransactions = "account_has_transactions";
+
+    /// <summary>A balance was posted on the wrong side for the account's ERPNext type (balance_must_be).</summary>
+    public const string BalanceSideMismatch = "balance_side_mismatch";
 }

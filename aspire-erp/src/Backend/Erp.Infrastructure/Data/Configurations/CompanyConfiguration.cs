@@ -26,6 +26,10 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.CurrencyId);
         builder.Property(c => c.TaxId).HasMaxLength(50).IsRequired();
 
+        // bank-catalog spec §3: ISO 3166-1 alpha-2 country (e.g. "MX"), NULL for legacy rows
+        // (no column default - the "MX" fallback lives at query level only).
+        builder.Property(c => c.CountryCode).HasMaxLength(2);
+
         // Phase 3 additions (decision D2): the two plan.md §2 columns the initial migration
         // predates, plus the D3 code-not-FK GL default for stock receipts. PeriodLockDate was
         // renamed to FrozenAccountsDate (tasks.md 2.2, plan.md §2 literal name) by the

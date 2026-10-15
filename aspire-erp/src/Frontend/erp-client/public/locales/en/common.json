@@ -67,7 +67,8 @@
       "selling": "Sales Invoices & POS",
       "buying": "Purchase Orders & Vendor Bills",
       "hr-payroll": "Payroll Runs & Directory",
-      "crm": "Sales Pipeline & Leads"
+      "crm": "Sales Pipeline & Leads",
+      "security-roles": "Roles & Permissions"
     },
     "category": {
       "dashboard": "Dashboard",
@@ -78,14 +79,16 @@
       "selling": "Selling",
       "buying": "Buying",
       "hr": "Human Resources",
-      "crm": "CRM"
+      "crm": "CRM",
+      "administration": "Administration"
     },
     "fallbackTitle": "Module",
     "fallbackCategory": "ERP",
     "group": {
       "overview": "Overview",
       "accounting": "Accounting & Finance",
-      "operations": "Operations"
+      "operations": "Operations",
+      "administration": "Administration"
     },
     "folder": {
       "masters": "Master Data",
@@ -119,7 +122,8 @@
       "bankingAccounts": "Bank Accounts",
       "bankingPayments": "Payments",
       "periodClosing": "Period Closing",
-      "accountingSettings": "Accounting Settings"
+      "accountingSettings": "Accounting Settings",
+      "securityRoles": "Roles & Permissions"
     },
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar"

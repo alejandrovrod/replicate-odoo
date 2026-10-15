@@ -67,7 +67,8 @@
       "selling": "Facturas de venta y PDV",
       "buying": "Órdenes de compra y facturas de proveedor",
       "hr-payroll": "Nóminas y directorio",
-      "crm": "Canal de ventas y leads"
+      "crm": "Canal de ventas y leads",
+      "security-roles": "Roles y permisos"
     },
     "category": {
       "dashboard": "Panel",
@@ -78,14 +79,16 @@
       "selling": "Ventas",
       "buying": "Compras",
       "hr": "Recursos Humanos",
-      "crm": "CRM"
+      "crm": "CRM",
+      "administration": "Administración"
     },
     "fallbackTitle": "Módulo",
     "fallbackCategory": "ERP",
     "group": {
       "overview": "Resumen",
       "accounting": "Contabilidad y finanzas",
-      "operations": "Operaciones"
+      "operations": "Operaciones",
+      "administration": "Administración"
     },
     "folder": {
       "masters": "Datos Maestros",
@@ -119,7 +122,8 @@
       "bankingAccounts": "Cuentas Bancarias",
       "bankingPayments": "Pagos",
       "periodClosing": "Cierre de período",
-      "accountingSettings": "Configuración contable"
+      "accountingSettings": "Configuración contable",
+      "securityRoles": "Roles y permisos"
     },
     "expandSidebar": "Expandir barra lateral",
     "collapseSidebar": "Contraer barra lateral"

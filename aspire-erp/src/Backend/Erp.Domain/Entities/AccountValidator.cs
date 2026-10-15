@@ -160,4 +160,124 @@ public static class AccountValidator
             }
         }
     }
+
+    /// <summary>
+    /// IsGroup conversion guard (ERPNext parity: a group with children cannot become a leaf, a
+    /// leaf with posted GL entries cannot become a non-posting group). Pure domain: the handler
+    /// resolves <paramref name="hasChildren"/> / <paramref name="hasGlEntries"/> through
+    /// IAccountRepository (HasChildrenAsync / HasGlEntriesAsync) and passes the booleans here, so
+    /// Erp.Domain stays dependency-free (no EF reference, Constitution Article I.2).
+    /// </summary>
+    /// <exception cref="AccountValidationException">The conversion would orphan postings or children.</exception>
+    public static void EnsureValidIsGroupChange(
+        bool currentIsGroup,
+        bool newIsGroup,
+        bool hasChildren,
+        bool hasGlEntries)
+    {
+        if (currentIsGroup == newIsGroup)
+        {
+            return;
+        }
+
+        if (!currentIsGroup && newIsGroup)
+        {
+            // Leaf -> Group: postings live on leaves only (Constitution III.3); folding a leaf
+            // with GL entries into a non-posting folder would hide its ledger history.
+            if (hasGlEntries)
+            {
+                throw new AccountValidationException(
+                    AccountErrorCodes.AccountHasTransactions,
+                    "A leaf account with posted GL entries cannot become a group (non-posting) account.");
+            }
+
+            return;
+        }
+
+        // Group -> Leaf: children would be left parented under a terminal posting account.
+        if (hasChildren)
+        {
+            throw new AccountValidationException(
+                AccountErrorCodes.GroupHasChildren,
+                "A group account with children cannot become a leaf (posting) account.");
+        }
+    }
+
+    /// <summary>
+    /// Subtree RootType audit for a future cascade reparent: every descendant must already carry
+    /// <paramref name="rootType"/>. Today the Update handler rejects cross-RootType reparents
+    /// outright (EnsureValidParent equality rule), so no propagation is needed; this helper stays
+    /// as the pure-domain check a cascade implementation would run before rewriting descendants.
+    /// </summary>
+    /// <exception cref="AccountValidationException">A descendant carries a different RootType.</exception>
+    public static void EnsureSubtreeRootTypeConsistent(
+        AccountRootType rootType,
+        IReadOnlyList<Account> descendants)
+    {
+        ArgumentNullException.ThrowIfNull(descendants);
+
+        foreach (var descendant in descendants)
+        {
+            if (descendant.RootType != rootType)
+            {
+                throw new AccountValidationException(
+                    AccountErrorCodes.RootTypeMismatch,
+                    $"Descendant account '{descendant.AccountCode}' has RootType '{descendant.RootType}' but the subtree requires '{rootType}'.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// ERPNext <c>balance_must_be</c> parity, pure domain (no EF, no balance column read).
+    /// AUDIT DECISION: Account persists no balance, so there is no invariant to enforce at the
+    /// entity level today. This mapping is the single source of truth for the FUTURE posting-time
+    /// check (the GL engine will call <see cref="EnsureBalanceSideConsistent"/> with the computed
+    /// net balance before appending entries). Unconstrained types (Other, RoundOff) return null:
+    /// RoundOff lines are compensating by nature and group/interim accounts carry no ERPNext side.
+    /// </summary>
+    public static AccountBalanceSide? ExpectedBalanceSideFor(AccountType type) => type switch
+    {
+        AccountType.Bank => AccountBalanceSide.Debit,
+        AccountType.Cash => AccountBalanceSide.Debit,
+        AccountType.Receivable => AccountBalanceSide.Debit,
+        AccountType.Stock => AccountBalanceSide.Debit,
+        AccountType.COGS => AccountBalanceSide.Debit,
+        AccountType.Expense => AccountBalanceSide.Debit,
+        AccountType.Depreciation => AccountBalanceSide.Debit,
+        AccountType.Payable => AccountBalanceSide.Credit,
+        AccountType.Tax => AccountBalanceSide.Credit,
+        AccountType.Equity => AccountBalanceSide.Credit,
+        AccountType.Revenue => AccountBalanceSide.Credit,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Posting-time side check for one account: <paramref name="netDebitMinusCredit"/> is the
+    /// computed net balance (debits minus credits); zero is always valid (no balance yet), and
+    /// unconstrained types (see <see cref="ExpectedBalanceSideFor"/>) accept any balance.
+    /// </summary>
+    /// <exception cref="AccountValidationException">The net balance sits on the wrong side.</exception>
+    public static void EnsureBalanceSideConsistent(AccountType type, decimal netDebitMinusCredit)
+    {
+        switch (ExpectedBalanceSideFor(type))
+        {
+            case AccountBalanceSide.Debit when netDebitMinusCredit < 0:
+                throw new AccountValidationException(
+                    AccountErrorCodes.BalanceSideMismatch,
+                    $"Account type '{type}' must carry a debit balance (balance_must_be Debit) but the net balance is {netDebitMinusCredit}.");
+            case AccountBalanceSide.Credit when netDebitMinusCredit > 0:
+                throw new AccountValidationException(
+                    AccountErrorCodes.BalanceSideMismatch,
+                    $"Account type '{type}' must carry a credit balance (balance_must_be Credit) but the net balance is {netDebitMinusCredit}.");
+            default:
+                break;
+        }
+    }
+}
+
+/// <summary>Normal balance side of an account type (ERPNext balance_must_be: Debit / Credit).</summary>
+public enum AccountBalanceSide
+{
+    Debit,
+    Credit,
 }

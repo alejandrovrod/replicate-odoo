@@ -381,6 +381,37 @@ public sealed class BankRepository : IBankRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<Bank?> GetBankByIdAsync(
+        Guid bankId,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.Banks
+            .FirstOrDefaultAsync(b => b.Id == bankId, cancellationToken);
+
+    public async Task<IReadOnlyList<Bank>> GetBanksByCountryAsync(
+        string? countryCode,
+        string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Banks.Where(b => b.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(countryCode))
+        {
+            var normalized = countryCode.Trim().ToUpperInvariant();
+            query = query.Where(b => b.CountryCode == normalized);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(b => b.Code.Contains(term) || b.Name.Contains(term));
+        }
+
+        return await query
+            .OrderBy(b => b.Code)
+            .ThenBy(b => b.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task RemoveReconciliationsAsync(
         Guid bankTransactionId,
         CancellationToken cancellationToken = default)

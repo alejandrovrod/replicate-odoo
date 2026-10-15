@@ -268,6 +268,7 @@ builder.Services.AddScoped<ICommandHandler<UnreconcileBankTransactionCommand, Re
 builder.Services.AddScoped<ICommandHandler<CreateVoucherFromBankTransactionCommand, Result<JournalEntryDto>>, CreateVoucherFromBankTransactionCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBankTransactionsQuery, PagedResult<BankTransactionDto>>, GetBankTransactionsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetBankTransactionRulesQuery, PagedResult<BankTransactionRuleDto>>, GetBankTransactionRulesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBanksQuery, Result<IReadOnlyList<BankDto>>>, GetBanksQueryHandler>();
 
 // Manufacturing (Block A masters + Block B work-order workflow and postings, tasks 9.1-9.4,
 // plus the Block C cancel/reversal and UI reads, tasks 9.5-9.7):
@@ -379,8 +380,18 @@ builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHand
 
 // Security
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<Erp.Domain.Repositories.IRoleRepository, Erp.Infrastructure.Data.Repositories.RolesRepository>();
 builder.Services.AddScoped<ITokenGenerator, Erp.Infrastructure.Security.JwtTokenGenerator>();
 builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Commands.LoginCommand, Result<Erp.Application.Features.Security.Commands.LoginResponseDto>>, Erp.Application.Features.Security.Commands.LoginCommandHandler>();
+
+// Role & Permission Manager (role-permission-manager spec §4): roles, matrices and assignments.
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Roles.CreateRoleCommand, Result<Erp.Application.Features.Security.Roles.RoleDto>>, Erp.Application.Features.Security.Roles.CreateRoleCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Roles.UpdateRolePermissionsCommand, Result<Erp.Application.Features.Security.Roles.RolePermissionsDto>>, Erp.Application.Features.Security.Roles.UpdateRolePermissionsCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Roles.AssignUserRolesCommand, Result<Unit>>, Erp.Application.Features.Security.Roles.AssignUserRolesCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Roles.GetRolesQuery, IReadOnlyList<Erp.Application.Features.Security.Roles.RoleDto>>, Erp.Application.Features.Security.Roles.GetRolesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Roles.GetRolePermissionsQuery, Result<Erp.Application.Features.Security.Roles.RolePermissionsDto>>, Erp.Application.Features.Security.Roles.GetRolePermissionsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Roles.GetDocTypesCatalogQuery, IReadOnlyList<Erp.Application.Features.Security.Roles.DocTypeCatalogEntry>>, Erp.Application.Features.Security.Roles.GetDocTypesCatalogQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Roles.GetUsersWithRolesQuery, IReadOnlyList<Erp.Application.Features.Security.Roles.UserWithRolesDto>>, Erp.Application.Features.Security.Roles.GetUsersWithRolesQueryHandler>();
 
 // User Profile & Security (module 15-user-profile): password change with brute-force lockout
 // plus MFA (TOTP + single-use backup codes). BCL-only services (no new NuGet packages -
@@ -422,12 +433,20 @@ if (app.Environment.IsDevelopment())
     // Parallel boots (one WebApplicationFactory per test class) may race on the same company;
     // the seeder converges on the unique index instead of crashing the boot.
     var companies = await dbContext.Companies.IgnoreQueryFilters().ToListAsync();
+    var bankCatalogSeededTenants = new HashSet<Guid>();
     foreach (var bootstrappedCompany in companies)
     {
         using var companyScope = app.Services.CreateScope();
         companyScope.ServiceProvider.GetRequiredService<ITenantProvider>().SetCurrentTenantId(bootstrappedCompany.TenantId);
         var companyContext = companyScope.ServiceProvider.GetRequiredService<AppDbContext>();
         await ReceivableAccountSeeder.SeedAsync(companyContext, bootstrappedCompany.Id, bootstrappedCompany.TenantId);
+
+        // bank-catalog spec §5: the offline MX master bank catalog, idempotent per tenant
+        // (one seed per tenant even when it owns several companies).
+        if (bankCatalogSeededTenants.Add(bootstrappedCompany.TenantId))
+        {
+            await BankCatalogSeeder.SeedAsync(companyContext, bootstrappedCompany.TenantId);
+        }
     }
 
     // Fase R3: seed the base RBAC matrix (roles + DocTypePermission rows) for every known

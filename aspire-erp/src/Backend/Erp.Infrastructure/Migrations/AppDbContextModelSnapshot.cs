@@ -388,6 +388,75 @@ namespace Erp.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.Bank", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
+                    b.Property<string>("SwiftBic")
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CountryCode", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_Banks_Tenant_Country_Code");
+
+                    b.HasIndex("TenantId", "CountryCode", "IsActive")
+                        .HasDatabaseName("IX_Banks_Tenant_Country_Active");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("TenantId", "CountryCode", "IsActive"), new[] { "Code", "Name" });
+
+                    b.ToTable("Banks", (string)null);
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("BanksHistory");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }));
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.BankAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -404,6 +473,9 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("BankId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("BankName")
                         .IsRequired()
@@ -453,11 +525,16 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BankId");
+
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("CurrencyId");
 
                     b.HasIndex("GLAccountId");
+
+                    b.HasIndex("TenantId", "BankId")
+                        .HasDatabaseName("IX_BankAccount_Tenant_Bank");
 
                     b.HasIndex("TenantId", "CompanyId", "AccountNumber")
                         .HasDatabaseName("IX_BankAccount_Tenant_Company_Number");
@@ -1086,6 +1163,10 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<string>("CogsAccountCode")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CountryCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -4231,7 +4312,8 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<string>("DocType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uniqueidentifier");
@@ -4243,7 +4325,11 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("DocTypePermissions");
+                    b.HasIndex("TenantId", "RoleId", "DocType")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_DocPerms_Tenant_Role_DocType");
+
+                    b.ToTable("DocTypePermissions", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Security.Role", b =>
@@ -4261,14 +4347,19 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles");
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_Roles_Tenant_Name");
+
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Security.User", b =>
@@ -4368,7 +4459,17 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserRoles");
+                    b.HasIndex("TenantId", "RoleId")
+                        .HasDatabaseName("IX_UserRoles_Tenant_Role");
+
+                    b.HasIndex("TenantId", "UserId")
+                        .HasDatabaseName("IX_UserRoles_Tenant_User");
+
+                    b.HasIndex("TenantId", "UserId", "RoleId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_UserRoles_Tenant_User_Role");
+
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.SerialNo", b =>
@@ -5255,6 +5356,12 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.BankAccount", b =>
                 {
+                    b.HasOne("Erp.Domain.Entities.Bank", "Bank")
+                        .WithMany()
+                        .HasForeignKey("BankId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_BankAccount_Bank");
+
                     b.HasOne("Erp.Domain.Entities.Company", "Company")
                         .WithMany()
                         .HasForeignKey("CompanyId")
@@ -5274,6 +5381,8 @@ namespace Erp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_BankAccount_GLAccount");
+
+                    b.Navigation("Bank");
 
                     b.Navigation("Company");
 

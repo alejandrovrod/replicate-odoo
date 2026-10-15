@@ -127,3 +127,19 @@ export interface JournalEntry {
 export function netAmount(line: BankTransaction): number {
   return Math.abs(line.deposit - line.withdrawal)
 }
+
+/**
+ * Mirrors `BankDto` (GET /api/v1/banks — bank-catalog module, BNK-G1..G5).
+ * Serialized camelCase by System.Text.Json; `swiftBic` is null when unknown.
+ */
+export interface BankDto {
+  id: string
+  /** ISO 3166-1 alpha-2, uppercase (MX). */
+  countryCode: string
+  /** 3-digit Banxico/SPEI key (MX), e.g. "012". */
+  code: string
+  name: string
+  swiftBic: string | null
+  /** Full DTO carries it; trimmed projections may omit it. */
+  isActive?: boolean
+}

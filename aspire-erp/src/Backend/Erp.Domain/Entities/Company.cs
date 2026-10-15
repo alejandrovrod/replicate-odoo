@@ -30,6 +30,13 @@ public class Company : ITenantEntity
     public string TaxId { get; set; } = string.Empty;
 
     /// <summary>
+    /// ISO 3166-1 alpha-2 country of the company (bank-catalog spec §3, e.g. "MX").
+    /// Nullable so legacy rows keep working; the read-level default is "MX" (resolved in the
+    /// query, never persisted as a column default).
+    /// </summary>
+    public string? CountryCode { get; set; }
+
+    /// <summary>
     /// Hard period lock (plan.md §2 "FrozenAccountsDate DATE NULL" / spec AC-04): documents dated
     /// on or before this day cannot be posted. NULL = every period open. Enforced by
     /// <see cref="EnsurePostingDateUnlocked"/> at every posting entry point.

@@ -124,6 +124,16 @@
     "bankPlaceholder": "p. ej. Banco Nación",
     "numberPlaceholder": "p. ej. 004920"
   },
+  "bankCatalog": {
+    "searchPlaceholder": "p. ej. 012 o BBVA",
+    "loading": "Cargando catálogo de bancos…",
+    "loadError": "No se pudo cargar el catálogo de bancos: {{message}}",
+    "retry": "Reintentar",
+    "noResults": "Sin bancos coincidentes.",
+    "useCustom": "Sin coincidencia — “{{name}}” se guardará como banco manual.",
+    "freeTextHint": "Igual puede escribir el banco manualmente — se guardará como texto libre.",
+    "clearSelection": "Limpiar selección de banco"
+  },
   "paymentForm": {
     "titleNew": "Nuevo Pago",
     "sectionGeneral": "Comprobante",

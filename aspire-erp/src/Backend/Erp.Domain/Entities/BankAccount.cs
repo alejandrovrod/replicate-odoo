@@ -29,6 +29,15 @@ public sealed class BankAccount : ITenantEntity
     /// <summary>Bank institution name (max 100 chars, plan.md §1).</summary>
     public string BankName { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Optional link to the offline <see cref="Bank"/> catalog master (bank-catalog spec §3):
+    /// null means free-text <see cref="BankName"/> (fallback/display for imports and legacy
+    /// rows). FK is Restrict/NO ACTION - a referenced bank is deactivated, never hard-deleted.
+    /// </summary>
+    public Guid? BankId { get; set; }
+
+    public Bank? Bank { get; set; }
+
     /// <summary>External account number (max 50 chars, plan.md §1).</summary>
     public string AccountNumber { get; set; } = string.Empty;
 

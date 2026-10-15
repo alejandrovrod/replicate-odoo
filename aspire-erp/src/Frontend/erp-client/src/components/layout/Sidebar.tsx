@@ -12,6 +12,7 @@ import {
   ListTree,
   Archive,
   Receipt,
+  ShieldCheck,
   Truck,
   Users,
   Folder,
@@ -34,6 +35,11 @@ interface NavItem {
    * so this is concealment, not security.
    */
   perm?: [string, string?]
+  /**
+   * UX-only gate: rendered solely when the signed-in user holds the System Manager
+   * role (triad SEC-G5 menu rule). Real authorization stays server-side.
+   */
+  systemOnly?: boolean
 }
 
 interface NavGroup {
@@ -134,6 +140,13 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'crm', route: 'crm', label: 'nav.item.crm', icon: Handshake, badge: 'ERPNext', perm: ['lead'] },
     ],
   },
+  {
+    id: 'administration',
+    title: 'nav.group.administration',
+    items: [
+      { id: 'security-roles', route: 'security-roles', label: 'nav.item.securityRoles', icon: ShieldCheck, systemOnly: true },
+    ],
+  },
 ]
 
 export function Sidebar() {
@@ -143,11 +156,13 @@ export function Sidebar() {
   const isSidebarCollapsed = useNavigationStore((state) => state.isSidebarCollapsed)
   const toggleSidebar = useNavigationStore((state) => state.toggleSidebar)
   const hasPermission = useAuthStore((state) => state.hasPermission)
+  const isSystemManager = useAuthStore((state) => state.isSystemManager)
 
   const isVisible = (item: NavItem): boolean => {
     if (item.children) {
       return item.children.some((child) => isVisible(child))
     }
+    if (item.systemOnly && !isSystemManager()) return false
     if (!item.perm) return true
     return hasPermission(item.perm[0], item.perm[1] ?? 'read')
   }

@@ -256,5 +256,183 @@ public class AccountValidatorTests
     {
         AccountValidator.EnsureNoCycle(Guid.NewGuid(), Array.Empty<Guid>());
     }
+
+    [Fact]
+    public void EnsureNoCycle_CandidateInMiddleOfChain_ThrowsCycleDetected()
+    {
+        // Reparenting under one of its own descendants: the walk from the proposed parent passes
+        // through the candidate before reaching the root.
+        var candidateId = Guid.NewGuid();
+        var chain = new List<Guid> { Guid.NewGuid(), candidateId, Guid.NewGuid() };
+
+        var ex = Assert.Throws<AccountValidationException>(() =>
+            AccountValidator.EnsureNoCycle(candidateId, chain));
+
+        Assert.Equal(AccountErrorCodes.CycleDetected, CodeOf(ex));
+    }
+
+    [Fact]
+    public void EnsureValidParent_NullCandidate_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            AccountValidator.EnsureValidParent(null!, NewGroup()));
+    }
+
+    [Fact]
+    public void EnsureValidParent_NullParent_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            AccountValidator.EnsureValidParent(NewAccount(), null!));
+    }
+
+    [Fact]
+    public void EnsureNoCycle_NullChain_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            AccountValidator.EnsureNoCycle(Guid.NewGuid(), null!));
+    }
+
+    // ------------------------------------------------------- IsGroup conversion (GL-guard rules)
+
+    [Fact]
+    public void EnsureValidIsGroupChange_SameValue_DoesNotThrowEvenWithChildrenAndPostings()
+    {
+        AccountValidator.EnsureValidIsGroupChange(true, true, hasChildren: true, hasGlEntries: true);
+        AccountValidator.EnsureValidIsGroupChange(false, false, hasChildren: false, hasGlEntries: true);
+    }
+
+    [Fact]
+    public void EnsureValidIsGroupChange_LeafToGroupWithGlEntries_ThrowsAccountHasTransactions()
+    {
+        var ex = Assert.Throws<AccountValidationException>(() =>
+            AccountValidator.EnsureValidIsGroupChange(false, true, hasChildren: false, hasGlEntries: true));
+
+        Assert.Equal(AccountErrorCodes.AccountHasTransactions, CodeOf(ex));
+    }
+
+    [Fact]
+    public void EnsureValidIsGroupChange_LeafToGroupWithoutPostings_DoesNotThrow()
+    {
+        AccountValidator.EnsureValidIsGroupChange(false, true, hasChildren: false, hasGlEntries: false);
+    }
+
+    [Fact]
+    public void EnsureValidIsGroupChange_GroupToLeafWithChildren_ThrowsGroupHasChildren()
+    {
+        var ex = Assert.Throws<AccountValidationException>(() =>
+            AccountValidator.EnsureValidIsGroupChange(true, false, hasChildren: true, hasGlEntries: false));
+
+        Assert.Equal(AccountErrorCodes.GroupHasChildren, CodeOf(ex));
+    }
+
+    [Fact]
+    public void EnsureValidIsGroupChange_GroupToLeafWithoutChildren_DoesNotThrow()
+    {
+        AccountValidator.EnsureValidIsGroupChange(true, false, hasChildren: false, hasGlEntries: false);
+    }
+
+    // ------------------------------------------------------- subtree RootType audit (no cascade)
+
+    [Fact]
+    public void EnsureSubtreeRootTypeConsistent_MatchingDescendants_DoesNotThrow()
+    {
+        var descendants = new List<Account>
+        {
+            NewAccount(rootType: AccountRootType.Asset),
+            NewAccount(rootType: AccountRootType.Asset),
+        };
+
+        AccountValidator.EnsureSubtreeRootTypeConsistent(AccountRootType.Asset, descendants);
+    }
+
+    [Fact]
+    public void EnsureSubtreeRootTypeConsistent_DivergentDescendant_ThrowsRootTypeMismatch()
+    {
+        var descendants = new List<Account>
+        {
+            NewAccount(rootType: AccountRootType.Asset),
+            NewAccount(rootType: AccountRootType.Expense),
+        };
+
+        var ex = Assert.Throws<AccountValidationException>(() =>
+            AccountValidator.EnsureSubtreeRootTypeConsistent(AccountRootType.Asset, descendants));
+
+        Assert.Equal(AccountErrorCodes.RootTypeMismatch, CodeOf(ex));
+    }
+
+    [Fact]
+    public void EnsureSubtreeRootTypeConsistent_NullDescendants_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            AccountValidator.EnsureSubtreeRootTypeConsistent(AccountRootType.Asset, null!));
+    }
+
+    // ------------------------------------------------------- balance_must_be (ERPNext parity)
+
+    [Theory]
+    [InlineData(AccountType.Bank, AccountBalanceSide.Debit)]
+    [InlineData(AccountType.Cash, AccountBalanceSide.Debit)]
+    [InlineData(AccountType.Receivable, AccountBalanceSide.Debit)]
+    [InlineData(AccountType.Stock, AccountBalanceSide.Debit)]
+    [InlineData(AccountType.COGS, AccountBalanceSide.Debit)]
+    [InlineData(AccountType.Expense, AccountBalanceSide.Debit)]
+    [InlineData(AccountType.Depreciation, AccountBalanceSide.Debit)]
+    [InlineData(AccountType.Payable, AccountBalanceSide.Credit)]
+    [InlineData(AccountType.Tax, AccountBalanceSide.Credit)]
+    [InlineData(AccountType.Equity, AccountBalanceSide.Credit)]
+    [InlineData(AccountType.Revenue, AccountBalanceSide.Credit)]
+    public void ExpectedBalanceSideFor_ConstrainedType_ReturnsExpectedSide(
+        AccountType type, AccountBalanceSide expected)
+    {
+        Assert.Equal(expected, AccountValidator.ExpectedBalanceSideFor(type));
+    }
+
+    [Theory]
+    [InlineData(AccountType.Other)]
+    [InlineData(AccountType.RoundOff)]
+    public void ExpectedBalanceSideFor_UnconstrainedType_ReturnsNull(AccountType type)
+    {
+        Assert.Null(AccountValidator.ExpectedBalanceSideFor(type));
+    }
+
+    [Fact]
+    public void EnsureBalanceSideConsistent_DebitTypeWithCreditBalance_ThrowsBalanceSideMismatch()
+    {
+        var ex = Assert.Throws<AccountValidationException>(() =>
+            AccountValidator.EnsureBalanceSideConsistent(AccountType.Receivable, netDebitMinusCredit: -100m));
+
+        Assert.Equal(AccountErrorCodes.BalanceSideMismatch, CodeOf(ex));
+    }
+
+    [Fact]
+    public void EnsureBalanceSideConsistent_CreditTypeWithDebitBalance_ThrowsBalanceSideMismatch()
+    {
+        var ex = Assert.Throws<AccountValidationException>(() =>
+            AccountValidator.EnsureBalanceSideConsistent(AccountType.Payable, netDebitMinusCredit: 100m));
+
+        Assert.Equal(AccountErrorCodes.BalanceSideMismatch, CodeOf(ex));
+    }
+
+    [Fact]
+    public void EnsureBalanceSideConsistent_ZeroBalance_DoesNotThrow()
+    {
+        AccountValidator.EnsureBalanceSideConsistent(AccountType.Receivable, 0m);
+        AccountValidator.EnsureBalanceSideConsistent(AccountType.Payable, 0m);
+    }
+
+    [Fact]
+    public void EnsureBalanceSideConsistent_UnconstrainedTypeAcceptsAnyBalance()
+    {
+        AccountValidator.EnsureBalanceSideConsistent(AccountType.Other, -500m);
+        AccountValidator.EnsureBalanceSideConsistent(AccountType.Other, 500m);
+        AccountValidator.EnsureBalanceSideConsistent(AccountType.RoundOff, -1m);
+    }
+
+    [Fact]
+    public void EnsureBalanceSideConsistent_CorrectSide_DoesNotThrow()
+    {
+        AccountValidator.EnsureBalanceSideConsistent(AccountType.Cash, 250m);
+        AccountValidator.EnsureBalanceSideConsistent(AccountType.Revenue, -250m);
+    }
 }
 

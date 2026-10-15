@@ -126,11 +126,11 @@ public sealed class AccountsController : ControllerBase
         if (!result.IsSuccess)
         {
             var error = result.Error!;
-            if (error.Code == "account_not_found")
+            if (error.Code == AccountErrorCodes.AccountNotFound)
             {
                 return Problem(StatusCodes.Status404NotFound, _common.Text("AccountNotFound"), error.Message, error.Code);
             }
-            if (error.Code == "concurrency_conflict")
+            if (error.Code == ConcurrencyErrorCodes.ConcurrencyConflict)
             {
                 return Problem(StatusCodes.Status409Conflict, _common.Text("ConcurrencyConflict"), error.Message, error.Code);
             }
@@ -169,7 +169,7 @@ public sealed class AccountsController : ControllerBase
         var account = await _accounts.GetByIdAsync(id, cancellationToken);
         if (account is null)
         {
-            return Problem(StatusCodes.Status404NotFound, _common.Text("AccountNotFound"), id.ToString(), "account_not_found");
+            return Problem(StatusCodes.Status404NotFound, _common.Text("AccountNotFound"), id.ToString(), AccountErrorCodes.AccountNotFound);
         }
 
         account.IsActive = isActive;

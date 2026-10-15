@@ -59,4 +59,11 @@ public static class BankingErrorCodes
     public const string BankNameRequired = "bank_name_required";
     public const string BankAccountNumberRequired = "bank_account_number_required";
     public const string InvalidGlAccount = "invalid_gl_account";
+
+    // Bank catalog master (bank-catalog spec §4): GetBanksQuery country validation +
+    // CreateBankAccount BankId resolution (unknown, foreign-tenant, inactive or
+    // wrong-country banks are indistinguishable by design -> same code).
+    public const string BankNotFound = "bank_not_found";
+    public const string InvalidBankCountry = "invalid_bank_country";
+    public const string InvalidBankCode = "invalid_bank_code";
 }

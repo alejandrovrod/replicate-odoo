@@ -102,6 +102,9 @@ public class AppDbContext : DbContext
 
     public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
 
+    /// <summary>Offline master bank catalog (bank-catalog spec §3): tenant-scoped, query filter automatic.</summary>
+    public DbSet<Bank> Banks => Set<Bank>();
+
     public DbSet<BankStatementImport> BankStatementImports => Set<BankStatementImport>();
 
     public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();

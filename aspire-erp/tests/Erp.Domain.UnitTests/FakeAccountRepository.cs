@@ -53,5 +53,16 @@ public sealed class FakeAccountRepository : IAccountRepository
         string accountCode,
         CancellationToken cancellationToken = default)
         => Task.FromResult(AccountsByCode);
+
+    /// <summary>IsGroup-conversion answers: set per test (default false = no children / no postings).</summary>
+    public bool HasChildren { get; set; }
+
+    public bool HasGlEntries { get; set; }
+
+    public Task<bool> HasChildrenAsync(Guid accountId, CancellationToken cancellationToken = default)
+        => Task.FromResult(HasChildren);
+
+    public Task<bool> HasGlEntriesAsync(Guid accountId, CancellationToken cancellationToken = default)
+        => Task.FromResult(HasGlEntries);
 }
 

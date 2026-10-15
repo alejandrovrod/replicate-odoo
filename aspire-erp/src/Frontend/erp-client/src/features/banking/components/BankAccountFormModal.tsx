@@ -10,6 +10,8 @@ import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { ApiError } from '../../../api/client'
 import type { BankAccount } from '../api/useBankAccounts'
+import type { BankDto } from '../types'
+import { BankCombobox } from './BankCombobox'
 import { useTranslation } from 'react-i18next'
 import { useAccountTree } from '../../accounting/useAccountTree'
 import { useCurrencies } from '../../accounting/api/useCurrencies'
@@ -21,6 +23,12 @@ interface BankAccountFormModalProps {
   onSave: (data: Partial<BankAccount>) => Promise<void>
   initialData?: BankAccount | null
   companyId: string
+  /**
+   * Company country used to pre-filter the bank catalog (`Company.CountryCode`,
+   * bank-catalog spec §3 D3). Defaults to "MX" when the company row carries no
+   * country — read-only filtering, never persisted.
+   */
+  countryCode?: string
 }
 
 export function BankAccountFormModal({
@@ -29,6 +37,7 @@ export function BankAccountFormModal({
   onSave,
   initialData,
   companyId,
+  countryCode = 'MX',
 }: BankAccountFormModalProps) {
   const { t } = useTranslation('banking')
   const [formData, setFormData] = useState<Partial<BankAccount>>({
@@ -69,6 +78,16 @@ export function BankAccountFormModal({
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
+
+  // Catalog pick → bankId + official name (the input stays editable afterwards);
+  // free text → bankId null + manual name (BNK-G3 fallback).
+  const handleBankSelect = (bank: BankDto | null, freeText: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      bankId: bank ? bank.id : null,
+      bankName: bank ? bank.name : freeText,
     }))
   }
 
@@ -135,13 +154,12 @@ export function BankAccountFormModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t('bankAccountForm.bankLabel', 'Bank *')}</label>
-              <Input
-                name="bankName"
-                value={formData.bankName || ''}
-                onChange={handleChange}
-                placeholder={t('bankAccountForm.bankPlaceholder', 'e.g. JPMorgan Chase')}
-                required
+              <label htmlFor="bank-account-bank-select-input" className="text-sm font-medium">{t('bankAccountForm.bankLabel', 'Bank *')}</label>
+              <BankCombobox
+                valueBankId={formData.bankId}
+                customBankName={formData.bankName}
+                countryCode={countryCode}
+                onSelect={handleBankSelect}
               />
             </div>
 

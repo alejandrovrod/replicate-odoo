@@ -32,4 +32,18 @@ public static class AuthErrorCodes
 
     /// <summary>Login-challenge failure: wrong/expired TOTP or backup code, or unusable challenge ticket.</summary>
     public const string MfaInvalidLoginCode = "AUTH_MFA_INVALID_CODE";
+
+    // Role & Permission Manager (.specify/modules/role-permission-manager/spec.md §4):
+    // every constant resolves in ErrorMessages{,.es}.resx (ErrorCatalogCoverageTests)
+    // and mirrors to frontend error.json via scripts/i18n-sync.mjs.
+    public const string CannotRemoveLastAdmin = "CANNOT_REMOVE_LAST_ADMIN";
+    public const string CrossTenantAssignmentDenied = "CROSS_TENANT_ASSIGNMENT_DENIED";
+    public const string RoleHasAssignments = "ROLE_HAS_ASSIGNMENTS";
+    public const string RoleNameConflict = "ROLE_NAME_CONFLICT";
+    public const string RoleNameInvalid = "ROLE_NAME_INVALID";
+    public const string RoleNotFound = "ROLE_NOT_FOUND";
+    public const string RolePermissionInvalid = "ROLE_PERMISSION_INVALID";
+    public const string SystemManagerImmutable = "SYSTEM_MANAGER_IMMUTABLE";
+    public const string UserRoleAlreadyAssigned = "USER_ROLE_ALREADY_ASSIGNED";
+    public const string UserRoleNotFound = "USER_ROLE_NOT_FOUND";
 }

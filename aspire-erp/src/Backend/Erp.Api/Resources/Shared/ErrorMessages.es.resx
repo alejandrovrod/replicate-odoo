@@ -728,6 +728,15 @@
   <data name="bank_account_not_found" xml:space="preserve">
     <value>Cuenta bancaria no encontrada.</value>
   </data>
+  <data name="bank_not_found" xml:space="preserve">
+    <value>Banco no encontrado en el catálogo.</value>
+  </data>
+  <data name="invalid_bank_country" xml:space="preserve">
+    <value>Código de país de banco inválido.</value>
+  </data>
+  <data name="invalid_bank_code" xml:space="preserve">
+    <value>Código de banco inválido.</value>
+  </data>
   <data name="accrual_voucher_not_found" xml:space="preserve">
     <value>Comprobante de devengado no encontrado.</value>
   </data>
@@ -888,6 +897,37 @@
   </data>
   <data name="AUTH_MFA_INVALID_CODE" xml:space="preserve">
     <value>El código de dos factores es incorrecto o ha expirado.</value>
+  </data>
+  <!-- Roles y permisos (role-permission-manager spec §4, orden alfabético). -->
+  <data name="CANNOT_REMOVE_LAST_ADMIN" xml:space="preserve">
+    <value>No se puede quitar el rol System Manager al último administrador del tenant.</value>
+  </data>
+  <data name="CROSS_TENANT_ASSIGNMENT_DENIED" xml:space="preserve">
+    <value>El usuario y el rol pertenecen a tenants diferentes.</value>
+  </data>
+  <data name="ROLE_HAS_ASSIGNMENTS" xml:space="preserve">
+    <value>No se puede eliminar el rol mientras esté asignado a usuarios.</value>
+  </data>
+  <data name="ROLE_NAME_CONFLICT" xml:space="preserve">
+    <value>Ya existe un rol con este nombre en este tenant.</value>
+  </data>
+  <data name="ROLE_NAME_INVALID" xml:space="preserve">
+    <value>El nombre del rol es obligatorio, debe tener entre 3 y 100 caracteres y solo puede contener letras, dígitos, espacios, guiones bajos y guiones.</value>
+  </data>
+  <data name="ROLE_NOT_FOUND" xml:space="preserve">
+    <value>Rol no encontrado.</value>
+  </data>
+  <data name="ROLE_PERMISSION_INVALID" xml:space="preserve">
+    <value>La fila de permiso no es válida: DocType desconocido o Create sin Write.</value>
+  </data>
+  <data name="SYSTEM_MANAGER_IMMUTABLE" xml:space="preserve">
+    <value>El rol System Manager es inmutable y no tiene filas de permiso editables.</value>
+  </data>
+  <data name="USER_ROLE_ALREADY_ASSIGNED" xml:space="preserve">
+    <value>El rol ya está asignado a este usuario.</value>
+  </data>
+  <data name="USER_ROLE_NOT_FOUND" xml:space="preserve">
+    <value>Usuario no encontrado en este tenant.</value>
   </data>
   <data name="invalid_discount" xml:space="preserve">
     <value>El descuento global no es válido.</value>

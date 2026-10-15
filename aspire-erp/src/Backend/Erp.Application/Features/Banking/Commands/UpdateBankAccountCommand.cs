@@ -17,4 +17,5 @@ public sealed record UpdateBankAccountCommand(
     Guid GLAccountId,
     Guid? CurrencyId,
     bool IsActive,
-    byte[] RowVersion) : ICommand<Result<BankAccountDto>>;
+    byte[] RowVersion,
+    Guid? BankId = null) : ICommand<Result<BankAccountDto>>;

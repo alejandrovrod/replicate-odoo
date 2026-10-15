@@ -168,4 +168,18 @@ public interface IBankRepository
 
     /// <summary>Deletes the links of one staging transaction (un-reconcile path).</summary>
     Task RemoveReconciliationsAsync(Guid bankTransactionId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Active catalog banks of one country, ordered by <c>Code</c> (autocomplete read,
+    /// bank-catalog spec BNK-G1/G2). Null/empty country returns every active bank.
+    /// Optional <paramref name="search"/> matches code or name (case-insensitive).
+    /// Tenant isolation stays automatic (Constitution II.3 - no manual TenantId filter).
+    /// </summary>
+    Task<IReadOnlyList<Bank>> GetBanksByCountryAsync(
+        string? countryCode,
+        string? search = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>One catalog bank by id (null when unknown or foreign to this tenant).</summary>
+    Task<Bank?> GetBankByIdAsync(Guid bankId, CancellationToken cancellationToken = default);
 }

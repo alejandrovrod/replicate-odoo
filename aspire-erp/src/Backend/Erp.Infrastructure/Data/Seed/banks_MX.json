@@ -1,0 +1,12 @@
+[
+  { "countryCode": "MX", "code": "002", "name": "Banco Nacional de México (Banamex)", "swiftBic": "BNMXMXMM", "isActive": true },
+  { "countryCode": "MX", "code": "012", "name": "BBVA México", "swiftBic": "BCMRMXMM", "isActive": true },
+  { "countryCode": "MX", "code": "014", "name": "Banco Santander México", "swiftBic": "BMSXMXMM", "isActive": true },
+  { "countryCode": "MX", "code": "021", "name": "HSBC México", "swiftBic": "BIMEMXMM", "isActive": true },
+  { "countryCode": "MX", "code": "030", "name": "Banco del Bajío", "swiftBic": null, "isActive": true },
+  { "countryCode": "MX", "code": "044", "name": "Scotiabank México", "swiftBic": null, "isActive": true },
+  { "countryCode": "MX", "code": "058", "name": "Banco Regional (Banregio)", "swiftBic": null, "isActive": true },
+  { "countryCode": "MX", "code": "062", "name": "Banca Afirme", "swiftBic": null, "isActive": true },
+  { "countryCode": "MX", "code": "072", "name": "Banco Mercantil del Norte (Banorte)", "swiftBic": "MENOMXMT", "isActive": true },
+  { "countryCode": "MX", "code": "127", "name": "Banco Azteca", "swiftBic": null, "isActive": true }
+]

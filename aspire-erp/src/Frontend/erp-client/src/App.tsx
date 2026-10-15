@@ -31,6 +31,7 @@ import { useNavigationStore, type NavRoute } from './store/useNavigationStore'
 import { useTenantStore } from './store/useTenantStore'
 import { AccountingSettingsView } from './features/accounting/AccountingSettingsView'
 import { ProfileScreen } from './features/profile/ProfileScreen'
+import { SecurityView } from './features/security/SecurityView'
 import { LoginScreen } from './components/auth/LoginScreen'
 import { RequirePermission } from './components/auth/RequirePermission'
 import { useAuthStore } from './store/useAuthStore'
@@ -88,7 +89,7 @@ function App() {
   const companyId = useTenantStore((state) => state.companyId)
   const currentRoute = useNavigationStore((state) => state.currentRoute)
 
-  const { token } = useAuthStore()
+  const { token, isSystemManager } = useAuthStore()
 
   if (!token) {
     return <LoginScreen />
@@ -146,6 +147,8 @@ function App() {
       {guard('buying-suppliers', <SupplierView />)}
       {guard('hr-payroll', <HrPayrollOverview />)}
       {guard('crm', <CrmOverview />)}
+      {/* Security is UX-gated on System Manager (menu + here); the API enforces the real policy. */}
+      {currentRoute === 'security-roles' ? (isSystemManager() ? <SecurityView /> : <Forbidden />) : null}
     </AppShell>
   )
 }

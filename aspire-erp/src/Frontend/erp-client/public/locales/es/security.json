@@ -1,0 +1,93 @@
+{
+  "page": {
+    "title": "Roles y permisos",
+    "subtitle": "Matriz de roles y asignación de usuarios. La autorización se aplica en el servidor; los cambios rigen en el próximo inicio de sesión."
+  },
+  "tabs": {
+    "permissions": "Permisos",
+    "users": "Usuarios"
+  },
+  "role": {
+    "label": "Rol",
+    "selectPlaceholder": "Elegí un rol…",
+    "loading": "Cargando roles…",
+    "loadFailed": "No se pudieron cargar los roles: {{message}}",
+    "retry": "Reintentar",
+    "empty": "Todavía no hay roles. Creá el primero abajo.",
+    "systemBadge": "Sistema",
+    "users_one": "{{count}} usuario",
+    "users_other": "{{count}} usuarios",
+    "createTitle": "Nuevo rol",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "p. ej. Soporte N1",
+    "descriptionLabel": "Descripción",
+    "descriptionPlaceholder": "Para qué sirve este rol (opcional)",
+    "createBtn": "Crear rol",
+    "creating": "Creando…",
+    "createFailed": "No se pudo crear el rol: {{message}}",
+    "created": "Rol creado."
+  },
+  "systemLocked": {
+    "title": "El rol de sistema es inmutable",
+    "body": "System Manager evita todos los controles de permiso y no tiene filas de permiso, así que no hay nada que editar. Cualquier intento de actualización se rechaza con SYSTEM_MANAGER_IMMUTABLE (403)."
+  },
+  "activeUsersWarning": "Atención: {{count}} usuario(s) activo(s) tienen este rol. Los cambios guardados aplican en su próximo inicio de sesión.",
+  "nextLoginNotice": "Guardado. Los claims de permiso se emiten al iniciar sesión (vencimiento 24h), así que cada usuario afectado ve la nueva matriz en su próximo inicio de sesión.",
+  "matrix": {
+    "title": "Matriz de permisos",
+    "subtitle": "Las filas son tipos de documento agrupados por módulo; las columnas son acciones.",
+    "colDoctype": "Tipo de documento",
+    "col": {
+      "read": "Lectura",
+      "write": "Escritura",
+      "create": "Crear",
+      "delete": "Eliminar",
+      "submit": "Enviar",
+      "cancel": "Cancelar"
+    },
+    "group": {
+      "sales": "Ventas",
+      "purchase": "Compras",
+      "accounting": "Contabilidad",
+      "stock": "Stock e ítems",
+      "core": "Núcleo y catálogo",
+      "hr": "RRHH",
+      "manufacturing": "Fabricación y proyectos"
+    },
+    "cellAria": "Permiso de {{action}} para {{doctype}}",
+    "rowToggleAria": "Cambiar todos los permisos de {{doctype}}",
+    "colToggleAria": "Cambiar {{action}} para todos los tipos de documento",
+    "loading": "Cargando permisos…",
+    "loadFailed": "No se pudieron cargar los permisos: {{message}}",
+    "save": "Guardar permisos",
+    "saving": "Guardando…",
+    "saved": "Permisos guardados.",
+    "dirty": "Tenés cambios sin guardar.",
+    "confirmTitle": "¿Guardar la matriz de permisos?",
+    "confirmBody": "Esto reescribe la matriz de permisos del rol “{{role}}”. Los usuarios con este rol conservan sus claims actuales hasta su próximo inicio de sesión.",
+    "confirmOk": "Guardar",
+    "saveFailed": "No se pudieron guardar los permisos: {{message}}"
+  },
+  "users": {
+    "title": "Usuarios y roles",
+    "subtitle": "Tildá roles para asignarlos. Quitar System Manager del último administrador se rechaza (409 CANNOT_REMOVE_LAST_ADMIN).",
+    "loading": "Cargando usuarios…",
+    "loadFailed": "No se pudieron cargar los usuarios: {{message}}",
+    "empty": "No se encontraron usuarios.",
+    "search": "Buscar usuarios…",
+    "colUser": "Usuario",
+    "colRoles": "Roles",
+    "colActions": "Acciones",
+    "manageRoles": "Gestionar roles",
+    "noRoles": "Sin roles"
+  },
+  "userModal": {
+    "title": "Roles de {{email}}",
+    "subtitle": "Los cambios aplican en el próximo inicio de sesión del usuario.",
+    "save": "Guardar roles",
+    "saving": "Guardando…",
+    "saved": "Roles actualizados.",
+    "failed": "No se pudieron actualizar los roles: {{message}}",
+    "lastAdmin": "Rechazado: este es el último administrador con System Manager. Asigná el rol a otra persona primero (CANNOT_REMOVE_LAST_ADMIN)."
+  }
+}

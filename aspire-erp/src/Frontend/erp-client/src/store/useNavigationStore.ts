@@ -17,6 +17,7 @@ export type NavRoute =
   | 'buying'
   | 'hr-payroll'
   | 'crm'
+  | 'security-roles'
   | 'stock-warehouses'
   | 'stock-items'
   | 'selling-customers'
@@ -57,6 +58,7 @@ const parseHash = (): NavRoute => {
     'buying',
     'hr-payroll',
     'crm',
+    'security-roles',
     'stock-warehouses',
     'stock-items',
     'selling-customers',

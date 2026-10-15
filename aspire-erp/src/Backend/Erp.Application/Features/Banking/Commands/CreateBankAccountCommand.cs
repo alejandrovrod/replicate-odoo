@@ -15,4 +15,5 @@ public sealed record CreateBankAccountCommand(
     string AccountNumber,
     Guid GLAccountId,
     Guid? CurrencyId = null,
-    bool IsActive = true) : ICommand<Result<BankAccountDto>>;
+    bool IsActive = true,
+    Guid? BankId = null) : ICommand<Result<BankAccountDto>>;

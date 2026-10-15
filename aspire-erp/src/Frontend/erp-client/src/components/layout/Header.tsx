@@ -56,6 +56,7 @@ const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys 
   'banking-payments': { title: 'nav.item.bankingPayments', category: 'nav.category.treasury' },
   'accounting-period-closing': { title: 'nav.item.periodClosing', category: 'nav.category.accounting' },
   'accounting-settings': { title: 'nav.item.accountingSettings', category: 'nav.category.accounting' },
+  'security-roles': { title: 'nav.route.security-roles', category: 'nav.category.administration' },
 }
 
 const FALLBACK_NAV = {

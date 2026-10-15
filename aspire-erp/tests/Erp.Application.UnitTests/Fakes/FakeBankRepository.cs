@@ -71,6 +71,41 @@ public sealed class FakeBankRepository : IBankRepository
 
     public void SeedAccount(BankAccount account) => _accounts.Add(account);
 
+    public void SeedBank(Bank bank) => _banks.Add(bank);
+
+    /// <summary>All seeded catalog banks.</summary>
+    public IReadOnlyList<Bank> Banks => _banks;
+
+    private readonly List<Bank> _banks = new();
+
+    public Task<Bank?> GetBankByIdAsync(Guid bankId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_banks.FirstOrDefault(b => b.Id == bankId));
+
+    public Task<IReadOnlyList<Bank>> GetBanksByCountryAsync(
+        string? countryCode,
+        string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _banks.Where(b => b.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(countryCode))
+        {
+            var normalized = countryCode.Trim().ToUpperInvariant();
+            query = query.Where(b => b.CountryCode == normalized);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(b =>
+                b.Code.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || b.Name.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return Task.FromResult<IReadOnlyList<Bank>>(
+            query.OrderBy(b => b.Code).ThenBy(b => b.Id).ToList());
+    }
+
     public void SeedTransaction(BankTransaction transaction) => _persistedTransactions.Add(transaction);
 
     public void SeedRule(BankTransactionRule rule) => _rules.Add(rule);

@@ -51,7 +51,19 @@ public sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAcco
             .HasConstraintName("FK_BankAccount_Currency")
             .OnDelete(DeleteBehavior.Restrict);
 
+        // bank-catalog spec §3: optional catalog link (nullable, Restrict/NO ACTION - a
+        // referenced bank is deactivated, never hard-deleted). BankName stays untouched as
+        // fallback/display.
+        builder.HasOne(a => a.Bank)
+            .WithMany()
+            .HasForeignKey(a => a.BankId)
+            .HasConstraintName("FK_BankAccount_Bank")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(a => new { a.TenantId, a.CompanyId, a.AccountNumber })
             .HasDatabaseName("IX_BankAccount_Tenant_Company_Number");
+
+        builder.HasIndex(a => new { a.TenantId, a.BankId })
+            .HasDatabaseName("IX_BankAccount_Tenant_Bank");
     }
 }

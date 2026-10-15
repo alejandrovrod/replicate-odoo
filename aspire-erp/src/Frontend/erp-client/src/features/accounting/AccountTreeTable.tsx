@@ -1,13 +1,14 @@
-import { ChevronDown, ChevronRight, Folder, MinusCircle, Search, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Folder, MinusCircle, Plus, Power, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTenantStore } from '../../store/useTenantStore'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { translateDocStatus } from '../../lib/docStatus'
-import type { AccountRootType, AccountTreeNode } from './types'
+import type { AccountRootType, AccountTreeNode, AccountType } from './types'
 import { useAccountTree } from './useAccountTree'
 import { AccountFormModal, type AccountFormData } from './components/AccountFormModal'
-import { apiClient } from '../../api/client'
+import { ApiError } from '../../api/client'
+import { saveAccountApi, setAccountActiveApi } from './api/updateAccountApi'
 import { Edit2 } from 'lucide-react'
 
 /** Depth indent in px. Padding (not margin/width) so column widths never move. */
@@ -21,6 +22,22 @@ const ROOT_TYPE_BADGE_CLASS: Record<AccountRootType, string> = {
   Equity: 'bg-violet-100 text-violet-700',
   Income: 'bg-emerald-100 text-emerald-700',
   Expense: 'bg-rose-100 text-rose-700',
+}
+
+const ACCOUNT_TYPE_BADGE_CLASS: Record<AccountType, string> = {
+  Other: 'bg-slate-100 text-slate-600',
+  Bank: 'bg-blue-100 text-blue-700',
+  Cash: 'bg-teal-100 text-teal-700',
+  Receivable: 'bg-cyan-100 text-cyan-700',
+  Payable: 'bg-orange-100 text-orange-700',
+  Stock: 'bg-lime-100 text-lime-700',
+  COGS: 'bg-rose-100 text-rose-700',
+  Tax: 'bg-red-100 text-red-700',
+  Equity: 'bg-violet-100 text-violet-700',
+  Revenue: 'bg-emerald-100 text-emerald-700',
+  Expense: 'bg-rose-100 text-rose-700',
+  Depreciation: 'bg-stone-100 text-stone-700',
+  RoundOff: 'bg-neutral-100 text-neutral-600',
 }
 
 interface FlatRow {
@@ -121,9 +138,30 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Partial<AccountFormData> | null>(null)
+  /** Last 409 ProblemDetails: offers a Reload prompt instead of silently failing. */
+  const [conflictError, setConflictError] = useState<ApiError | null>(null)
+  /** Last enable/disable failure (non-409): dismissible domain feedback. */
+  const [toggleError, setToggleError] = useState<ApiError | null>(null)
+  /** Row currently flipping IsActive — its toggle button stays disabled meanwhile. */
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const handleCreate = () => {
     setEditingAccount(null)
+    setConflictError(null)
+    setIsModalOpen(true)
+  }
+
+  /** Pre-fills parent + inherits rootType so the child lands under the right branch. */
+  const handleAddChild = (parent: AccountTreeNode) => {
+    if (!parent.isGroup) return
+    setEditingAccount({
+      companyId,
+      parentAccountId: parent.id,
+      rootType: parent.rootType,
+      isGroup: false,
+      isActive: true,
+    })
+    setConflictError(null)
     setIsModalOpen(true)
   }
 
@@ -145,21 +183,47 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
   }
 
   const handleSaveAccount = async (data: AccountFormData) => {
-    if (data.id) {
-      // PUT mirrors UpdateAccountCommand: only name + active travel, plus the
-      // original rowVersion token for the concurrency check.
-      await apiClient.put(`/v1/accounts/${data.id}`, {
-        id: data.id,
-        companyId: data.companyId,
-        accountName: data.accountName,
-        isActive: data.isActive,
-        rowVersion: data.rowVersion,
-      })
-    } else {
-      // Post
-      await apiClient.post('/v1/accounts', data)
+    try {
+      await saveAccountApi(data)
+      setConflictError(null)
+      reload()
+    } catch (err) {
+      // Surface stale-rowVersion / duplicate-code as a reload prompt (RFC7807
+      // code/message preserved) AND rethrow so the modal shows domain feedback.
+      if (err instanceof ApiError && err.status === 409) {
+        setConflictError(err)
+      }
+      throw err
     }
-    reload()
+  }
+
+  /**
+   * Contextual Activar/Desactivar flip via the dedicated enable|disable
+   * endpoints (AccountsController.SetActiveAsync). A 409 joins the shared
+   * conflict banner (reload prompt); any other failure renders its RFC 7807
+   * code/message in the dismissible toggle alert below. Either way the tree
+   * reloads on success so fresh rowVersion tokens arrive with the GET.
+   */
+  const handleToggleActive = async (node: AccountTreeNode) => {
+    if (togglingId) return
+    setTogglingId(node.id)
+    setToggleError(null)
+    try {
+      await setAccountActiveApi(node.id, !node.isActive)
+      reload()
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setConflictError(err)
+      } else {
+        setToggleError(
+          err instanceof ApiError
+            ? err
+            : new ApiError(0, 'Toggle failed', err instanceof Error ? err.message : String(err)),
+        )
+      }
+    } finally {
+      setTogglingId(null)
+    }
   }
 
   const searchQuery = query.trim().toLowerCase()
@@ -241,7 +305,62 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
   }
 
   return (
-    <div className="w-full">
+    <section aria-label={t('page.title', 'Chart of Accounts')} className="w-full">
+      {conflictError ? (
+        <div
+          role="alert"
+          data-testid="account-conflict-banner"
+          className="mb-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+        >
+          <p className="font-medium">{t('tree.conflictTitle', 'This account changed elsewhere')}</p>
+          <p className="mt-1">
+            {translateErrorCode(i18n, conflictError.code, conflictError.message)}
+          </p>
+          {conflictError.code ? (
+            <p className="mt-1 text-xs">
+              {t('tree.errorCode')}{' '}
+              <code className="rounded bg-amber-100 px-1 py-0.5 font-mono">{conflictError.code}</code>
+            </p>
+          ) : null}
+          <button
+            type="button"
+            data-testid="account-conflict-reload"
+            onClick={() => {
+              setConflictError(null)
+              reload()
+            }}
+            className="mt-2 rounded border border-amber-400 px-2 py-1 text-amber-900 hover:bg-amber-100"
+          >
+            {t('tree.reload', 'Reload')}
+          </button>
+        </div>
+      ) : null}
+      {toggleError ? (
+        <div
+          role="alert"
+          data-testid="account-toggle-error"
+          className="mb-2 rounded-md border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+        >
+          <p className="font-medium">{t('tree.toggleActiveFailed', 'Could not change the account status')}</p>
+          <p className="mt-1">
+            {translateErrorCode(i18n, toggleError.code, toggleError.message)}
+          </p>
+          {toggleError.code ? (
+            <p className="mt-1 text-xs">
+              {t('tree.errorCode')}{' '}
+              <code className="rounded bg-rose-100 px-1 py-0.5 font-mono">{toggleError.code}</code>
+            </p>
+          ) : null}
+          <button
+            type="button"
+            data-testid="account-toggle-error-dismiss"
+            onClick={() => setToggleError(null)}
+            className="mt-2 rounded border border-rose-400 px-2 py-1 text-rose-900 hover:bg-rose-100"
+          >
+            {t('tree.dismiss', 'Dismiss')}
+          </button>
+        </div>
+      ) : null}
       <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
         <Search className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
         <input
@@ -266,6 +385,7 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
 
       <button
         type="button"
+        data-testid="account-new-btn"
         onClick={handleCreate}
         className="fixed bottom-8 right-8 z-50 flex items-center gap-2 rounded-full bg-sky-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-sky-600/20 transition-all hover:-translate-y-0.5 hover:bg-sky-700 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
       >
@@ -279,25 +399,27 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
             <col className="w-24" />
             <col />
             <col className="w-28" />
+            <col className="w-28" />
             <col className="w-24" />
             <col className="w-24" />
-            <col className="w-16" />
+            <col className="w-24" />
           </colgroup>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-2 py-2" aria-label={t('tree.expandColumn')} />
-              <th className="px-2 py-2 font-semibold">{t('tree.colCode')}</th>
-              <th className="px-2 py-2 font-semibold">{t('tree.colName')}</th>
-              <th className="px-2 py-2 font-semibold">{t('tree.colRootType')}</th>
-              <th className="px-2 py-2 font-semibold">{t('tree.colKind')}</th>
-              <th className="px-2 py-2 font-semibold">{t('tree.colStatus')}</th>
-              <th className="px-2 py-2" aria-label={t('tree.actionsColumn')} />
+              <th scope="col" className="px-2 py-2" aria-label={t('tree.expandColumn')} />
+              <th scope="col" className="px-2 py-2 font-semibold">{t('tree.colCode')}</th>
+              <th scope="col" className="px-2 py-2 font-semibold">{t('tree.colName')}</th>
+              <th scope="col" className="px-2 py-2 font-semibold">{t('tree.colRootType')}</th>
+              <th scope="col" className="px-2 py-2 font-semibold">{t('tree.colType', 'Type')}</th>
+              <th scope="col" className="px-2 py-2 font-semibold">{t('tree.colKind')}</th>
+              <th scope="col" className="px-2 py-2 font-semibold">{t('tree.colStatus')}</th>
+              <th scope="col" className="px-2 py-2" aria-label={t('tree.actionsColumn')} />
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr className={ROW_HEIGHT_CLASS}>
-                <td colSpan={7} className="px-4 text-center text-slate-500">
+                <td colSpan={8} className="px-4 text-center text-slate-500">
                   {filtered
                     ? t('tree.emptyFiltered', { query: query.trim() })
                     : t('tree.empty')}
@@ -309,12 +431,14 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
                 return (
                   <tr
                     key={node.id}
+                    data-testid={`account-row-${node.code}`}
                     className={`${ROW_HEIGHT_CLASS} border-b border-slate-100 last:border-b-0 hover:bg-slate-50`}
                   >
                     <td className="px-0 text-center align-middle">
                       {hasChildren ? (
                         <button
                           type="button"
+                          data-testid={`account-toggle-${node.code}`}
                           onClick={() => toggle(node.id)}
                           aria-expanded={isExpanded}
                           aria-label={`${isExpanded ? t('tree.collapse') : t('tree.expand')} ${node.code}`}
@@ -347,6 +471,18 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
                         {translateDocStatus(i18n, node.rootType)}
                       </span>
                     </td>
+                    <td className="px-2">
+                      {node.isGroup ? (
+                        <span className="text-xs text-slate-400">—</span>
+                      ) : (
+                        <span
+                          data-testid={`account-type-${node.code}`}
+                          className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${ACCOUNT_TYPE_BADGE_CLASS[node.type ?? 'Other'] ?? 'bg-slate-100 text-slate-700'}`}
+                        >
+                          {node.type ?? 'Other'}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-2 text-slate-600">
                       {node.isGroup ? (
                         <span className="inline-flex items-center gap-1 text-xs">
@@ -373,14 +509,59 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
                       </span>
                     </td>
                     <td className="px-2 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(node)}
-                        className="inline-flex size-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                        title={t('tree.edit', 'Edit Account')}
-                      >
-                        <Edit2 className="size-3.5" aria-hidden="true" />
-                      </button>
+                      <span className="inline-flex items-center gap-1">
+                        {node.isGroup ? (
+                          <button
+                            type="button"
+                            data-testid={`account-add-child-${node.code}`}
+                            onClick={() => handleAddChild(node)}
+                            className="inline-flex size-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            title={t('tree.addChild', 'Add child account')}
+                            aria-label={`${t('tree.addChild', 'Add child account')} ${node.code}`}
+                          >
+                            <Plus className="size-3.5" aria-hidden="true" />
+                          </button>
+                        ) : (
+                          <span
+                            data-testid={`account-add-child-${node.code}`}
+                            title={t('tree.addChildDisabled', 'Only group accounts can have children')}
+                            aria-disabled="true"
+                            className="inline-flex size-6 cursor-not-allowed items-center justify-center rounded text-slate-200"
+                          >
+                            <Plus className="size-3.5" aria-hidden="true" />
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          data-testid={`account-edit-${node.code}`}
+                          onClick={() => handleEdit(node)}
+                          className="inline-flex size-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          title={t('tree.edit', 'Edit Account')}
+                          aria-label={`${t('tree.edit', 'Edit Account')} ${node.code}`}
+                        >
+                          <Edit2 className="size-3.5" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`account-active-toggle-${node.code}`}
+                          onClick={() => handleToggleActive(node)}
+                          disabled={togglingId === node.id}
+                          className="inline-flex size-6 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-wait disabled:opacity-50"
+                          title={
+                            node.isActive
+                              ? t('tree.deactivate', 'Deactivate account')
+                              : t('tree.activate', 'Activate account')
+                          }
+                          aria-label={`${
+                            node.isActive
+                              ? t('tree.deactivate', 'Deactivate account')
+                              : t('tree.activate', 'Activate account')
+                          } ${node.code}`}
+                          aria-pressed={node.isActive}
+                        >
+                          <Power className="size-3.5" aria-hidden="true" />
+                        </button>
+                      </span>
                     </td>
                   </tr>
                 )
@@ -398,6 +579,6 @@ export function AccountTreeTable({ companyId }: AccountTreeTableProps) {
         initialData={editingAccount}
         accountsQuery={{ nodes, status }}
       />
-    </div>
+    </section>
   )
 }

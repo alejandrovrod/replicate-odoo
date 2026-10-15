@@ -277,6 +277,12 @@
   <data name="BankAccountNotFound" xml:space="preserve">
     <value>Bank Account Not Found</value>
   </data>
+  <data name="BankNotFound" xml:space="preserve">
+    <value>Bank Not Found</value>
+  </data>
+  <data name="InvalidBankCountry" xml:space="preserve">
+    <value>Invalid Bank Country</value>
+  </data>
   <data name="StatementImportRejected" xml:space="preserve">
     <value>Statement Import Rejected</value>
   </data>

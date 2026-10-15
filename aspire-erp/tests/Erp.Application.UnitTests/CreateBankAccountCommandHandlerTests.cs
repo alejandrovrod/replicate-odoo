@@ -41,7 +41,7 @@ public sealed class CreateBankAccountCommandHandlerTests
         => new(_banks, _companies, _accounts, _currencies);
 
     private UpdateBankAccountCommandHandler UpdateHandler()
-        => new(_banks, _accounts, _currencies);
+        => new(_banks, _companies, _accounts, _currencies);
 
     [Fact]
     public async Task HandleAsync_ValidAccount_PersistsAndReturnsDto()

@@ -47,4 +47,10 @@ public interface IAccountRepository
 
     /// <summary>Updates an existing account.</summary>
     Task UpdateAsync(Account account, CancellationToken cancellationToken = default);
+
+    /// <summary>True when any account lists this account as its parent (IsGroup-conversion guard).</summary>
+    Task<bool> HasChildrenAsync(Guid accountId, CancellationToken cancellationToken = default);
+
+    /// <summary>True when any GL entry posts against this account (IsGroup-conversion guard).</summary>
+    Task<bool> HasGlEntriesAsync(Guid accountId, CancellationToken cancellationToken = default);
 }

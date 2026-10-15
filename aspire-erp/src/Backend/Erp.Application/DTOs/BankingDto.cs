@@ -116,7 +116,8 @@ public sealed record BankAccountDto(
     decimal LastReconciledBalance,
     DateOnly? LastReconciledDate,
     bool IsActive,
-    byte[]? RowVersion = null)
+    byte[]? RowVersion = null,
+    Guid? BankId = null)
 {
     public static BankAccountDto From(BankAccount account) =>
         new(
@@ -130,5 +131,6 @@ public sealed record BankAccountDto(
             account.LastReconciledBalance,
             account.LastReconciledDate,
             account.IsActive,
-            account.RowVersion);
+            account.RowVersion,
+            account.BankId);
 }

@@ -727,6 +727,15 @@
   <data name="bank_account_not_found" xml:space="preserve">
     <value>Bank account not found.</value>
   </data>
+  <data name="bank_not_found" xml:space="preserve">
+    <value>Bank not found in the catalog.</value>
+  </data>
+  <data name="invalid_bank_country" xml:space="preserve">
+    <value>Invalid bank country code.</value>
+  </data>
+  <data name="invalid_bank_code" xml:space="preserve">
+    <value>Invalid bank code.</value>
+  </data>
   <data name="accrual_voucher_not_found" xml:space="preserve">
     <value>Accrual voucher not found.</value>
   </data>
@@ -887,6 +896,37 @@
   </data>
   <data name="AUTH_MFA_INVALID_CODE" xml:space="preserve">
     <value>The two-factor code is incorrect or has expired.</value>
+  </data>
+  <!-- Role & Permission Manager (role-permission-manager spec §4, alphabetical). -->
+  <data name="CANNOT_REMOVE_LAST_ADMIN" xml:space="preserve">
+    <value>The System Manager role cannot be removed from the last administrator of the tenant.</value>
+  </data>
+  <data name="CROSS_TENANT_ASSIGNMENT_DENIED" xml:space="preserve">
+    <value>The user and the role belong to different tenants.</value>
+  </data>
+  <data name="ROLE_HAS_ASSIGNMENTS" xml:space="preserve">
+    <value>The role cannot be deleted while it is assigned to users.</value>
+  </data>
+  <data name="ROLE_NAME_CONFLICT" xml:space="preserve">
+    <value>A role with this name already exists in this tenant.</value>
+  </data>
+  <data name="ROLE_NAME_INVALID" xml:space="preserve">
+    <value>The role name is required, must be 3..100 characters and may only contain letters, digits, spaces, underscores and hyphens.</value>
+  </data>
+  <data name="ROLE_NOT_FOUND" xml:space="preserve">
+    <value>Role not found.</value>
+  </data>
+  <data name="ROLE_PERMISSION_INVALID" xml:space="preserve">
+    <value>The permission row is invalid: unknown DocType, or Create without Write.</value>
+  </data>
+  <data name="SYSTEM_MANAGER_IMMUTABLE" xml:space="preserve">
+    <value>The System Manager role is immutable and owns no editable permission rows.</value>
+  </data>
+  <data name="USER_ROLE_ALREADY_ASSIGNED" xml:space="preserve">
+    <value>The role is already assigned to this user.</value>
+  </data>
+  <data name="USER_ROLE_NOT_FOUND" xml:space="preserve">
+    <value>User not found in this tenant.</value>
   </data>
   <data name="invalid_discount" xml:space="preserve">
     <value>The global discount is invalid.</value>

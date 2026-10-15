@@ -29,6 +29,31 @@ export interface AccountTreeNode {
   rowVersion?: string
 }
 
+export interface GroupAccountOption {
+  id: string
+  code: string
+  name: string
+}
+
+/**
+ * Pure presentational helper (COA-01): flattens the tree into group-only parent
+ * options. The client pre-filters the parent selector to groups; the domain
+ * (`parent_is_not_group`) stays authoritative and re-validates server-side.
+ */
+export function collectGroupAccounts(nodes: AccountTreeNode[]): GroupAccountOption[] {
+  const options: GroupAccountOption[] = []
+  const walk = (items: AccountTreeNode[]): void => {
+    for (const node of items) {
+      if (node.isGroup) {
+        options.push({ id: node.id, code: node.code, name: node.name })
+        walk(node.children)
+      }
+    }
+  }
+  walk(nodes)
+  return options
+}
+
 /**
  * Mirrors `GeneralLedgerEntryDto` (pinned Task 2.6 contract).
  * Rows arrive ordered by `postingDate` ASC, `id` ASC (chronological audit order).

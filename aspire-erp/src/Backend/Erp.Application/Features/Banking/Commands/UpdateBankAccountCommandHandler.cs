@@ -14,15 +14,18 @@ namespace Erp.Application.Features.Banking.Commands;
 public sealed class UpdateBankAccountCommandHandler : ICommandHandler<UpdateBankAccountCommand, Result<BankAccountDto>>
 {
     private readonly IBankRepository _banks;
+    private readonly ICompanyRepository _companies;
     private readonly IAccountRepository _accounts;
     private readonly ICurrencyRepository _currencies;
 
     public UpdateBankAccountCommandHandler(
         IBankRepository banks,
+        ICompanyRepository companies,
         IAccountRepository accounts,
         ICurrencyRepository currencies)
     {
         _banks = banks;
+        _companies = companies;
         _accounts = accounts;
         _currencies = currencies;
     }
@@ -46,10 +49,26 @@ public sealed class UpdateBankAccountCommandHandler : ICommandHandler<UpdateBank
                 throw new ConcurrencyConflictException(nameof(BankAccount), account.Id);
             }
 
+            // bank-catalog spec §4: same BankId validation as create (unknown/inactive/
+            // wrong-country -> bank_not_found; empty BankName autocompletes from catalog).
+            Bank? catalogBank = null;
+            if (request.BankId.HasValue)
+            {
+                var company = await _companies.GetByIdAsync(request.CompanyId, cancellationToken)
+                    ?? throw new BankingValidationException(
+                        BankingErrorCodes.CompanyNotFound,
+                        $"Company '{request.CompanyId}' was not found in this tenant.");
+
+                catalogBank = await BankAccountGuards.RequireCatalogBankAsync(
+                    _banks, request.BankId.Value, company.CountryCode, cancellationToken);
+            }
+
+            var bankName = BankAccountGuards.ResolveBankDisplayName(request.BankName, catalogBank);
+
             BankAccountGuards.EnsureValidFields(
                 request.CompanyId,
                 request.AccountName,
-                request.BankName,
+                bankName,
                 request.AccountNumber);
 
             await BankAccountGuards.RequirePostableGlAccountAsync(
@@ -64,7 +83,8 @@ public sealed class UpdateBankAccountCommandHandler : ICommandHandler<UpdateBank
             }
 
             account.AccountName = request.AccountName.Trim();
-            account.BankName = request.BankName.Trim();
+            account.BankName = bankName.Trim();
+            account.BankId = request.BankId;
             account.AccountNumber = request.AccountNumber.Trim();
             account.GLAccountId = request.GLAccountId;
             account.CurrencyId = request.CurrencyId;

@@ -120,8 +120,18 @@ public sealed class AccountRepository : IAccountRepository
         {
             _dbContext.Entry(account).State = EntityState.Detached;
             throw new AccountValidationException(
-                "concurrency_conflict",
+                ConcurrencyErrorCodes.ConcurrencyConflict,
                 $"The account '{account.AccountCode}' was modified by another user. Please refresh and try again.");
         }
     }
+
+    public Task<bool> HasChildrenAsync(Guid accountId, CancellationToken cancellationToken = default)
+        => _dbContext.Accounts.AnyAsync(
+            a => a.ParentAccountId == accountId,
+            cancellationToken);
+
+    public Task<bool> HasGlEntriesAsync(Guid accountId, CancellationToken cancellationToken = default)
+        => _dbContext.GLEntries.AnyAsync(
+            g => g.AccountId == accountId,
+            cancellationToken);
 }

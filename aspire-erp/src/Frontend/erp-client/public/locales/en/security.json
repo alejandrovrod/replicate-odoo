@@ -1,0 +1,93 @@
+{
+  "page": {
+    "title": "Roles & Permissions",
+    "subtitle": "Role matrix and user assignments. Authorization is enforced server-side; changes apply on next sign-in."
+  },
+  "tabs": {
+    "permissions": "Permissions",
+    "users": "Users"
+  },
+  "role": {
+    "label": "Role",
+    "selectPlaceholder": "Select a role…",
+    "loading": "Loading roles…",
+    "loadFailed": "Could not load roles: {{message}}",
+    "retry": "Retry",
+    "empty": "No roles yet. Create the first one below.",
+    "systemBadge": "System",
+    "users_one": "{{count}} user",
+    "users_other": "{{count}} users",
+    "createTitle": "New role",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Support L1",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What this role is for (optional)",
+    "createBtn": "Create role",
+    "creating": "Creating…",
+    "createFailed": "Could not create the role: {{message}}",
+    "created": "Role created."
+  },
+  "systemLocked": {
+    "title": "System role is immutable",
+    "body": "System Manager bypasses every permission check and owns no permission rows, so there is nothing to edit. Any update attempt is rejected with SYSTEM_MANAGER_IMMUTABLE (403)."
+  },
+  "activeUsersWarning": "Warning: {{count}} active user(s) hold this role. Saved changes apply on their next sign-in.",
+  "nextLoginNotice": "Saved. Permission claims are issued at login (24h expiry), so every affected user sees the new matrix on their next sign-in.",
+  "matrix": {
+    "title": "Permission matrix",
+    "subtitle": "Rows are document types grouped by module; columns are actions.",
+    "colDoctype": "Document Type",
+    "col": {
+      "read": "Read",
+      "write": "Write",
+      "create": "Create",
+      "delete": "Delete",
+      "submit": "Submit",
+      "cancel": "Cancel"
+    },
+    "group": {
+      "sales": "Sales",
+      "purchase": "Purchasing",
+      "accounting": "Accounting",
+      "stock": "Stock & Items",
+      "core": "Core & Catalog",
+      "hr": "Human Resources",
+      "manufacturing": "Manufacturing & Projects"
+    },
+    "cellAria": "{{action}} permission for {{doctype}}",
+    "rowToggleAria": "Toggle all permissions for {{doctype}}",
+    "colToggleAria": "Toggle {{action}} for all document types",
+    "loading": "Loading permissions…",
+    "loadFailed": "Could not load permissions: {{message}}",
+    "save": "Save permissions",
+    "saving": "Saving…",
+    "saved": "Permissions saved.",
+    "dirty": "You have unsaved changes.",
+    "confirmTitle": "Save permission matrix?",
+    "confirmBody": "This rewrites the permission matrix for role “{{role}}”. Users holding this role keep their current claims until their next sign-in.",
+    "confirmOk": "Save",
+    "saveFailed": "Could not save permissions: {{message}}"
+  },
+  "users": {
+    "title": "Users & roles",
+    "subtitle": "Tick roles to assign them. Removing System Manager from the last administrator is rejected (409 CANNOT_REMOVE_LAST_ADMIN).",
+    "loading": "Loading users…",
+    "loadFailed": "Could not load users: {{message}}",
+    "empty": "No users found.",
+    "search": "Search users…",
+    "colUser": "User",
+    "colRoles": "Roles",
+    "colActions": "Actions",
+    "manageRoles": "Manage roles",
+    "noRoles": "No roles"
+  },
+  "userModal": {
+    "title": "Roles for {{email}}",
+    "subtitle": "Changes apply on the user's next sign-in.",
+    "save": "Save roles",
+    "saving": "Saving…",
+    "saved": "Roles updated.",
+    "failed": "Could not update roles: {{message}}",
+    "lastAdmin": "Refused: this is the last administrator holding System Manager. Assign the role to someone else first (CANNOT_REMOVE_LAST_ADMIN)."
+  }
+}

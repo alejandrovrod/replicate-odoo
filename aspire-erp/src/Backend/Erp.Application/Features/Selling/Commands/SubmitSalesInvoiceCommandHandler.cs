@@ -141,6 +141,15 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                 AbsorbRoundingResidual(glEntries, incomeAccountId, !invoice.IsReturn);
                 DoubleEntryGuard.EnsureBalanced(glEntries);
 
+                // Module 18 (gap D3 / scenario RET-G1): a credit note amortizes the ORIGINAL
+                // invoice's outstanding balance. The customer's own balance already shrank above
+                // (negative GrandTotal); this reduces the specific bill the note references, so
+                // the referenced invoice stops showing as fully collectible.
+                if (invoice.IsReturn)
+                {
+                    await AmortizeReturnedInvoiceAsync(invoice, token);
+                }
+
                 // Module 18 §3: stock re-entry on returns (and symmetric outflow on normal sales)
                 // when the invoice moves inventory. Valuation follows the POS simplification
                 // (line rate as valuation rate); the delivery-note FIFO engine stays untouched.
@@ -176,6 +185,30 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
     }
 
     // ------------------------------------------------------------------ account resolution
+
+    /// <summary>
+    /// Module 18 (gap D3): reduces the referenced invoice's <see cref="SalesInvoice.OutstandingAmount"/>
+    /// by the credit note's absolute grand total, floored at zero so rounding overlap cannot drive it
+    /// negative. The creation-time guard already proved the original exists, belongs to the same
+    /// customer and is submitted, so a missing row here is a no-op rather than a failure.
+    /// </summary>
+    private async Task AmortizeReturnedInvoiceAsync(SalesInvoice creditNote, CancellationToken token)
+    {
+        if (creditNote.ReturnAgainstId is not { } originalId || originalId == Guid.Empty)
+        {
+            return;
+        }
+
+        var original = await _salesInvoices.GetByIdAsync(originalId, token);
+        if (original is null || original.IsReturn)
+        {
+            return;
+        }
+
+        var credit = Math.Abs(creditNote.GrandTotal);
+        original.OutstandingAmount = Math.Max(0m, original.OutstandingAmount - credit);
+        await _salesInvoices.UpdateAsync(original, token);
+    }
 
     private async Task<Guid> ResolveReceivableAccountAsync(
         Customer customer, Company company, Guid companyId, CancellationToken token)

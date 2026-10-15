@@ -165,6 +165,96 @@ public sealed class PurchaseInvoicesController : ControllerBase
     }
 
     /// <summary>
+    /// Creates AND posts one supplier debit note (purchase return, module 19) against a posted bill
+    /// in a single transaction: the strict inverse of <see cref="Create"/> - Debit Accounts Payable /
+    /// Credit Input Tax / Credit inventory (with negative Kardex rows when <c>updateStock</c> is set)
+    /// or Credit the accrued liability for an amount-only adjustment - a gapless PRET voucher and the
+    /// amortization of the referenced bill's outstanding balance.
+    /// </summary>
+    /// <remarks>
+    /// Requires the <c>Idempotency-Key</c> header (Constitution VI.4). The requested quantity per
+    /// line must be positive and must not exceed the original line's billed quantity; the return's
+    /// gross, added to every debit note already booked against the same bill, must not exceed the
+    /// bill's gross (<c>return_amount_exceeded</c>, 400) on top of the usual fiscal/GL rejections.
+    /// </remarks>
+    /// <param name="id">Id of the posted bill being returned against.</param>
+    /// <param name="companyId">Company that owns the bill.</param>
+    /// <param name="request">Return data (lines, tax, stock flag, dates).</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:guid}/return")]
+    [Authorize(Policy = "permission:purchase_invoice:write")]
+    [Consumes("application/json")]
+    [IdempotencyKeyRequired]
+    [ProducesResponseType(typeof(PurchaseInvoicePostingDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Return(
+        Guid id,
+        [FromQuery] Guid companyId,
+        [FromBody] PurchaseReturnRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidPurchaseInvoice"),
+                _errors.Text(PurchaseErrorCodes.InvoiceNotFound),
+                PurchaseErrorCodes.InvoiceNotFound);
+        }
+
+        var command = new PostPurchaseReturnCommand(
+            companyId,
+            id,
+            request.BillNumber ?? string.Empty,
+            request.CurrencyId,
+            request.DueDate,
+            request.PostingDate,
+            request.TaxAmount,
+            request.UpdateStock,
+            request.Lines);
+
+        var result = await _sender.SendAsync(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+
+            return error.Code switch
+            {
+                PurchaseErrorCodes.InvoiceAlreadyExists => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("DuplicatePurchaseInvoice"),
+                    error.Message,
+                    error.Code),
+                PurchaseErrorCodes.InvalidStatusTransition => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("PurchaseOrderConflict"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("ConcurrentUpdateConflict"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                AccountingErrorCodes.FiscalPeriodLocked => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("FiscalPeriodLocked"),
+                    error.Message,
+                    error.Code),
+                _ => Problem(
+                    StatusCodes.Status400BadRequest,
+                    _common.Text("PurchaseInvoiceRejected"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+            };
+        }
+
+        var posting = result.Value!;
+        return CreatedAtAction(nameof(Get), new { companyId = posting.Invoice.CompanyId }, posting);
+    }
+
+    /// <summary>
     /// Cancels one posted purchase invoice: appends the compensating reversal rows (Debit/Credit
     /// swapped, original PostingDate, <c>IsCancelled = true</c>) and moves the bill
     /// Unpaid/PartiallyPaid -&gt; Cancelled, atomically, leaving the voucher netted to 0.0000 and

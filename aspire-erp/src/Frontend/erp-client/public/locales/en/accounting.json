@@ -6,7 +6,11 @@
   "missingTenant": "No tenant/company selected. Set VITE_TENANT_ID and VITE_COMPANY_ID in .env.development.",
   "page": {
     "title": "Chart of Accounts",
-    "subtitle": "Hierarchical ledger taxonomy (Assets, Liabilities, Equity, Income, Expenses)."
+    "subtitle": "Hierarchical ledger taxonomy (Assets, Liabilities, Equity, Income, Expenses).",
+    "accountingSettings": {
+      "title": "Accounting Settings",
+      "subtitle": "Manage company-wide accounting configuration"
+    }
   },
   "tree": {
     "loading": "Loading chart of accounts…",
@@ -293,5 +297,65 @@
     "loading": "Loading...",
     "submitError": "Failed to submit",
     "cancelError": "Failed to cancel"
+  },
+  "action": {
+    "configure": "Configure"
+  },
+  "companySettings": {
+    "title": "Company Accounting Settings",
+    "description": "Configure frozen accounts date and default retained earnings account for the company.",
+    "loadError": "Error loading company settings",
+    "saveError": "Error saving settings",
+    "loading": "Loading...",
+    "frozenDate": "Frozen Accounts Date (Hard Period Lock)",
+    "frozenDateHelp": "Vouchers dated on or before this day cannot be posted.",
+    "retainedEarnings": "Default Retained Earnings Account",
+    "selectPlaceholder": "Select",
+    "retainedEarningsHelp": "Equity account used for period closing vouchers."
+  },
+  "accountForm": {
+    "isGroup": "Is Group Account?",
+    "isGroupDesc": "Group accounts cannot contain entries.",
+    "isGroupHelp": "Group accounts organize children and cannot hold postings. Leaf accounts hold balances.",
+    "errorConflict": "Concurrency conflict or duplicate code. Please try again.",
+    "errorGeneric": "An error occurred while saving.",
+    "errorRequired": "Code and Name are required.",
+    "errorCodeRequired": "Account code is required.",
+    "errorNameRequired": "Account name is required.",
+    "errorRootTypeRequired": "Root type is required.",
+    "errorParentNotGroup": "Parent must be a group account.",
+    "titleEdit": "Edit Account",
+    "titleNew": "New Account",
+    "codeLabel": "Account Code *",
+    "nameLabel": "Account Name *",
+    "rootTypeLabel": "Root Type",
+    "rootAsset": "Asset",
+    "rootLiability": "Liability",
+    "rootEquity": "Equity",
+    "rootIncome": "Income",
+    "rootExpense": "Expense",
+    "currencyLabel": "Currency",
+    "currencyNone": "-- Default (USD) --",
+    "typeLabel": "Account Type",
+    "typeOther": "Other (Default)",
+    "typeBank": "Bank",
+    "typeCash": "Cash",
+    "typeReceivable": "Receivable",
+    "typePayable": "Payable",
+    "typeStock": "Stock",
+    "typeCOGS": "Cost of Goods Sold (COGS)",
+    "typeTax": "Tax",
+    "typeEquity": "Equity",
+    "typeRevenue": "Revenue",
+    "typeExpense": "Expense",
+    "typeDepreciation": "Depreciation",
+    "typeRoundOff": "Round Off",
+    "parentLabel": "Parent Group Account",
+    "accountNone": "-- No Parent --",
+    "active": "Active",
+    "activeDesc": "Account is available for selection.",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
   }
 }

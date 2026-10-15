@@ -179,6 +179,9 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("ItemId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("OpeningJournalEntryId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("PeriodEnd")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
@@ -191,6 +194,12 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<DateOnly>("PurchaseDate")
                         .HasColumnType("date");
+
+                    b.Property<Guid?>("PurchaseInvoiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PurchaseInvoiceItemId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -223,6 +232,12 @@ namespace Erp.Infrastructure.Migrations
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("ItemId");
+
+                    b.HasIndex("OpeningJournalEntryId");
+
+                    b.HasIndex("PurchaseInvoiceId");
+
+                    b.HasIndex("PurchaseInvoiceItemId");
 
                     b.HasIndex("TenantId", "CompanyId", "AssetCategoryId", "Status")
                         .HasDatabaseName("IX_Asset_Tenant_Category");
@@ -271,6 +286,16 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<Guid?>("CwipAccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("DefaultSalvageValuePercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<int>("DefaultUsefulLifeMonths")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(60);
 
                     b.Property<Guid>("DepreciationExpenseAccountId")
                         .HasColumnType("uniqueidentifier");
@@ -2124,6 +2149,9 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<Guid?>("AssetCategoryId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2143,6 +2171,11 @@ namespace Erp.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("IsFixedAsset")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsStockItem")
                         .HasColumnType("bit");
@@ -2181,6 +2214,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssetCategoryId");
 
                     b.HasIndex("DefaultWarehouseId");
 
@@ -3274,6 +3309,11 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0.0000m);
 
+                    b.Property<bool>("IsReturn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<decimal>("NetTotal")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,4)")
@@ -3286,6 +3326,9 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<DateOnly>("PostingDate")
                         .HasColumnType("date");
+
+                    b.Property<Guid?>("ReturnAgainstId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -3307,6 +3350,11 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("UpdateStock")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("VoucherNo")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -3321,6 +3369,9 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasIndex("CurrencyId");
 
+                    b.HasIndex("ReturnAgainstId")
+                        .HasDatabaseName("IX_PurchaseInvoice_ReturnAgainstId");
+
                     b.HasIndex("SupplierId");
 
                     b.HasIndex("CompanyId", "BillNumber")
@@ -3333,7 +3384,7 @@ namespace Erp.Infrastructure.Migrations
 
                     b.ToTable("PurchaseInvoice", null, t =>
                         {
-                            t.HasCheckConstraint("CK_PurchaseInvoice_Totals", "[NetTotal] >= 0.0000 AND [TaxTotal] >= 0.0000 AND [GrandTotal] >= 0.0000");
+                            t.HasCheckConstraint("CK_PurchaseInvoice_Totals", "([NetTotal] >= 0.0000 AND [TaxTotal] >= 0.0000 AND [GrandTotal] >= 0.0000) OR ([NetTotal] <= 0.0000 AND [TaxTotal] <= 0.0000 AND [GrandTotal] <= 0.0000)");
                         });
                 });
 
@@ -3376,9 +3427,9 @@ namespace Erp.Infrastructure.Migrations
 
                     b.ToTable("PurchaseInvoiceLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_PurchaseInvoiceLine_Amount_NonNegative", "[Amount] >= 0");
+                            t.HasCheckConstraint("CK_PurchaseInvoiceLine_Amount_NonNegative", "([Qty] > 0 AND [Amount] >= 0) OR ([Qty] < 0 AND [Amount] <= 0)");
 
-                            t.HasCheckConstraint("CK_PurchaseInvoiceLine_Qty_Positive", "[Qty] > 0");
+                            t.HasCheckConstraint("CK_PurchaseInvoiceLine_Qty_Positive", "[Qty] <> 0");
 
                             t.HasCheckConstraint("CK_PurchaseInvoiceLine_Rate_NonNegative", "[Rate] >= 0");
                         });
@@ -5274,6 +5325,24 @@ namespace Erp.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_Asset_Item");
 
+                    b.HasOne("Erp.Domain.Entities.JournalEntry", null)
+                        .WithMany()
+                        .HasForeignKey("OpeningJournalEntryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Asset_OpeningJournalEntry");
+
+                    b.HasOne("Erp.Domain.Entities.PurchaseInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Asset_PurchaseInvoice");
+
+                    b.HasOne("Erp.Domain.Entities.PurchaseInvoiceLine", null)
+                        .WithMany()
+                        .HasForeignKey("PurchaseInvoiceItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Asset_PurchaseInvoiceItem");
+
                     b.Navigation("AssetCategory");
 
                     b.Navigation("Item");
@@ -5801,6 +5870,12 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.Item", b =>
                 {
+                    b.HasOne("Erp.Domain.Entities.AssetCategory", "AssetCategory")
+                        .WithMany()
+                        .HasForeignKey("AssetCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Item_AssetCategory");
+
                     b.HasOne("Erp.Domain.Entities.Warehouse", "DefaultWarehouse")
                         .WithMany()
                         .HasForeignKey("DefaultWarehouseId");
@@ -5823,6 +5898,8 @@ namespace Erp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_Item_UOM");
+
+                    b.Navigation("AssetCategory");
 
                     b.Navigation("DefaultWarehouse");
 
@@ -6128,6 +6205,12 @@ namespace Erp.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("CurrencyId");
 
+                    b.HasOne("Erp.Domain.Entities.PurchaseInvoice", "ReturnAgainst")
+                        .WithMany()
+                        .HasForeignKey("ReturnAgainstId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_PurchaseInvoice_ReturnAgainst");
+
                     b.HasOne("Erp.Domain.Entities.Supplier", "Supplier")
                         .WithMany()
                         .HasForeignKey("SupplierId")
@@ -6136,6 +6219,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasConstraintName("FK_PurchaseInvoice_Supplier");
 
                     b.Navigation("Currency");
+
+                    b.Navigation("ReturnAgainst");
 
                     b.Navigation("Supplier");
                 });

@@ -15,9 +15,14 @@ public sealed class PurchaseInvoiceLineConfiguration : IEntityTypeConfiguration<
     {
         builder.ToTable("PurchaseInvoiceLine", table =>
         {
-            table.HasCheckConstraint("CK_PurchaseInvoiceLine_Qty_Positive", "[Qty] > 0");
+            // Normal bills bill a POSITIVE quantity/amount; return lines (module 19, T1) carry the
+            // exact negative mirror. The constraints forbid a ZERO quantity (empty line) and a
+            // quantity/amount that disagree in SIGN, without demanding a positive value.
+            table.HasCheckConstraint("CK_PurchaseInvoiceLine_Qty_Positive", "[Qty] <> 0");
             table.HasCheckConstraint("CK_PurchaseInvoiceLine_Rate_NonNegative", "[Rate] >= 0");
-            table.HasCheckConstraint("CK_PurchaseInvoiceLine_Amount_NonNegative", "[Amount] >= 0");
+            table.HasCheckConstraint(
+                "CK_PurchaseInvoiceLine_Amount_NonNegative",
+                "([Qty] > 0 AND [Amount] >= 0) OR ([Qty] < 0 AND [Amount] <= 0)");
         });
 
         builder.HasKey(l => l.Id);

@@ -90,6 +90,13 @@ public interface IPurchaseRepository
     Task<PurchaseInvoice?> GetInvoiceByIdAsync(Guid purchaseInvoiceId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Absolute gross already returned against one bill (module 19, T2): the sum of
+    /// <c>|GrandTotal|</c> over every debit note whose <c>ReturnAgainstId</c> is the bill. Used to
+    /// enforce the <c>return_amount_exceeded</c> ceiling before a new return is posted.
+    /// </summary>
+    Task<decimal> GetReturnedAmountForInvoiceAsync(Guid purchaseInvoiceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Saves status/amount transitions of an already-tracked invoice (spec BY-05). Translates the
     /// RowVersion mismatch into <see cref="ConcurrencyConflictException"/> like UpdateOrderAsync.
     /// </summary>

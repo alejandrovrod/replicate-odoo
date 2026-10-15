@@ -58,7 +58,30 @@ public class PurchaseInvoice : ITenantEntity
     public decimal OutstandingAmount { get; set; }
 
     /// <summary>
-    /// Gapless voucher number (Constitution III.4): PINV-2026-00001.
+    /// Module 19 (returns-and-credit-notes, T1): true when this bill is a supplier debit note
+    /// (purchase return). A return carries NEGATIVE totals/lines, references the bill it reverses
+    /// (<see cref="ReturnAgainstId"/>) and books the strict inverse of the original bill.
+    /// </summary>
+    public bool IsReturn { get; set; }
+
+    /// <summary>
+    /// Module 19 (T1): the posted, non-return bill this debit note reverses. Null for a normal
+    /// bill; never null on a return (validated at posting, mirrors SalesInvoice.ReturnAgainstId).
+    /// </summary>
+    public Guid? ReturnAgainstId { get; set; }
+
+    public PurchaseInvoice? ReturnAgainst { get; set; }
+
+    /// <summary>
+    /// Module 19 (T1): when true the return physically reverses inventory (negative StockLedgerEntry
+    /// rows + Cr inventory). When false it is an amount-only adjustment that reopens the interim
+    /// <c>Stock Received But Not Billed</c> liability instead of touching stock.
+    /// </summary>
+    public bool UpdateStock { get; set; }
+
+    /// <summary>
+    /// Gapless voucher number (Constitution III.4): PINV-2026-00001 (normal bills) or
+    /// PRET-2026-00001 (returns).
     /// Assigned inside the posting transaction - the entity is only persisted with a number.
     /// </summary>
     public string VoucherNo { get; set; } = string.Empty;

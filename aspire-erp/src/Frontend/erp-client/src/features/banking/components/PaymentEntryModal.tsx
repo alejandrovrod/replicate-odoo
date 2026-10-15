@@ -10,11 +10,13 @@ import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { ApiError } from '../../../api/client'
 import { translateErrorCode } from '../../../lib/translateErrorCode'
+import { formatMoney } from '../../../lib/format'
 import { useTranslation } from 'react-i18next'
 import { useBankAccounts } from '../api/useBankAccounts'
 import { useCustomers } from '../../selling/api/useCustomers'
 import { useSuppliers } from '../../buying/api/useSuppliers'
 import { getOutstandingInvoices, type OutstandingInvoice } from '../api/usePaymentEntries'
+import { planFifoAllocations } from '../fifoAllocation'
 
 interface AllocationDraft {
   invoiceId: string
@@ -136,6 +138,22 @@ export function PaymentEntryModal({ isOpen, onClose, onSave, companyId }: Paymen
 
   const updateAllocation = (invoiceId: string, amount: number) => {
     setAllocations((prev) => prev.map((a) => (a.invoiceId === invoiceId ? { ...a, allocatedAmount: amount } : a)))
+  }
+
+  /**
+   * FIFO settlement (ui-spec r-12 D2 / PAY-UI-G1): delegation only - the ordering and capping
+   * rules live in the pure `planFifoAllocations` so they are tested without a rendered modal.
+   * The last slice stops at the remaining cash; anything beyond the open total stays as advance.
+   */
+  const autoAllocate = () => {
+    const plan = planFifoAllocations(outstanding, Number(paidAmount) || 0)
+    setAllocations(
+      plan.map((slice) => ({
+        invoiceId: slice.invoiceId,
+        isSales: isReceive,
+        allocatedAmount: slice.allocatedAmount,
+      })),
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -274,16 +292,49 @@ export function PaymentEntryModal({ isOpen, onClose, onSave, companyId }: Paymen
               </div>
             </div>
 
-            <SectionTitle>
-              {t('paymentForm.sectionAllocations', 'Allocations')} ·{' '}
-              <span className="font-mono normal-case">
-                {t('paymentForm.allocatedOf', 'allocated {{a}} of {{p}} (unallocated {{u}})', {
-                  a: allocatedTotal.toLocaleString(),
-                  p: (Number(paidAmount) || 0).toLocaleString(),
-                  u: unallocated.toLocaleString(),
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <SectionTitle>
+                {t('paymentForm.sectionAllocations', 'Allocations')} ·{' '}
+                <span className="font-mono normal-case">
+                  {t('paymentForm.allocatedOf', 'allocated {{a}} of {{p}} (unallocated {{u}})', {
+                    a: allocatedTotal.toLocaleString(),
+                    p: (Number(paidAmount) || 0).toLocaleString(),
+                    u: unallocated.toLocaleString(),
+                  })}
+                </span>
+              </SectionTitle>
+              <div className="flex items-center gap-2 pt-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={!partyId || loadingInvoices || outstanding.length === 0 || !(Number(paidAmount) > 0)}
+                  onClick={autoAllocate}
+                >
+                  {t('paymentForm.autoAllocate', 'Auto-allocate (FIFO)')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={allocations.length === 0}
+                  onClick={() => setAllocations([])}
+                >
+                  {t('paymentForm.clearAllocations', 'Clear')}
+                </Button>
+              </div>
+            </div>
+            {unallocated > 0 ? (
+              <div className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                {t('paymentForm.advanceBadge', 'Advance: {{amount}}', { amount: formatMoney(unallocated) })}
+              </div>
+            ) : unallocated < 0 ? (
+              <div className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-800">
+                {t('paymentForm.overAllocatedBadge', 'Over-allocated by {{amount}}', {
+                  amount: formatMoney(Math.abs(unallocated)),
                 })}
-              </span>
-            </SectionTitle>
+              </div>
+            ) : null}
             {!partyId ? (
               <p className="text-xs text-slate-500">{t('paymentForm.pickPartyFirst', 'Pick a party to list open invoices.')}</p>
             ) : loadingInvoices ? (

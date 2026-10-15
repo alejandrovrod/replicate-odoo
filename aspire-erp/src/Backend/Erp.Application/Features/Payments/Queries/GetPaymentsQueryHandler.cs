@@ -38,10 +38,12 @@ public sealed class GetPaymentDetailQueryHandler
     : IQueryHandler<GetPaymentDetailQuery, PaymentEntryDetailDto?>
 {
     private readonly IBankRepository _banks;
+    private readonly IStockRepository _stock;
 
-    public GetPaymentDetailQueryHandler(IBankRepository banks)
+    public GetPaymentDetailQueryHandler(IBankRepository banks, IStockRepository stock)
     {
         _banks = banks;
+        _stock = stock;
     }
 
     public async Task<PaymentEntryDetailDto?> HandleAsync(
@@ -54,11 +56,29 @@ public sealed class GetPaymentDetailQueryHandler
             return null;
         }
 
+        // The GL lines carry VoucherId = payment.Id (PaymentPosting.BuildLedgerLines), so the same
+        // voucher-id read the cancel handlers use exposes them. Draft vouchers simply have none.
+        var glRows = await _stock.GetGlEntriesByVoucherIdAsync(payment.Id, cancellationToken);
+
         return new PaymentEntryDetailDto(
             PaymentEntryDto.From(payment),
             payment.Allocations
                 .OrderBy(a => a.AllocatedAmount)
                 .Select(PaymentAllocationDto.From)
+                .ToList(),
+            glRows
+                .OrderBy(g => g.Id)
+                .Select(g => new GLEntryDto(
+                    g.Id,
+                    g.AccountId,
+                    g.Account?.AccountCode ?? string.Empty,
+                    g.Account?.AccountName ?? string.Empty,
+                    g.PostingDate,
+                    g.Debit,
+                    g.Credit,
+                    g.VoucherType,
+                    g.VoucherNo,
+                    g.Remarks))
                 .ToList());
     }
 }

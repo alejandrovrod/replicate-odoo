@@ -5,6 +5,13 @@ import { Button } from '../../../components/ui/Button'
 import { translateDocStatus } from '../../../lib/docStatus'
 import type { PaymentEntry } from '../api/usePaymentEntries'
 
+/** Header filter values; `status`/`paymentType` drive the server query, `text` is a page filter. */
+export interface PaymentListFilters {
+  status: string
+  paymentType: string
+  text: string
+}
+
 interface PaymentEntryListProps {
   payments: PaymentEntry[]
   totalCount: number
@@ -14,6 +21,9 @@ interface PaymentEntryListProps {
   onNew: () => void
   onSubmit: (payment: PaymentEntry) => void
   onCancel: (payment: PaymentEntry) => void
+  onRowClick?: (payment: PaymentEntry) => void
+  filters?: PaymentListFilters
+  onFilterChange?: (patch: Partial<PaymentListFilters>) => void
   actingId?: string | null
 }
 
@@ -22,6 +32,9 @@ function statusClass(status: string): string {
   if (status === 'Cancelled') return 'bg-slate-200 text-slate-600'
   return 'bg-amber-100 text-amber-800'
 }
+
+const selectClassName =
+  'h-8 rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900 transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200'
 
 export function PaymentEntryList({
   payments,
@@ -32,9 +45,15 @@ export function PaymentEntryList({
   onNew,
   onSubmit,
   onCancel,
+  onRowClick,
+  filters,
+  onFilterChange,
   actingId,
 }: PaymentEntryListProps) {
   const { t, i18n } = useTranslation('banking')
+
+  const hasFilters = Boolean(filters && (filters.status || filters.paymentType || filters.text))
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -46,6 +65,53 @@ export function PaymentEntryList({
           {t('payments.new', 'New Payment')}
         </Button>
       </div>
+
+      {filters && onFilterChange ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+          <select
+            aria-label={t('payments.colStatus', 'Status')}
+            value={filters.status}
+            onChange={(event) => onFilterChange({ status: event.target.value })}
+            className={selectClassName}
+          >
+            <option value="">{t('payments.filterStatusAll', 'All statuses')}</option>
+            <option value="Draft">{translateDocStatus(i18n, 'Draft')}</option>
+            <option value="Submitted">{translateDocStatus(i18n, 'Submitted')}</option>
+            <option value="Cancelled">{translateDocStatus(i18n, 'Cancelled')}</option>
+          </select>
+          <select
+            aria-label={t('payments.colType', 'Type')}
+            value={filters.paymentType}
+            onChange={(event) => onFilterChange({ paymentType: event.target.value })}
+            className={selectClassName}
+          >
+            <option value="">{t('payments.filterTypeAll', 'All types')}</option>
+            <option value="Receive">{t('payments.typeReceive', 'Receive')}</option>
+            <option value="Pay">{t('payments.typePay', 'Pay')}</option>
+            <option value="InternalTransfer">{t('payments.typeTransfer', 'Internal Transfer')}</option>
+          </select>
+          <input
+            type="search"
+            value={filters.text}
+            onChange={(event) => onFilterChange({ text: event.target.value })}
+            placeholder={t('payments.filterTextPlaceholder', 'Search voucher, party, reference…')}
+            aria-label={t('payments.filterTextPlaceholder', 'Search voucher, party, reference…')}
+            className={`${selectClassName} min-w-56 flex-1`}
+          />
+          {hasFilters ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onFilterChange({ status: '', paymentType: '', text: '' })}
+            >
+              {t('payments.filterClear', 'Clear filters')}
+            </Button>
+          ) : null}
+          {filters.text ? (
+            <span className="text-xs text-slate-500">{t('payments.filteringPage', 'Filtering the rows on this page.')}</span>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs">
         <Table>
@@ -69,7 +135,11 @@ export function PaymentEntryList({
               </TableRow>
             ) : (
               payments.map((p) => (
-                <TableRow key={p.id} className="hover:bg-slate-50">
+                <TableRow
+                  key={p.id}
+                  onClick={onRowClick ? () => onRowClick(p) : undefined}
+                  className={onRowClick ? 'cursor-pointer hover:bg-slate-50' : 'hover:bg-slate-50'}
+                >
                   <TableCell className="font-mono font-medium text-slate-900">
                     {p.voucherNo || <span className="text-slate-400">{t('payments.draftBadge', '— draft —')}</span>}
                   </TableCell>
@@ -94,7 +164,10 @@ export function PaymentEntryList({
                       {translateDocStatus(i18n, p.documentStatus)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell
+                    className="text-right"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <span className="inline-flex gap-1">
                       {p.documentStatus === 'Draft' && (
                         <Button size="sm" variant="outline" disabled={actingId === p.id} onClick={() => onSubmit(p)}>

@@ -21,9 +21,13 @@ public sealed class AssetCategoryConfiguration : IEntityTypeConfiguration<AssetC
             .ValueGeneratedOnAdd()
             .HasDefaultValueSql("NEWSEQUENTIALID()");
 
-        builder.Property(c => c.CategoryName).HasMaxLength(100).IsRequired();
+        builder.Property(a => a.CategoryName).HasMaxLength(100).IsRequired();
         builder.Property(c => c.IsNonDepreciable).HasDefaultValue(false);
         builder.Property(c => c.IsActive).HasDefaultValue(true);
+
+        // Asset-capitalization defaults applied when a fixed-asset item of this category is billed.
+        builder.Property(c => c.DefaultUsefulLifeMonths).IsRequired().HasDefaultValue(60);
+        builder.Property(c => c.DefaultSalvageValuePercent).HasColumnType("decimal(5,2)").IsRequired().HasDefaultValue(0m);
 
         // Optimistic concurrency (specs ST-06/BY-06): store-generated rowversion token.
         builder.Property(c => c.RowVersion).IsRowVersion();

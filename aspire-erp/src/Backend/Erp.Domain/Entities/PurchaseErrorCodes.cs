@@ -40,6 +40,23 @@ public static class PurchaseErrorCodes
     public const string QuantityMismatch = "quantity_mismatch";
     public const string InvalidTaxAmount = "invalid_tax_amount";
 
+    // Purchase returns / supplier debit notes (module 19, spec returns-and-credit-notes, T1).
+    // Same wire values as the certified sales vocabulary (SellingErrorCodes) so one concept keeps
+    // one language across both ledgers.
+    public const string ReturnAgainstRequired = "return_against_required";
+    public const string ReturnAgainstInvalid = "return_against_invalid";
+    public const string ReturnAmountExceeded = "return_amount_exceeded";
+
+    /// <summary>A return line requests a non-positive quantity (mirrors the sales rule).</summary>
+    public const string ReturnLineInvalid = "return_line_invalid";
+
+    /// <summary>
+    /// Cancelling a supplier debit note is not supported yet (module 19, RET-G4 remains open): the
+    /// certified cancellation path unwinds receipts and would corrupt the ledger for a return, so it
+    /// is refused explicitly instead of being silently mishandled.
+    /// </summary>
+    public const string ReturnCancellationUnsupported = "return_cancellation_unsupported";
+
     // Three-way match overbilling rejection (Task 4.4 / spec BY-03 and BY-06): the invoice bills
     // more than the receipt line still has available. It is a bad REQUEST (400), not a conflict.
     public const string OverbillingNotAllowed = "overbilling_not_allowed";

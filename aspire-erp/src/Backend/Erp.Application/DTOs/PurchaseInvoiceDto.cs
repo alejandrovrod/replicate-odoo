@@ -29,6 +29,9 @@ public sealed record PurchaseInvoiceDto(
     string VoucherNo,
     string RowVersion,
     DateTimeOffset CreatedAt,
+    bool IsReturn,
+    Guid? ReturnAgainstId,
+    bool UpdateStock,
     IReadOnlyList<PurchaseInvoiceLineDto> Lines)
 {
     /// <summary>Maps an invoice aggregate; <paramref name="itemsById"/> resolves line codes/names.</summary>
@@ -71,6 +74,9 @@ public sealed record PurchaseInvoiceDto(
                 ? string.Empty
                 : Convert.ToBase64String(invoice.RowVersion),
             invoice.CreatedAt,
+            invoice.IsReturn,
+            invoice.ReturnAgainstId,
+            invoice.UpdateStock,
             lines);
     }
 }

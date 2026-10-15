@@ -1,4 +1,5 @@
 using Erp.Application.DTOs;
+using Erp.Application.Features.Assets;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -28,6 +29,9 @@ public sealed class PurchasePostingService : IPurchasePostingService
     private const string ReceiptVoucherPrefix = "PR";
     private const string InvoiceVoucherPrefix = "PINV";
 
+    /// <summary>Module 19 (T1): gapless prefix for supplier debit notes (purchase returns).</summary>
+    private const string ReturnVoucherPrefix = "PRET";
+
     /// <summary>plan.md §2 GLEntry.PartyType vocabulary value for supplier parties.</summary>
     private const string SupplierPartyType = "Supplier";
 
@@ -38,6 +42,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
     private readonly IStockRepository _stock;
     private readonly IPurchaseRepository _purchases;
     private readonly IExchangeRateRepository _exchangeRates;
+    private readonly IAssetsRepository _assets;
 
     public PurchasePostingService(
         ICompanyRepository companies,
@@ -46,7 +51,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
         IItemRepository items,
         IStockRepository stock,
         IPurchaseRepository purchases,
-        IExchangeRateRepository exchangeRates)
+        IExchangeRateRepository exchangeRates,
+        IAssetsRepository assets)
     {
         _companies = companies;
         _accounts = accounts;
@@ -55,6 +61,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
         _stock = stock;
         _purchases = purchases;
         _exchangeRates = exchangeRates;
+        _assets = assets;
     }
 
     // ------------------------------------------------------------------------ receipt (4.2)
@@ -316,9 +323,11 @@ public sealed class PurchasePostingService : IPurchasePostingService
             var glLines = new List<GLEntry>(request.Lines.Count + 3);
             var interimTotal = 0m;
             var payableTotal = 0m;
+            var assetPlans = new List<AssetLinePlan>();
 
-            foreach (var line in request.Lines)
+            for (var index = 0; index < request.Lines.Count; index++)
             {
+                var line = request.Lines[index];
                 var receiptLine = receiptLinesById[line.PurchaseReceiptLineId];
                 var item = items[line.ItemId];
                 var interim = Round4(line.Qty * receiptLine.Rate);
@@ -326,6 +335,14 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
                 interimTotal += interim;
                 payableTotal += payable;
+
+                // Asset-capitalization module (gap D1): fixed-asset lines need a category, its cost
+                // account and the source warehouse's stock account resolved BEFORE any write.
+                if (item.IsFixedAsset)
+                {
+                    assetPlans.Add(await PlanAssetCapitalizationAsync(
+                        index, line, receiptLine, item, company.Id, exchangeRate, token));
+                }
 
                 // tasks.md 4.3: debit the accrual for the billed quantities (zeroes it out).
                 AddGlLine(
@@ -381,6 +398,25 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 debitInFC: 0m, creditInFC: grossTotal,
                 remarks: "PurchaseInvoice: accounts payable");
 
+            // Asset capitalization (asset-capitalization module, gap D3): each capitalized line is
+            // reclassified OUT of the warehouse stock account into the category's cost account. The
+            // receipt had debited stock; this bill cleared the interim liability; the reclass lands
+            // the value in the fixed-asset account, so the net chain is Dr Fixed Asset / Cr Payable.
+            // The pair is self-balancing, so the invoice keeps its zero-sum invariant.
+            foreach (var plan in assetPlans)
+            {
+                AddGlLine(
+                    glLines, request.PostingDate, company.Id, InvoiceVoucherType, plan.CostAccount,
+                    debit: plan.BilledCompany, credit: 0m,
+                    debitInFC: plan.BilledFc, creditInFC: 0m,
+                    remarks: $"PurchaseInvoice: capitalize {plan.Item.ItemCode} x{plan.Quantity:0.####} into fixed assets");
+                AddGlLine(
+                    glLines, request.PostingDate, company.Id, InvoiceVoucherType, plan.StockAccount,
+                    debit: 0m, credit: plan.BilledCompany,
+                    debitInFC: 0m, creditInFC: plan.BilledFc,
+                    remarks: $"PurchaseInvoice: reclassify {plan.Item.ItemCode} from stock to fixed asset");
+            }
+
             // Constitution III.1: balance must hold to four decimals BEFORE anything is saved.
             DoubleEntryGuard.EnsureBalanced(glLines);
 
@@ -421,6 +457,20 @@ public sealed class PurchasePostingService : IPurchasePostingService
             await _purchases.AddInvoiceAsync(invoice, token);
             await _stock.AddGlEntriesAsync(glLines, token);
 
+            // Asset-capitalization module (gap D1/D4): each fixed-asset line becomes an Asset linked
+            // to this bill and its line, with the gapless AST code and the straight-line schedule
+            // generated inside the SAME transaction. The invoice is already persisted, so the line
+            // ids exist and EF inserts the assets without FK-ordering ambiguity.
+            if (assetPlans.Count > 0)
+            {
+                var invoiceLines = invoice.Lines.OrderBy(l => l.LineNumber).ToList();
+                foreach (var plan in assetPlans)
+                {
+                    await CreateAssetFromInvoiceLineAsync(
+                        plan, invoice, invoiceLines[plan.Index], request.PostingDate, company.Id, token);
+                }
+            }
+
             // Task 4.1 workflow (verify W5/W6): billing advances the linked orders' per-line billed
             // quantities and header percentage, and an order completes ONLY when every line is
             // fully billed - a partial bill keeps it PartiallyReceived instead of faking a close.
@@ -456,6 +506,276 @@ public sealed class PurchasePostingService : IPurchasePostingService
             return BuildInvoiceResult(invoice, glLines, items, ordersToUpdate.FirstOrDefault()?.Status);
         }, cancellationToken);
     }
+
+    // -------------------------------------------------------------------- return (module 19 / T1)
+
+    public async Task<PurchaseInvoicePostingDto> PostReturnAsync(
+        PurchaseReturnPostingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        PurchaseValidator.EnsureHasLines(request.Lines);
+        PurchaseValidator.EnsureValidTaxAmount(request.TaxAmount);
+
+        // One transaction for the WHOLE posting: validation, SLE, GL, voucher, save and the
+        // original-bill amortization commit together or not at all.
+        return await _purchases.ExecuteInTransactionAsync(async token =>
+        {
+            var company = await _companies.GetByIdAsync(request.CompanyId, token)
+                ?? throw new StockValidationException(
+                    StockErrorCodes.CompanyNotFound,
+                    $"Company '{request.CompanyId}' was not found in this tenant.");
+
+            // Hard fiscal lock FIRST (same rationale as the receipt/invoice postings): a back-dated
+            // return modifies zero data.
+            company.EnsurePostingDateUnlocked(request.PostingDate);
+            await _companies.EnsurePostingDateInOpenYearAsync(company.Id, request.PostingDate, token);
+
+            var original = await _purchases.GetInvoiceByIdAsync(request.ReturnAgainstId, token);
+            if (original is null || original.CompanyId != company.Id)
+            {
+                throw new PurchaseValidationException(
+                    PurchaseErrorCodes.ReturnAgainstRequired,
+                    $"Purchase bill '{request.ReturnAgainstId}' was not found in company '{company.Id}'.");
+            }
+
+            // Provenance first (exists, not a return, not cancelled): a return-of-a-return must fail
+            // with its own code, before any per-line quantity comparison.
+            PurchaseValidator.EnsureReturnTarget(original);
+
+            var originalLinesById = original.Lines.ToDictionary(l => l.Id);
+
+            // Resolve the requested lines against the ORIGINAL bill and total the net (foreign).
+            var planned = new List<ReturnLinePlan>(request.Lines.Count);
+            var netFc = 0m;
+            for (var index = 0; index < request.Lines.Count; index++)
+            {
+                var line = request.Lines[index];
+                PurchaseValidator.EnsureValidReturnLine(line.Qty);
+
+                if (!originalLinesById.TryGetValue(line.PurchaseInvoiceLineId, out var originalLine))
+                {
+                    throw new PurchaseValidationException(
+                        PurchaseErrorCodes.ReturnAgainstInvalid,
+                        $"Return line references invoice line '{line.PurchaseInvoiceLineId}', which "
+                        + $"does not belong to bill '{original.VoucherNo}'.");
+                }
+
+                // Per-line ceiling against the ORIGINAL billed quantity (the gross ceiling below
+                // bounds the SUM across all debit notes).
+                if (line.Qty > originalLine.Qty)
+                {
+                    throw new PurchaseValidationException(
+                        PurchaseErrorCodes.ReturnAmountExceeded,
+                        $"Return of {line.Qty:0.####} exceeds the billed quantity "
+                        + $"{originalLine.Qty:0.####} of invoice line {originalLine.LineNumber}.");
+                }
+
+                var lineNetFc = Round4(line.Qty * originalLine.Rate);
+                netFc += lineNetFc;
+                planned.Add(new ReturnLinePlan(index + 1, originalLine, line.Qty, lineNetFc));
+            }
+
+            netFc = Round4(netFc);
+            var taxFc = Round4(request.TaxAmount);
+            var grossFc = Round4(netFc + taxFc);
+
+            // Provenance + cumulative ceiling (scenario RET-G3): the return cannot exceed what the
+            // original bill still has available after every debit note already booked against it.
+            var alreadyReturned = await _purchases.GetReturnedAmountForInvoiceAsync(original.Id, token);
+            PurchaseValidator.EnsureReturnAmountWithinCeiling(original, alreadyReturned, grossFc);
+
+            // --- FX resolution (mirrors PostInvoiceAsync).
+            var exchangeRate = 1m;
+            if (request.CurrencyId.HasValue && company.CurrencyId.HasValue && request.CurrencyId != company.CurrencyId)
+            {
+                var rateRow = await _exchangeRates.GetLatestRateAsync(
+                    request.CurrencyId.Value, company.CurrencyId.Value, request.PostingDate, token);
+                if (rateRow == null)
+                {
+                    throw new PurchaseValidationException(
+                        FxErrorCodes.ExchangeRateMissing, $"Missing exchange rate for {request.CurrencyId.Value}");
+                }
+                exchangeRate = rateRow.Rate;
+            }
+
+            var payableAccount = await RequireAccountByCodeAsync(
+                company.Id, company.AccountsPayableAccountCode, "Company.AccountsPayableAccountCode", token);
+
+            var items = await LoadItemsAsync(planned.Select(p => p.OriginalLine.ItemId), token);
+
+            var glLines = new List<GLEntry>(4);
+            var ledger = new List<StockLedgerEntry>();
+
+            if (request.UpdateStock)
+            {
+                // Goods come back to the supplier: negative Kardex rows + a credit to the inventory
+                // account of each returned line's warehouse. A bill may reference receipts from more
+                // than one warehouse, so the credit is accumulated per stock account.
+                var receiptLineIds = planned.Select(p => p.OriginalLine.PurchaseReceiptLineId).Distinct().ToList();
+                var receiptLines = await _purchases.GetReceiptLinesByIdsAsync(receiptLineIds, token);
+                var receiptLinesById = receiptLines.ToDictionary(l => l.Id);
+                var creditsByAccount = new Dictionary<Guid, decimal>();
+                var accountsById = new Dictionary<Guid, Account>();
+
+                foreach (var plan in planned)
+                {
+                    if (!receiptLinesById.TryGetValue(plan.OriginalLine.PurchaseReceiptLineId, out var receiptLine)
+                        || receiptLine.PurchaseReceipt is null)
+                    {
+                        throw new PurchaseValidationException(
+                            PurchaseErrorCodes.PurchaseReceiptNotFound,
+                            $"Receipt line '{plan.OriginalLine.PurchaseReceiptLineId}' backing invoice "
+                            + $"line {plan.OriginalLine.LineNumber} was not found.");
+                    }
+
+                    var warehouse = await ResolveWarehouseAsync(
+                        receiptLine.PurchaseReceipt.WarehouseId, company.Id, token);
+                    var stockAccount = await RequirePostableAccountAsync(
+                        warehouse.AccountId ?? Guid.Empty, company.Id, $"warehouse '{warehouse.WarehouseCode}'", token);
+
+                    accountsById[stockAccount.Id] = stockAccount;
+                    creditsByAccount[stockAccount.Id] = creditsByAccount.TryGetValue(stockAccount.Id, out var acc)
+                        ? acc + plan.NetFc
+                        : plan.NetFc;
+
+                    // Goods leave: negative quantity/amount (the GL keeps positive magnitudes).
+                    ledger.Add(new StockLedgerEntry
+                    {
+                        Id = Guid.NewGuid(),
+                        ItemId = plan.OriginalLine.ItemId,
+                        WarehouseId = warehouse.Id,
+                        PostingDate = request.PostingDate,
+                        QtyChange = -plan.Quantity,
+                        ValuationRate = plan.OriginalLine.Rate,
+                        Amount = -plan.NetFc,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                    });
+                }
+
+                foreach (var (accountId, accountNetFc) in creditsByAccount)
+                {
+                    if (accountNetFc == 0m)
+                    {
+                        continue;
+                    }
+
+                    AddGlLine(
+                        glLines, request.PostingDate, company.Id, InvoiceVoucherType, accountsById[accountId],
+                        debit: 0m, credit: accountNetFc * exchangeRate,
+                        creditInFC: accountNetFc,
+                        remarks: "PurchaseReturn: inventory re-issue");
+                }
+            }
+            else if (netFc != 0m)
+            {
+                // Amount-only adjustment (price correction): no physical movement, so the interim
+                // accrued liability the original bill debited is reopened instead of touching stock.
+                var receivedAccount = await RequireAccountByCodeAsync(
+                    company.Id, company.StockReceivedAccountCode, "Company.StockReceivedAccountCode", token);
+
+                AddGlLine(
+                    glLines, request.PostingDate, company.Id, InvoiceVoucherType, receivedAccount,
+                    debit: 0m, credit: netFc * exchangeRate,
+                    creditInFC: netFc,
+                    remarks: "PurchaseReturn: accrued liability reopened (no stock movement)");
+            }
+
+            if (taxFc > 0m)
+            {
+                var taxAccount = await RequireAccountByCodeAsync(
+                    company.Id, company.InputTaxRecoverableAccountCode, "Company.InputTaxRecoverableAccountCode", token);
+
+                AddGlLine(
+                    glLines, request.PostingDate, company.Id, InvoiceVoucherType, taxAccount,
+                    debit: 0m, credit: taxFc * exchangeRate,
+                    creditInFC: taxFc,
+                    remarks: "PurchaseReturn: input tax reversal");
+            }
+
+            // Gross payable reduction: Debit Accounts Payable (mirror of spec BY-01's credit). The
+            // debit takes the SUM of the credits already booked so FX rounding can never unbalance
+            // the voucher (the FC amounts stay exact: gross = net + tax).
+            var payableDebitCompany = glLines.Sum(l => l.Credit);
+            AddGlLine(
+                glLines, request.PostingDate, company.Id, InvoiceVoucherType, payableAccount,
+                debit: payableDebitCompany, credit: 0m,
+                debitInFC: grossFc, creditInFC: 0m,
+                remarks: "PurchaseReturn: accounts payable");
+
+            // Constitution III.1: the voucher must balance to four decimals BEFORE anything is saved.
+            DoubleEntryGuard.EnsureBalanced(glLines);
+
+            var returnInvoice = new PurchaseInvoice
+            {
+                Id = Guid.NewGuid(),
+                CompanyId = company.Id,
+                SupplierId = original.SupplierId,
+                BillNumber = request.BillNumber,
+                PostingDate = request.PostingDate,
+                DueDate = request.DueDate,
+                Status = PurchaseInvoiceStatus.Unpaid,
+                CurrencyId = request.CurrencyId,
+                ExchangeRate = exchangeRate,
+                NetTotal = -netFc,
+                TaxTotal = -taxFc,
+                WithholdingTaxTotal = 0m,
+                GrandTotal = -grossFc,
+                OutstandingAmount = -grossFc,
+                IsReturn = true,
+                ReturnAgainstId = original.Id,
+                UpdateStock = request.UpdateStock,
+                VoucherNo = await _purchases.NextInvoiceVoucherNumberAsync(
+                    company.Id, ReturnVoucherPrefix, request.PostingDate.Year, token),
+                CreatedAt = DateTimeOffset.UtcNow,
+                Lines = planned.Select(p => new PurchaseInvoiceLine
+                {
+                    Id = Guid.NewGuid(),
+                    PurchaseReceiptLineId = p.OriginalLine.PurchaseReceiptLineId,
+                    ItemId = p.OriginalLine.ItemId,
+                    Qty = -p.Quantity,
+                    Rate = p.OriginalLine.Rate,
+                    Amount = -p.NetFc,
+                    LineNumber = p.LineNumber,
+                }).ToList(),
+            };
+
+            foreach (var entry in ledger)
+            {
+                entry.VoucherType = InvoiceVoucherType;
+                entry.VoucherNo = returnInvoice.VoucherNo;
+            }
+
+            foreach (var glLine in glLines)
+            {
+                glLine.VoucherNo = returnInvoice.VoucherNo;
+                glLine.VoucherId = returnInvoice.Id;
+                glLine.PartyType = SupplierPartyType;
+                glLine.PartyId = original.SupplierId;
+            }
+
+            await _purchases.AddInvoiceAsync(returnInvoice, token);
+            await _stock.AddGlEntriesAsync(glLines, token);
+            if (ledger.Count > 0)
+            {
+                await _stock.AddLedgerEntriesAsync(ledger, token);
+            }
+
+            // Module 19 (gap D3): the debit note amortizes the referenced bill's outstanding
+            // balance, floored at zero (mirrors the sales credit-note amortization).
+            original.OutstandingAmount = Math.Max(0m, original.OutstandingAmount - grossFc);
+            await _purchases.UpdateInvoiceAsync(original, token);
+
+            return BuildInvoiceResult(returnInvoice, glLines, items, null);
+        }, cancellationToken);
+    }
+
+    /// <summary>Resolved plan of one return line (see <see cref="PostReturnAsync"/>).</summary>
+    private sealed record ReturnLinePlan(
+        int LineNumber,
+        PurchaseInvoiceLine OriginalLine,
+        decimal Quantity,
+        decimal NetFc);
 
     // ----------------------------------------------------------------- validation & resolution
 
@@ -511,6 +831,174 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
         return byId;
     }
+
+    // --------------------------------------------------- asset capitalization (module D1-D5)
+
+    /// <summary>
+    /// Resolves the capitalization plan of ONE fixed-asset invoice line BEFORE any write: the item's
+    /// asset category, its postable cost account and the source warehouse's stock account the value
+    /// is reclassified out of. Lines billed at a different rate than received are rejected so the
+    /// stock account clears exactly (the reclass credits stock at the value the receipt debited).
+    /// </summary>
+    private async Task<AssetLinePlan> PlanAssetCapitalizationAsync(
+        int index,
+        PurchaseInvoicePostingLine line,
+        PurchaseReceiptLine receiptLine,
+        Item item,
+        Guid companyId,
+        decimal exchangeRate,
+        CancellationToken token)
+    {
+        if (item.AssetCategoryId is not { } categoryId)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.AssetCategoryRequired,
+                $"Item '{item.ItemCode}' is flagged as a fixed asset but has no asset category linked.");
+        }
+
+        var category = await _assets.GetCategoryByIdAsync(categoryId, token)
+            ?? throw new AssetValidationException(
+                AssetErrorCodes.CategoryNotFound,
+                $"Asset category '{categoryId}' of item '{item.ItemCode}' was not found in this tenant.");
+
+        if (category.CompanyId != companyId)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.CategoryNotFound,
+                $"Asset category '{category.CategoryName}' does not belong to company '{companyId}'.");
+        }
+
+        if (!category.IsActive)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.InactiveCategory,
+                $"Asset category '{category.CategoryName}' is inactive and cannot capitalize assets.");
+        }
+
+        if (category.FixedAssetAccountId == Guid.Empty
+            || category.AccumulatedDepreciationAccountId == Guid.Empty
+            || category.DepreciationExpenseAccountId == Guid.Empty)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.AssetCategoryMissingAccounts,
+                $"Asset category '{category.CategoryName}' is missing its cost, accumulated-depreciation "
+                + "or depreciation-expense account; configure the category before billing fixed assets.");
+        }
+
+        if (line.Rate != receiptLine.Rate)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.AssetLineRateMismatch,
+                $"Fixed-asset line '{item.ItemCode}' must be billed at the received rate "
+                + $"({receiptLine.Rate:0.######}); received {line.Rate:0.######}.");
+        }
+
+        var costAccount = await AssetAccountGuards.RequirePostableAccountAsync(
+            _accounts, category.FixedAssetAccountId, companyId,
+            $"asset category '{category.CategoryName}' cost account", token);
+
+        var stockAccount = await ResolveReceiptStockAccountAsync(receiptLine, companyId, token);
+
+        var billedFc = Round4(line.Qty * line.Rate);
+        return new AssetLinePlan(
+            index,
+            item,
+            category,
+            line.Qty,
+            billedFc,
+            Round4(billedFc * exchangeRate),
+            costAccount,
+            stockAccount);
+    }
+
+    private async Task<Account> ResolveReceiptStockAccountAsync(
+        PurchaseReceiptLine receiptLine,
+        Guid companyId,
+        CancellationToken token)
+    {
+        var receipt = receiptLine.PurchaseReceipt
+            ?? throw new PurchaseValidationException(
+                PurchaseErrorCodes.PurchaseReceiptNotFound,
+                $"Receipt line '{receiptLine.Id}' is missing its receipt.");
+
+        var warehouse = await _warehouses.GetByIdAsync(receipt.WarehouseId, token)
+            ?? throw new PurchaseValidationException(
+                PurchaseErrorCodes.PurchaseReceiptNotFound,
+                $"Warehouse '{receipt.WarehouseId}' of receipt line '{receiptLine.Id}' was not found.");
+
+        return await RequirePostableAccountAsync(
+            warehouse.AccountId ?? Guid.Empty, companyId, $"warehouse '{warehouse.WarehouseCode}'", token);
+    }
+
+    private async Task CreateAssetFromInvoiceLineAsync(
+        AssetLinePlan plan,
+        PurchaseInvoice invoice,
+        PurchaseInvoiceLine invoiceLine,
+        DateOnly postingDate,
+        Guid companyId,
+        CancellationToken token)
+    {
+        var gross = plan.BilledCompany;
+        var salvage = Round4(gross * plan.Category.DefaultSalvageValuePercent / 100m);
+
+        var asset = Asset.CreateFromPurchase(
+            companyId,
+            plan.Item.Id,
+            plan.Category.Id,
+            plan.Item.ItemName,
+            gross,
+            salvage,
+            plan.Category.DefaultUsefulLifeMonths,
+            postingDate,
+            postingDate,
+            invoice.Id,
+            invoiceLine.Id);
+
+        asset.AssetCode = await _assets.NextAssetCodeAsync(companyId, postingDate.Year, token);
+
+        var scheduleRows = new List<AssetDepreciationSchedule>();
+        if (!plan.Category.IsNonDepreciable)
+        {
+            var planned = DepreciationScheduler.GenerateStraightLineSchedule(
+                gross,
+                salvage,
+                asset.TotalNumberOfDepreciations,
+                asset.FrequencyInMonths,
+                asset.AvailableForUseDate);
+
+            foreach (var row in planned)
+            {
+                scheduleRows.Add(new AssetDepreciationSchedule
+                {
+                    Id = Guid.NewGuid(),
+                    AssetId = asset.Id,
+                    ScheduleDate = row.ScheduleDate,
+                    DepreciationAmount = row.DepreciationAmount,
+                    AccumulatedDepreciationAfter = row.AccumulatedDepreciation,
+                    Status = AssetScheduleStatus.Scheduled,
+                });
+            }
+        }
+
+        asset.Capitalize();
+
+        await _assets.AddAssetAsync(asset, token);
+        if (scheduleRows.Count > 0)
+        {
+            await _assets.AddScheduleRangeAsync(scheduleRows, token);
+        }
+    }
+
+    /// <summary>Resolved capitalization plan of one fixed-asset invoice line (see PlanAssetCapitalizationAsync).</summary>
+    private sealed record AssetLinePlan(
+        int Index,
+        Item Item,
+        AssetCategory Category,
+        decimal Quantity,
+        decimal BilledFc,
+        decimal BilledCompany,
+        Account CostAccount,
+        Account StockAccount);
 
     /// <summary>
     /// Constitution III.3: every GL-referenced account must exist, be active, be a leaf (posting)

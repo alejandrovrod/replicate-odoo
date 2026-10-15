@@ -85,6 +85,31 @@ public sealed class AssetConfiguration : IEntityTypeConfiguration<Asset>
             .HasConstraintName("FK_Asset_Company")
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Asset-capitalization provenance (gap D4): the vendor bill + its line that created the
+        // asset, and the opening journal entry used for migrations. All nullable so seed/opening
+        // assets stay valid. No navigation properties: the ids are provenance, not aggregate links.
+        builder.Property(a => a.PurchaseInvoiceId);
+        builder.Property(a => a.PurchaseInvoiceItemId);
+        builder.Property(a => a.OpeningJournalEntryId);
+
+        builder.HasOne<PurchaseInvoice>()
+            .WithMany()
+            .HasForeignKey(a => a.PurchaseInvoiceId)
+            .HasConstraintName("FK_Asset_PurchaseInvoice")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<PurchaseInvoiceLine>()
+            .WithMany()
+            .HasForeignKey(a => a.PurchaseInvoiceItemId)
+            .HasConstraintName("FK_Asset_PurchaseInvoiceItem")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<JournalEntry>()
+            .WithMany()
+            .HasForeignKey(a => a.OpeningJournalEntryId)
+            .HasConstraintName("FK_Asset_OpeningJournalEntry")
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Plan DDL lookup - TenantId leads per Constitution IV.1.
         builder.HasIndex(a => new { a.TenantId, a.CompanyId, a.AssetCategoryId, a.Status })
             .HasDatabaseName("IX_Asset_Tenant_Category");

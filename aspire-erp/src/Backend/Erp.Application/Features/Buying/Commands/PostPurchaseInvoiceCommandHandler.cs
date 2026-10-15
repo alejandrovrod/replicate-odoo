@@ -70,5 +70,12 @@ public sealed class PostPurchaseInvoiceCommandHandler
             return Result<PurchaseInvoicePostingDto>.Failure(
                 PurchaseErrorCodes.OverbillingNotAllowed, ex.Message);
         }
+        catch (AssetValidationException ex)
+        {
+            // Asset-capitalization module (gap D5): a fixed-asset line with a misconfigured category,
+            // a missing cost account or a billed-rate mismatch fails the whole bill with its own
+            // RFC 7807 code (e.g. asset_category_missing_accounts) before anything is persisted.
+            return Result<PurchaseInvoicePostingDto>.Failure(ex.Code, ex.Message);
+        }
     }
 }

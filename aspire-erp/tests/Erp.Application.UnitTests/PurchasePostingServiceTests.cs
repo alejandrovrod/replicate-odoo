@@ -27,6 +27,7 @@ public sealed class PurchasePostingServiceTests
     private readonly FakeStockRepository _stock = new();
     private readonly FakePurchaseRepository _purchases = new();
     private readonly FakeExchangeRateRepository _exchangeRates = new();
+    private readonly FakeAssetsRepository _assets = new();
 
     private readonly Account _stockAccount;    // 1310 - Stock In Hand (warehouse asset)
     private readonly Account _receivedAccount; // 2120 - Stock Received But Not Billed (interim)
@@ -97,7 +98,7 @@ public sealed class PurchasePostingServiceTests
     }
 
     private PurchasePostingService CreateService() =>
-        new(_companies, _accounts, _warehouses, _items, _stock, _purchases, _exchangeRates);
+        new(_companies, _accounts, _warehouses, _items, _stock, _purchases, _exchangeRates, _assets);
 
     private Account NewAccount(string code, string name) =>
         new()
@@ -631,6 +632,157 @@ public sealed class PurchasePostingServiceTests
             Math.Abs(invoicePosting.TotalDebit - invoicePosting.TotalCredit) <= 0.0001m,
             $"Invoice {invoicePosting.Invoice.VoucherNo} is out of balance: "
             + $"D={invoicePosting.TotalDebit:0.0000}, C={invoicePosting.TotalCredit:0.0000}.");
+    }
+
+    // --------------------------------------------------- asset capitalization (module D1-D5)
+
+    private AssetCategory SeedVehicleCategory()
+    {
+        var cost = NewAccount("1501", "Fixed Assets - Vehicles");
+        var accum = NewAccount("1502", "Accumulated Depreciation");
+        var expense = NewAccount("5501", "Depreciation Expense");
+        _accounts.Seed(cost, accum, expense);
+
+        var category = new AssetCategory
+        {
+            Id = Guid.NewGuid(),
+            TenantId = _tenantId,
+            CompanyId = _companyId,
+            CategoryName = "Vehicles",
+            FixedAssetAccountId = cost.Id,
+            AccumulatedDepreciationAccountId = accum.Id,
+            DepreciationExpenseAccountId = expense.Id,
+            IsActive = true,
+            DefaultUsefulLifeMonths = 60,
+            DefaultSalvageValuePercent = 0m,
+        };
+        _assets.SeedCategory(category);
+        return category;
+    }
+
+    private Item SeedFixedAssetItem(AssetCategory category)
+    {
+        var item = new Item
+        {
+            Id = Guid.NewGuid(),
+            TenantId = _tenantId,
+            CompanyId = _companyId,
+            ItemCode = "FA-001",
+            ItemName = "Delivery Truck",
+            StockUomId = Guid.NewGuid(),
+            IsFixedAsset = true,
+            AssetCategoryId = category.Id,
+        };
+        _items.Seed(item);
+        return item;
+    }
+
+    [Fact]
+    public async Task PostInvoiceAsync_FixedAssetLine_CreatesCapitalizedAssetAndReclassifiesStock()
+    {
+        // Asset-capitalization module (gap D1/D3/D4): a fixed-asset line is capitalized like BY-01
+        // but reclassified out of stock, and an Asset is created and linked to the bill.
+        var category = SeedVehicleCategory();
+        var assetItem = SeedFixedAssetItem(category);
+
+        await CreateService().PostReceiptAsync(new PurchaseReceiptPostingRequest(
+            _companyId, _warehouse.Id, _supplier.Id, null, PostingDate,
+            new[] { new PurchaseReceiptPostingLine(assetItem.Id, 1m, 500000m) }));
+        var receipt = _purchases.Receipts.Single();
+
+        var request = NewInvoiceRequest(
+            receipt.Id, taxAmount: 0m,
+            new PurchaseInvoicePostingLine(receipt.Lines.Single().Id, assetItem.Id, 1m, 500000m));
+
+        var result = await CreateService().PostInvoiceAsync(request);
+
+        // BY-01 clearance + the capitalization reclass: both sides total 1,000,000.
+        Assert.Equal(1000000m, result.TotalDebit);
+        Assert.Equal(1000000m, result.TotalCredit);
+        Assert.Equal(500000m, result.GlEntries.Single(g => g.AccountCode == "2120").Debit);
+        Assert.Equal(500000m, result.GlEntries.Single(g => g.AccountCode == "1501").Debit);
+        Assert.Equal(500000m, result.GlEntries.Single(g => g.AccountCode == "1310").Credit);
+        Assert.Equal(500000m, result.GlEntries.Single(g => g.AccountCode == "2110").Credit);
+
+        // Gapless AST code, Capitalized status, value and provenance back to the bill.
+        var asset = Assert.Single(_assets.Assets);
+        Assert.Equal("AST-2026-00001", asset.AssetCode);
+        Assert.Equal(AssetStatus.Capitalized, asset.Status);
+        Assert.Equal(500000m, asset.GrossPurchaseAmount);
+        Assert.Equal(result.Invoice.Id, asset.PurchaseInvoiceId);
+        Assert.NotNull(asset.PurchaseInvoiceItemId);
+
+        // The straight-line calendar was generated inside the same transaction (60 months).
+        Assert.Equal(60, _assets.AddedSchedules.Count);
+        Assert.Equal(asset.Id, _assets.AddedSchedules[0].AssetId);
+    }
+
+    [Fact]
+    public async Task PostInvoiceAsync_FixedAssetWithoutCategory_FailsWithAssetCategoryRequired()
+    {
+        var item = new Item
+        {
+            Id = Guid.NewGuid(),
+            TenantId = _tenantId,
+            CompanyId = _companyId,
+            ItemCode = "FA-002",
+            ItemName = "Unconfigured Asset",
+            StockUomId = Guid.NewGuid(),
+            IsFixedAsset = true,
+            AssetCategoryId = null,
+        };
+        _items.Seed(item);
+
+        await CreateService().PostReceiptAsync(new PurchaseReceiptPostingRequest(
+            _companyId, _warehouse.Id, _supplier.Id, null, PostingDate,
+            new[] { new PurchaseReceiptPostingLine(item.Id, 1m, 100m) }));
+        var receipt = _purchases.Receipts.Single();
+
+        var request = NewInvoiceRequest(
+            receipt.Id, taxAmount: 0m,
+            new PurchaseInvoicePostingLine(receipt.Lines.Single().Id, item.Id, 1m, 100m));
+
+        var ex = await Assert.ThrowsAsync<AssetValidationException>(() =>
+            CreateService().PostInvoiceAsync(request));
+
+        Assert.Equal(AssetErrorCodes.AssetCategoryRequired, ex.Code);
+        Assert.Empty(_purchases.Invoices);
+        Assert.Empty(_assets.Assets);
+    }
+
+    [Fact]
+    public async Task PostInvoiceAsync_FixedAssetCategoryMissingCostAccount_FailsWithMissingAccounts()
+    {
+        // Scenario AST-CAP-G3: the category exists but is missing a required GL account.
+        var category = new AssetCategory
+        {
+            Id = Guid.NewGuid(),
+            TenantId = _tenantId,
+            CompanyId = _companyId,
+            CategoryName = "Incomplete",
+            FixedAssetAccountId = Guid.Empty,           // missing cost account
+            AccumulatedDepreciationAccountId = Guid.NewGuid(),
+            DepreciationExpenseAccountId = Guid.NewGuid(),
+            IsActive = true,
+        };
+        _assets.SeedCategory(category);
+        var item = SeedFixedAssetItem(category);
+
+        await CreateService().PostReceiptAsync(new PurchaseReceiptPostingRequest(
+            _companyId, _warehouse.Id, _supplier.Id, null, PostingDate,
+            new[] { new PurchaseReceiptPostingLine(item.Id, 1m, 100m) }));
+        var receipt = _purchases.Receipts.Single();
+
+        var request = NewInvoiceRequest(
+            receipt.Id, taxAmount: 0m,
+            new PurchaseInvoicePostingLine(receipt.Lines.Single().Id, item.Id, 1m, 100m));
+
+        var ex = await Assert.ThrowsAsync<AssetValidationException>(() =>
+            CreateService().PostInvoiceAsync(request));
+
+        Assert.Equal(AssetErrorCodes.AssetCategoryMissingAccounts, ex.Code);
+        Assert.Empty(_purchases.Invoices);
+        Assert.Empty(_assets.Assets);
     }
 }
 

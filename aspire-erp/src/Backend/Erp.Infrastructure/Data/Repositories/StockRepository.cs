@@ -332,6 +332,9 @@ public sealed class StockRepository : IStockRepository, IStockLedgerReportReposi
 
     public async Task<IReadOnlyList<GLEntry>> GetGlEntriesByVoucherIdAsync(Guid voucherId, CancellationToken cancellationToken = default)
         => await _dbContext.GLEntries
+            // Account included so voucher-detail views (payment "Asiento Contable" tab) and the
+            // reversal builders can read the account code/name without a second round trip.
+            .Include(e => e.Account)
             .Where(e => e.VoucherId == voucherId)
             .ToListAsync(cancellationToken);
 

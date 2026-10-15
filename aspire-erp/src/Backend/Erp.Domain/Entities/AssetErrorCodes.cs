@@ -48,4 +48,13 @@ public static class AssetErrorCodes
     // Disposal Reversal (Task 10.6, spec AS-05 reversal)
     public const string AssetNotDisposed = "asset_not_disposed";
     public const string AlreadyReversed = "already_reversed";
+
+    // Capitalization from a vendor bill / opening entry (asset-capitalization module, gap D5)
+    public const string AssetCategoryRequired = "asset_category_required";
+    public const string AssetCategoryMissingAccounts = "asset_category_missing_accounts";
+    public const string AssetLineRateMismatch = "asset_line_rate_mismatch";
+    public const string CannotCapitalizeUnsubmittedInvoice = "cannot_capitalize_unsubmitted_invoice";
+    public const string AssetHasDepreciationEntries = "asset_has_depreciation_entries";
+    public const string AlreadyCancelled = "asset_already_cancelled";
+    public const string ScheduleAlreadyExists = "asset_schedule_already_exists";
 }

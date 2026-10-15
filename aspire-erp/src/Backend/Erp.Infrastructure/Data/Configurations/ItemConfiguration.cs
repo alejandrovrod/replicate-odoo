@@ -33,6 +33,16 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
 
         builder.Property(i => i.IsActive).HasDefaultValue(true);
 
+        // Asset-capitalization module (gap D1/D2): fixed-asset flag + category template link.
+        builder.Property(i => i.IsFixedAsset).HasDefaultValue(false);
+        builder.Property(i => i.AssetCategoryId);
+
+        builder.HasOne(i => i.AssetCategory)
+            .WithMany()
+            .HasForeignKey(i => i.AssetCategoryId)
+            .HasConstraintName("FK_Item_AssetCategory")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(i => i.IncomeAccountId);
         builder.Property(i => i.ExpenseAccountId);
 

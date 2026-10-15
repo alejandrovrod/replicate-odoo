@@ -189,6 +189,12 @@ public sealed class FakePurchaseRepository : IPurchaseRepository, IPayableAgingR
         Guid purchaseInvoiceId, CancellationToken cancellationToken = default)
         => Task.FromResult(_invoices.FirstOrDefault(i => i.Id == purchaseInvoiceId));
 
+    public Task<decimal> GetReturnedAmountForInvoiceAsync(
+        Guid purchaseInvoiceId, CancellationToken cancellationToken = default)
+        => Task.FromResult(_invoices
+            .Where(i => i.ReturnAgainstId == purchaseInvoiceId)
+            .Sum(i => Math.Abs(i.GrandTotal)));
+
     public Task<IReadOnlyList<PurchaseInvoice>> GetOutstandingBySupplierAsync(
         Guid companyId, Guid supplierId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<PurchaseInvoice>>(

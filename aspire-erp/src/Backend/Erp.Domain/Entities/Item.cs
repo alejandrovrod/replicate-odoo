@@ -34,6 +34,21 @@ public class Item : ITenantEntity
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Fixed-asset flag (asset-capitalization module, gap D1). When true, the item is capitalized
+    /// on the vendor bill: the posting debits the category's cost account and the handler creates
+    /// an <see cref="Asset"/> linked to the invoice, instead of leaving the value expensed.
+    /// </summary>
+    public bool IsFixedAsset { get; set; }
+
+    /// <summary>
+    /// Asset category driving the capitalization accounts (cost, depreciation, accumulated) for a
+    /// fixed-asset item. REQUIRED when <see cref="IsFixedAsset"/> is true; unused otherwise.
+    /// </summary>
+    public Guid? AssetCategoryId { get; set; }
+
+    public AssetCategory? AssetCategory { get; set; }
+
     /// <summary>Default income account for sales postings (nullable FK to Account).</summary>
     public Guid? IncomeAccountId { get; set; }
 

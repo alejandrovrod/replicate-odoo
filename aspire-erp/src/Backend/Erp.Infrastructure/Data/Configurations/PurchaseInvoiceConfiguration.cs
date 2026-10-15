@@ -15,7 +15,13 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
     public void Configure(EntityTypeBuilder<PurchaseInvoice> builder)
     {
         builder.ToTable("PurchaseInvoice", table =>
-            table.HasCheckConstraint("CK_PurchaseInvoice_Totals", "[NetTotal] >= 0.0000 AND [TaxTotal] >= 0.0000 AND [GrandTotal] >= 0.0000"));
+            table.HasCheckConstraint(
+                "CK_PurchaseInvoice_Totals",
+                // Normal bills carry non-negative totals; returns (module 19, T1) carry the exact
+                // negative mirror. The constraint now only forbids a bill whose totals disagree in
+                // SIGN (it can no longer require >= 0, which a debit note violates by construction).
+                "([NetTotal] >= 0.0000 AND [TaxTotal] >= 0.0000 AND [GrandTotal] >= 0.0000) "
+                + "OR ([NetTotal] <= 0.0000 AND [TaxTotal] <= 0.0000 AND [GrandTotal] <= 0.0000)"));
 
         builder.HasKey(i => i.Id);
         builder.Property(i => i.Id)
@@ -32,10 +38,22 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
         builder.Property(i => i.VoucherNo).HasMaxLength(100).IsRequired();
         builder.Property(i => i.BillNumber).HasMaxLength(100).IsRequired();
         builder.Property(i => i.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
-        
+
+        // Module 19 (returns-and-credit-notes, T1): return provenance and the stock-movement flag.
+        builder.Property(i => i.IsReturn).IsRequired().HasDefaultValue(false);
+        builder.Property(i => i.UpdateStock).IsRequired().HasDefaultValue(false);
+
         builder.Property(i => i.RowVersion)
             .IsRowVersion()
             .IsRequired();
+
+        // Self-referencing provenance: a debit note points back at the bill it reverses. Restrict so
+        // a returned-against bill cannot be deleted out from under its notes.
+        builder.HasOne(i => i.ReturnAgainst)
+            .WithMany()
+            .HasForeignKey(i => i.ReturnAgainstId)
+            .HasConstraintName("FK_PurchaseInvoice_ReturnAgainst")
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(i => i.Supplier)
             .WithMany()
@@ -66,5 +84,9 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
             .IsUnique()
             .HasDatabaseName("IX_PurchaseInvoice_Company_BillNumber")
             .HasFilter("[BillNumber] <> ''");
+
+        // Return ceiling lookups (module 19): sum the debit notes booked against one bill.
+        builder.HasIndex(i => i.ReturnAgainstId)
+            .HasDatabaseName("IX_PurchaseInvoice_ReturnAgainstId");
     }
 }

@@ -1,4 +1,5 @@
-import { apiClient } from '../../../api/client'
+import { useCallback, useEffect, useState } from 'react'
+import { ApiError, apiClient } from '../../../api/client'
 import { useApiList } from '../../../lib/useApiList'
 
 export interface PaymentAllocation {
@@ -51,8 +52,107 @@ export interface OutstandingInvoice {
   status: string
 }
 
-export function usePaymentEntries(companyId: string, page = 1, pageSize = 50) {
-  return useApiList<PaymentEntry>('/v1/PaymentEntries', { companyId, page, pageSize }, Boolean(companyId))
+/** One General Ledger line the voucher posted (backend `GLEntryDto`). */
+export interface GlEntry {
+  id: number
+  accountId: string
+  accountCode: string
+  accountName: string
+  postingDate: string
+  debit: number
+  credit: number
+  voucherType: string
+  voucherNo: string
+  remarks?: string | null
+}
+
+/** Detail payload of `GET /v1/PaymentEntries/{id}` (header + allocations + posted GL). */
+export interface PaymentEntryDetail {
+  payment: PaymentEntry
+  allocations: PaymentAllocation[]
+  glEntries: GlEntry[]
+}
+
+/** Optional server-side filters of the payment list (mapped 1:1 onto the query string). */
+export interface PaymentEntryFilters {
+  status?: string
+  paymentType?: string
+}
+
+export function usePaymentEntries(
+  companyId: string,
+  page = 1,
+  pageSize = 50,
+  filters: PaymentEntryFilters = {},
+) {
+  return useApiList<PaymentEntry>(
+    '/v1/PaymentEntries',
+    {
+      companyId,
+      page,
+      pageSize,
+      status: filters.status || undefined,
+      paymentType: filters.paymentType || undefined,
+    },
+    Boolean(companyId),
+  )
+}
+
+export interface PaymentDetailQuery {
+  detail: PaymentEntryDetail | null
+  status: 'idle' | 'loading' | 'success' | 'error'
+  error: ApiError | null
+  reload: () => void
+}
+
+const toApiError = (cause: unknown): ApiError =>
+  cause instanceof ApiError
+    ? cause
+    : new ApiError(0, 'Unexpected Error', cause instanceof Error ? cause.message : String(cause))
+
+/**
+ * Single-object GET loader for the detail dialog. Unlike `useApiList` this is not paged, so it
+ * stays a small purpose-built hook; the `attempt` counter backs the same `reload()` contract.
+ */
+export function usePaymentDetail(id: string | null, companyId: string): PaymentDetailQuery {
+  const [attempt, setAttempt] = useState(0)
+  const [detail, setDetail] = useState<PaymentEntryDetail | null>(null)
+  const [status, setStatus] = useState<PaymentDetailQuery['status']>('idle')
+  const [error, setError] = useState<ApiError | null>(null)
+
+  useEffect(() => {
+    if (!id || !companyId) {
+      setDetail(null)
+      setStatus('idle')
+      setError(null)
+      return undefined
+    }
+    let cancelled = false
+    setStatus('loading')
+    setError(null)
+    getPaymentDetail(id, companyId).then(
+      (result) => {
+        if (!cancelled) {
+          setDetail(result)
+          setStatus('success')
+        }
+      },
+      (cause: unknown) => {
+        if (!cancelled) {
+          setDetail(null)
+          setError(toApiError(cause))
+          setStatus('error')
+        }
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [id, companyId, attempt])
+
+  const reload = useCallback(() => setAttempt((current) => current + 1), [])
+
+  return { detail, status, error, reload }
 }
 
 export async function createPaymentEntry(payload: {
@@ -105,6 +205,14 @@ export async function cancelPaymentEntry(id: string, companyId: string, rowVersi
     { rowVersion: rowVersion ?? null },
     { params: { companyId } },
   )
+  return response.data
+}
+
+/** Header + allocations + posted GL lines of one voucher (read-only detail view). */
+export async function getPaymentDetail(id: string, companyId: string): Promise<PaymentEntryDetail> {
+  const response = await apiClient.get<PaymentEntryDetail>(`/v1/PaymentEntries/${id}`, {
+    params: { companyId },
+  })
   return response.data
 }
 

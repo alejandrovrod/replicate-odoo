@@ -404,6 +404,14 @@ public sealed class PurchaseRepository : IPurchaseRepository, IPayableAgingRepos
             .Include(i => i.Lines)
             .FirstOrDefaultAsync(i => i.Id == purchaseInvoiceId, cancellationToken);
 
+    public async Task<decimal> GetReturnedAmountForInvoiceAsync(
+        Guid purchaseInvoiceId,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.PurchaseInvoices
+            .Where(i => i.ReturnAgainstId == purchaseInvoiceId)
+            .SumAsync(i => (decimal?)Math.Abs(i.GrandTotal), cancellationToken)
+            ?? 0m;
+
     private static void AddParameter(DbCommand command, string name, object value)
     {
         var parameter = command.CreateParameter();

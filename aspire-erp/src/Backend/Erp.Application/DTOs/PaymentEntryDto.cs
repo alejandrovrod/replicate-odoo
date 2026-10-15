@@ -98,10 +98,15 @@ public sealed record PaymentEntryDto(
             payment.Remarks);
 }
 
-/// <summary>Payment voucher detail: the header plus its allocation slices.</summary>
+/// <summary>
+/// Payment voucher detail: the header, its allocation slices and the General Ledger lines the
+/// voucher posted (spec R-12 / ui-spec D1: the detail dialog's "Asiento Contable" tab). The GL rows
+/// are empty while the voucher is still Draft (nothing is posted until submit).
+/// </summary>
 public sealed record PaymentEntryDetailDto(
     PaymentEntryDto Payment,
-    IReadOnlyList<PaymentAllocationDto> Allocations);
+    IReadOnlyList<PaymentAllocationDto> Allocations,
+    IReadOnlyList<GLEntryDto> GlEntries);
 
 /// <summary>One open invoice row of the allocation source grid (spec R-12 §4).</summary>
 public sealed record OutstandingInvoiceDto(

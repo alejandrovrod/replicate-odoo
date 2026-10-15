@@ -29,6 +29,7 @@ public enum AssetStatus
     FullyDepreciated,
     Sold,
     Scrapped,
+    Cancelled,
 }
 
 /// <summary>
@@ -111,6 +112,24 @@ public class Asset : ITenantEntity
     /// Used by the reversal logic to find the original GL lines.
     /// </summary>
     public string DisposalVoucherNo { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Vendor bill that capitalized this asset (asset-capitalization module, gap D4). Null when the
+    /// asset entered through a non-purchase flow (opening entry / manual seed).
+    /// </summary>
+    public Guid? PurchaseInvoiceId { get; set; }
+
+    /// <summary>
+    /// The <see cref="PurchaseInvoiceLine"/> that originated this asset, so the invoice view can
+    /// trace each capitalized line back to its asset. Null for non-purchase origins.
+    /// </summary>
+    public Guid? PurchaseInvoiceItemId { get; set; }
+
+    /// <summary>
+    /// Opening journal entry that capitalized this asset (migration flow, scenario AST-CAP-G2).
+    /// Null for purchase- and seed-originated assets.
+    /// </summary>
+    public Guid? OpeningJournalEntryId { get; set; }
 
     /// <summary>
     /// Optimistic concurrency token (SQL Server <c>rowversion</c> - spec AS-06): capitalization
@@ -216,5 +235,97 @@ public class Asset : ITenantEntity
         Status = restoredStatus;
         DisposalDate = null;
         DisposalProceedsAmount = 0m;
+    }
+
+    /// <summary>
+    /// Creates a Draft asset originating from a vendor bill (asset-capitalization module, gap D1):
+    /// the value/period guards run here, the gapless <see cref="AssetCode"/> and the schedule are
+    /// completed by the posting handler inside the invoice transaction, and the asset is then
+    /// promoted with <see cref="Capitalize"/>.
+    /// </summary>
+    /// <exception cref="AssetValidationException">
+    /// <c>invalid_gross_amount</c>, <c>invalid_salvage_value</c> or <c>invalid_depreciation_periods</c>
+    /// when the value/period guards fail.
+    /// </exception>
+    public static Asset CreateFromPurchase(
+        Guid companyId,
+        Guid itemId,
+        Guid assetCategoryId,
+        string assetName,
+        decimal grossPurchaseAmount,
+        decimal salvageValue,
+        int usefulLifeMonths,
+        DateOnly purchaseDate,
+        DateOnly availableForUseDate,
+        Guid purchaseInvoiceId,
+        Guid purchaseInvoiceItemId)
+    {
+        AssetValidator.EnsureValidGrossAmount(grossPurchaseAmount);
+        AssetValidator.EnsureValidSalvageValue(grossPurchaseAmount, salvageValue);
+
+        if (usefulLifeMonths <= 0)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.InvalidDepreciationPeriods,
+                $"Useful life must be greater than zero months (received {usefulLifeMonths}).");
+        }
+
+        return new Asset
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            ItemId = itemId,
+            AssetCategoryId = assetCategoryId,
+            AssetName = assetName,
+            GrossPurchaseAmount = grossPurchaseAmount,
+            SalvageValue = salvageValue,
+            PurchaseDate = purchaseDate,
+            AvailableForUseDate = availableForUseDate,
+            DepreciationMethod = DepreciationMethod.StraightLine,
+            TotalNumberOfDepreciations = usefulLifeMonths,
+            FrequencyInMonths = 1,
+            // Born Draft so the posting handler can stamp the gapless code and then Capitalize().
+            Status = AssetStatus.Draft,
+            PurchaseInvoiceId = purchaseInvoiceId,
+            PurchaseInvoiceItemId = purchaseInvoiceItemId,
+            CreatedAt = DateTimeOffset.UtcNow,
+        };
+    }
+
+    /// <summary>
+    /// Cancels an asset that originated from a source document that was itself cancelled
+    /// (asset-capitalization module, scenario AST-CAP-G4). Blocked once any depreciation has been
+    /// booked: the accumulated depreciation would strand a contra-asset balance with no asset.
+    /// </summary>
+    /// <exception cref="AssetValidationException">
+    /// <c>asset_already_cancelled</c> when already cancelled, <c>asset_has_depreciation_entries</c>
+    /// when accumulated depreciation is non-zero, or <c>invalid_status_transition</c> for terminal
+    /// Sold/Scrapped assets.
+    /// </exception>
+    public void CancelFromSource()
+    {
+        if (Status == AssetStatus.Cancelled)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.AlreadyCancelled,
+                $"Asset '{AssetCode}' is already cancelled.");
+        }
+
+        if (Status is AssetStatus.Sold or AssetStatus.Scrapped)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.InvalidStatusTransition,
+                $"A Sold or Scrapped asset cannot be cancelled; asset '{AssetCode}' is '{Status}'.");
+        }
+
+        if (AccumulatedDepreciation != 0m)
+        {
+            throw new AssetValidationException(
+                AssetErrorCodes.AssetHasDepreciationEntries,
+                $"Asset '{AssetCode}' has posted depreciation ({AccumulatedDepreciation:0.####}) "
+                + "and cannot be cancelled; reverse the depreciation first.");
+        }
+
+        Status = AssetStatus.Cancelled;
     }
 }

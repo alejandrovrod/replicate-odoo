@@ -2,7 +2,6 @@ import {
   Bell,
   Building2,
   CheckCircle2,
-  ChevronDown,
   KeyRound,
   LogOut,
   Search,

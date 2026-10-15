@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../../api/client'
 import { translateErrorCode } from '../../../lib/translateErrorCode'
 import { useTenantStore } from '../../../store/useTenantStore'
 import { usePagination } from '../../../lib/pagination'
-import { PaymentEntryList } from '../components/PaymentEntryList'
+import { PaymentEntryList, type PaymentListFilters } from '../components/PaymentEntryList'
 import { PaymentEntryModal } from '../components/PaymentEntryModal'
+import { PaymentEntryDetailDialog } from '../components/PaymentEntryDetailDialog'
 import {
   cancelPaymentEntry,
   createPaymentEntry,
@@ -14,15 +15,50 @@ import {
   type PaymentEntry,
 } from '../api/usePaymentEntries'
 
+const EMPTY_FILTERS: PaymentListFilters = { status: '', paymentType: '', text: '' }
+
+/** Rows the free-text box matches, over the fields the operator can actually see. */
+function matchesText(payment: PaymentEntry, needle: string): boolean {
+  return [
+    payment.voucherNo,
+    payment.partyName,
+    payment.paymentDate,
+    payment.referenceNumber,
+    payment.paymentType,
+    payment.documentStatus,
+  ].some((value) => (value ?? '').toString().toLowerCase().includes(needle))
+}
+
 export function PaymentsView() {
   const { t, i18n } = useTranslation('banking')
   const companyId = useTenantStore((state) => state.companyId)
-  const { page, pageSize, setPage } = usePagination(10)
-  const { items, status, error, reload, totalCount, pageNumber } = usePaymentEntries(companyId, page, pageSize)
+  const { page, pageSize, setPage, reset } = usePagination(10)
+
+  const [filters, setFilters] = useState<PaymentListFilters>(EMPTY_FILTERS)
+  const { items, status, error, reload, totalCount, pageNumber } = usePaymentEntries(
+    companyId,
+    page,
+    pageSize,
+    { status: filters.status, paymentType: filters.paymentType },
+  )
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [actingId, setActingId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+
+  // Server-side filters (status/type) narrow the page request; the free-text box narrows the
+  // loaded page in place, which is why the hint says so instead of implying a global search.
+  const visibleItems = useMemo(() => {
+    const needle = filters.text.trim().toLowerCase()
+    if (!needle) return items
+    return items.filter((payment) => matchesText(payment, needle))
+  }, [items, filters.text])
+
+  const handleFilterChange = (patch: Partial<PaymentListFilters>) => {
+    setFilters((prev) => ({ ...prev, ...patch }))
+    reset()
+  }
 
   const handleSave = async (data: {
     paymentType: string
@@ -75,7 +111,7 @@ export function PaymentsView() {
     <div className="p-4 space-y-4">
       {actionError && <div className="text-sm text-red-600">{actionError}</div>}
       <PaymentEntryList
-        payments={items}
+        payments={visibleItems}
         totalCount={totalCount}
         page={pageNumber}
         pageSize={pageSize}
@@ -83,6 +119,9 @@ export function PaymentsView() {
         onNew={() => setIsModalOpen(true)}
         onSubmit={(p) => runAction(p, 'submit')}
         onCancel={(p) => runAction(p, 'cancel')}
+        onRowClick={(p) => setDetailId(p.id)}
+        filters={filters}
+        onFilterChange={handleFilterChange}
         actingId={actingId}
       />
       <PaymentEntryModal
@@ -90,6 +129,12 @@ export function PaymentsView() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         companyId={companyId}
+      />
+      <PaymentEntryDetailDialog
+        isOpen={detailId !== null}
+        paymentId={detailId}
+        companyId={companyId}
+        onClose={() => setDetailId(null)}
       />
     </div>
   )

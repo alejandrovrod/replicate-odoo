@@ -167,6 +167,7 @@ public sealed class AssetsController : ControllerBase
     /// <param name="request">Company and as-of date.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpPost("depreciation-run")]
+    [HttpPost("depreciate-period")]
     [Authorize(Policy = "permission:asset:submit")]
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(DepreciationRunDto), StatusCodes.Status200OK)]
@@ -294,6 +295,45 @@ public sealed class AssetsController : ControllerBase
     }
 
     /// <summary>
+    /// Generates the straight-line depreciation schedule of one asset (asset-capitalization
+    /// module, task T4). Refuses an asset that already has schedule lines.
+    /// </summary>
+    /// <remarks>No General Ledger rows are written (the schedule is a plan), so no idempotency guard.</remarks>
+    /// <param name="id">Asset id.</param>
+    /// <param name="request">Company that owns the asset.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:guid}/generate-schedule")]
+    [Authorize(Policy = "permission:asset:submit")]
+    [ProducesResponseType(typeof(AssetCapitalizationDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> GenerateSchedule(
+        Guid id,
+        [FromBody] GenerateScheduleRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || request.CompanyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidAsset"),
+                _errors.Text(AssetErrorCodes.AssetNotFound),
+                AssetErrorCodes.AssetNotFound);
+        }
+
+        var result = await _sender.SendAsync(
+            new GenerateAssetScheduleCommand(request.CompanyId, id), cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return AssetProblem(result.Error!);
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
     /// RFC 7807 mapping for the asset posting routes, mirroring the manufacturing controller:
     /// missing masters are 404, state conflicts (bad transition, frozen period, concurrency
     /// race) are 409, every other domain failure - including the proceeds-shape and
@@ -314,6 +354,7 @@ public sealed class AssetsController : ControllerBase
             AssetErrorCodes.InvalidStatusTransition
                 or AssetErrorCodes.AssetNotDisposed
                 or AssetErrorCodes.AlreadyReversed
+                or AssetErrorCodes.ScheduleAlreadyExists
                 or ConcurrencyErrorCodes.ConcurrencyConflict
                 or AccountingErrorCodes.FiscalPeriodLocked => Problem(
                     StatusCodes.Status409Conflict,
@@ -366,6 +407,10 @@ public sealed record CapitalizeAssetRequest(
 public sealed record DepreciationRunRequest(
     Guid CompanyId,
     DateOnly AsOfDate);
+
+/// <summary>Schedule generation request body: the company that owns the asset.</summary>
+public sealed record GenerateScheduleRequest(
+    Guid CompanyId);
 
 /// <summary>
 /// Disposal request body: the company, the accounting date, the cash proceeds (0 = scrap) and

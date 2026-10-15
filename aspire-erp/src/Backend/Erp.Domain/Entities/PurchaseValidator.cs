@@ -125,6 +125,85 @@ public static class PurchaseValidator
         }
     }
 
+    /// <summary>
+    /// Return (supplier debit note) line rule (module 19, T2): the REQUESTED quantity is strictly
+    /// positive - the posting engine stores the negative counterpart and enforces the per-line
+    /// ceiling against the original bill.
+    /// </summary>
+    /// <exception cref="PurchaseValidationException">The requested quantity is not strictly positive.</exception>
+    public static void EnsureValidReturnLine(decimal qty)
+    {
+        if (qty <= 0)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.ReturnLineInvalid,
+                $"Return line quantity must be greater than zero (received {qty:0.####}).");
+        }
+    }
+
+    /// <summary>
+    /// Return provenance rule (module 19, T2): the target bill must exist, must itself be a normal
+    /// (non-return) bill and must not be cancelled. Pure rule (no EF). Run BEFORE the line loop so a
+    /// return-of-a-return fails with its own code instead of a downstream ceiling comparison.
+    /// </summary>
+    /// <exception cref="PurchaseValidationException">
+    /// <see cref="PurchaseErrorCodes.ReturnAgainstRequired"/> when <paramref name="original"/> is null,
+    /// <see cref="PurchaseErrorCodes.ReturnAgainstInvalid"/> for a return-of-a-return or a cancelled bill.
+    /// </exception>
+    public static void EnsureReturnTarget(PurchaseInvoice? original)
+    {
+        if (original is null)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.ReturnAgainstRequired,
+                "A purchase return must reference an existing, posted bill.");
+        }
+
+        if (original.IsReturn)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.ReturnAgainstInvalid,
+                $"Bill '{original.VoucherNo}' is itself a return; returns cannot be chained.");
+        }
+
+        if (original.Status == PurchaseInvoiceStatus.Cancelled)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.ReturnAgainstInvalid,
+                $"Bill '{original.VoucherNo}' is cancelled and cannot be returned against.");
+        }
+    }
+
+    /// <summary>
+    /// Return cumulative ceiling rule (module 19, T2 / scenario RET-G3): the new return's gross,
+    /// added to every debit note already booked against the same bill, cannot exceed the bill's
+    /// gross. Pure rule (no EF): the caller loads the already-returned amount.
+    /// </summary>
+    /// <exception cref="PurchaseValidationException"><see cref="PurchaseErrorCodes.ReturnAmountExceeded"/>.</exception>
+    public static void EnsureReturnAmountWithinCeiling(
+        PurchaseInvoice original,
+        decimal alreadyReturnedAmount,
+        decimal returnAmount)
+    {
+        if (returnAmount <= 0)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.ReturnAmountExceeded,
+                $"Return amount must be greater than zero (received {returnAmount:0.####}).");
+        }
+
+        var ceiling = Math.Abs(original.GrandTotal);
+        if (Round4(alreadyReturnedAmount + returnAmount) > ceiling)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.ReturnAmountExceeded,
+                $"Return of {returnAmount:0.####} exceeds what bill '{original.VoucherNo}' still has "
+                + $"available: already returned {alreadyReturnedAmount:0.####} of {ceiling:0.####}.");
+        }
+    }
+
+    private static decimal Round4(decimal value) => Math.Round(value, 4, MidpointRounding.AwayFromZero);
+
     /// <summary>Workflow rule (Task 4.1): only a Draft order can be updated.</summary>
     /// <exception cref="PurchaseValidationException">The order is not in Draft.</exception>
     public static void EnsureDraft(PurchaseOrderStatus status)

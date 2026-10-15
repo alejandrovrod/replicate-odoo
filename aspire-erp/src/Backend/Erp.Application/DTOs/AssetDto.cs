@@ -62,7 +62,9 @@ public sealed record AssetDto(
     int FrequencyInMonths,
     AssetStatus Status,
     DateOnly? DisposalDate,
-    DateTimeOffset CreatedAt)
+    DateTimeOffset CreatedAt,
+    Guid? PurchaseInvoiceId = null,
+    Guid? PurchaseInvoiceItemId = null)
 {
     public static AssetDto Build(Asset asset) =>
         new(
@@ -83,7 +85,9 @@ public sealed record AssetDto(
             asset.FrequencyInMonths,
             asset.Status,
             asset.DisposalDate,
-            asset.CreatedAt);
+            asset.CreatedAt,
+            asset.PurchaseInvoiceId,
+            asset.PurchaseInvoiceItemId);
 }
 
 /// <summary>

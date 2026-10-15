@@ -253,6 +253,39 @@ public sealed class SalesInvoiceReturnsTests
     }
 
     [Fact]
+    public async Task Submit_Return_AmortizesOriginalInvoiceOutstanding()
+    {
+        // Module 18 (gap D3 / scenario RET-G1): beyond shrinking the customer's aggregate
+        // balance, the credit note reduces the SPECIFIC referenced bill so it stops showing
+        // as fully collectible.
+        var original = SeedOriginal();
+        Assert.Equal(1000m, original.OutstandingAmount);
+
+        var created = await CreateHandler().HandleAsync(ReturnCommand(original.Id));
+        Assert.True(created.IsSuccess);
+
+        var result = await SubmitHandler().HandleAsync(
+            new SubmitSalesInvoiceCommand(_companyId, created.Value!.Id));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(600m, original.OutstandingAmount);
+    }
+
+    [Fact]
+    public async Task Submit_FullReturn_AmortizesOriginalInvoiceToZero()
+    {
+        var original = SeedOriginal();
+        var created = await CreateHandler().HandleAsync(ReturnCommand(original.Id, quantity: -10m));
+        Assert.True(created.IsSuccess);
+
+        var result = await SubmitHandler().HandleAsync(
+            new SubmitSalesInvoiceCommand(_companyId, created.Value!.Id));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0m, original.OutstandingAmount);
+    }
+
+    [Fact]
     public async Task Submit_ReturnWithTax_ReversesTaxLegAsDebit()
     {
         // Full return of a taxed invoice: the ceiling compares GrandTotals (1210 vs 1210).

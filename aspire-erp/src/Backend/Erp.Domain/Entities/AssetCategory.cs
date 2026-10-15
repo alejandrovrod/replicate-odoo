@@ -81,6 +81,19 @@ public class AssetCategory : ITenantEntity
     /// <summary>Land and other non-wasting assets: no depreciation schedule is generated.</summary>
     public bool IsNonDepreciable { get; set; }
 
+    /// <summary>
+    /// Default useful life in months applied when a fixed-asset item of this category is
+    /// capitalized from a vendor bill (asset-capitalization module, gap D2). Ignored when
+    /// <see cref="IsNonDepreciable"/> is true. Defaults to 60 (5 years).
+    /// </summary>
+    public int DefaultUsefulLifeMonths { get; set; } = 60;
+
+    /// <summary>
+    /// Default salvage value as a PERCENTAGE of the gross cost (0..100) used when a fixed-asset
+    /// item of this category is capitalized from a vendor bill. Defaults to 0.
+    /// </summary>
+    public decimal DefaultSalvageValuePercent { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     /// <summary>

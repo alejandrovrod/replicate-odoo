@@ -158,6 +158,7 @@ builder.Services.AddScoped<IQueryHandler<GetPurchaseOrdersQuery, PagedResult<Pur
 builder.Services.AddScoped<ICommandHandler<PostPurchaseReceiptCommand, Result<PurchaseReceiptPostingDto>>, PostPurchaseReceiptCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPurchaseReceiptsQuery, PagedResult<PurchaseReceiptDto>>, GetPurchaseReceiptsQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<PostPurchaseInvoiceCommand, Result<PurchaseInvoicePostingDto>>, PostPurchaseInvoiceCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<PostPurchaseReturnCommand, Result<PurchaseInvoicePostingDto>>, PostPurchaseReturnCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelPurchaseInvoiceCommand, Result<PurchaseInvoiceDto>>, CancelPurchaseInvoiceCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetPurchaseInvoicesQuery, PagedResult<PurchaseInvoiceDto>>, GetPurchaseInvoicesQueryHandler>();
 
@@ -296,6 +297,7 @@ builder.Services.AddScoped<IAssetsRepository, AssetsRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateAssetCategoryCommand, Result<AssetCategoryDto>>, CreateAssetCategoryCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdateAssetCategoryCommand, Result<AssetCategoryDto>>, UpdateAssetCategoryCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CapitalizeAssetCommand, Result<AssetCapitalizationDto>>, CapitalizeAssetCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<GenerateAssetScheduleCommand, Result<AssetCapitalizationDto>>, GenerateAssetScheduleCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<PostDueDepreciationsCommand, Result<DepreciationRunDto>>, PostDueDepreciationsCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DisposeAssetCommand, Result<AssetDisposalDto>>, DisposeAssetCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelDisposeAssetCommand, Result<AssetDisposalReversalDto>>, CancelDisposeAssetCommandHandler>();

@@ -93,6 +93,19 @@ public sealed class CancelPurchaseInvoiceCommandHandler
 
                 EnsureRowVersion(invoice, command.RowVersion);
 
+                // Module 19 (T1): a supplier debit note is NOT cancellable through this path yet.
+                // The unwinder below keys on the return lines' PurchaseReceiptLineId - which a return
+                // copies from the bill it reverses - so it would negate the ORIGINAL receipt intake
+                // (destroying purchased stock) and would leave the reversed bill's outstanding
+                // balance unrestored. Refuse explicitly rather than corrupt the ledger (RET-G4 open).
+                if (invoice.IsReturn)
+                {
+                    throw new PurchaseValidationException(
+                        PurchaseErrorCodes.ReturnCancellationUnsupported,
+                        $"Purchase return '{invoice.VoucherNo}' cannot be cancelled: the original bill "
+                        + "would have to be restored and the returned stock re-issued (module 19 RET-G4).");
+                }
+
                 // Cancelling WRITES ledger rows (the reversal), so the period lock applies -
                 // against the invoice's ORIGINAL PostingDate, which is the date the reversal
                 // rows will carry.

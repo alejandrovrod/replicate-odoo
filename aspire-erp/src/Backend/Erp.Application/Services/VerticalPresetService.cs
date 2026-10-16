@@ -257,7 +257,10 @@ public sealed class VerticalPresetService : IVerticalPresetService
         var record = await _tenantPresets.GetAsync(cancellationToken);
         if (record is null)
         {
-            return new ActivePresetDto(null, null, new Dictionary<string, IReadOnlyDictionary<string, string>>());
+            return new ActivePresetDto(
+                null,
+                null,
+                new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>>());
         }
 
         var document = Load(record.PresetKey);
@@ -266,9 +269,9 @@ public sealed class VerticalPresetService : IVerticalPresetService
             document.Name,
             document.Terminology.ToDictionary(
                 kvp => kvp.Key,
-                kvp => (IReadOnlyDictionary<string, string>)kvp.Value
-                    .SelectMany(ns => ns.Value.Select(term => new KeyValuePair<string, string>($"{ns.Key}:{term.Key}", term.Value)))
-                    .ToDictionary(p => p.Key, p => p.Value)));
+                kvp => (IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>)kvp.Value.ToDictionary(
+                    ns => ns.Key,
+                    ns => (IReadOnlyDictionary<string, string>)ns.Value)));
     }
 
     private static string NormalizeFieldType(string? type)

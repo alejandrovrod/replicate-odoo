@@ -5,8 +5,28 @@
   "terminology": {
     "en": {
       "selling": {
+        "overview.manageCustomers": "Patients",
+        "overview.orders": "Admission Orders",
+        "invoices.colCustomer": "Patient",
+        "orders.colCustomer": "Patient",
+        "orders.title": "Admission Orders",
+        "orders.new": "New Admission Order",
+        "form.customer": "Patient *",
+        "orderForm.titleNew": "New Admission Order",
+        "orderForm.errorCustomer": "The patient is required.",
+        "invoiceForm.errorCustomer": "The patient is required.",
         "customerForm.titleNew": "New Patient",
-        "customerForm.titleEdit": "Edit Patient"
+        "customerForm.titleEdit": "Edit Patient",
+        "customerForm.codeLabel": "Patient Code *",
+        "customerForm.nameLabel": "Patient Name *",
+        "customerForm.typeLabel": "Patient Type",
+        "customerForm.detailsPlaceholder": "Internal clinical notes about this patient",
+        "customers.manageTitle": "Patients",
+        "customers.manageSubtitle": "Manage your patients and medical credit limits.",
+        "customers.search": "Search patients...",
+        "customers.columns.name": "Patient Name",
+        "customers.columns.code": "Patient Code",
+        "customers.columns.type": "Patient Type"
       },
       "common": {
         "nav.item.sellingCustomers": "Patients",
@@ -15,8 +35,28 @@
     },
     "es": {
       "selling": {
+        "overview.manageCustomers": "Pacientes",
+        "overview.orders": "Órdenes de Admisión",
+        "invoices.colCustomer": "Paciente",
+        "orders.colCustomer": "Paciente",
+        "orders.title": "Órdenes de Admisión",
+        "orders.new": "Nueva orden de admisión",
+        "form.customer": "Paciente *",
+        "orderForm.titleNew": "Nueva orden de admisión",
+        "orderForm.errorCustomer": "El paciente es obligatorio.",
+        "invoiceForm.errorCustomer": "El paciente es obligatorio.",
         "customerForm.titleNew": "Nuevo Paciente",
-        "customerForm.titleEdit": "Editar Paciente"
+        "customerForm.titleEdit": "Editar Paciente",
+        "customerForm.codeLabel": "Código de Paciente *",
+        "customerForm.nameLabel": "Nombre del Paciente *",
+        "customerForm.typeLabel": "Tipo de Paciente",
+        "customerForm.detailsPlaceholder": "Notas clínicas internas sobre este paciente",
+        "customers.manageTitle": "Pacientes",
+        "customers.manageSubtitle": "Gestionar pacientes e historial de crédito.",
+        "customers.search": "Buscar pacientes...",
+        "customers.columns.name": "Nombre del Paciente",
+        "customers.columns.code": "Código de Paciente",
+        "customers.columns.type": "Tipo de Paciente"
       },
       "common": {
         "nav.item.sellingCustomers": "Pacientes",

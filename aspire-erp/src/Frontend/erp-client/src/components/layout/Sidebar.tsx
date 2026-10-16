@@ -173,6 +173,7 @@ export function Sidebar() {
     'acc-transactions': true,
     'acc-assets': true,
     'acc-banking': true,
+    'selling-folder': true,
   })
 
   const toggleFolder = (id: string) => {

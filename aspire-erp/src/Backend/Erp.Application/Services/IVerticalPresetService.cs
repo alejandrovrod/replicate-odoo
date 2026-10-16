@@ -17,7 +17,7 @@ public sealed record VerticalPresetSummary(
 public sealed record ActivePresetDto(
     string? PresetKey,
     string? Name,
-    IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Terminology);
+    IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>> Terminology);
 
 /// <summary>What one preset application created vs skipped (idempotent re-apply).</summary>
 public sealed record PresetApplyResult(

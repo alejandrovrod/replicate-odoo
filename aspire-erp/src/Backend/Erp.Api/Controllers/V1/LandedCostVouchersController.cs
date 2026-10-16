@@ -26,7 +26,7 @@ namespace Erp.Api.Controllers.V1;
 /// (CustomersController precedent).
 /// </remarks>
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/landed-cost-vouchers")]
 [Authorize(Policy = "TenantMember")]
 [Produces("application/json")]
 [Consumes("application/json")]

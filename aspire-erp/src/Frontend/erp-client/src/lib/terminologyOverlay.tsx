@@ -48,12 +48,41 @@ export function TerminologyOverlayProvider({ children }: { children: ReactNode }
       const response = await apiClient.get<ActivePreset>('/v1/presets/active')
       if (signal.cancelled) return
       const { presetKey, name, terminology } = response.data
+      const namespacesToEnsure = new Set<string>()
+      for (const namespaces of Object.values(terminology ?? {})) {
+        for (const ns of Object.keys(namespaces ?? {})) {
+          namespacesToEnsure.add(ns)
+        }
+      }
+      if (namespacesToEnsure.size > 0) {
+        await i18n.loadNamespaces(Array.from(namespacesToEnsure))
+      }
+
+      let hasUpdates = false
       for (const [lng, namespaces] of Object.entries(terminology ?? {})) {
         for (const [ns, terms] of Object.entries(namespaces ?? {})) {
           if (terms && Object.keys(terms).length > 0) {
-            i18n.addResourceBundle(lng, ns, terms, true, true)
+            // Expand dotted keys like "nav.item.sellingCustomers" into nested objects { nav: { item: { sellingCustomers } } }
+            // so i18next deep merge (deep=true) replaces the exact leaf in the bundle!
+            const nested: Record<string, any> = {}
+            for (const [key, val] of Object.entries(terms)) {
+              const parts = key.split('.')
+              let current = nested
+              for (let i = 0; i < parts.length - 1; i++) {
+                current[parts[i]] = current[parts[i]] || {}
+                current = current[parts[i]]
+              }
+              current[parts[parts.length - 1]] = val
+            }
+            i18n.addResourceBundle(lng, ns, nested, true, true)
+            hasUpdates = true
           }
         }
+      }
+      if (hasUpdates) {
+        // Emit change so all useTranslation() hooks re-render with the new overlay keys
+        i18n.emit('added')
+        await i18n.changeLanguage(i18n.language)
       }
       setValue((prev) => ({ ...prev, presetKey, presetName: name, ready: true }))
     } catch {

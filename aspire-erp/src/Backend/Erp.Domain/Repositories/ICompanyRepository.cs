@@ -11,6 +11,14 @@ public interface ICompanyRepository
 {
     /// <summary>The company with the given id, or null when it does not exist in this tenant.</summary>
     Task<Company?> GetByIdAsync(Guid companyId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every company of the current tenant, ordered by name (the tenant filter is applied by the
+    /// repository). Backs the company picker used to edit per-company Supplier account mappings
+    /// (module buying-suppliers, spec scenario SUP-G1).
+    /// </summary>
+    Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken cancellationToken = default);
+
     Task UpdateCompanyAsync(Company company, CancellationToken cancellationToken = default);
 
     /// <summary>

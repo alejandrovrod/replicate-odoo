@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -17,15 +18,18 @@ public sealed class SubmitPurchaseOrderCommandHandler
     private readonly ISupplierRepository _suppliers;
     private readonly IItemRepository _items;
     private readonly IPurchaseRepository _purchases;
+    private readonly IEnumerable<IDocumentLifecycleHook<PurchaseOrder>>? _hooks;
 
     public SubmitPurchaseOrderCommandHandler(
         ISupplierRepository suppliers,
         IItemRepository items,
-        IPurchaseRepository purchases)
+        IPurchaseRepository purchases,
+        IEnumerable<IDocumentLifecycleHook<PurchaseOrder>>? hooks = null)
     {
         _suppliers = suppliers;
         _items = items;
         _purchases = purchases;
+        _hooks = hooks;
     }
 
     public async Task<Result<PurchaseOrderDto>> HandleAsync(
@@ -48,8 +52,13 @@ public sealed class SubmitPurchaseOrderCommandHandler
 
             PurchaseValidator.EnsureSubmittable(order.Status);
 
+            // Workflow Fase 5 (gap D2): operational gate before the transition.
+            await DocumentLifecycleInvoker.RunBeforeSubmitAsync(_hooks, order, cancellationToken);
+
             order.Status = PurchaseOrderStatus.Submitted;
             await _purchases.UpdateOrderAsync(order, cancellationToken);
+
+            await DocumentLifecycleInvoker.RunAfterSubmitAsync(_hooks, order, cancellationToken);
 
             var supplier = await _suppliers.GetByIdAsync(order.SupplierId, cancellationToken)
                 ?? throw new PurchaseValidationException(
@@ -61,6 +70,15 @@ public sealed class SubmitPurchaseOrderCommandHandler
             return Result<PurchaseOrderDto>.Success(PurchaseOrderDto.Build(order, supplier, items));
         }
         catch (PurchaseValidationException ex)
+        {
+            return Result<PurchaseOrderDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (WorkflowValidationException ex)
+        {
+            // Workflow Fase 5: the guard's own stable code travels verbatim.
+            return Result<PurchaseOrderDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (LifecycleHookRejectedException ex)
         {
             return Result<PurchaseOrderDto>.Failure(ex.Code, ex.Message);
         }

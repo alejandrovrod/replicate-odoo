@@ -21,7 +21,7 @@ public enum PurchaseInvoiceStatus
     Cancelled = 5
 }
 
-public class PurchaseInvoice : ITenantEntity
+public class PurchaseInvoice : ITenantEntity, ICustomFieldsCarrier, IWorkflowCarrier
 {
     public Guid Id { get; set; }
 
@@ -88,9 +88,25 @@ public class PurchaseInvoice : ITenantEntity
 
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
+    /// <summary>Tenant-configured dynamic attributes, see <see cref="ICustomFieldsCarrier"/>.</summary>
+    public string? CustomData { get; set; }
+
+    /// <summary>
+    /// Operational workflow state (workflow Fase 5, <see cref="IWorkflowCarrier"/>): see
+    /// <see cref="SalesOrder.WorkflowState"/> - same contract, PurchaseInvoice flow.
+    /// </summary>
+    public string? WorkflowState { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public ICollection<PurchaseInvoiceLine> Lines { get; set; } = new List<PurchaseInvoiceLine>();
+
+    /// <summary>
+    /// Tax-engine Fase 2 "Taxes and Charges" rows (transferred taxes + fiscal retentions).
+    /// Empty on legacy bills posted from the scalar tax amount (that path persists zero rows,
+    /// exactly as before).
+    /// </summary>
+    public ICollection<PurchaseInvoiceTax> Taxes { get; set; } = new List<PurchaseInvoiceTax>();
 
     /// <summary>
     /// Cancels the bill and applies the compensating status transition (spec BY-05):

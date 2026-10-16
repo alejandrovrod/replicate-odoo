@@ -18,6 +18,9 @@ export async function createItem(payload: Partial<Item>): Promise<Item> {
     incomeAccountId: payload.incomeAccountId ?? null,
     expenseAccountId: payload.expenseAccountId ?? null,
     isActive: payload.isActive ?? true,
+    customData: payload.customData ?? null,
+    hasBatchNo: payload.hasBatchNo ?? false,
+    hasSerialNo: payload.hasSerialNo ?? false,
   })
   return response.data
 }
@@ -37,6 +40,9 @@ export async function updateItem(id: string, payload: Partial<Item>): Promise<It
     expenseAccountId: payload.expenseAccountId ?? null,
     isActive: payload.isActive ?? true,
     rowVersion: payload.rowVersion,
+    customData: payload.customData ?? null,
+    hasBatchNo: payload.hasBatchNo ?? false,
+    hasSerialNo: payload.hasSerialNo ?? false,
   })
   return response.data
 }
@@ -63,7 +69,22 @@ export interface CreateStockEntryPayload {
   warehouseId: string
   targetWarehouseId?: string
   postingDate: string
-  lines: { itemId: string; qty: number; rate?: number }[]
+  lines: CreateStockEntryLine[]
+}
+
+/** One line of POST /api/v1/stockentries (mirrors `CreateStockEntryLine`). */
+export interface CreateStockEntryLine {
+  itemId: string
+  qty: number
+  /** Required (and > 0) on receipts only; omitted on issues/transfers (FIFO decides). */
+  rate?: number
+  /** Batch-and-serial Fase 3: batch id (issues/transfers) or number (receipts). */
+  batchId?: string | null
+  batchNo?: string | null
+  manufacturingDate?: string | null
+  expiryDate?: string | null
+  /** Exact serials moved (count must equal qty when the item is serial-tracked). */
+  serialNumbers?: string[] | null
 }
 
 /**

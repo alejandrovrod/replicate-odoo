@@ -168,6 +168,18 @@
   <data name="DuplicateSupplierCode" xml:space="preserve">
     <value>Duplicate Supplier Code</value>
   </data>
+  <data name="SupplierOnHold" xml:space="preserve">
+    <value>Supplier On Hold</value>
+  </data>
+  <data name="SupplierGroupNotFound" xml:space="preserve">
+    <value>Supplier Group Not Found</value>
+  </data>
+  <data name="DuplicateSupplierGroupCode" xml:space="preserve">
+    <value>Duplicate Supplier Group Code</value>
+  </data>
+  <data name="SupplierGroupRejected" xml:space="preserve">
+    <value>Supplier Group Rejected</value>
+  </data>
   <data name="InvalidPurchaseInvoice" xml:space="preserve">
     <value>Invalid Purchase Invoice</value>
   </data>
@@ -390,5 +402,86 @@
   </data>
   <data name="ProfileRejected" xml:space="preserve">
     <value>Profile Update Rejected</value>
+  </data>
+  <data name="InvalidCustomField" xml:space="preserve">
+    <value>Invalid Custom Field</value>
+  </data>
+  <data name="CustomFieldNotFound" xml:space="preserve">
+    <value>Custom Field Not Found</value>
+  </data>
+  <data name="CustomFieldRejected" xml:space="preserve">
+    <value>Custom Field Rejected</value>
+  </data>
+  <data name="CustomFieldConflict" xml:space="preserve">
+    <value>Custom Field Conflict</value>
+  </data>
+  <data name="InvalidTaxTemplate" xml:space="preserve">
+    <value>Invalid Tax Template</value>
+  </data>
+  <data name="TaxTemplateNotFound" xml:space="preserve">
+    <value>Tax Template Not Found</value>
+  </data>
+  <data name="TaxTemplateRejected" xml:space="preserve">
+    <value>Tax Template Rejected</value>
+  </data>
+  <data name="TaxTemplateConflict" xml:space="preserve">
+    <value>Tax Template Conflict</value>
+  </data>
+  <data name="TaxCalculationRejected" xml:space="preserve">
+    <value>Tax Calculation Rejected</value>
+  </data>
+  <data name="InvalidBatch" xml:space="preserve">
+    <value>Invalid Batch</value>
+  </data>
+  <data name="BatchNotFound" xml:space="preserve">
+    <value>Batch Not Found</value>
+  </data>
+  <data name="BatchRejected" xml:space="preserve">
+    <value>Batch Rejected</value>
+  </data>
+  <data name="BatchConflict" xml:space="preserve">
+    <value>Batch Conflict</value>
+  </data>
+  <data name="InvalidSerial" xml:space="preserve">
+    <value>Invalid Serial</value>
+  </data>
+  <data name="SerialNotFound" xml:space="preserve">
+    <value>Serial Not Found</value>
+  </data>
+  <data name="SerialRejected" xml:space="preserve">
+    <value>Serial Rejected</value>
+  </data>
+  <data name="InvalidLandedCostVoucher" xml:space="preserve">
+    <value>Invalid Landed Cost Voucher</value>
+  </data>
+  <data name="LandedCostVoucherNotFound" xml:space="preserve">
+    <value>Landed Cost Voucher Not Found</value>
+  </data>
+  <data name="LandedCostVoucherRejected" xml:space="preserve">
+    <value>Landed Cost Voucher Rejected</value>
+  </data>
+  <data name="LandedCostVoucherConflict" xml:space="preserve">
+    <value>Landed Cost Voucher Conflict</value>
+  </data>
+  <data name="InvalidWorkflow" xml:space="preserve">
+    <value>Invalid Workflow</value>
+  </data>
+  <data name="WorkflowNotFound" xml:space="preserve">
+    <value>Workflow Not Found</value>
+  </data>
+  <data name="WorkflowRejected" xml:space="preserve">
+    <value>Workflow Rejected</value>
+  </data>
+  <data name="WorkflowConflict" xml:space="preserve">
+    <value>Workflow Conflict</value>
+  </data>
+  <data name="WorkflowForbidden" xml:space="preserve">
+    <value>Workflow Forbidden</value>
+  </data>
+  <data name="PresetNotFound" xml:space="preserve">
+    <value>Preset Not Found</value>
+  </data>
+  <data name="PresetRejected" xml:space="preserve">
+    <value>Preset Rejected</value>
   </data>
 </root>

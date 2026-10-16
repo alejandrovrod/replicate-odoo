@@ -33,6 +33,13 @@ public sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<SalesIn
         builder.Property(s => s.RowVersion).IsRowVersion();
         builder.Property(s => s.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
+        // Workflow Fase 5: free-text operational state (NULL until adopted). Never drives
+        // the ledger - only gates the Draft → Submitted move via CanSubmit states.
+        builder.Property(s => s.WorkflowState).HasMaxLength(50);
+
+        // Extensibility Fase 1 (gap D1): free-form JSON object string, NULL when none.
+        builder.Property(s => s.CustomData).HasColumnType("NVARCHAR(MAX)");
+
         builder.HasOne(s => s.Customer)
             .WithMany()
             .HasForeignKey(s => s.CustomerId)

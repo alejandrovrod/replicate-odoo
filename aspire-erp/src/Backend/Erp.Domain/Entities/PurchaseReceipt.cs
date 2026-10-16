@@ -59,4 +59,12 @@ public class PurchaseReceiptLine
     public decimal Amount { get; set; }
 
     public int LineNumber { get; set; }
+
+    /// <summary>
+    /// Batch-and-serial Fase 3: the received batch (auto-created-or-topped-up from the
+    /// line's batch number at posting). Required when the item tracks batches.
+    /// </summary>
+    public Guid? BatchId { get; set; }
+
+    public Batch? Batch { get; set; }
 }

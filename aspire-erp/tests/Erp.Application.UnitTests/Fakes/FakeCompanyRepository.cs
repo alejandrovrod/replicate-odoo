@@ -11,6 +11,9 @@ public sealed class FakeCompanyRepository : ICompanyRepository
     public Task<Company?> GetByIdAsync(Guid companyId, CancellationToken cancellationToken = default)
         => Task.FromResult(Company);
 
+    public Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Company>>(Company is null ? Array.Empty<Company>() : new[] { Company });
+
     public Task UpdateCompanyAsync(Company company, CancellationToken cancellationToken = default)
     {
         Company = company;

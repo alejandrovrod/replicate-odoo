@@ -9,7 +9,12 @@ public sealed record StockEntryLineDto(
     string ItemName,
     decimal Qty,
     decimal? Rate,
-    int LineNumber);
+    int LineNumber,
+    // Batch-and-serial Fase 3: batch + serials moved (null/absent for untracked items and
+    // for vouchers posted by flows without tracking input, e.g. manufacturing).
+    Guid? BatchId = null,
+    string? BatchNo = null,
+    IReadOnlyList<string>? SerialNumbers = null);
 
 /// <summary>One Kardex row produced by a posted voucher.</summary>
 public sealed record StockLedgerEntryDto(
@@ -19,7 +24,9 @@ public sealed record StockLedgerEntryDto(
     DateOnly PostingDate,
     decimal QtyChange,
     decimal ValuationRate,
-    decimal Amount);
+    decimal Amount,
+    // Batch-and-serial Fase 3: batch provenance (null for untracked movements).
+    Guid? BatchId = null);
 
 /// <summary>One General Ledger line produced by a posted voucher (account included for readability).</summary>
 public sealed record GLEntryDto(

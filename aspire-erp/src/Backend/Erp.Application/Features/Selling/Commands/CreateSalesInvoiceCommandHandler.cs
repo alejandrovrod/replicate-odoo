@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Application.Services;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -14,6 +15,8 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
     private readonly ICompanyRepository _companies;
     private readonly IAccountRepository _accounts;
     private readonly IWarehouseRepository _warehouses;
+    private readonly ITaxEngineService _taxEngine;
+    private readonly ITaxTemplateRepository? _taxTemplates;
 
     public CreateSalesInvoiceCommandHandler(
         ISalesInvoiceRepository salesInvoices,
@@ -21,7 +24,9 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
         IItemRepository items,
         ICompanyRepository companies,
         IAccountRepository accounts,
-        IWarehouseRepository warehouses)
+        IWarehouseRepository warehouses,
+        ITaxEngineService? taxEngine = null,
+        ITaxTemplateRepository? taxTemplates = null)
     {
         _salesInvoices = salesInvoices;
         _customers = customers;
@@ -29,6 +34,8 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
         _companies = companies;
         _accounts = accounts;
         _warehouses = warehouses;
+        _taxEngine = taxEngine ?? new TaxEngineService();
+        _taxTemplates = taxTemplates;
     }
 
     public async Task<Result<SalesInvoiceDto>> HandleAsync(CreateSalesInvoiceCommand request, CancellationToken cancellationToken = default)
@@ -115,31 +122,34 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
             invoice.DiscountAmount = discountAmount;
 
             // Module 17: taxes on the discounted base. Amounts are recomputed - never trusted.
+            // Tax-engine Fase 2: template expansion (template lines first, then manual rows) +
+            // Add/Deduct + cascade, computed by the shared engine at sales precision (2).
             var taxableBase = netTotal - discountAmount;
-            decimal taxTotal = 0;
+            var taxSpecs = await ResolveTaxSpecsAsync(request, company.Id, cancellationToken);
+            var calculation = _taxEngine.Calculate(taxableBase, taxSpecs.Rows, decimals: 2);
 
-            foreach (var tax in request.Taxes ?? (IReadOnlyList<SalesInvoiceTaxCommandDto>)Array.Empty<SalesInvoiceTaxCommandDto>())
+            for (var i = 0; i < calculation.Rows.Count; i++)
             {
-                SalesValidator.EnsureValidTaxRate(tax.Rate);
-                var taxAccount = await RequireTaxAccountAsync(tax.AccountId, company.Id, cancellationToken);
-
-                var taxAmount = Math.Round(taxableBase * tax.Rate / 100m, 2, MidpointRounding.AwayFromZero);
-                taxTotal += taxAmount;
+                var computed = calculation.Rows[i];
+                var account = taxSpecs.Accounts[i];
 
                 invoice.Taxes.Add(new SalesInvoiceTax
                 {
                     Id = Guid.NewGuid(),
                     SalesInvoiceId = invoice.Id,
-                    AccountId = taxAccount.Id,
-                    Account = taxAccount,
-                    Rate = tax.Rate,
-                    TaxAmount = taxAmount,
+                    AccountId = account.Id,
+                    Account = account,
+                    Rate = taxSpecs.Rates[i],
+                    ChargeType = computed.ChargeType,
+                    CalculationBasis = computed.CalculationBasis,
+                    BaseAmount = computed.BaseAmount,
+                    TaxAmount = computed.TaxAmount,
                 });
             }
 
             invoice.NetTotal = netTotal;
-            invoice.TaxTotal = taxTotal;
-            invoice.GrandTotal = taxableBase + taxTotal;
+            invoice.TaxTotal = calculation.TaxTotal;
+            invoice.GrandTotal = calculation.GrandTotal;
 
             // Module 18: return-mode guards (provenance, sign, ceiling vs the original invoice).
             if (request.IsReturn)
@@ -167,13 +177,23 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
         {
             return Result<SalesInvoiceDto>.Failure(ex.Code, ex.Message);
         }
+        catch (TaxValidationException ex)
+        {
+            // Tax-engine Fase 2: engine/template failures carry their own RFC 7807 codes
+            // (tax_account_required, invalid_tax_calculation_basis, tax_template_not_found...).
+            return Result<SalesInvoiceDto>.Failure(ex.Code, ex.Message);
+        }
     }
 
     /// <summary>
-    /// Module 17 task item: tax accounts must be postable LIABILITY leaves of the company -
-    /// revenue/income accounts are rejected here, not just in the SPA.
+    /// Module 17 task item (+ tax-engine Fase 2): tax accounts must be postable leaves of the
+    /// company. <c>Add</c> rows keep the legacy LIABILITY rule (tax payable credited on
+    /// submit); <c>Deduct</c> rows (suffered retentions, booked as debit) accept Liability
+    /// (contra-liability, e.g. 21xx "retenciones a favor") OR Asset (recoverable) leaves.
+    /// Revenue/income accounts are rejected here, not just in the SPA.
     /// </summary>
-    private async Task<Account> RequireTaxAccountAsync(Guid accountId, Guid companyId, CancellationToken cancellationToken)
+    private async Task<Account> RequireTaxAccountAsync(
+        Guid accountId, Guid companyId, TaxChargeType chargeType, CancellationToken cancellationToken)
     {
         if (accountId == Guid.Empty)
         {
@@ -197,14 +217,84 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
                 $"Tax account '{account.AccountCode}' must be an active leaf (posting) account.");
         }
 
-        if (account.RootType != AccountRootType.Liability)
+        var allowed = chargeType == TaxChargeType.Deduct
+            ? account.RootType is AccountRootType.Liability or AccountRootType.Asset
+            : account.RootType == AccountRootType.Liability;
+        if (!allowed)
         {
             throw new SalesValidationException(
                 SellingErrorCodes.InvalidTaxAccount,
-                $"Tax account '{account.AccountCode}' must be a Liability account, not '{account.RootType}'.");
+                chargeType == TaxChargeType.Deduct
+                    ? $"Retention account '{account.AccountCode}' must be a Liability or Asset account, not '{account.RootType}'."
+                    : $"Tax account '{account.AccountCode}' must be a Liability account, not '{account.RootType}'.");
         }
 
         return account;
+    }
+
+    /// <summary>
+    /// Tax-engine Fase 2: resolves the ordered computation specs (template lines first, then
+    /// manual rows) with their validated accounts. The engine runs on the returned rows; the
+    /// parallel <c>Accounts</c>/<c>Rates</c> lists persist the invoice rows in the same order.
+    /// </summary>
+    private async Task<(IReadOnlyList<TaxRowInput> Rows, IReadOnlyList<Account> Accounts, IReadOnlyList<decimal> Rates)>
+        ResolveTaxSpecsAsync(CreateSalesInvoiceCommand request, Guid companyId, CancellationToken cancellationToken)
+    {
+        var rows = new List<TaxRowInput>();
+        var accounts = new List<Account>();
+        var rates = new List<decimal>();
+
+        if (request.TaxTemplateId is { } templateId && templateId != Guid.Empty)
+        {
+            if (_taxTemplates is null)
+            {
+                throw new TaxValidationException(
+                    TaxErrorCodes.TaxTemplateNotFound,
+                    $"Tax template '{templateId}' was not found in this tenant.");
+            }
+
+            var template = await _taxTemplates.GetByIdAsync(templateId, cancellationToken)
+                ?? throw new TaxValidationException(
+                    TaxErrorCodes.TaxTemplateNotFound,
+                    $"Tax template '{templateId}' was not found in this tenant.");
+
+            if (template.CompanyId != companyId)
+            {
+                throw new TaxValidationException(
+                    TaxErrorCodes.TaxTemplateNotFound,
+                    $"Tax template '{template.Title}' does not belong to this company.");
+            }
+
+            if (!string.Equals(template.Category, "Sales", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new TaxValidationException(
+                    TaxErrorCodes.InvalidTaxTemplateCategory,
+                    $"Tax template '{template.Title}' is a '{template.Category}' template and cannot be applied to a sales invoice.");
+            }
+
+            foreach (var line in template.Taxes)
+            {
+                if (line.AccountId == Guid.Empty)
+                {
+                    throw new TaxValidationException(
+                        TaxErrorCodes.TaxAccountRequired,
+                        $"Template '{template.Title}' line '{line.Description}' has no GL account assigned.");
+                }
+
+                accounts.Add(await RequireTaxAccountAsync(line.AccountId, companyId, line.ChargeType, cancellationToken));
+                rates.Add(line.Rate);
+                rows.Add(new TaxRowInput(line.Rate, line.ChargeType, line.CalculationBasis, line.Amount));
+            }
+        }
+
+        foreach (var tax in request.Taxes ?? (IReadOnlyList<SalesInvoiceTaxCommandDto>)Array.Empty<SalesInvoiceTaxCommandDto>())
+        {
+            accounts.Add(await RequireTaxAccountAsync(tax.AccountId, companyId, tax.ChargeType, cancellationToken));
+            rates.Add(tax.Rate);
+            rows.Add(new TaxRowInput(tax.Rate, tax.ChargeType, tax.CalculationBasis, tax.FixedAmount));
+        }
+
+        return (rows, accounts, rates);
     }
 
     /// <summary>

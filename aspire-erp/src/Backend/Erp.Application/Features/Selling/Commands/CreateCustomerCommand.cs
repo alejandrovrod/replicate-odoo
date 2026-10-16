@@ -34,4 +34,5 @@ public sealed record CreateCustomerCommand(
     string ContactPerson = "",
     string Website = "",
     string PaymentTerms = "",
-    string CustomerDetails = "") : ICommand<Result<CustomerDto>>;
+    string CustomerDetails = "",
+    string? CustomData = null) : ICommand<Result<CustomerDto>>;

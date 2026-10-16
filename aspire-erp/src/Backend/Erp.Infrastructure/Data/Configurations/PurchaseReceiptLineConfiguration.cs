@@ -19,6 +19,13 @@ public sealed class PurchaseReceiptLineConfiguration : IEntityTypeConfiguration<
         builder.Property(i => i.Rate).HasColumnType("decimal(18,4)").IsRequired();
         builder.Property(i => i.Amount).HasColumnType("decimal(18,4)").IsRequired();
 
+        // Batch-and-serial Fase 3: optional received-batch provenance (Restrict, see above).
+        builder.HasOne(i => i.Batch)
+            .WithMany()
+            .HasForeignKey(i => i.BatchId)
+            .HasConstraintName("FK_PurchaseReceiptLine_Batch")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.ToTable(t => 
         {
             t.HasCheckConstraint("CK_PurchaseReceiptLine_Quantity", "[Qty] > 0.0000");

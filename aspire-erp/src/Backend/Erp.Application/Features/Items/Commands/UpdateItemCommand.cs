@@ -13,4 +13,7 @@ public sealed record UpdateItemCommand(
     Guid? IncomeAccountId,
     Guid? ExpenseAccountId,
     bool IsActive,
-    byte[] RowVersion) : ICommand<Result<ItemDto>>;
+    byte[] RowVersion,
+    string? CustomData = null,
+    bool HasBatchNo = false,
+    bool HasSerialNo = false) : ICommand<Result<ItemDto>>;

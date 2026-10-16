@@ -59,6 +59,16 @@ public sealed class CreatePurchaseOrderCommandHandler
                     $"Supplier '{supplier.Code}' is inactive and cannot receive new purchase orders.");
             }
 
+            // Governance guard (module buying-suppliers, spec §1 gap D4): only a FULL hold
+            // (HoldType.All) blocks creating a purchase order - an "Invoices"-scoped hold still
+            // allows ordering, matching ERPNext's on_hold semantics.
+            if (supplier.IsBlockedFor(SupplierHoldType.All, command.TransactionDate))
+            {
+                throw new PurchaseValidationException(
+                    PurchaseErrorCodes.SupplierOnHold,
+                    $"Supplier '{supplier.Code}' is on hold for all documents and cannot receive new purchase orders.");
+            }
+
             var items = await LoadItemsAsync(command.Items!, cancellationToken);
 
             // Calculate totals

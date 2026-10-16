@@ -16,6 +16,14 @@ public class CompaniesController : ControllerBase
         _sender = sender;
     }
 
+    [HttpGet]
+    [Authorize(Policy = "permission:company:read")]
+    public async Task<IActionResult> GetAll()
+    {
+        var companies = await _sender.SendAsync(new GetCompaniesQuery());
+        return Ok(companies);
+    }
+
     [HttpGet("{id}")]
     [Authorize(Policy = "permission:company:read")]
     public async Task<IActionResult> Get(Guid id)

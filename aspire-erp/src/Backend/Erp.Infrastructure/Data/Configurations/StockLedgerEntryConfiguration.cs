@@ -28,6 +28,14 @@ public sealed class StockLedgerEntryConfiguration : IEntityTypeConfiguration<Sto
         builder.Property(e => e.IsCancelled).HasDefaultValue(false);
         builder.Property(e => e.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
+        // Batch-and-serial Fase 3: optional batch provenance (Restrict: batches retire via
+        // IsDisabled, never deleted under movements).
+        builder.HasOne(e => e.Batch)
+            .WithMany()
+            .HasForeignKey(e => e.BatchId)
+            .HasConstraintName("FK_StockLedgerEntry_Batch")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(e => e.Item)
             .WithMany()
             .HasForeignKey(e => e.ItemId)

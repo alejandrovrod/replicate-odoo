@@ -62,5 +62,16 @@ public sealed class PostPurchaseReturnCommandHandler
             // threw BEFORE building any GLEntry line, so the failure carries zero data changes.
             return Result<PurchaseInvoicePostingDto>.Failure(ex.Code, ex.Message);
         }
+        catch (LifecycleHookRejectedException ex)
+        {
+            // Extensibility Fase 1: the hook's own stable code travels verbatim; the posting
+            // transaction rolled back, so no debit note and no GL exist.
+            return Result<PurchaseInvoicePostingDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (WorkflowValidationException ex)
+        {
+            // Workflow Fase 5: the guard's own stable code travels verbatim.
+            return Result<PurchaseInvoicePostingDto>.Failure(ex.Code, ex.Message);
+        }
     }
 }

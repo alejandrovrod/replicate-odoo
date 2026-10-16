@@ -167,6 +167,18 @@
   <data name="DuplicateSupplierCode" xml:space="preserve">
     <value>Código de proveedor duplicado</value>
   </data>
+  <data name="SupplierOnHold" xml:space="preserve">
+    <value>Proveedor en retención</value>
+  </data>
+  <data name="SupplierGroupNotFound" xml:space="preserve">
+    <value>Grupo de proveedor no encontrado</value>
+  </data>
+  <data name="DuplicateSupplierGroupCode" xml:space="preserve">
+    <value>Código de grupo de proveedor duplicado</value>
+  </data>
+  <data name="SupplierGroupRejected" xml:space="preserve">
+    <value>Grupo de proveedor rechazado</value>
+  </data>
   <data name="InvalidPurchaseInvoice" xml:space="preserve">
     <value>Factura de compra inválida</value>
   </data>
@@ -389,5 +401,86 @@
   </data>
   <data name="ProfileRejected" xml:space="preserve">
     <value>Actualización de perfil rechazada</value>
+  </data>
+  <data name="InvalidCustomField" xml:space="preserve">
+    <value>Campo personalizado inválido</value>
+  </data>
+  <data name="CustomFieldNotFound" xml:space="preserve">
+    <value>Campo personalizado no encontrado</value>
+  </data>
+  <data name="CustomFieldRejected" xml:space="preserve">
+    <value>Campo personalizado rechazado</value>
+  </data>
+  <data name="CustomFieldConflict" xml:space="preserve">
+    <value>Conflicto de campo personalizado</value>
+  </data>
+  <data name="InvalidTaxTemplate" xml:space="preserve">
+    <value>Plantilla de impuestos inválida</value>
+  </data>
+  <data name="TaxTemplateNotFound" xml:space="preserve">
+    <value>Plantilla de impuestos no encontrada</value>
+  </data>
+  <data name="TaxTemplateRejected" xml:space="preserve">
+    <value>Plantilla de impuestos rechazada</value>
+  </data>
+  <data name="TaxTemplateConflict" xml:space="preserve">
+    <value>Conflicto de plantilla de impuestos</value>
+  </data>
+  <data name="TaxCalculationRejected" xml:space="preserve">
+    <value>Cálculo de impuestos rechazado</value>
+  </data>
+  <data name="InvalidBatch" xml:space="preserve">
+    <value>Lote inválido</value>
+  </data>
+  <data name="BatchNotFound" xml:space="preserve">
+    <value>Lote no encontrado</value>
+  </data>
+  <data name="BatchRejected" xml:space="preserve">
+    <value>Lote rechazado</value>
+  </data>
+  <data name="BatchConflict" xml:space="preserve">
+    <value>Conflicto de lote</value>
+  </data>
+  <data name="InvalidSerial" xml:space="preserve">
+    <value>Serie inválida</value>
+  </data>
+  <data name="SerialNotFound" xml:space="preserve">
+    <value>Serie no encontrada</value>
+  </data>
+  <data name="SerialRejected" xml:space="preserve">
+    <value>Serie rechazada</value>
+  </data>
+  <data name="InvalidLandedCostVoucher" xml:space="preserve">
+    <value>Comprobante de costos inválido</value>
+  </data>
+  <data name="LandedCostVoucherNotFound" xml:space="preserve">
+    <value>Comprobante de costos no encontrado</value>
+  </data>
+  <data name="LandedCostVoucherRejected" xml:space="preserve">
+    <value>Comprobante de costos rechazado</value>
+  </data>
+  <data name="LandedCostVoucherConflict" xml:space="preserve">
+    <value>Conflicto de comprobante de costos</value>
+  </data>
+  <data name="InvalidWorkflow" xml:space="preserve">
+    <value>Flujo inválido</value>
+  </data>
+  <data name="WorkflowNotFound" xml:space="preserve">
+    <value>Flujo no encontrado</value>
+  </data>
+  <data name="WorkflowRejected" xml:space="preserve">
+    <value>Flujo rechazado</value>
+  </data>
+  <data name="WorkflowConflict" xml:space="preserve">
+    <value>Conflicto de flujo</value>
+  </data>
+  <data name="WorkflowForbidden" xml:space="preserve">
+    <value>Flujo prohibido</value>
+  </data>
+  <data name="PresetNotFound" xml:space="preserve">
+    <value>Preset no encontrado</value>
+  </data>
+  <data name="PresetRejected" xml:space="preserve">
+    <value>Preset rechazado</value>
   </data>
 </root>

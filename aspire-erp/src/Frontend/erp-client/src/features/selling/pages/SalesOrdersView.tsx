@@ -57,9 +57,11 @@ export function SalesOrdersView() {
         totalCount={totalCount}
         page={pageNumber}
         pageSize={pageSize}
+        companyId={companyId}
         onPageChange={setPage}
         onNew={() => setIsModalOpen(true)}
         onSubmit={handleSubmit}
+        onRefresh={reload}
         submittingId={submittingId}
       />
       <SalesOrderFormModal

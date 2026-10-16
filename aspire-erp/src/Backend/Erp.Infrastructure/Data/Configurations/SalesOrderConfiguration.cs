@@ -39,6 +39,10 @@ public sealed class SalesOrderConfiguration : IEntityTypeConfiguration<SalesOrde
 
         builder.Property(o => o.OrderNumber).HasMaxLength(50).IsRequired();
 
+        // Workflow Fase 5: free-text operational state (NULL until the first transition or
+        // guard evaluation adopts the flow's initial state). Never drives the ledger.
+        builder.Property(o => o.WorkflowState).HasMaxLength(50);
+
         // plan.md §1: INT Status DEFAULT 1 (Draft). NO string conversion - see the enum docs.
         builder.Property(o => o.Status)
             .HasDefaultValue(SalesOrderStatus.Draft)

@@ -16,12 +16,14 @@ public sealed class CreateItemCommandHandler : ICommandHandler<CreateItemCommand
     private readonly IItemRepository _items;
     private readonly IUomRepository _uoms;
     private readonly IAccountRepository _accounts;
+    private readonly ICustomFieldValidator? _customFields;
 
-    public CreateItemCommandHandler(IItemRepository items, IUomRepository uoms, IAccountRepository accounts)
+    public CreateItemCommandHandler(IItemRepository items, IUomRepository uoms, IAccountRepository accounts, ICustomFieldValidator? customFields = null)
     {
         _items = items;
         _uoms = uoms;
         _accounts = accounts;
+        _customFields = customFields;
     }
 
     public async Task<Result<ItemDto>> HandleAsync(CreateItemCommand command, CancellationToken cancellationToken = default)
@@ -54,6 +56,16 @@ public sealed class CreateItemCommandHandler : ICommandHandler<CreateItemCommand
                     $"Item code '{code}' already exists in this tenant.");
             }
 
+            // Extensibility Fase 1 (gap D2): validated BEFORE the insert.
+            if (_customFields is not null)
+            {
+                var customError = await _customFields.ValidateAsync("Item", command.CustomData, cancellationToken);
+                if (customError is not null)
+                {
+                    throw new StockValidationException(customError.Code, customError.Message);
+                }
+            }
+
             var item = new Item
             {
                 // Id is generated here so tests can inspect the entity before it is persisted.
@@ -65,6 +77,9 @@ public sealed class CreateItemCommandHandler : ICommandHandler<CreateItemCommand
                 IncomeAccountId = command.IncomeAccountId,
                 ExpenseAccountId = command.ExpenseAccountId,
                 IsActive = command.IsActive,
+                CustomData = command.CustomData,
+                HasBatchNo = command.HasBatchNo,
+                HasSerialNo = command.HasSerialNo,
 
                 // TenantId is intentionally NOT set: AppDbContext stamps CurrentTenantId on insert
                 // and throws when no tenant context exists (Constitution Article II.4, fail closed).

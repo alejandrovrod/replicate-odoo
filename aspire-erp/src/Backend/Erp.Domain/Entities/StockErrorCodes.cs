@@ -46,6 +46,25 @@ public static class StockErrorCodes
     public const string VoucherNotFound = "voucher_not_found";
     public const string InvalidStatusTransition = "invalid_status_transition";
 
+    // Batch & serial tracking (Fase 3)
+    public const string BatchRequired = "batch_required";
+    public const string BatchNotFound = "batch_not_found";
+    public const string BatchHasExpired = "batch_has_expired";
+    public const string BatchInsufficientStock = "batch_insufficient_stock";
+    public const string BatchDisabled = "batch_disabled";
+    public const string DuplicateBatch = "duplicate_batch";
+    public const string SerialRequired = "serial_required";
+    public const string SerialCountMismatch = "serial_count_mismatch";
+    public const string SerialNotInWarehouse = "serial_not_in_warehouse";
+    public const string SerialAlreadyExists = "serial_already_exists";
+    public const string SerialNotFound = "serial_not_found";
+
+    /// <summary>
+    /// Batch-and-serial Fase 3 boundary: stock-moving purchase returns of tracked items have
+    /// no serial/batch return flow yet (amount-only returns stay legal).
+    /// </summary>
+    public const string TrackedReturnUnsupported = "tracked_return_unsupported";
+
     // General Ledger configuration / invariants (Constitution Article III)
     public const string MissingExpenseAccount = "missing_expense_account";
     public const string MissingStockAccount = "missing_stock_account";

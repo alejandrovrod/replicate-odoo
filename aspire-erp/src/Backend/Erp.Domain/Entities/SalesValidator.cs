@@ -246,24 +246,35 @@ public static class SalesValidator
     }
 
     /// <summary>
-    /// Invoice totals sign rule (modules 17/18): normal invoices keep the legacy
-    /// non-negative invariant; returns carry all-negative money columns (spec 18 §3).
+    /// Invoice totals sign rule (modules 17/18 + tax-engine Fase 2): with retentions
+    /// (<see cref="TaxChargeType.Deduct"/>) the SIGNED tax sum is free - a normal invoice may
+    /// carry a negative TaxTotal (retentions exceed transferred taxes) and the mirror of such
+    /// an invoice carries a positive one. The economic invariant moves to Net/Grand: normal
+    /// invoices never pay out money (both non-negative), returns never collect it (both
+    /// non-positive). <see cref="EnsureValidTotals"/> itself is untouched (order flow).
     /// </summary>
     /// <exception cref="SalesValidationException">A total has the wrong sign.</exception>
     public static void EnsureInvoiceTotalsSign(decimal netTotal, decimal taxTotal, decimal grandTotal, bool isReturn = false)
     {
         if (!isReturn)
         {
-            EnsureValidTotals(netTotal, taxTotal, grandTotal);
+            if (netTotal < 0 || grandTotal < 0)
+            {
+                throw new SalesValidationException(
+                    SellingErrorCodes.InvalidTotals,
+                    $"Invoice totals must not be negative "
+                    + $"(NetTotal {netTotal:0.####}, GrandTotal {grandTotal:0.####}).");
+            }
+
             return;
         }
 
-        if (netTotal > 0 || taxTotal > 0 || grandTotal > 0)
+        if (netTotal > 0 || grandTotal > 0)
         {
             throw new SalesValidationException(
                 SellingErrorCodes.InvalidTotals,
                 $"Return totals must not be positive "
-                + $"(NetTotal {netTotal:0.####}, TaxTotal {taxTotal:0.####}, GrandTotal {grandTotal:0.####}).");
+                + $"(NetTotal {netTotal:0.####}, GrandTotal {grandTotal:0.####}).");
         }
     }
 

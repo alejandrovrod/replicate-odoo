@@ -147,6 +147,47 @@ public sealed class PurchaseOrderWorkflowTests
     }
 
     [Fact]
+    public async Task Create_SupplierOnHoldForAll_FailsWithSupplierOnHold()
+    {
+        // spec §1 gap D4: a FULL hold blocks new purchase orders.
+        _supplier.OnHold = true;
+        _supplier.HoldType = SupplierHoldType.All;
+
+        var result = await CreateOrderHandler().HandleAsync(NewOrder());
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(PurchaseErrorCodes.SupplierOnHold, result.Error!.Code);
+        Assert.Empty(_purchases.Orders);
+    }
+
+    [Fact]
+    public async Task Create_SupplierOnHoldForInvoices_StillAllowsOrdering()
+    {
+        // The order guard only reacts to a FULL hold: an invoice-scoped hold still lets you buy.
+        _supplier.OnHold = true;
+        _supplier.HoldType = SupplierHoldType.Invoices;
+
+        var result = await CreateOrderHandler().HandleAsync(NewOrder());
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(_purchases.Orders);
+    }
+
+    [Fact]
+    public async Task Create_SupplierOnHoldButReleaseDateElapsed_Succeeds()
+    {
+        // SUP-G3: a hold whose release date is strictly in the past no longer blocks.
+        _supplier.OnHold = true;
+        _supplier.HoldType = SupplierHoldType.All;
+        _supplier.ReleaseDate = PostingDate.AddDays(-1);
+
+        var result = await CreateOrderHandler().HandleAsync(NewOrder());
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(_purchases.Orders);
+    }
+
+    [Fact]
     public async Task Create_NoLines_FailsWithNoLines()
     {
         var result = await CreateOrderHandler().HandleAsync(

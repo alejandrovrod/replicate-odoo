@@ -32,6 +32,11 @@ export interface Item {
   stock: ItemStock[]
   /** Base64 rowversion token from GET; echoed back on PUT for optimistic concurrency. */
   rowVersion?: string
+  /** Tenant-configured dynamic attributes as a JSON object string (extensibility Fase 1). */
+  customData?: string | null
+  /** Batch-and-serial Fase 3 traceability flags. */
+  hasBatchNo?: boolean
+  hasSerialNo?: boolean
 }
 
 /** One node of GET /api/v1/warehouses/tree. */
@@ -65,6 +70,8 @@ export interface StockLedgerEntry {
   qtyChange: number
   valuationRate: number
   amount: number
+  /** Batch-and-serial Fase 3 provenance (null for untracked movements). */
+  batchId?: string | null
 }
 
 /** One General Ledger line produced by a posting (GLEntryDto). */

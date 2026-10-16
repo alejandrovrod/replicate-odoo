@@ -167,5 +167,25 @@ public sealed class FakeStockRepository : IStockRepository, IStockLedgerReportRe
     public Task<IReadOnlyList<GLEntry>> GetGlEntriesByVoucherIdAsync(Guid voucherId, CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<GLEntry>>(
             _addedGl.Where(g => g.VoucherId == voucherId).ToList());
+
+    /// <summary>
+    /// Batch-and-serial Fase 3: per-batch on-hand quantities from the seeded/posted Kardex
+    /// rows (same SUM semantics as the EF implementation; zero balances excluded).
+    /// </summary>
+    public Task<IReadOnlyList<BatchBalance>> GetBatchBalancesAsync(
+        Guid itemId,
+        Guid warehouseId,
+        DateOnly asOf,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<BatchBalance>>(
+            _persistedLedger
+                .Where(e => e.ItemId == itemId
+                    && e.WarehouseId == warehouseId
+                    && e.PostingDate <= asOf
+                    && e.BatchId.HasValue)
+                .GroupBy(e => e.BatchId!.Value)
+                .Select(g => new BatchBalance(g.Key, g.Sum(e => e.QtyChange)))
+                .Where(b => b.Qty != 0m)
+                .ToList());
 }
 

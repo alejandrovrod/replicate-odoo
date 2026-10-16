@@ -9,7 +9,7 @@ public enum ValuationMethod
     Lifo,
 }
 
-public class Item : ITenantEntity
+public class Item : ITenantEntity, ICustomFieldsCarrier
 {
     public Guid Id { get; set; }
     public Guid TenantId { get; set; }
@@ -25,6 +25,20 @@ public class Item : ITenantEntity
     public ValuationMethod ValuationMethod { get; set; } = ValuationMethod.Fifo;
 
     public bool IsStockItem { get; set; } = true;
+
+    /// <summary>
+    /// Batch-tracking flag (batch-and-serial Fase 3, gap D1): every stock movement line for
+    /// this item must name a <see cref="Batch"/> (receipts create-or-top-up by number, issues
+    /// and transfers consume by id with FEFO guidance). Coexists with
+    /// <see cref="HasSerialNo"/> - a line needing both names a batch AND the exact serials.
+    /// </summary>
+    public bool HasBatchNo { get; set; }
+
+    /// <summary>
+    /// Serial-tracking flag (batch-and-serial Fase 3, gap D1): every moved unit must be
+    /// identified by serial number (count must equal the line quantity exactly).
+    /// </summary>
+    public bool HasSerialNo { get; set; }
 
     public Guid? DefaultWarehouseId { get; set; }
     public Warehouse? DefaultWarehouse { get; set; }
@@ -60,4 +74,7 @@ public class Item : ITenantEntity
     public Account? ExpenseAccount { get; set; }
 
     public byte[] RowVersion { get; set; } = null!;
+
+    /// <summary>Tenant-configured dynamic attributes, see <see cref="ICustomFieldsCarrier"/>.</summary>
+    public string? CustomData { get; set; }
 }

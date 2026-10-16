@@ -38,7 +38,8 @@ public sealed class PostDeliveryNoteCommandHandler
                 command.WarehouseId,
                 command.PostingDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 (command.Lines ?? Array.Empty<PostDeliveryNoteLine>())
-                    .Select(l => new DeliveryNotePostingLine(l.SalesOrderItemId, l.ItemId, l.Qty))
+                    .Select(l => new DeliveryNotePostingLine(
+                        l.SalesOrderItemId, l.ItemId, l.Qty, l.BatchId, l.SerialNumbers))
                     .ToList());
 
             var result = await _posting.PostDeliveryNoteAsync(request, cancellationToken);

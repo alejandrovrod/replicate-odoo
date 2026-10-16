@@ -147,6 +147,7 @@ public class ConvertLeadCommandHandlerTests
     {
         public Company CompanyToReturn { get; set; }
         public Task<Company?> GetByIdAsync(Guid companyId, CancellationToken cancellationToken = default) => Task.FromResult<Company?>(CompanyToReturn);
+        public Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<Company>>(CompanyToReturn is null ? Array.Empty<Company>() : new[] { CompanyToReturn });
         public Task UpdateCompanyAsync(Company company, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task EnsurePostingDateInOpenYearAsync(Guid companyId, DateOnly postingDate, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }

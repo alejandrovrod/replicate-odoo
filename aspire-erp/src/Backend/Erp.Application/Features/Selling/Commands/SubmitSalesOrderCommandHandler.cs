@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -23,15 +24,18 @@ public sealed class SubmitSalesOrderCommandHandler
     private readonly ICustomerRepository _customers;
     private readonly IItemRepository _items;
     private readonly ISalesOrderRepository _salesOrders;
+    private readonly IEnumerable<IDocumentLifecycleHook<SalesOrder>>? _hooks;
 
     public SubmitSalesOrderCommandHandler(
         ICustomerRepository customers,
         IItemRepository items,
-        ISalesOrderRepository salesOrders)
+        ISalesOrderRepository salesOrders,
+        IEnumerable<IDocumentLifecycleHook<SalesOrder>>? hooks = null)
     {
         _customers = customers;
         _items = items;
         _salesOrders = salesOrders;
+        _hooks = hooks;
     }
 
     public async Task<Result<SalesOrderDto>> HandleAsync(
@@ -54,6 +58,10 @@ public sealed class SubmitSalesOrderCommandHandler
 
             SalesValidator.EnsureSubmittable(order.Status);
 
+            // Workflow Fase 5 (gap D2): operational gate before the transition - a gated
+            // document in a non-submittable state fails here with zero writes.
+            await DocumentLifecycleInvoker.RunBeforeSubmitAsync(_hooks, order, cancellationToken);
+
             var customer = await _customers.GetByIdAsync(order.CustomerId, cancellationToken)
                 ?? throw new SalesValidationException(
                     SellingErrorCodes.CustomerNotFound,
@@ -66,11 +74,23 @@ public sealed class SubmitSalesOrderCommandHandler
             order.Status = SalesOrderStatus.Submitted;
             await _salesOrders.UpdateOrderAsync(order, cancellationToken);
 
+            await DocumentLifecycleInvoker.RunAfterSubmitAsync(_hooks, order, cancellationToken);
+
             var items = await LoadItemsAsync(order, cancellationToken);
 
             return Result<SalesOrderDto>.Success(SalesOrderDto.Build(order, customer, items));
         }
         catch (SalesValidationException ex)
+        {
+            return Result<SalesOrderDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (WorkflowValidationException ex)
+        {
+            // Workflow Fase 5: the guard's own stable code travels verbatim
+            // (workflow_submit_not_allowed); the order stays Draft with zero writes.
+            return Result<SalesOrderDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (LifecycleHookRejectedException ex)
         {
             return Result<SalesOrderDto>.Failure(ex.Code, ex.Message);
         }

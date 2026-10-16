@@ -40,6 +40,7 @@ public sealed class SalesPostingService : ISalesPostingService
     private readonly ISalesOrderRepository _salesOrders;
     private readonly IDeliveryNoteRepository _deliveryNotes;
     private readonly ICustomerRepository _customers;
+    private readonly IBatchSerialService? _tracking;
 
     public SalesPostingService(
         ICompanyRepository companies,
@@ -49,7 +50,8 @@ public sealed class SalesPostingService : ISalesPostingService
         IStockRepository stock,
         ISalesOrderRepository salesOrders,
         IDeliveryNoteRepository deliveryNotes,
-        ICustomerRepository customers)
+        ICustomerRepository customers,
+        IBatchSerialService? tracking = null)
     {
         _companies = companies;
         _accounts = accounts;
@@ -59,6 +61,7 @@ public sealed class SalesPostingService : ISalesPostingService
         _salesOrders = salesOrders;
         _deliveryNotes = deliveryNotes;
         _customers = customers;
+        _tracking = tracking;
     }
 
     public async Task<DeliveryNotePostingDto> PostDeliveryNoteAsync(
@@ -160,18 +163,28 @@ public sealed class SalesPostingService : ISalesPostingService
             }
 
             // --- phase 2: value every line with FIFO, then build the balanced ledger pair.
+            // Batch-and-serial Fase 3 gates run per line BEFORE its FIFO consumption, with
+            // in-voucher batch consumption so two lines cannot dispatch the same batch units.
             var ledger = new List<StockLedgerEntry>(request.Lines.Count);
             var glLines = new List<GLEntry>(request.Lines.Count * 2);
+            var consumedByBatch = new Dictionary<Guid, decimal>();
+            var serialsToUpdate = new List<SerialNo>();
+            var batchByLine = new Dictionary<int, Guid?>();
 
-            foreach (var line in request.Lines)
+            for (var lineIndex = 0; lineIndex < request.Lines.Count; lineIndex++)
             {
+                var line = request.Lines[lineIndex];
                 var item = items[line.ItemId];
+                var batchId = await PlanLineTrackingAsync(
+                    request, company, line, item, warehouse, lineIndex,
+                    consumedByBatch, serialsToUpdate, batchByLine, token);
+
                 var layers = await GetLayersAsync(line, warehouse, request, ledger, token);
                 var consumption = FifoValuation.Consume(
                     layers, line.Qty, company.AllowNegativeStock, item.ItemCode, warehouse.WarehouseCode);
 
                 ledger.Add(NewLedgerEntry(
-                    line, warehouse.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost));
+                    line, warehouse.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost, batchId));
 
                 // tasks.md 5.2b: Debit Cost of Goods Sold / Credit the warehouse stock account.
                 AddGlLine(
@@ -198,7 +211,7 @@ public sealed class SalesPostingService : ISalesPostingService
                 // Set explicitly: the column default (SYSDATETIMEOFFSET) is not read back into the
                 // entity, so without this the 201 response would report 0001-01-01T00:00:00.
                 CreatedAt = DateTimeOffset.UtcNow,
-                Lines = BuildLines(request, items),
+                Lines = BuildLines(request, items, batchByLine),
             };
 
             // The Kardex rows and the GL lines share the voucher identity of this posting.
@@ -223,6 +236,19 @@ public sealed class SalesPostingService : ISalesPostingService
             await _stock.AddLedgerEntriesAsync(ledger, token);
             await _stock.AddGlEntriesAsync(glLines, token);
 
+            // Batch-and-serial Fase 3: stamp the delivery document refs on the dispatched
+            // serials and persist the transitions with everything else, atomically.
+            if (serialsToUpdate.Count > 0 && _tracking is not null)
+            {
+                foreach (var serial in serialsToUpdate)
+                {
+                    serial.DeliveryDocumentNo = deliveryNote.VoucherNo;
+                }
+
+                await _tracking.PersistSerialsAsync(
+                    Array.Empty<SerialNo>(), serialsToUpdate, token);
+            }
+
             // Task 5.2b: the order advances in the SAME transaction - counters, percentage and
             // workflow status. BilledPercentage belongs to Task 5.3 and is never touched here.
             ApplyDelivery(order, requestedByOrderLine);
@@ -239,6 +265,72 @@ public sealed class SalesPostingService : ISalesPostingService
     }
 
     // ----------------------------------------------------------------- validation & resolution
+
+    /// <summary>
+    /// Batch-and-serial Fase 3 per-line planning (delivery = issue flavor): shape validation,
+    /// batch sufficiency/expiry gates with in-voucher consumption, and serial staging to
+    /// Delivered. Returns the resolved batch id (null for untracked items).
+    /// </summary>
+    private async Task<Guid?> PlanLineTrackingAsync(
+        DeliveryNotePostingRequest request,
+        Company company,
+        DeliveryNotePostingLine line,
+        Item item,
+        Warehouse warehouse,
+        int lineIndex,
+        Dictionary<Guid, decimal> consumedByBatch,
+        List<SerialNo> serialsToUpdate,
+        Dictionary<int, Guid?> batchByLine,
+        CancellationToken token)
+    {
+        var cleanedSerials = StockEntryValidator.EnsureTrackingShape(
+            item.ItemCode,
+            item.HasBatchNo,
+            line.BatchId,
+            batchNo: null,
+            isReceipt: false,
+            item.HasSerialNo,
+            line.SerialNumbers,
+            line.Qty);
+
+        if (!item.HasBatchNo && !item.HasSerialNo)
+        {
+            batchByLine[lineIndex] = null;
+            return null;
+        }
+
+        if (_tracking is null)
+        {
+            throw new StockValidationException(
+                StockErrorCodes.BatchRequired,
+                $"Item '{item.ItemCode}' is batch/serial-tracked but no tracking service is wired.");
+        }
+
+        Guid? batchId = null;
+        if (item.HasBatchNo)
+        {
+            var batch = await _tracking.EnsureBatchForIssueAsync(
+                item.Id, item.ItemCode, line.BatchId!.Value, warehouse.Id,
+                warehouse.WarehouseCode, line.Qty, request.PostingDate,
+                company.AllowNegativeStock, consumedByBatch, token);
+            batchId = batch.Id;
+            consumedByBatch[batchId.Value] = consumedByBatch.TryGetValue(batchId.Value, out var used)
+                ? used + line.Qty
+                : line.Qty;
+        }
+
+        batchByLine[lineIndex] = batchId;
+
+        if (item.HasSerialNo)
+        {
+            var staged = await _tracking.StageIssueSerialsAsync(
+                item.Id, item.ItemCode, cleanedSerials, warehouse.Id,
+                warehouse.WarehouseCode, request.PostingDate, token);
+            serialsToUpdate.AddRange(staged);
+        }
+
+        return batchId;
+    }
 
     private async Task<Warehouse> ResolveWarehouseAsync(Guid warehouseId, Guid companyId, CancellationToken token)
     {
@@ -451,12 +543,14 @@ public sealed class SalesPostingService : ISalesPostingService
         DeliveryNotePostingRequest request,
         decimal qtyChange,
         decimal valuationRate,
-        decimal amount) =>
+        decimal amount,
+        Guid? batchId = null) =>
         new()
         {
             Id = Guid.NewGuid(),
             ItemId = line.ItemId,
             WarehouseId = warehouseId,
+            BatchId = batchId,
             PostingDate = request.PostingDate,
             QtyChange = qtyChange,
             ValuationRate = valuationRate,
@@ -512,11 +606,13 @@ public sealed class SalesPostingService : ISalesPostingService
 
     private static List<DeliveryNoteLine> BuildLines(
         DeliveryNotePostingRequest request,
-        IReadOnlyDictionary<Guid, Item> items)
+        IReadOnlyDictionary<Guid, Item> items,
+        IReadOnlyDictionary<int, Guid?> batchByLine)
     {
         var lines = new List<DeliveryNoteLine>(request.Lines.Count);
-        foreach (var line in request.Lines)
+        for (var i = 0; i < request.Lines.Count; i++)
         {
+            var line = request.Lines[i];
             _ = items[line.ItemId];
 
             lines.Add(new DeliveryNoteLine
@@ -525,6 +621,7 @@ public sealed class SalesPostingService : ISalesPostingService
                 SalesOrderItemId = line.SalesOrderItemId,
                 ItemId = line.ItemId,
                 Qty = line.Qty,
+                BatchId = batchByLine.TryGetValue(i, out var batchId) ? batchId : null,
             });
         }
 
@@ -542,7 +639,7 @@ public sealed class SalesPostingService : ISalesPostingService
         IReadOnlyDictionary<Guid, Item> items)
     {
         var ledgerDtos = ledger
-            .Select(e => new StockLedgerEntryDto(e.Id, e.ItemId, e.WarehouseId, e.PostingDate, e.QtyChange, e.ValuationRate, e.Amount))
+            .Select(e => new StockLedgerEntryDto(e.Id, e.ItemId, e.WarehouseId, e.PostingDate, e.QtyChange, e.ValuationRate, e.Amount, e.BatchId))
             .ToList();
 
         var totalDebit = 0m;

@@ -1,6 +1,7 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Services;
+using Erp.Domain.Entities;
 
 namespace Erp.Application.Features.Buying.Commands;
 
@@ -25,4 +26,9 @@ public sealed record PostPurchaseInvoiceCommand(
     DateOnly? DueDate = null,
     DateOnly? PostingDate = null,
     decimal TaxAmount = 0m,
-    IReadOnlyList<PostPurchaseInvoiceLine>? Lines = null) : ICommand<Result<PurchaseInvoicePostingDto>>;
+    IReadOnlyList<PostPurchaseInvoiceLine>? Lines = null,
+    // Tax-engine Fase 2: explicit tax rows (transferred taxes + withholdings) and/or a
+    // template shortcut. When BOTH are absent the legacy scalar TaxAmount posts exactly
+    // as before (one Add row against the input-tax account, unpersisted).
+    IReadOnlyList<PurchaseInvoiceTaxInput>? Taxes = null,
+    Guid? TaxTemplateId = null) : ICommand<Result<PurchaseInvoicePostingDto>>;

@@ -45,4 +45,80 @@ public static class StockEntryValidator
             }
         }
     }
+
+    /// <summary>
+    /// Batch-and-serial Fase 3 shape rules (no data access): a tracked item must name its
+    /// batch (by id for issues/transfers, by number for receipts - exactly one of them), and
+    /// a serialized item must list exactly as many serials as units move. Existence,
+    /// expiry, warehouse and duplicate checks live in the tracking service, which owns repos.
+    /// </summary>
+    /// <exception cref="StockValidationException">An invariant was violated.</exception>
+    public static IReadOnlyList<string> EnsureTrackingShape(
+        string itemCode,
+        bool hasBatchNo,
+        Guid? batchId,
+        string? batchNo,
+        bool isReceipt,
+        bool hasSerialNo,
+        IReadOnlyList<string>? serials,
+        decimal qty)
+    {
+        if (hasBatchNo)
+        {
+            var byId = batchId.HasValue && batchId.Value != Guid.Empty;
+            var byNumber = !string.IsNullOrWhiteSpace(batchNo);
+            if (!byId && !byNumber)
+            {
+                throw new StockValidationException(
+                    StockErrorCodes.BatchRequired,
+                    $"Item '{itemCode}' is batch-tracked: a line must name a batch "
+                    + (isReceipt ? "(batch number). " : "(batch id)."));
+            }
+
+            if (byId && byNumber)
+            {
+                throw new StockValidationException(
+                    StockErrorCodes.BatchRequired,
+                    $"Item '{itemCode}': pass either a batch id or a batch number, not both.");
+            }
+        }
+
+        if (!hasSerialNo)
+        {
+            return Array.Empty<string>();
+        }
+
+        var cleaned = (serials ?? Array.Empty<string>())
+            .Select(s => (s ?? string.Empty).Trim())
+            .Where(s => s.Length > 0)
+            .ToList();
+
+        if (cleaned.Count == 0)
+        {
+            throw new StockValidationException(
+                StockErrorCodes.SerialRequired,
+                $"Item '{itemCode}' is serial-tracked: a line must list the serial numbers of the moved units.");
+        }
+
+        var duplicate = cleaned
+            .GroupBy(s => s, StringComparer.Ordinal)
+            .FirstOrDefault(g => g.Count() > 1);
+        if (duplicate is not null)
+        {
+            throw new StockValidationException(
+                StockErrorCodes.SerialAlreadyExists,
+                $"Serial '{duplicate.Key}' is listed twice in the same line.");
+        }
+
+        // One serial per unit: fractional quantities can never match an integer count.
+        if (cleaned.Count != (int)qty || qty != (int)qty)
+        {
+            throw new StockValidationException(
+                StockErrorCodes.SerialCountMismatch,
+                $"Item '{itemCode}' moves {qty:0.####} units but lists {cleaned.Count} serials: "
+                + "one serial per unit is required.");
+        }
+
+        return cleaned;
+    }
 }

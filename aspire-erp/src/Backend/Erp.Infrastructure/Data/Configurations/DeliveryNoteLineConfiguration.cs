@@ -24,6 +24,13 @@ public sealed class DeliveryNoteLineConfiguration : IEntityTypeConfiguration<Del
 
         builder.Property(l => l.Qty).HasColumnType("decimal(18,4)").IsRequired();
 
+        // Batch-and-serial Fase 3: optional shipped-batch provenance (Restrict, see above).
+        builder.HasOne(l => l.Batch)
+            .WithMany()
+            .HasForeignKey(l => l.BatchId)
+            .HasConstraintName("FK_DeliveryNoteLine_Batch")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(l => l.DeliveryNote)
             .WithMany(d => d.Lines)
             .HasForeignKey(l => l.DeliveryNoteId)

@@ -11,7 +11,28 @@ namespace Erp.Application.Services;
 /// Unit rate. Required (and &gt; 0) for MaterialReceipt; IGNORED for issues/transfers, where the
 /// FIFO engine computes the valuation rate from the open cost layers.
 /// </param>
-public sealed record StockPostingLine(Guid ItemId, decimal Qty, decimal? Rate);
+/// <param name="BatchId">
+/// Batch-and-serial Fase 3: the batch consumed (issues/transfers, required when tracked).
+/// Receipts name the batch by <paramref name="BatchNo"/> instead.
+/// </param>
+/// <param name="BatchNo">
+/// Batch-and-serial Fase 3: the receipt batch number (created-or-topped-up at posting,
+/// required when tracked). Ignored for issues/transfers.
+/// </param>
+/// <param name="ManufacturingDate">Receipt batch master data (used only when creating).</param>
+/// <param name="ExpiryDate">Receipt batch master data (used only when creating).</param>
+/// <param name="SerialNumbers">
+/// Batch-and-serial Fase 3: the exact serials moved (count must equal Qty when tracked).
+/// </param>
+public sealed record StockPostingLine(
+    Guid ItemId,
+    decimal Qty,
+    decimal? Rate,
+    Guid? BatchId = null,
+    string? BatchNo = null,
+    DateOnly? ManufacturingDate = null,
+    DateOnly? ExpiryDate = null,
+    IReadOnlyList<string>? SerialNumbers = null);
 
 /// <summary>
 /// Everything the posting engine needs to atomically post one stock voucher (decision D4).

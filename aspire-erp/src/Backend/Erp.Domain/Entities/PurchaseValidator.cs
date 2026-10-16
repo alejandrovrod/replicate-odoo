@@ -56,6 +56,39 @@ public static class PurchaseValidator
         }
     }
 
+    /// <summary>Supplier group field rules (module buying-suppliers, spec §1 gap D1): required code (50) / name (150).</summary>
+    /// <exception cref="PurchaseValidationException">An invariant was violated.</exception>
+    public static void EnsureValidSupplierGroupFields(string? code, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.SupplierGroupCodeRequired,
+                "Supplier Group Code is required.");
+        }
+
+        if (code.Length > MaxCodeLength)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.SupplierGroupCodeRequired,
+                $"Supplier Group Code must not exceed {MaxCodeLength} characters.");
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.SupplierGroupNameRequired,
+                "Supplier Group Name is required.");
+        }
+
+        if (name.Length > MaxNameLength)
+        {
+            throw new PurchaseValidationException(
+                PurchaseErrorCodes.SupplierGroupNameRequired,
+                $"Supplier Group Name must not exceed {MaxNameLength} characters.");
+        }
+    }
+
     /// <summary>A purchase document (order or receipt) must carry at least one line.</summary>
     /// <exception cref="PurchaseValidationException">The line list is empty.</exception>
     public static void EnsureHasLines(IReadOnlyCollection<object>? lines)

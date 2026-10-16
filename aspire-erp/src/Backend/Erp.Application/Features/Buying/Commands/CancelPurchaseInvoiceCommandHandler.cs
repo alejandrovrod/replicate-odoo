@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -55,17 +56,25 @@ public sealed class CancelPurchaseInvoiceCommandHandler
     private readonly IPurchaseRepository _purchases;
     private readonly IStockRepository _stock;
     private readonly IItemRepository _items;
+    private readonly IEnumerable<IDocumentLifecycleHook<PurchaseInvoice>>? _hooks;
+    private readonly ISerialNoRepository? _serials;
 
     public CancelPurchaseInvoiceCommandHandler(
         ICompanyRepository companies,
         IPurchaseRepository purchases,
         IStockRepository stock,
-        IItemRepository items)
+        IItemRepository items,
+        IEnumerable<IDocumentLifecycleHook<PurchaseInvoice>>? hooks = null,
+        ISerialNoRepository? serials = null)
     {
         _companies = companies;
         _purchases = purchases;
         _stock = stock;
         _items = items;
+        _hooks = hooks;
+        // Optional for legacy direct constructions: serial revert is skipped when unwired
+        // (batches still revert through the compensating Kardex rows).
+        _serials = serials;
     }
 
     public async Task<Result<PurchaseInvoiceDto>> HandleAsync(
@@ -122,6 +131,10 @@ public sealed class CancelPurchaseInvoiceCommandHandler
                 // cannot make (invalid_status_transition) instead of the missing-ledger code.
                 invoice.Cancel();
 
+                // Extensibility Fase 1 (gap D3): Before hooks after the Core gates, before any
+                // write (status + reversal rows). A rejection rolls back with zero writes.
+                await DocumentLifecycleInvoker.RunBeforeCancelAsync(_hooks, invoice, token);
+
                 var originalRows = (await _stock.GetGlEntriesByVoucherIdAsync(invoice.Id, token))
                     .Where(r => r.VoucherType == InvoiceVoucherType)
                     .ToList();
@@ -161,16 +174,32 @@ public sealed class CancelPurchaseInvoiceCommandHandler
                     await _stock.AddLedgerEntriesAsync(unwind.SleReversals, token);
                 }
 
+                // Batch-and-serial Fase 3: receipt-born serials die with the unwind (their stock
+                // just did). Skipped when the serial repo is unwired (legacy constructions).
+                if (unwind.SerialsToDelete.Count > 0 && _serials is not null)
+                {
+                    await _serials.DeleteRangeAsync(unwind.SerialsToDelete, token);
+                }
+
                 var itemIds = invoice.Lines.Select(l => l.ItemId).Distinct().ToList();
                 var itemsById = itemIds.Count == 0
                     ? new Dictionary<Guid, Item>()
                     : (await _items.GetByIdsAsync(itemIds, token)).ToDictionary(i => i.Id);
+
+                // Extensibility Fase 1: After hooks inside the same transaction (no half-states).
+                await DocumentLifecycleInvoker.RunAfterCancelAsync(_hooks, invoice, token);
 
                 return Result<PurchaseInvoiceDto>.Success(PurchaseInvoiceDto.Build(invoice, itemsById));
             }, cancellationToken);
         }
         catch (PurchaseValidationException ex)
         {
+            return Result<PurchaseInvoiceDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (LifecycleHookRejectedException ex)
+        {
+            // Extensibility Fase 1: the hook's own stable code travels verbatim; the
+            // cancellation transaction rolled back (status + reversal rows untouched).
             return Result<PurchaseInvoiceDto>.Failure(ex.Code, ex.Message);
         }
         catch (DoubleEntryImbalanceException ex)
@@ -330,6 +359,7 @@ public sealed class CancelPurchaseInvoiceCommandHandler
                     TenantId = intake.TenantId,
                     ItemId = intake.ItemId,
                     WarehouseId = intake.WarehouseId,
+                    BatchId = intake.BatchId,
                     StockEntryId = intake.StockEntryId,
                     VoucherType = intake.VoucherType,
                     VoucherNo = intake.VoucherNo,
@@ -343,6 +373,15 @@ public sealed class CancelPurchaseInvoiceCommandHandler
                     CreatedAt = createdAt,
                     IsCancelled = true,
                 });
+            }
+
+            // Batch-and-serial Fase 3: serials born in this receipt (still Active - never moved
+            // on) are deleted with the unwind. Already-dispatched serials survive (their chain
+            // stays intact) - documented boundary, mirroring the shared-receipt limitation.
+            if (_serials is not null)
+            {
+                var bornHere = await _serials.GetByPurchaseDocumentNoAsync(receipt.VoucherNo, token);
+                plan.SerialsToDelete.AddRange(bornHere.Where(s => s.Status == SerialNoStatus.Active));
             }
 
             var receiptGlRows = (await _stock.GetGlEntriesByVoucherIdAsync(receipt.Id, token))
@@ -361,6 +400,9 @@ public sealed class CancelPurchaseInvoiceCommandHandler
         public List<GLEntry> GlReversals { get; } = new();
 
         public List<StockLedgerEntry> SleReversals { get; } = new();
+
+        /// <summary>Batch-and-serial Fase 3: receipt-born serials to delete with the unwind.</summary>
+        public List<SerialNo> SerialsToDelete { get; } = new();
     }
 
     /// <summary>

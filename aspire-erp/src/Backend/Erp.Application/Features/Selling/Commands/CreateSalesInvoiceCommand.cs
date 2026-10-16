@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Entities;
 
 namespace Erp.Application.Features.Selling.Commands;
 
@@ -10,13 +11,17 @@ public sealed record SalesInvoiceLineCommandDto(
 );
 
 /// <summary>
-/// One "Taxes and Charges" input row (module 17): only the liability account and the rate
-/// travel on the wire - <c>TaxAmount</c> is ALWAYS recomputed server-side from the discounted
-/// net base (ERPNext "On Net Total" default), so clients can never book arbitrary tax money.
+/// One "Taxes and Charges" input row (module 17 + tax-engine Fase 2): the account and the
+/// computation shape travel on the wire - <c>TaxAmount</c> is ALWAYS recomputed server-side
+/// by <c>ITaxEngineService</c>, so clients can never book arbitrary tax money. Charge and
+/// basis default to the module-17 behavior (Add on the discounted net base).
 /// </summary>
 public sealed record SalesInvoiceTaxCommandDto(
     Guid AccountId,
-    decimal Rate
+    decimal Rate,
+    TaxChargeType ChargeType = TaxChargeType.Add,
+    TaxCalculationBasis CalculationBasis = TaxCalculationBasis.OnNetTotal,
+    decimal FixedAmount = 0m
 );
 
 public sealed record CreateSalesInvoiceCommand(
@@ -34,5 +39,9 @@ public sealed record CreateSalesInvoiceCommand(
     bool IsReturn = false,
     Guid? ReturnAgainstId = null,
     bool UpdateStock = false,
-    Guid? SourceWarehouseId = null
+    Guid? SourceWarehouseId = null,
+    // Tax-engine Fase 2: optional template expansion (template lines first, then manual
+    // Taxes rows). The server re-resolves and recomputes everything - the template is a
+    // shortcut, never trusted money.
+    Guid? TaxTemplateId = null
 ) : ICommand<Result<SalesInvoiceDto>>;

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Pagination } from '../../../components/ui/Pagination'
 import { Button } from '../../../components/ui/Button'
+import { WorkflowActionBar } from '../../../components/workflow/WorkflowActionBar'
 import { translateDocStatus } from '../../../lib/docStatus'
 import type { SalesOrder } from '../api/useSalesOrders'
 
@@ -10,9 +11,11 @@ interface SalesOrderListProps {
   totalCount: number
   page: number
   pageSize: number
+  companyId: string
   onPageChange: (page: number) => void
   onNew: () => void
   onSubmit: (order: SalesOrder) => void
+  onRefresh: () => void
   submittingId?: string | null
 }
 
@@ -21,9 +24,11 @@ export function SalesOrderList({
   totalCount,
   page,
   pageSize,
+  companyId,
   onPageChange,
   onNew,
   onSubmit,
+  onRefresh,
   submittingId,
 }: SalesOrderListProps) {
   const { t, i18n } = useTranslation('selling')
@@ -77,16 +82,26 @@ export function SalesOrderList({
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    {o.status === 'Draft' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={submittingId === o.id}
-                        onClick={() => onSubmit(o)}
-                      >
-                        {submittingId === o.id ? t('orders.submitting', 'Submitting…') : t('orders.submit', 'Submit')}
-                      </Button>
-                    )}
+                    <span className="inline-flex flex-wrap justify-end gap-1">
+                      {o.status === 'Draft' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={submittingId === o.id}
+                          onClick={() => onSubmit(o)}
+                        >
+                          {submittingId === o.id ? t('orders.submitting', 'Submitting…') : t('orders.submit', 'Submit')}
+                        </Button>
+                      )}
+                      {o.status === 'Draft' && (
+                        <WorkflowActionBar
+                          documentType="SalesOrder"
+                          companyId={companyId}
+                          documentId={o.id}
+                          onTransition={onRefresh}
+                        />
+                      )}
+                    </span>
                   </TableCell>
                 </TableRow>
               ))

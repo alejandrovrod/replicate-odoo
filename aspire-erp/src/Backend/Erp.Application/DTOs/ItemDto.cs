@@ -24,7 +24,11 @@ public sealed record ItemDto(
     Guid? ExpenseAccountId,
     bool IsActive,
     IReadOnlyList<ItemStockDto> Stock,
-    byte[]? RowVersion = null)
+    byte[]? RowVersion = null,
+    string? CustomData = null,
+    // Batch-and-serial Fase 3: traceability flags (defaulted so positional constructions compile).
+    bool HasBatchNo = false,
+    bool HasSerialNo = false)
 {
     public static ItemDto From(Item item, IReadOnlyList<ItemStockDto>? stock = null) =>
         new(
@@ -37,6 +41,9 @@ public sealed record ItemDto(
             item.ExpenseAccountId,
             item.IsActive,
             stock ?? (IReadOnlyList<ItemStockDto>)Array.Empty<ItemStockDto>(),
-            item.RowVersion);
+            item.RowVersion,
+            item.CustomData,
+            item.HasBatchNo,
+            item.HasSerialNo);
 }
 

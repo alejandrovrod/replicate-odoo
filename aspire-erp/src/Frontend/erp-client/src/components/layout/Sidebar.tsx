@@ -121,6 +121,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'nav.group.operations',
     items: [
       { id: 'stock', route: 'stock', label: 'nav.item.stock', icon: Boxes, perm: ['stock'] },
+      { id: 'stock-landed-cost', route: 'stock-landed-cost', label: 'nav.item.stockLandedCost', icon: Receipt, perm: ['landed_cost_voucher'] },
       { id: 'manufacturing', route: 'manufacturing', label: 'nav.item.manufacturing', icon: Factory, badge: 'ERPNext', perm: ['work_order'] },
       {
         id: 'selling-folder',

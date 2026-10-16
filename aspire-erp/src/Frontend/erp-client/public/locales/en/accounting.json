@@ -4,6 +4,25 @@
     "subtitle": "Chart of accounts, journal entries, periods and reports."
   },
   "missingTenant": "No tenant/company selected. Set VITE_TENANT_ID and VITE_COMPANY_ID in .env.development.",
+  "tax": {
+    "noRows": "No taxes - the document posts its net amount only.",
+    "colAccount": "Account",
+    "colBase": "Taxable Base",
+    "colRate": "Rate %",
+    "colType": "Type",
+    "colAmount": "Amount",
+    "fixed": "fixed",
+    "chargeAdd": "Traslado",
+    "chargeDeduct": "Retención",
+    "totalAdd": "Transferred taxes",
+    "totalDeduct": "Retentions",
+    "grandTotal": "Net payable",
+    "templateLabel": "Tax template",
+    "templateLoading": "Loading templates…",
+    "templateNone": "-- Manual rows --",
+    "templateDefault": "default",
+    "templateLines": "{{count}} lines"
+  },
   "page": {
     "title": "Chart of Accounts",
     "subtitle": "Hierarchical ledger taxonomy (Assets, Liabilities, Equity, Income, Expenses).",

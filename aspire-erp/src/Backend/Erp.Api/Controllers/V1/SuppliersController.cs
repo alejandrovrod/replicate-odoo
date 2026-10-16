@@ -44,8 +44,12 @@ public sealed class SuppliersController : ControllerBase
         _common = common;
     }
 
-    /// <summary>Returns the tenant's most recent suppliers.</summary>
-    /// <param name="limit">Maximum number of suppliers to return (defaults to 50).</param>
+    /// <summary>Returns the tenant's most recent suppliers, optionally filtered.</summary>
+    /// <param name="page">1-based page number (defaults to 1).</param>
+    /// <param name="pageSize">Rows per page (defaults to 50).</param>
+    /// <param name="groupId">Optional supplier-group filter (spec §5).</param>
+    /// <param name="onHold">Optional hold-status filter (spec §5).</param>
+    /// <param name="companyId">Optional company filter: only suppliers with a mapping for it (spec §5).</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
     [Authorize(Policy = "permission:supplier:read")]
@@ -53,10 +57,36 @@ public sealed class SuppliersController : ControllerBase
     public async Task<IActionResult> Get(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
+        [FromQuery] Guid? groupId = null,
+        [FromQuery] bool? onHold = null,
+        [FromQuery] Guid? companyId = null,
         CancellationToken cancellationToken = default)
     {
-        var suppliers = await _sender.SendAsync(new GetSuppliersQuery(page, pageSize), cancellationToken);
+        var suppliers = await _sender.SendAsync(
+            new GetSuppliersQuery(page, pageSize, groupId, onHold, companyId), cancellationToken);
         return Ok(suppliers);
+    }
+
+    /// <summary>Returns one supplier with its per-company accounts and group.</summary>
+    /// <param name="id">Supplier ID.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:supplier:read")]
+    [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var supplier = await _sender.SendAsync(new GetSupplierByIdQuery(id), cancellationToken);
+        if (supplier is null)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("SupplierNotFound"),
+                _errors.Text("supplier_not_found"),
+                "supplier_not_found");
+        }
+
+        return Ok(supplier);
     }
 
     /// <summary>Creates one supplier (unique code per tenant - duplicates are a 409).</summary>
@@ -88,6 +118,11 @@ public sealed class SuppliersController : ControllerBase
                     // untranslated, the title still localizes (Phase 2 convention).
                     error.Message,
                     error.Code),
+                PurchaseErrorCodes.SupplierGroupNotFound => Problem(
+                    StatusCodes.Status404NotFound,
+                    _common.Text("SupplierGroupNotFound"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
                 _ => Problem(
                     StatusCodes.Status400BadRequest,
                     _common.Text("SupplierRejected"),
@@ -96,7 +131,7 @@ public sealed class SuppliersController : ControllerBase
             };
         }
 
-        return CreatedAtAction(nameof(Get), new { }, result.Value);
+        return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value);
     }
 
     /// <summary>Updates an existing supplier. 200 with the updated supplier.</summary>
@@ -128,9 +163,11 @@ public sealed class SuppliersController : ControllerBase
 
             return error.Code switch
             {
-                "supplier_not_found" => Problem(
+                "supplier_not_found" or PurchaseErrorCodes.SupplierGroupNotFound => Problem(
                     StatusCodes.Status404NotFound,
-                    _common.Text("SupplierNotFound"),
+                    error.Code == PurchaseErrorCodes.SupplierGroupNotFound
+                        ? _common.Text("SupplierGroupNotFound")
+                        : _common.Text("SupplierNotFound"),
                     _errors.Text(error.Code, error.Message),
                     error.Code),
                 ConcurrencyErrorCodes.ConcurrencyConflict or PurchaseErrorCodes.DuplicateSupplierCode => Problem(
@@ -164,6 +201,54 @@ public sealed class SuppliersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)
         => await SetActiveAsync(id, true, cancellationToken);
+
+    /// <summary>
+    /// Suspends (<c>onHold = true</c>) or releases (<c>onHold = false</c>) a supplier hold
+    /// (module buying-suppliers, spec §5 <c>POST /api/v1/suppliers/{id}/hold</c>).
+    /// </summary>
+    /// <param name="id">Supplier ID.</param>
+    /// <param name="request">Hold status, type, optional release date and RowVersion.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:guid}/hold")]
+    [Authorize(Policy = "permission:supplier:write")]
+    [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> SetHold(
+        Guid id,
+        [FromBody] SetSupplierHoldRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.SendAsync(
+            new SetSupplierHoldStatusCommand(id, request.OnHold, request.HoldType, request.ReleaseDate, request.RowVersion),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+            return error.Code switch
+            {
+                PurchaseErrorCodes.SupplierNotFound => Problem(
+                    StatusCodes.Status404NotFound,
+                    _common.Text("SupplierNotFound"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
+                    StatusCodes.Status409Conflict,
+                    _common.Text("ConcurrentUpdateConflict"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+                _ => Problem(
+                    StatusCodes.Status400BadRequest,
+                    _common.Text("SupplierRejected"),
+                    _errors.Text(error.Code, error.Message),
+                    error.Code),
+            };
+        }
+
+        return Ok(result.Value!);
+    }
 
     private async Task<IActionResult> SetActiveAsync(Guid id, bool isActive, CancellationToken cancellationToken)
     {
@@ -230,6 +315,7 @@ public sealed class SuppliersController : ControllerBase
             Type = status switch
             {
                 StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+                StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc9110#section-15.5.5",
                 _ => "https://tools.ietf.org/html/rfc9110#section-15.5.1",
             },
             Title = title,
@@ -246,3 +332,10 @@ public sealed class SuppliersController : ControllerBase
         return new ObjectResult(problem) { StatusCode = status };
     }
 }
+
+/// <summary>Body of <c>POST /api/v1/suppliers/{id}/hold</c> (module buying-suppliers, spec §5).</summary>
+public sealed record SetSupplierHoldRequest(
+    bool OnHold,
+    SupplierHoldType HoldType = SupplierHoldType.None,
+    DateOnly? ReleaseDate = null,
+    byte[]? RowVersion = null);

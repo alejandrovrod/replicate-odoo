@@ -393,6 +393,7 @@ public sealed class PurchaseRepository : IPurchaseRepository, IPayableAgingRepos
         => await _dbContext.PurchaseInvoices
             .Where(i => i.CompanyId == companyId)
             .Include(i => i.Lines)
+            .Include(i => i.Taxes)
             .OrderByDescending(i => i.CreatedAt)
             .ThenByDescending(i => i.Id)
             .ToPagedResultAsync(paging, cancellationToken);
@@ -402,6 +403,7 @@ public sealed class PurchaseRepository : IPurchaseRepository, IPayableAgingRepos
         CancellationToken cancellationToken = default)
         => await _dbContext.PurchaseInvoices
             .Include(i => i.Lines)
+            .Include(i => i.Taxes)
             .FirstOrDefaultAsync(i => i.Id == purchaseInvoiceId, cancellationToken);
 
     public async Task<decimal> GetReturnedAmountForInvoiceAsync(

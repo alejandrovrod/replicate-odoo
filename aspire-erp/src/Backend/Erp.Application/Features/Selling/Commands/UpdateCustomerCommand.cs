@@ -24,4 +24,5 @@ public sealed record UpdateCustomerCommand(
     string? ContactPerson = null,
     string? Website = null,
     string? PaymentTerms = null,
-    string? CustomerDetails = null) : ICommand<Result<CustomerDto>>;
+    string? CustomerDetails = null,
+    string? CustomData = null) : ICommand<Result<CustomerDto>>;

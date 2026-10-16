@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Erp.Api.Authorization;
 using Erp.Api.Filters;
 using Erp.Api.Middleware;
+using Erp.Api.Security;
 using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.SystemBase.Companies;
@@ -22,6 +23,7 @@ using Erp.Application.Features.Selling.Commands;
 using Erp.Application.Features.Selling.Queries;
 using Erp.Application.Features.Stock.Commands;
 using Erp.Application.Features.Stock.Queries;
+using Erp.Application.Features.Stock.Tracking;
 using Erp.Application.Features.Manufacturing.Commands;
 using Erp.Application.Features.Manufacturing.Queries;
 using Erp.Application.Features.Assets.Commands;
@@ -39,6 +41,16 @@ using Erp.Application.Features.Payments.Commands;
 using Erp.Application.Features.Payments.Queries;
 using Erp.Application.Features.ExchangeRates.Commands;
 using Erp.Application.Features.ExchangeRates.Queries;
+using Erp.Application.Features.LandedCost.Commands;
+using Erp.Application.Features.LandedCost.Queries;
+using Erp.Application.Features.Presets.Commands;
+using Erp.Application.Features.Presets.Queries;
+using Erp.Application.Features.Workflow.Commands;
+using Erp.Application.Features.Workflow.Queries;
+using Erp.Application.Features.Extensibility.Commands;
+using Erp.Application.Features.Extensibility.Queries;
+using Erp.Application.Features.Tax.Commands;
+using Erp.Application.Features.Tax.Queries;
 using Erp.Application.Services;
 using Erp.Domain.Common;
 using Erp.Domain.Repositories;
@@ -82,6 +94,8 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 // Multi-tenancy composition root (Constitution Article II.2): the scoped tenant provider is
 // injected into AppDbContext, which is wired to the Aspire-injected ConnectionStrings:erp-db.
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserRoles, HttpCurrentUserRoles>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("erp-db")
@@ -121,6 +135,7 @@ builder.Services.AddScoped<IQueryHandler<GetRevaluationPreviewQuery, Result<Reva
 // Erp.Application - only the composition root knows both (decision C2).
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<IQueryHandler<GetCompanyQuery, Result<CompanyDto>>, GetCompanyQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCompaniesQuery, IReadOnlyList<CompanyDto>>, GetCompaniesQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdateCompanyCommand, Result<CompanyDto>>, UpdateCompanyCommandHandler>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
 builder.Services.AddScoped<IUomRepository, UomRepository>();
@@ -145,12 +160,17 @@ builder.Services.AddScoped<IQueryHandler<GetStockSummaryQuery, StockSummaryDto>,
 // engine (accrual on receipt, interim clearance + A/P + Input Tax on invoice). Same split as the
 // stock module: repositories in Erp.Infrastructure, handlers and services in Erp.Application.
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+builder.Services.AddScoped<ISupplierGroupRepository, SupplierGroupRepository>();
 builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<IPurchasePostingService, PurchasePostingService>();
 
 builder.Services.AddScoped<ICommandHandler<CreateSupplierCommand, Result<SupplierDto>>, CreateSupplierCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdateSupplierCommand, Result<SupplierDto>>, UpdateSupplierCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SetSupplierHoldStatusCommand, Result<SupplierDto>>, SetSupplierHoldStatusCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetSuppliersQuery, PagedResult<SupplierDto>>, GetSuppliersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSupplierByIdQuery, SupplierDto?>, GetSupplierByIdQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateSupplierGroupCommand, Result<SupplierGroupDto>>, CreateSupplierGroupCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSupplierGroupsQuery, IReadOnlyList<SupplierGroupDto>>, GetSupplierGroupsQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreatePurchaseOrderCommand, Result<PurchaseOrderDto>>, CreatePurchaseOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<UpdatePurchaseOrderCommand, Result<PurchaseOrderDto>>, UpdatePurchaseOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitPurchaseOrderCommand, Result<PurchaseOrderDto>>, SubmitPurchaseOrderCommandHandler>();
@@ -342,6 +362,69 @@ builder.Services.AddScoped<IQueryHandler<GetOpportunitiesQuery, PagedResult<Oppo
 // System Catalogs
 builder.Services.AddScoped<ICatalogRepository, CatalogRepository>();
 builder.Services.AddScoped<IQueryHandler<GetCatalogByCodeQuery, List<CatalogItemDto>>, GetCatalogByCodeQueryHandler>();
+
+// Extensibility Engine (Fase 1): the custom-field catalog repository, the in-memory
+// JSON validator and the catalog CRUD pipeline. Lifecycle hooks need NO registration here:
+// verticals register their own IDocumentLifecycleHook<T> and IEnumerable<T> resolves empty
+// when none exist (zero behavior change for the Core paths).
+builder.Services.AddScoped<ICustomFieldDefinitionRepository, CustomFieldDefinitionRepository>();
+builder.Services.AddScoped<ICustomFieldValidator, CustomFieldValidator>();
+builder.Services.AddScoped<ICommandHandler<CreateCustomFieldDefinitionCommand, Result<CustomFieldDefinitionDto>>, CreateCustomFieldDefinitionCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateCustomFieldDefinitionCommand, Result<CustomFieldDefinitionDto>>, UpdateCustomFieldDefinitionCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteCustomFieldDefinitionCommand, Result<bool>>, DeleteCustomFieldDefinitionCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCustomFieldDefinitionsQuery, IReadOnlyList<CustomFieldDefinitionDto>>, GetCustomFieldDefinitionsQueryHandler>();
+
+// Tax Engine (Fase 2): the reusable template catalog, its CRUD pipeline and the
+// deterministic calculation service shared by the sales submit and purchase posting paths.
+builder.Services.AddScoped<ITaxTemplateRepository, TaxTemplateRepository>();
+builder.Services.AddScoped<ITaxEngineService, TaxEngineService>();
+builder.Services.AddScoped<ICommandHandler<CreateTaxTemplateCommand, Result<TaxTemplateDto>>, CreateTaxTemplateCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateTaxTemplateCommand, Result<TaxTemplateDto>>, UpdateTaxTemplateCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteTaxTemplateCommand, Result<bool>>, DeleteTaxTemplateCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetTaxTemplatesQuery, IReadOnlyList<TaxTemplateDto>>, GetTaxTemplatesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetTaxTemplateByIdQuery, TaxTemplateDto?>, GetTaxTemplateByIdQueryHandler>();
+
+// Batch & Serial Tracking (Fase 3): the tracking masters, the shared movement pipeline
+// and the FEFO/catalog reads. Posting engines take the pipeline as an optional dependency
+// (legacy direct constructions post untracked items only and fail closed otherwise).
+builder.Services.AddScoped<IBatchRepository, BatchRepository>();
+builder.Services.AddScoped<ISerialNoRepository, SerialNoRepository>();
+builder.Services.AddScoped<IBatchSerialService, BatchSerialService>();
+builder.Services.AddScoped<ICommandHandler<CreateBatchCommand, Result<BatchDto>>, CreateBatchCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateBatchCommand, Result<BatchDto>>, UpdateBatchCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetBatchAvailabilityQuery, IReadOnlyList<BatchAvailabilityDto>>, GetBatchAvailabilityQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSerialsQuery, IReadOnlyList<SerialNoDto>>, GetSerialsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<VerifySerialQuery, SerialNoDto?>, VerifySerialQueryHandler>();
+
+// Landed Cost Voucher (Fase 4): the voucher aggregate, its CRUD pipeline and the
+// deterministic apportionment service shared by create-time pre-calculation.
+builder.Services.AddScoped<ILandedCostVoucherRepository, LandedCostVoucherRepository>();
+builder.Services.AddScoped<ILandedCostCalculationService, LandedCostCalculationService>();
+builder.Services.AddScoped<ICommandHandler<CreateLandedCostVoucherCommand, Result<LandedCostVoucherDto>>, CreateLandedCostVoucherCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<SubmitLandedCostVoucherCommand, Result<LandedCostVoucherDto>>, SubmitLandedCostVoucherCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CancelLandedCostVoucherCommand, Result<LandedCostVoucherDto>>, CancelLandedCostVoucherCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetLandedCostVouchersQuery, PagedResult<LandedCostVoucherDto>>, GetLandedCostVouchersQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetLandedCostVoucherByIdQuery, LandedCostVoucherDto?>, GetLandedCostVoucherByIdQueryHandler>();
+
+// Operational Workflows (Fase 5): the definition catalog, transitions, the submit guard
+// (open-generic: one guard per carrier document, resolved by typeof(TDoc).Name) and the
+// ambient caller roles behind the transition role gate.
+builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
+builder.Services.AddScoped<ITenantPresetRepository, TenantPresetRepository>();
+builder.Services.AddScoped(typeof(IDocumentLifecycleHook<>), typeof(WorkflowSubmitGuard<>));
+builder.Services.AddScoped<ICommandHandler<CreateWorkflowDefinitionCommand, Result<WorkflowDefinitionDto>>, CreateWorkflowDefinitionCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateWorkflowDefinitionCommand, Result<WorkflowDefinitionDto>>, UpdateWorkflowDefinitionCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteWorkflowDefinitionCommand, Result<bool>>, DeleteWorkflowDefinitionCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<ApplyWorkflowTransitionCommand, Result<WorkflowStatusDto>>, ApplyWorkflowTransitionCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetWorkflowDefinitionsQuery, IReadOnlyList<WorkflowDefinitionDto>>, GetWorkflowDefinitionsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetWorkflowDefinitionByIdQuery, WorkflowDefinitionDto?>, GetWorkflowDefinitionByIdQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetWorkflowStatusQuery, WorkflowStatusDto?>, GetWorkflowStatusQueryHandler>();
+
+// Industry Presets (Fase 5): the embedded seed packs + their apply/list/active pipeline.
+builder.Services.AddScoped<IVerticalPresetService, VerticalPresetService>();
+builder.Services.AddScoped<ICommandHandler<ApplyPresetCommand, Result<PresetApplyDto>>, ApplyPresetCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPresetsQuery, IReadOnlyList<VerticalPresetDto>>, GetPresetsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetActivePresetQuery, ActivePresetDto>, GetActivePresetQueryHandler>();
 
 // [IdempotencyKeyRequired] is a ServiceFilterAttribute, so the filter itself must be resolvable
 // from DI (Constitution Article VI.4).

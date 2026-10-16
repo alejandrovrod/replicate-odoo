@@ -9,9 +9,11 @@ namespace Erp.Domain.Entities;
 /// <see cref="SalesInvoice"/> (Constitution Article II.1).
 /// </summary>
 /// <remarks>
-/// Amounts are ALWAYS stored non-negative: the taxable base of a return is negative, so the
-/// computed tax is negative too and the posting engine books explicit inverse sides with
-/// absolute magnitudes (GLEntry forbids negative Debit/Credit - Constitution IV.3).
+/// Signed amounts (tax-engine Fase 2): <see cref="TaxChargeType.Add"/> rows follow the base
+/// sign (positive on normal invoices, negative on returns); <see cref="TaxChargeType.Deduct"/>
+/// rows (retentions) carry the OPPOSITE sign, so the document total is always
+/// <c>NetTotal + Σ TaxAmount</c>. The posting engine books explicit sides from the sign
+/// (GLEntry forbids negative Debit/Credit - Constitution IV.3).
 /// </remarks>
 public sealed class SalesInvoiceTax
 {
@@ -26,6 +28,25 @@ public sealed class SalesInvoiceTax
 
     /// <summary>Percentage applied on the discounted net base (e.g. 21.00).</summary>
     public decimal Rate { get; set; }
+
+    /// <summary>
+    /// Tax-engine Fase 2: direction of the row. Defaults to <see cref="TaxChargeType.Add"/>,
+    /// preserving the module-17 flat-rate behavior; <see cref="TaxChargeType.Deduct"/> rows
+    /// (retentions) carry a NEGATIVE <see cref="TaxAmount"/> on normal invoices.
+    /// </summary>
+    public TaxChargeType ChargeType { get; set; } = TaxChargeType.Add;
+
+    /// <summary>
+    /// Tax-engine Fase 2: what the rate applies on. Defaults to
+    /// <see cref="TaxCalculationBasis.OnNetTotal"/> (module-17 behavior).
+    /// </summary>
+    public TaxCalculationBasis CalculationBasis { get; set; } = TaxCalculationBasis.OnNetTotal;
+
+    /// <summary>
+    /// Tax-engine Fase 2: the base this row computed on (discounted net, or the previous
+    /// row's total for cascades). Stored for the UI breakdown; same sign as the base.
+    /// </summary>
+    public decimal BaseAmount { get; set; }
 
     /// <summary>Server-computed tax amount (never trusted from the client).</summary>
     public decimal TaxAmount { get; set; }

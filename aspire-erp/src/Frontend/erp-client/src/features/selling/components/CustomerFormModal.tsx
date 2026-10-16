@@ -14,6 +14,13 @@ import { useTranslation } from 'react-i18next'
 import { useCurrencies } from '../../accounting/api/useCurrencies'
 import { useAccountTree } from '../../accounting/useAccountTree'
 import type { AccountTreeNode } from '../../accounting/types'
+import { useCustomFields } from '../../extensibility/api/useCustomFields'
+import {
+  CustomFieldsRenderer,
+  parseCustomData,
+  serializeCustomData,
+  type CustomFieldValues,
+} from '../../../components/forms/CustomFieldsRenderer'
 
 interface CustomerFormModalProps {
   isOpen: boolean
@@ -39,15 +46,18 @@ export function CustomerFormModal({
   companyId,
 }: CustomerFormModalProps) {
   const { t } = useTranslation('selling')
+  const { t: tCommon } = useTranslation('common')
   const [formData, setFormData] = useState<Partial<Customer>>({
     companyId,
     isActive: true,
   })
+  const [customValues, setCustomValues] = useState<CustomFieldValues>({})
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { nodes, status: accountsStatus } = useAccountTree(companyId || '')
   const currenciesQuery = useCurrencies()
+  const customFieldsQuery = useCustomFields(isOpen ? 'Customer' : '')
 
   const receivableAccounts: { id: string; name: string; code: string }[] = []
   if (accountsStatus === 'success') {
@@ -65,8 +75,10 @@ export function CustomerFormModal({
   useEffect(() => {
     if (initialData) {
       setFormData(initialData)
+      setCustomValues(parseCustomData(initialData.customData))
     } else {
       setFormData({ companyId, isActive: true })
+      setCustomValues({})
     }
   }, [initialData, companyId, isOpen])
 
@@ -93,10 +105,14 @@ export function CustomerFormModal({
     try {
       // rowVersion/id/companyId travel inside formData on edits so the PUT carries the
       // original concurrency token; createCustomer/updateCustomer shape the wire body.
+      // CustomData travels as a JSON object string (extensibility Fase 1); null/empty
+      // means "no custom attributes" on create and "keep stored value" on update only
+      // when the caller omits it - here we always send the serialized form state.
       await onSave({
         ...formData,
         defaultReceivableAccountId: formData.defaultReceivableAccountId || undefined,
         currencyId: formData.currencyId || undefined,
+        customData: serializeCustomData(customValues),
       })
       onClose()
     } catch (err: unknown) {
@@ -330,6 +346,19 @@ export function CustomerFormModal({
                 {t('customerForm.active', 'Active')}
               </label>
             </div>
+
+            {customFieldsQuery.definitions.length > 0 && (
+              <>
+                <SectionTitle>{tCommon('customFields.title', 'Custom Fields')}</SectionTitle>
+                <CustomFieldsRenderer
+                  definitions={customFieldsQuery.definitions}
+                  values={customValues}
+                  onChange={(fieldName, value) =>
+                    setCustomValues((prev) => ({ ...prev, [fieldName]: value }))
+                  }
+                />
+              </>
+            )}
           </div>
 
           <DialogFooter className="pt-4 border-t border-slate-100">

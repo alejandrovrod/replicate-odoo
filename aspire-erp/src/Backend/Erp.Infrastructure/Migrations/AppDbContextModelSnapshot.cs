@@ -151,6 +151,9 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("datetimeoffset")
                         .HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
+                    b.Property<string>("CustomData")
+                        .HasColumnType("NVARCHAR(MAX)");
+
                     b.Property<string>("DepreciationMethod")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -907,20 +910,28 @@ namespace Erp.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
 
                     b.Property<string>("BatchId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly?>("ExpiryDate")
                         .HasColumnType("date");
+
+                    b.Property<bool>("IsDisabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<Guid>("ItemId")
                         .HasColumnType("uniqueidentifier");
@@ -938,7 +949,11 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasIndex("ItemId");
 
-                    b.ToTable("Batches");
+                    b.HasIndex("TenantId", "ItemId", "BatchId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_Batch_Tenant_Item_Number");
+
+                    b.ToTable("Batches", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.BillOfMaterials", b =>
@@ -1333,6 +1348,61 @@ namespace Erp.Infrastructure.Migrations
                     b.ToTable("Currency", (string)null);
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.CustomFieldDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+                    b.Property<string>("DefaultValue")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<string>("EntityName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsRequired")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ValidationJsonSchema")
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EntityName", "FieldName")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_CustomFieldDefinition_Tenant_Entity_Field");
+
+                    b.ToTable("CustomFieldDefinition", (string)null);
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1369,6 +1439,9 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<Guid?>("CurrencyId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CustomData")
+                        .HasColumnType("NVARCHAR(MAX)");
 
                     b.Property<string>("CustomerCode")
                         .IsRequired()
@@ -1567,6 +1640,9 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<Guid?>("BatchId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("DeliveryNoteId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1580,6 +1656,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BatchId");
 
                     b.HasIndex("DeliveryNoteId");
 
@@ -2155,6 +2233,9 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CustomData")
+                        .HasColumnType("NVARCHAR(MAX)");
+
                     b.Property<Guid?>("DefaultWarehouseId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2163,6 +2244,16 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<Guid?>("ExpenseAccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("HasBatchNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("HasSerialNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<Guid?>("IncomeAccountId")
                         .HasColumnType("uniqueidentifier");
@@ -2339,6 +2430,164 @@ namespace Erp.Infrastructure.Migrations
 
                             t.HasCheckConstraint("CK_JournalEntryLine_Debit_NonNegative", "[Debit] >= 0");
                         });
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.LandedCostApportionmentItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<decimal>("ApplicableCharges")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LandedCostVoucherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("NewRate")
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("OriginalRate")
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<Guid>("PurchaseReceiptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PurchaseReceiptLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Qty")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("LandedCostVoucherId")
+                        .HasDatabaseName("IX_LandedCostItem_VoucherId");
+
+                    b.HasIndex("PurchaseReceiptId");
+
+                    b.ToTable("LandedCostApportionmentItem", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.LandedCostChargeItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("ExpenseAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("LandedCostVoucherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpenseAccountId");
+
+                    b.HasIndex("LandedCostVoucherId");
+
+                    b.ToTable("LandedCostChargeItem", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.LandedCostReceiptReference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("LandedCostVoucherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PurchaseReceiptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LandedCostVoucherId");
+
+                    b.HasIndex("PurchaseReceiptId");
+
+                    b.ToTable("LandedCostReceiptReference", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.LandedCostVoucher", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+                    b.Property<string>("DistributeBy")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Amount");
+
+                    b.Property<DateOnly>("PostingDate")
+                        .HasColumnType("date");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Draft");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalTaxesAndCharges")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("VoucherNo")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CompanyId", "VoucherNo")
+                        .HasDatabaseName("IX_LandedCostVoucher_Tenant_Company_Number");
+
+                    b.ToTable("LandedCostVoucher", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Lead", b =>
@@ -3298,6 +3547,9 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid?>("CurrencyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CustomData")
+                        .HasColumnType("NVARCHAR(MAX)");
+
                     b.Property<DateOnly>("DueDate")
                         .HasColumnType("date");
 
@@ -3365,6 +3617,10 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0.0000m);
 
+                    b.Property<string>("WorkflowState")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CurrencyId");
@@ -3384,7 +3640,7 @@ namespace Erp.Infrastructure.Migrations
 
                     b.ToTable("PurchaseInvoice", null, t =>
                         {
-                            t.HasCheckConstraint("CK_PurchaseInvoice_Totals", "([NetTotal] >= 0.0000 AND [TaxTotal] >= 0.0000 AND [GrandTotal] >= 0.0000) OR ([NetTotal] <= 0.0000 AND [TaxTotal] <= 0.0000 AND [GrandTotal] <= 0.0000)");
+                            t.HasCheckConstraint("CK_PurchaseInvoice_Totals", "([NetTotal] >= 0.0000 AND [GrandTotal] >= 0.0000) OR ([NetTotal] <= 0.0000 AND [GrandTotal] <= 0.0000)");
                         });
                 });
 
@@ -3433,6 +3689,63 @@ namespace Erp.Infrastructure.Migrations
 
                             t.HasCheckConstraint("CK_PurchaseInvoiceLine_Rate_NonNegative", "[Rate] >= 0");
                         });
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoiceTax", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BaseAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("CalculationBasis")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("OnNetTotal");
+
+                    b.Property<string>("ChargeType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Add");
+
+                    b.Property<decimal>("FixedAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid>("PurchaseInvoiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Rate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("TaxAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("PurchaseInvoiceId")
+                        .HasDatabaseName("IX_PurchaseInvoiceTax_PurchaseInvoiceId");
+
+                    b.ToTable("PurchaseInvoiceTax", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseOrder", b =>
@@ -3502,6 +3815,10 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<DateOnly>("TransactionDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("WorkflowState")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -3649,6 +3966,9 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<Guid?>("BatchId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("ItemId")
                         .HasColumnType("uniqueidentifier");
 
@@ -3665,6 +3985,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("decimal(18,4)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BatchId");
 
                     b.HasIndex("ItemId");
 
@@ -4041,6 +4363,9 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid?>("CurrencyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CustomData")
+                        .HasColumnType("NVARCHAR(MAX)");
+
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
@@ -4122,6 +4447,10 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<bool>("UpdateStock")
                         .HasColumnType("bit");
 
+                    b.Property<string>("WorkflowState")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CurrencyId");
@@ -4182,6 +4511,25 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BaseAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("CalculationBasis")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("OnNetTotal");
+
+                    b.Property<string>("ChargeType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Add");
 
                     b.Property<decimal>("Rate")
                         .ValueGeneratedOnAdd()
@@ -4273,6 +4621,10 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<DateOnly>("TransactionDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("WorkflowState")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -4527,7 +4879,8 @@ namespace Erp.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
 
                     b.Property<Guid?>("BatchId")
                         .HasColumnType("uniqueidentifier");
@@ -4536,7 +4889,9 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
                     b.Property<Guid?>("CurrentWarehouseId")
                         .HasColumnType("uniqueidentifier");
@@ -4558,11 +4913,16 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<string>("SerialNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("Active");
+
+                    b.Property<Guid?>("StockEntryItemId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
@@ -4575,7 +4935,11 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasIndex("ItemId");
 
-                    b.ToTable("SerialNos");
+                    b.HasIndex("TenantId", "SerialNumber")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_SerialNo_Tenant_Number");
+
+                    b.ToTable("SerialNos", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.StockEntry", b =>
@@ -4647,6 +5011,9 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<Guid?>("BatchId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("ItemId")
                         .HasColumnType("uniqueidentifier");
 
@@ -4663,6 +5030,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BatchId");
 
                     b.HasIndex("ItemId");
 
@@ -4683,6 +5052,9 @@ namespace Erp.Infrastructure.Migrations
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid?>("BatchId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -4727,6 +5099,8 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BatchId");
+
                     b.HasIndex("ItemId");
 
                     b.HasIndex("StockEntryId");
@@ -4759,18 +5133,39 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid?>("CurrencyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CustomData")
+                        .HasColumnType("NVARCHAR(MAX)");
+
                     b.Property<Guid?>("DefaultPayableAccountId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DefaultPriceListId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("HoldType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("IsFrozen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<bool>("OnHold")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<decimal>("OutstandingAmount")
                         .ValueGeneratedOnAdd()
@@ -4783,11 +5178,20 @@ namespace Erp.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(30);
 
+                    b.Property<Guid?>("PaymentTermsTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("ReleaseDate")
+                        .HasColumnType("date");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
+
+                    b.Property<Guid?>("SupplierGroupId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("TaxId")
                         .IsRequired()
@@ -4805,11 +5209,89 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasIndex("DefaultPayableAccountId");
 
+                    b.HasIndex("SupplierGroupId");
+
                     b.HasIndex("TenantId", "Code")
                         .IsUnique()
                         .HasDatabaseName("IX_Supplier_Tenant_Code");
 
+                    b.HasIndex("TenantId", "SupplierGroupId")
+                        .HasDatabaseName("IX_Supplier_Tenant_Group");
+
                     b.ToTable("Supplier", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.SupplierCompanyAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid?>("AdvanceAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PayableAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdvanceAccountId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("PayableAccountId");
+
+                    b.HasIndex("SupplierId", "CompanyId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_SupplierCompanyAccount_Supplier_Company");
+
+                    b.ToTable("SupplierCompanyAccount", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.SupplierGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_SupplierGroup_Tenant_Code");
+
+                    b.ToTable("SupplierGroup", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.System.Catalog", b =>
@@ -4929,37 +5411,66 @@ namespace Erp.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Sales");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsDefault")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("TaxTemplates");
+                    b.HasIndex("TenantId", "CompanyId", "Category", "Title")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_TaxTemplate_Tenant_Company_Category_Title");
+
+                    b.ToTable("TaxTemplates", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.TaxTemplateItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
 
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CalculationBasis")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("OnNetTotal");
+
+                    b.Property<string>("ChargeType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Add");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -4973,11 +5484,13 @@ namespace Erp.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("IX_TaxTemplateItem_AccountId");
 
-                    b.HasIndex("TaxTemplateId");
+                    b.HasIndex("TaxTemplateId")
+                        .HasDatabaseName("IX_TaxTemplateItem_TaxTemplateId");
 
-                    b.ToTable("TaxTemplateItem");
+                    b.ToTable("TaxTemplateItem", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Tenant", b =>
@@ -5014,6 +5527,33 @@ namespace Erp.Infrastructure.Migrations
                         .HasDatabaseName("IX_Tenant_Code");
 
                     b.ToTable("Tenant", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.TenantPreset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<DateTimeOffset>("AppliedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PresetKey")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_TenantPreset_Tenant");
+
+                    b.ToTable("TenantPreset", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.UOM", b =>
@@ -5214,6 +5754,118 @@ namespace Erp.Infrastructure.Migrations
                         {
                             t.HasCheckConstraint("CK_WorkOrder_Quantities", "[QuantityToProduce] > 0.0000 AND [ProducedQuantity] >= 0.0000");
                         });
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.WorkflowDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "DocumentType", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_Workflow_Tenant_Type_Name");
+
+                    b.ToTable("WorkflowDefinition", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.WorkflowStateDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<bool>("CanSubmit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsInitial")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("StateName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("WorkflowDefinitionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkflowDefinitionId")
+                        .HasDatabaseName("IX_WorkflowState_DefinitionId");
+
+                    b.ToTable("WorkflowStateDefinition", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.WorkflowTransition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("ActionLabel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AllowedRole")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("FromState")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ToState")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("WorkflowDefinitionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkflowDefinitionId")
+                        .HasDatabaseName("IX_WorkflowTransition_DefinitionId");
+
+                    b.ToTable("WorkflowTransition", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Workstation", b =>
@@ -5698,6 +6350,12 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.DeliveryNoteLine", b =>
                 {
+                    b.HasOne("Erp.Domain.Entities.Batch", "Batch")
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_DeliveryNoteLine_Batch");
+
                     b.HasOne("Erp.Domain.Entities.DeliveryNote", "DeliveryNote")
                         .WithMany("Lines")
                         .HasForeignKey("DeliveryNoteId")
@@ -5718,6 +6376,8 @@ namespace Erp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_DeliveryNoteLine_OrderLine");
+
+                    b.Navigation("Batch");
 
                     b.Navigation("DeliveryNote");
 
@@ -5938,6 +6598,78 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("JournalEntry");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.LandedCostApportionmentItem", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_LandedCostItem_Item");
+
+                    b.HasOne("Erp.Domain.Entities.LandedCostVoucher", "LandedCostVoucher")
+                        .WithMany("Items")
+                        .HasForeignKey("LandedCostVoucherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_LandedCostItem_Voucher");
+
+                    b.HasOne("Erp.Domain.Entities.PurchaseReceipt", "PurchaseReceipt")
+                        .WithMany()
+                        .HasForeignKey("PurchaseReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_LandedCostItem_Receipt");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("LandedCostVoucher");
+
+                    b.Navigation("PurchaseReceipt");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.LandedCostChargeItem", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Account", "ExpenseAccount")
+                        .WithMany()
+                        .HasForeignKey("ExpenseAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_LandedCostCharge_Account");
+
+                    b.HasOne("Erp.Domain.Entities.LandedCostVoucher", "LandedCostVoucher")
+                        .WithMany("Charges")
+                        .HasForeignKey("LandedCostVoucherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_LandedCostCharge_Voucher");
+
+                    b.Navigation("ExpenseAccount");
+
+                    b.Navigation("LandedCostVoucher");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.LandedCostReceiptReference", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.LandedCostVoucher", "LandedCostVoucher")
+                        .WithMany("Receipts")
+                        .HasForeignKey("LandedCostVoucherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_LandedCostReceipt_Voucher");
+
+                    b.HasOne("Erp.Domain.Entities.PurchaseReceipt", "PurchaseReceipt")
+                        .WithMany()
+                        .HasForeignKey("PurchaseReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_LandedCostReceipt_Receipt");
+
+                    b.Navigation("LandedCostVoucher");
+
+                    b.Navigation("PurchaseReceipt");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.Lead", b =>
@@ -6254,6 +6986,27 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("PurchaseReceiptLine");
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoiceTax", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Account", "Account")
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_PurchaseInvoiceTax_TaxAccount");
+
+                    b.HasOne("Erp.Domain.Entities.PurchaseInvoice", "PurchaseInvoice")
+                        .WithMany("Taxes")
+                        .HasForeignKey("PurchaseInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_PurchaseInvoiceTax_PurchaseInvoice");
+
+                    b.Navigation("Account");
+
+                    b.Navigation("PurchaseInvoice");
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseOrder", b =>
                 {
                     b.HasOne("Erp.Domain.Entities.Company", null)
@@ -6331,6 +7084,12 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseReceiptLine", b =>
                 {
+                    b.HasOne("Erp.Domain.Entities.Batch", "Batch")
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_PurchaseReceiptLine_Batch");
+
                     b.HasOne("Erp.Domain.Entities.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId")
@@ -6343,6 +7102,8 @@ namespace Erp.Infrastructure.Migrations
                         .HasForeignKey("PurchaseReceiptId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Batch");
 
                     b.Navigation("Item");
 
@@ -6654,11 +7415,13 @@ namespace Erp.Infrastructure.Migrations
                 {
                     b.HasOne("Erp.Domain.Entities.Batch", "Batch")
                         .WithMany()
-                        .HasForeignKey("BatchId");
+                        .HasForeignKey("BatchId")
+                        .HasConstraintName("FK_SerialNos_Batches_BatchId");
 
                     b.HasOne("Erp.Domain.Entities.Warehouse", "CurrentWarehouse")
                         .WithMany()
-                        .HasForeignKey("CurrentWarehouseId");
+                        .HasForeignKey("CurrentWarehouseId")
+                        .HasConstraintName("FK_SerialNos_Warehouse_CurrentWarehouseId");
 
                     b.HasOne("Erp.Domain.Entities.Item", "Item")
                         .WithMany()
@@ -6702,6 +7465,12 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.StockEntryItem", b =>
                 {
+                    b.HasOne("Erp.Domain.Entities.Batch", "Batch")
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_StockEntryItem_Batch");
+
                     b.HasOne("Erp.Domain.Entities.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId")
@@ -6715,6 +7484,8 @@ namespace Erp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Batch");
+
                     b.Navigation("Item");
 
                     b.Navigation("StockEntry");
@@ -6722,6 +7493,12 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.StockLedgerEntry", b =>
                 {
+                    b.HasOne("Erp.Domain.Entities.Batch", "Batch")
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_StockLedgerEntry_Batch");
+
                     b.HasOne("Erp.Domain.Entities.Item", "Item")
                         .WithMany()
                         .HasForeignKey("ItemId")
@@ -6741,6 +7518,8 @@ namespace Erp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_StockLedgerEntry_Warehouse");
+
+                    b.Navigation("Batch");
 
                     b.Navigation("Item");
 
@@ -6763,9 +7542,49 @@ namespace Erp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("FK_Supplier_Account");
 
+                    b.HasOne("Erp.Domain.Entities.SupplierGroup", "SupplierGroup")
+                        .WithMany()
+                        .HasForeignKey("SupplierGroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Supplier_SupplierGroup");
+
                     b.Navigation("Currency");
 
                     b.Navigation("DefaultPayableAccount");
+
+                    b.Navigation("SupplierGroup");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.SupplierCompanyAccount", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AdvanceAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_SupplierCompanyAccount_AdvanceAccount");
+
+                    b.HasOne("Erp.Domain.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_SupplierCompanyAccount_Company");
+
+                    b.HasOne("Erp.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("PayableAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_SupplierCompanyAccount_PayableAccount");
+
+                    b.HasOne("Erp.Domain.Entities.Supplier", "Supplier")
+                        .WithMany("Accounts")
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_SupplierCompanyAccount_Supplier");
+
+                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.System.CatalogItem", b =>
@@ -6795,14 +7614,16 @@ namespace Erp.Infrastructure.Migrations
                     b.HasOne("Erp.Domain.Entities.Account", "Account")
                         .WithMany()
                         .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_TaxTemplateItem_Account_AccountId");
 
                     b.HasOne("Erp.Domain.Entities.TaxTemplate", "TaxTemplate")
                         .WithMany("Taxes")
                         .HasForeignKey("TaxTemplateId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_TaxTemplateItem_TaxTemplates_TaxTemplateId");
 
                     b.Navigation("Account");
 
@@ -6888,6 +7709,30 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("WipWarehouse");
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.WorkflowStateDefinition", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.WorkflowDefinition", "WorkflowDefinition")
+                        .WithMany("States")
+                        .HasForeignKey("WorkflowDefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_WorkflowState_Definition");
+
+                    b.Navigation("WorkflowDefinition");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.WorkflowTransition", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.WorkflowDefinition", "WorkflowDefinition")
+                        .WithMany("Transitions")
+                        .HasForeignKey("WorkflowDefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_WorkflowTransition_Definition");
+
+                    b.Navigation("WorkflowDefinition");
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.Workstation", b =>
                 {
                     b.HasOne("Erp.Domain.Entities.Company", null)
@@ -6930,6 +7775,15 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("Lines");
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.LandedCostVoucher", b =>
+                {
+                    b.Navigation("Charges");
+
+                    b.Navigation("Items");
+
+                    b.Navigation("Receipts");
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.MaterialRequest", b =>
                 {
                     b.Navigation("Items");
@@ -6958,6 +7812,8 @@ namespace Erp.Infrastructure.Migrations
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseInvoice", b =>
                 {
                     b.Navigation("Lines");
+
+                    b.Navigation("Taxes");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.PurchaseOrder", b =>
@@ -7014,6 +7870,11 @@ namespace Erp.Infrastructure.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.Supplier", b =>
+                {
+                    b.Navigation("Accounts");
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.System.Catalog", b =>
                 {
                     b.Navigation("Items");
@@ -7032,6 +7893,13 @@ namespace Erp.Infrastructure.Migrations
             modelBuilder.Entity("Erp.Domain.Entities.Warehouse", b =>
                 {
                     b.Navigation("Children");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.WorkflowDefinition", b =>
+                {
+                    b.Navigation("States");
+
+                    b.Navigation("Transitions");
                 });
 #pragma warning restore 612, 618
         }

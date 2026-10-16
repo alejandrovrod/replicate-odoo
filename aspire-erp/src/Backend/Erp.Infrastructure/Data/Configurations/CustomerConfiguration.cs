@@ -52,6 +52,11 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.PaymentTerms).HasMaxLength(100).IsRequired().HasDefaultValue(string.Empty);
         builder.Property(c => c.CustomerDetails).HasMaxLength(1000).IsRequired().HasDefaultValue(string.Empty);
 
+        // Extensibility Fase 1 (gap D1): free-form JSON object string, NULL when the master
+        // carries no custom attributes. NVARCHAR(MAX) keeps SQL Server happy without a
+        // schema change per industry; validation happens in Application before persistence.
+        builder.Property(c => c.CustomData).HasColumnType("NVARCHAR(MAX)");
+
         builder.Property(c => c.DefaultReceivableAccountId);
 
         // plan.md §1 DDL defaults: CreditLimit 0.0000, BypassCreditLimitCheck 0, 30 days,

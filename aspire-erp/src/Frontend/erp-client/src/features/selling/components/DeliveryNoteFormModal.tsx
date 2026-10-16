@@ -6,7 +6,15 @@ import { Input } from '../../../components/ui/Input'
 import { ApiError } from '../../../api/client'
 import { translateErrorCode } from '../../../lib/translateErrorCode'
 import { useSalesOrders } from '../api/useSalesOrders'
-import { useFlatWarehouses } from '../../stock/useStockData'
+import { useFlatWarehouses, useItems } from '../../stock/useStockData'
+import { MAX_PAGE_SIZE } from '../../../lib/pagination'
+import { BatchSelector } from '../../stock/components/BatchSelector'
+import { SerialNoPickerModal } from '../../stock/components/SerialNoPickerModal'
+
+interface TrackingDraft {
+  batchId: string
+  serials: string[]
+}
 
 interface DeliveryNoteFormModalProps {
   isOpen: boolean
@@ -15,7 +23,7 @@ interface DeliveryNoteFormModalProps {
     salesOrderId: string
     warehouseId: string
     postingDate: string
-    lines: { salesOrderItemId: string; itemId: string; qty: number }[]
+    lines: { salesOrderItemId: string; itemId: string; qty: number; batchId?: string | null; serialNumbers?: string[] }[]
   }) => Promise<void>
   companyId: string
 }
@@ -30,11 +38,18 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
   const [warehouseId, setWarehouseId] = useState('')
   const [postingDate, setPostingDate] = useState(todayIso())
   const [quantities, setQuantities] = useState<Record<string, number>>({})
+  const [tracking, setTracking] = useState<Record<string, TrackingDraft>>({})
+  const [serialLineId, setSerialLineId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const ordersQuery = useSalesOrders(companyId, 1, 100)
   const warehousesQuery = useFlatWarehouses(companyId, 1, 100, true)
+  const itemsQuery = useItems(companyId, 1, MAX_PAGE_SIZE)
+  const itemById = useMemo(
+    () => new Map(itemsQuery.items.map((item) => [item.id, item])),
+    [itemsQuery.items],
+  )
 
   const deliverableOrders = useMemo(
     () => ordersQuery.items.filter((o) => o.status === 'Submitted' || o.status === 'PartiallyDelivered'),
@@ -51,6 +66,8 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
       setWarehouseId('')
       setPostingDate(todayIso())
       setQuantities({})
+      setTracking({})
+      setSerialLineId(null)
       setError(null)
     }
   }, [isOpen])
@@ -77,15 +94,42 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
         salesOrderItemId: line.id,
         itemId: line.itemId,
         qty: quantities[line.id] ?? 0,
+        tracking: tracking[line.id] ?? { batchId: '', serials: [] },
+        flags: itemById.get(line.itemId),
       }))
       .filter((l) => l.qty > 0)
     if (lines.length === 0) {
       setError(t('deliveryForm.errorLines', 'Enter a quantity > 0 for at least one line.'))
       return
     }
+    // Batch-and-serial Fase 3: tracked lines must name their batch and list exactly qty
+    // serials. The server re-validates expiry, balances, warehouse and duplicates.
+    for (const line of lines) {
+      if (line.flags?.hasBatchNo && !line.tracking.batchId) {
+        setError(t('deliveryForm.errorBatch', 'Batch-tracked lines need a batch selection.'))
+        return
+      }
+      if (line.flags?.hasSerialNo && line.tracking.serials.length !== line.qty) {
+        setError(
+          t('deliveryForm.errorSerialCount', 'Serial-tracked lines need exactly one serial per unit.'),
+        )
+        return
+      }
+    }
     setIsSubmitting(true)
     try {
-      await onSave({ salesOrderId, warehouseId, postingDate, lines })
+      await onSave({
+        salesOrderId,
+        warehouseId,
+        postingDate,
+        lines: lines.map((line) => ({
+          salesOrderItemId: line.salesOrderItemId,
+          itemId: line.itemId,
+          qty: line.qty,
+          ...(line.tracking.batchId ? { batchId: line.tracking.batchId } : {}),
+          ...(line.tracking.serials.length > 0 ? { serialNumbers: line.tracking.serials } : {}),
+        })),
+      })
       onClose()
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -155,28 +199,86 @@ export function DeliveryNoteFormModal({ isOpen, onClose, onSave, companyId }: De
                 <label className="text-sm font-medium">{t('deliveryForm.linesPending', 'Lines (pending = ordered − delivered)')}</label>
                 {selectedOrder.lines.map((line) => {
                   const pending = Math.max(0, line.quantity - line.deliveredQuantity)
+                  const flags = itemById.get(line.itemId)
+                  const lineTracking = tracking[line.id] ?? { batchId: '', serials: [] }
+                  const setLineTracking = (patch: Partial<TrackingDraft>) =>
+                    setTracking((prev) => ({ ...prev, [line.id]: { ...lineTracking, ...patch } }))
                   return (
-                    <div key={line.id} className="grid grid-cols-12 gap-2 items-center">
-                      <span className="col-span-7 text-sm text-slate-700">
-                        {line.itemCode} — {line.itemName}
-                        <span className="ml-2 font-mono text-xs text-slate-500">{t('deliveryForm.pending', 'pending {{count}}', { count: pending })}</span>
-                      </span>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={pending}
-                        step="0.0001"
-                        value={quantities[line.id] ?? 0}
-                        onChange={(e) =>
-                          setQuantities((prev) => ({ ...prev, [line.id]: Number(e.target.value) }))
-                        }
-                        className="col-span-5"
-                      />
+                    <div key={line.id} className="space-y-1">
+                      <div className="grid grid-cols-12 gap-2 items-center">
+                        <span className="col-span-7 text-sm text-slate-700">
+                          {line.itemCode} — {line.itemName}
+                          <span className="ml-2 font-mono text-xs text-slate-500">{t('deliveryForm.pending', 'pending {{count}}', { count: pending })}</span>
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={pending}
+                          step="0.0001"
+                          value={quantities[line.id] ?? 0}
+                          onChange={(e) =>
+                            setQuantities((prev) => ({ ...prev, [line.id]: Number(e.target.value) }))
+                          }
+                          className="col-span-5"
+                        />
+                      </div>
+                      {(flags?.hasBatchNo || flags?.hasSerialNo) && (
+                        <div className="grid grid-cols-1 gap-2 rounded-lg bg-slate-50 px-2 py-2 sm:grid-cols-2">
+                          {flags?.hasBatchNo && (
+                            <BatchSelector
+                              itemId={line.itemId}
+                              warehouseId={warehouseId}
+                              value={lineTracking.batchId}
+                              onChange={(batchId) => setLineTracking({ batchId })}
+                            />
+                          )}
+                          {flags?.hasSerialNo && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSerialLineId(line.id)}
+                                className="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                              >
+                                {t('deliveryForm.serials', 'Serials')}
+                                <span
+                                  className={`rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold ${
+                                    lineTracking.serials.length === (quantities[line.id] ?? 0) &&
+                                    (quantities[line.id] ?? 0) > 0
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : 'bg-amber-100 text-amber-800'
+                                  }`}
+                                >
+                                  {lineTracking.serials.length}/{quantities[line.id] ?? 0}
+                                </span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
               </div>
             )}
+            {serialLineId &&
+              (() => {
+                const orderLine = selectedOrder?.lines.find((l) => l.id === serialLineId) ?? null
+                return (
+                  <SerialNoPickerModal
+                    isOpen={serialLineId !== null}
+                    onClose={() => setSerialLineId(null)}
+                    itemLabel={orderLine ? `${orderLine.itemCode} — ${orderLine.itemName}` : ''}
+                    expectedCount={quantities[serialLineId] ?? 0}
+                    initial={tracking[serialLineId]?.serials ?? []}
+                    onApply={(serials) =>
+                      setTracking((prev) => ({
+                        ...prev,
+                        [serialLineId]: { batchId: prev[serialLineId]?.batchId ?? '', serials },
+                      }))
+                    }
+                  />
+                )
+              })()}
           </div>
 
           <DialogFooter className="pt-4 border-t border-slate-100">

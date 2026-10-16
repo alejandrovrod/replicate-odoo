@@ -123,6 +123,16 @@ public sealed class CreatePaymentEntryCommandHandler : ICommandHandler<CreatePay
                         BankingErrorCodes.PaymentPartyMismatch,
                         $"Supplier '{command.PartyId}' was not found in this tenant.");
                 }
+
+                // Governance guard (module buying-suppliers, spec §1 gap D4): a supplier on hold
+                // for PAYMENTS (or ALL) cannot be paid - checked before any voucher row is built.
+                if (supplier.IsBlockedFor(SupplierHoldType.Payments, command.PaymentDate))
+                {
+                    throw new BankingValidationException(
+                        PurchaseErrorCodes.SupplierOnHoldPayments,
+                        $"Supplier '{supplier.Code}' is on hold for payments and cannot be paid"
+                        + (supplier.ReleaseDate.HasValue ? $" until {supplier.ReleaseDate:yyyy-MM-dd}." : "."));
+                }
             }
 
             // Per-line invoice gates (existence, company, party, status, PE-02 cap).

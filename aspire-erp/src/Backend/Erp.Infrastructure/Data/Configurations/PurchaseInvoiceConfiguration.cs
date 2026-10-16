@@ -17,11 +17,13 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
         builder.ToTable("PurchaseInvoice", table =>
             table.HasCheckConstraint(
                 "CK_PurchaseInvoice_Totals",
-                // Normal bills carry non-negative totals; returns (module 19, T1) carry the exact
-                // negative mirror. The constraint now only forbids a bill whose totals disagree in
-                // SIGN (it can no longer require >= 0, which a debit note violates by construction).
-                "([NetTotal] >= 0.0000 AND [TaxTotal] >= 0.0000 AND [GrandTotal] >= 0.0000) "
-                + "OR ([NetTotal] <= 0.0000 AND [TaxTotal] <= 0.0000 AND [GrandTotal] <= 0.0000)"));
+                // Tax-engine Fase 2: TaxTotal is the SIGNED tax sum and may be negative on a
+                // normal bill (retentions exceed transferred taxes) or positive on a return
+                // (the mirror) - so the sign-consistency rule moves to Net/Grand only: normal
+                // bills never pay out (both non-negative), returns never collect (both
+                // non-positive). Previously all three totals had to agree in sign (module 19).
+                "([NetTotal] >= 0.0000 AND [GrandTotal] >= 0.0000) "
+                + "OR ([NetTotal] <= 0.0000 AND [GrandTotal] <= 0.0000)"));
 
         builder.HasKey(i => i.Id);
         builder.Property(i => i.Id)
@@ -38,6 +40,15 @@ public sealed class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<Purc
         builder.Property(i => i.VoucherNo).HasMaxLength(100).IsRequired();
         builder.Property(i => i.BillNumber).HasMaxLength(100).IsRequired();
         builder.Property(i => i.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
+
+        // Workflow Fase 5: free-text operational state (NULL until adopted). Never drives
+        // the ledger - only gates the Draft → Submitted move via CanSubmit states.
+        // (Purchase bills post without a Draft, so the guard mainly serves returns/cancels
+        // and future Draft-capable purchase flows.)
+        builder.Property(i => i.WorkflowState).HasMaxLength(50);
+
+        // Extensibility Fase 1 (gap D1): free-form JSON object string, NULL when none.
+        builder.Property(i => i.CustomData).HasColumnType("NVARCHAR(MAX)");
 
         // Module 19 (returns-and-credit-notes, T1): return provenance and the stock-movement flag.
         builder.Property(i => i.IsReturn).IsRequired().HasDefaultValue(false);

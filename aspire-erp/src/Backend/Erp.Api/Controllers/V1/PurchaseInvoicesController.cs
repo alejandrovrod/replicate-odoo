@@ -107,6 +107,7 @@ public sealed class PurchaseInvoicesController : ControllerBase
     [ProducesResponseType(typeof(PurchaseInvoicePostingDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create(
         [FromBody] PostPurchaseInvoiceCommand command,
         CancellationToken cancellationToken)
@@ -150,6 +151,14 @@ public sealed class PurchaseInvoicesController : ControllerBase
                     _common.Text("OverbillingNotAllowed"),
                     // Instance-valued detail (quantities, pinned by
                     // PurchaseInvoiceOverbillingApiTests): passthrough.
+                    error.Message,
+                    error.Code),
+                // Governance guard (module buying-suppliers, spec §1 gap D4, scenario SUP-G2): the
+                // supplier is on hold for invoices - the request is well-formed but the supplier's
+                // state forbids it, so it is a 422 (not a 400).
+                PurchaseErrorCodes.SupplierOnHoldInvoices => Problem(
+                    StatusCodes.Status422UnprocessableEntity,
+                    _common.Text("SupplierOnHold"),
                     error.Message,
                     error.Code),
                 _ => Problem(
@@ -348,6 +357,7 @@ public sealed class PurchaseInvoicesController : ControllerBase
             {
                 StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc9110#section-15.5.5",
                 StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+                StatusCodes.Status422UnprocessableEntity => "https://tools.ietf.org/html/rfc9110#section-15.5.22",
                 _ => "https://tools.ietf.org/html/rfc9110#section-15.5.1",
             },
             Title = title,

@@ -28,20 +28,33 @@ public sealed class StockPostingService : IStockPostingService
     private readonly IWarehouseRepository _warehouses;
     private readonly IItemRepository _items;
     private readonly IStockRepository _stock;
+    private readonly IBatchSerialService? _tracking;
 
     public StockPostingService(
         ICompanyRepository companies,
         IAccountRepository accounts,
         IWarehouseRepository warehouses,
         IItemRepository items,
-        IStockRepository stock)
+        IStockRepository stock,
+        IBatchSerialService? tracking = null)
     {
         _companies = companies;
         _accounts = accounts;
         _warehouses = warehouses;
         _items = items;
         _stock = stock;
+        _tracking = tracking;
     }
+
+    /// <summary>
+    /// Batch-and-serial Fase 3: the tracking pipeline (gates + transitions). In production DI
+    /// always provides it; legacy direct constructions (older unit tests) only post untracked
+    /// items, so a tracked item without the pipeline fails closed instead of silently skipping.
+    /// </summary>
+    private IBatchSerialService TrackingOrThrow(string itemCode) =>
+        _tracking ?? throw new StockValidationException(
+            StockErrorCodes.BatchRequired,
+            $"Item '{itemCode}' is batch/serial-tracked but no tracking service is wired.");
 
     public async Task<StockEntryPostingDto> PostAsync(StockPostingRequest request, CancellationToken cancellationToken = default)
     {
@@ -107,30 +120,45 @@ public sealed class StockPostingService : IStockPostingService
             var glLines = new List<GLEntry>(request.Lines.Count * 2);
             var consumedByLine = new Dictionary<int, FifoResult>(request.Lines.Count);
 
+            // Batch-and-serial Fase 3 per-voucher tracking state: batch consumption inside
+            // this voucher (so two lines cannot consume the same batch units twice) and the
+            // staged serial transitions, persisted after the voucher number is assigned.
+            var consumedByBatch = new Dictionary<Guid, decimal>();
+            var serialsToAdd = new List<SerialNo>();
+            var serialsToUpdate = new List<SerialNo>();
+            var serialsByLine = new Dictionary<int, List<SerialNo>>();
+            var batchByLine = new Dictionary<int, Guid?>();
+            var batchNumbers = new Dictionary<Guid, string>();
+
             for (var i = 0; i < request.Lines.Count; i++)
             {
                 var line = request.Lines[i];
                 StockEntryValidator.EnsureValidLine(request.EntryType, line.Qty, line.Rate);
                 var item = items[line.ItemId];
 
+                var batchId = await PlanLineTrackingAsync(
+                    request, company, line, item, sourceWarehouse, targetWarehouse, i,
+                    consumedByBatch, serialsToAdd, serialsToUpdate, serialsByLine, batchByLine,
+                    batchNumbers, token);
+
                 switch (request.EntryType)
                 {
                     case StockEntryType.MaterialReceipt:
                         await BuildReceiptLineAsync(
                             request, company, line, item, sourceWarehouse, sourceStockAccount,
-                            ledger, glLines, token);
+                            batchId, ledger, glLines, token);
                         break;
 
                     case StockEntryType.MaterialIssue:
                         consumedByLine[i] = await BuildIssueLineAsync(
                             request, company, line, item, sourceWarehouse, sourceStockAccount,
-                            ledger, glLines, token);
+                            batchId, ledger, glLines, token);
                         break;
 
                     case StockEntryType.MaterialTransfer:
                         consumedByLine[i] = await BuildTransferLineAsync(
                             request, company, line, item, sourceWarehouse, targetWarehouse!,
-                            sourceStockAccount, targetStockAccount!, ledger, glLines, token);
+                            sourceStockAccount, targetStockAccount!, batchId, ledger, glLines, token);
                         break;
 
                     case StockEntryType.Manufacture:
@@ -164,7 +192,7 @@ public sealed class StockPostingService : IStockPostingService
                 // entity, so without this the 201 response would report 0001-01-01T00:00:00.
                 CreatedAt = DateTimeOffset.UtcNow,
 
-                Items = BuildLines(request, items, consumedByLine),
+                Items = BuildLines(request, items, consumedByLine, batchByLine),
             };
 
             // The Kardex rows belong to this voucher aggregate; the GL lines share its number.
@@ -188,11 +216,134 @@ public sealed class StockPostingService : IStockPostingService
             await _stock.AddLedgerEntriesAsync(ledger, token);
             await _stock.AddGlEntriesAsync(glLines, token);
 
-            return BuildResult(stockEntry, ledger, glLines, items);
+            // Batch-and-serial Fase 3: link staged serials to their persisted lines (ids only
+            // exist now) and persist the transitions with everything else, atomically.
+            if (serialsByLine.Count > 0 && _tracking is not null)
+            {
+                var persistedLines = stockEntry.Items.OrderBy(l => l.LineNumber).ToList();
+                foreach (var (lineIndex, staged) in serialsByLine)
+                {
+                    var persistedLineId = persistedLines[lineIndex].Id;
+                    foreach (var serial in staged)
+                    {
+                        serial.StockEntryItemId = persistedLineId;
+
+                        // Issues stamp the voucher as the dispatch document (transfers keep
+                        // moving silently; receipts use the purchase document when born there).
+                        if (request.EntryType == StockEntryType.MaterialIssue)
+                        {
+                            serial.DeliveryDocumentNo = stockEntry.VoucherNo;
+                        }
+                    }
+                }
+
+                await _tracking.PersistSerialsAsync(serialsToAdd, serialsToUpdate, token);
+            }
+
+            return BuildResult(stockEntry, ledger, glLines, items, batchByLine, batchNumbers, serialsByLine);
         }, cancellationToken);
     }
 
     // ----------------------------------------------------------------- validation & resolution
+
+    /// <summary>
+    /// Batch-and-serial Fase 3 per-line planning: shape validation (batch named, serial
+    /// count == qty), batch gates (receipt top-up-or-create, issue sufficiency/expiry with
+    /// in-voucher consumption) and serial staging. Returns the resolved batch id (null for
+    /// untracked items) for the Kardex rows and persisted lines. Serial doc refs and line
+    /// links are stamped after numbering; persistence happens with everything else.
+    /// </summary>
+    private async Task<Guid?> PlanLineTrackingAsync(
+        StockPostingRequest request,
+        Company company,
+        StockPostingLine line,
+        Item item,
+        Warehouse sourceWarehouse,
+        Warehouse? targetWarehouse,
+        int lineIndex,
+        Dictionary<Guid, decimal> consumedByBatch,
+        List<SerialNo> serialsToAdd,
+        List<SerialNo> serialsToUpdate,
+        Dictionary<int, List<SerialNo>> serialsByLine,
+        Dictionary<int, Guid?> batchByLine,
+        Dictionary<Guid, string> batchNumbers,
+        CancellationToken token)
+    {
+        var isReceipt = request.EntryType == StockEntryType.MaterialReceipt;
+        var cleanedSerials = StockEntryValidator.EnsureTrackingShape(
+            item.ItemCode,
+            item.HasBatchNo,
+            line.BatchId,
+            line.BatchNo,
+            isReceipt,
+            item.HasSerialNo,
+            line.SerialNumbers,
+            line.Qty);
+
+        if (!item.HasBatchNo && !item.HasSerialNo)
+        {
+            batchByLine[lineIndex] = null;
+            return null;
+        }
+
+        var tracking = TrackingOrThrow(item.ItemCode);
+        Guid? batchId = null;
+
+        if (item.HasBatchNo)
+        {
+            if (isReceipt)
+            {
+                var batch = await tracking.EnsureBatchForReceiptAsync(
+                    item.Id, item.ItemCode, line.BatchNo!, line.ManufacturingDate, line.ExpiryDate, token);
+                batchId = batch.Id;
+                batchNumbers[batch.Id] = batch.BatchId;
+            }
+            else
+            {
+                var batch = await tracking.EnsureBatchForIssueAsync(
+                    item.Id, item.ItemCode, line.BatchId!.Value, sourceWarehouse.Id,
+                    sourceWarehouse.WarehouseCode, line.Qty, request.PostingDate,
+                    company.AllowNegativeStock, consumedByBatch, token);
+                batchId = batch.Id;
+                batchNumbers[batch.Id] = batch.BatchId;
+                consumedByBatch[batchId.Value] = consumedByBatch.TryGetValue(batchId.Value, out var used)
+                    ? used + line.Qty
+                    : line.Qty;
+            }
+        }
+
+        batchByLine[lineIndex] = batchId;
+
+        if (item.HasSerialNo)
+        {
+            if (isReceipt)
+            {
+                var staged = await tracking.StageReceiptSerialsAsync(
+                    item.Id, item.ItemCode, cleanedSerials, sourceWarehouse.Id, batchId,
+                    request.PostingDate, token);
+                serialsToAdd.AddRange(staged);
+                serialsByLine[lineIndex] = staged.ToList();
+            }
+            else if (request.EntryType == StockEntryType.MaterialTransfer)
+            {
+                var staged = await tracking.StageTransferSerialsAsync(
+                    item.Id, item.ItemCode, cleanedSerials, sourceWarehouse.Id,
+                    sourceWarehouse.WarehouseCode, targetWarehouse!.Id, token);
+                serialsToUpdate.AddRange(staged);
+                serialsByLine[lineIndex] = staged.ToList();
+            }
+            else
+            {
+                var staged = await tracking.StageIssueSerialsAsync(
+                    item.Id, item.ItemCode, cleanedSerials, sourceWarehouse.Id,
+                    sourceWarehouse.WarehouseCode, request.PostingDate, token);
+                serialsToUpdate.AddRange(staged);
+                serialsByLine[lineIndex] = staged.ToList();
+            }
+        }
+
+        return batchId;
+    }
 
     private async Task<(Warehouse Source, Warehouse? Target)> ResolveWarehousesAsync(
         StockPostingRequest request,
@@ -381,6 +532,7 @@ public sealed class StockPostingService : IStockPostingService
         Item item,
         Warehouse warehouse,
         Account stockAccount,
+        Guid? batchId,
         List<StockLedgerEntry> ledger,
         List<GLEntry> glLines,
         CancellationToken token)
@@ -394,7 +546,7 @@ public sealed class StockPostingService : IStockPostingService
             "Company.StockReceivedAccountCode",
             token);
 
-        ledger.Add(NewLedgerEntry(line, warehouse.Id, request, +line.Qty, rate, +amount));
+        ledger.Add(NewLedgerEntry(line, warehouse.Id, request, +line.Qty, rate, +amount, batchId));
 
         // spec ST-01: Debit 1310 Stock In Hand / Credit 2120 Stock Received But Not Billed.
         AddGlLine(glLines, request, company.Id, stockAccount, debit: amount, credit: 0m, line, item);
@@ -408,6 +560,7 @@ public sealed class StockPostingService : IStockPostingService
         Item item,
         Warehouse warehouse,
         Account stockAccount,
+        Guid? batchId,
         List<StockLedgerEntry> ledger,
         List<GLEntry> glLines,
         CancellationToken token)
@@ -423,7 +576,7 @@ public sealed class StockPostingService : IStockPostingService
         var consumption = FifoValuation.Consume(
             layers, line.Qty, company.AllowNegativeStock, item.ItemCode, warehouse.WarehouseCode);
 
-        ledger.Add(NewLedgerEntry(line, warehouse.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost));
+        ledger.Add(NewLedgerEntry(line, warehouse.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost, batchId));
 
         // spec ST-02: Debit Cost of Goods Sold / Credit Stock In Hand for the FIFO cost.
         AddGlLine(glLines, request, company.Id, cogsAccount, debit: consumption.TotalCost, credit: 0m, line, item);
@@ -441,6 +594,7 @@ public sealed class StockPostingService : IStockPostingService
         Warehouse target,
         Account sourceStockAccount,
         Account targetStockAccount,
+        Guid? batchId,
         List<StockLedgerEntry> ledger,
         List<GLEntry> glLines,
         CancellationToken token)
@@ -452,8 +606,8 @@ public sealed class StockPostingService : IStockPostingService
             layers, line.Qty, company.AllowNegativeStock, item.ItemCode, source.WarehouseCode);
 
         // Out of the source warehouse and INTO the target at the consumed value: value is preserved.
-        ledger.Add(NewLedgerEntry(line, source.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost));
-        ledger.Add(NewLedgerEntry(line, target.Id, request, +line.Qty, consumption.AverageRate, +consumption.TotalCost));
+        ledger.Add(NewLedgerEntry(line, source.Id, request, -line.Qty, consumption.AverageRate, -consumption.TotalCost, batchId));
+        ledger.Add(NewLedgerEntry(line, target.Id, request, +line.Qty, consumption.AverageRate, +consumption.TotalCost, batchId));
 
         if (sourceStockAccount.Id != targetStockAccount.Id)
         {
@@ -514,12 +668,14 @@ public sealed class StockPostingService : IStockPostingService
         StockPostingRequest request,
         decimal qtyChange,
         decimal valuationRate,
-        decimal amount) =>
+        decimal amount,
+        Guid? batchId) =>
         new()
         {
             Id = Guid.NewGuid(),
             ItemId = line.ItemId,
             WarehouseId = warehouseId,
+            BatchId = batchId,
             PostingDate = request.PostingDate,
             QtyChange = qtyChange,
             ValuationRate = valuationRate,
@@ -594,7 +750,8 @@ public sealed class StockPostingService : IStockPostingService
     private static List<StockEntryItem> BuildLines(
         StockPostingRequest request,
         IReadOnlyDictionary<Guid, Item> items,
-        IReadOnlyDictionary<int, FifoResult> consumedByLine)
+        IReadOnlyDictionary<int, FifoResult> consumedByLine,
+        IReadOnlyDictionary<int, Guid?> batchByLine)
     {
         var lines = new List<StockEntryItem>(request.Lines.Count);
         for (var i = 0; i < request.Lines.Count; i++)
@@ -608,6 +765,7 @@ public sealed class StockPostingService : IStockPostingService
                 ItemId = line.ItemId,
                 Qty = line.Qty,
                 LineNumber = i + 1,
+                BatchId = batchByLine.TryGetValue(i, out var batchId) ? batchId : null,
 
                 // Receipts carry the user rate; issues/transfers carry the FIFO-computed average.
                 Rate = request.EntryType == StockEntryType.MaterialReceipt
@@ -623,13 +781,29 @@ public sealed class StockPostingService : IStockPostingService
         StockEntry stockEntry,
         IReadOnlyList<StockLedgerEntry> ledger,
         IReadOnlyList<GLEntry> glLines,
-        IReadOnlyDictionary<Guid, Item> items)
+        IReadOnlyDictionary<Guid, Item> items,
+        IReadOnlyDictionary<int, Guid?> batchByLine,
+        IReadOnlyDictionary<Guid, string> batchNumbers,
+        IReadOnlyDictionary<int, List<SerialNo>> serialsByLine)
     {
         var lines = new List<StockEntryLineDto>(stockEntry.Items.Count);
-        foreach (var line in stockEntry.Items.OrderBy(l => l.LineNumber))
+        var orderedItems = stockEntry.Items.OrderBy(l => l.LineNumber).ToList();
+        for (var i = 0; i < orderedItems.Count; i++)
         {
+            var line = orderedItems[i];
             var item = items[line.ItemId];
-            lines.Add(new StockEntryLineDto(line.ItemId, item.ItemCode, item.ItemName, line.Qty, line.Rate, line.LineNumber));
+            batchByLine.TryGetValue(i, out var batchId);
+            serialsByLine.TryGetValue(i, out var serials);
+            lines.Add(new StockEntryLineDto(
+                line.ItemId,
+                item.ItemCode,
+                item.ItemName,
+                line.Qty,
+                line.Rate,
+                line.LineNumber,
+                batchId,
+                batchId.HasValue && batchNumbers.TryGetValue(batchId.Value, out var number) ? number : null,
+                serials?.Select(s => s.SerialNumber).ToList()));
         }
 
         var dto = new StockEntryDto(
@@ -644,7 +818,7 @@ public sealed class StockPostingService : IStockPostingService
             lines);
 
         var ledgerDtos = ledger
-            .Select(e => new StockLedgerEntryDto(e.Id, e.ItemId, e.WarehouseId, e.PostingDate, e.QtyChange, e.ValuationRate, e.Amount))
+            .Select(e => new StockLedgerEntryDto(e.Id, e.ItemId, e.WarehouseId, e.PostingDate, e.QtyChange, e.ValuationRate, e.Amount, e.BatchId))
             .ToList();
 
         var totalDebit = 0m;

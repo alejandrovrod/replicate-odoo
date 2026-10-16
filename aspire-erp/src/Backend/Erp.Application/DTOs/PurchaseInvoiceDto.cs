@@ -12,6 +12,16 @@ public sealed record PurchaseInvoiceLineDto(
     decimal Rate,
     int LineNumber);
 
+/// <summary>One "Taxes and Charges" row as stored (tax-engine Fase 2).</summary>
+public sealed record PurchaseInvoiceTaxDto(
+    Guid Id,
+    Guid AccountId,
+    decimal Rate,
+    decimal TaxAmount,
+    TaxChargeType ChargeType = TaxChargeType.Add,
+    TaxCalculationBasis CalculationBasis = TaxCalculationBasis.OnNetTotal,
+    decimal BaseAmount = 0m);
+
 /// <summary>Purchase invoice payload returned by GET /api/v1/purchaseinvoices.</summary>
 public sealed record PurchaseInvoiceDto(
     Guid Id,
@@ -32,7 +42,10 @@ public sealed record PurchaseInvoiceDto(
     bool IsReturn,
     Guid? ReturnAgainstId,
     bool UpdateStock,
-    IReadOnlyList<PurchaseInvoiceLineDto> Lines)
+    IReadOnlyList<PurchaseInvoiceLineDto> Lines,
+    IReadOnlyList<PurchaseInvoiceTaxDto>? Taxes = null,
+    // Workflow Fase 5: operational state (null until adopted by the first transition/guard).
+    string? WorkflowState = null)
 {
     /// <summary>Maps an invoice aggregate; <paramref name="itemsById"/> resolves line codes/names.</summary>
     public static PurchaseInvoiceDto Build(
@@ -77,7 +90,12 @@ public sealed record PurchaseInvoiceDto(
             invoice.IsReturn,
             invoice.ReturnAgainstId,
             invoice.UpdateStock,
-            lines);
+            lines,
+            invoice.Taxes
+                .Select(t => new PurchaseInvoiceTaxDto(
+                    t.Id, t.AccountId, t.Rate, t.TaxAmount, t.ChargeType, t.CalculationBasis, t.BaseAmount))
+                .ToList(),
+            invoice.WorkflowState);
     }
 }
 

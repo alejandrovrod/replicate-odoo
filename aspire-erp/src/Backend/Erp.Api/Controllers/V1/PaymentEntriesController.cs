@@ -109,6 +109,7 @@ public sealed class PaymentEntriesController : ControllerBase
     [IdempotencyKeyRequired]
     [ProducesResponseType(typeof(PaymentEntryDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create(
         [FromBody] CreatePaymentEntryCommand command,
         CancellationToken cancellationToken)
@@ -118,6 +119,18 @@ public sealed class PaymentEntriesController : ControllerBase
         if (!result.IsSuccess)
         {
             var error = result.Error!;
+
+            // Governance guard (module buying-suppliers, spec §1 gap D4): a supplier on hold for
+            // payments is a 422 (well-formed request, forbidden by the supplier's state).
+            if (error.Code == PurchaseErrorCodes.SupplierOnHoldPayments)
+            {
+                return Problem(
+                    StatusCodes.Status422UnprocessableEntity,
+                    _common.Text("SupplierOnHold"),
+                    error.Message,
+                    error.Code);
+            }
+
             return Problem(
                 StatusCodes.Status400BadRequest,
                 _common.Text("PaymentRejected"),
@@ -224,6 +237,7 @@ public sealed class PaymentEntriesController : ControllerBase
             {
                 StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc9110#section-15.5.10",
                 StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+                StatusCodes.Status422UnprocessableEntity => "https://tools.ietf.org/html/rfc9110#section-15.5.22",
                 _ => "https://tools.ietf.org/html/rfc9110#section-15.5.1",
             },
             Title = title,

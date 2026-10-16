@@ -43,6 +43,7 @@ const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys 
   'stock-warehouses': { title: 'nav.route.stock', category: 'nav.category.stock' },
   'assets': { title: 'nav.item.assets', category: 'nav.category.accounting' },
   'stock-items': { title: 'nav.route.stock', category: 'nav.category.stock' },
+  'stock-landed-cost': { title: 'nav.item.stockLandedCost', category: 'nav.category.stock' },
   'selling-customers': { title: 'nav.route.selling', category: 'nav.category.selling' },
   'selling-orders': { title: 'nav.item.sellingOrders', category: 'nav.category.selling' },
   'selling-invoices': { title: 'nav.item.sellingInvoices', category: 'nav.category.selling' },

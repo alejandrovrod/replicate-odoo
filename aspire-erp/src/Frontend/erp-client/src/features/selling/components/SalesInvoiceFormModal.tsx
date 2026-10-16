@@ -10,6 +10,10 @@ import { useItems } from '../../stock/useStockData'
 import { useAccountTree } from '../../accounting/useAccountTree'
 import type { AccountTreeNode } from '../../accounting/types'
 import type { CreateSalesInvoicePayload, SalesInvoice } from '../api/useSalesInvoices'
+import { TaxBreakdownTable } from '../../accounting/components/TaxBreakdownTable'
+import { TaxTemplateSelector } from '../../accounting/components/TaxTemplateSelector'
+import type { TaxTemplate } from '../../accounting/api/useTaxTemplates'
+import { calculateTaxes, type TaxCalculationBasis, type TaxChargeType } from '../../accounting/taxCalculation'
 
 interface LineDraft {
   itemId: string
@@ -20,6 +24,9 @@ interface LineDraft {
 interface TaxDraft {
   accountId: string
   rate: number
+  chargeType: TaxChargeType
+  basis: TaxCalculationBasis
+  fixedAmount: number
 }
 
 interface SalesInvoiceFormModalProps {
@@ -39,13 +46,15 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100
 }
 
-/** Flattens the COA tree to selectable leaf liability accounts (module 17 task item). */
-function liabilityLeaves(nodes: AccountTreeNode[]): { id: string; label: string }[] {
-  const out: { id: string; label: string }[] = []
+/** Flattens the COA tree to selectable tax leaves (tax-engine Fase 2): Liability leaves
+ * for transferred taxes plus Asset leaves for suffered retentions (booked as debit).
+ * The server re-validates per-row charge rules authoritatively. */
+function taxEligibleLeaves(nodes: AccountTreeNode[]): { id: string; label: string; rootType: string }[] {
+  const out: { id: string; label: string; rootType: string }[] = []
   const walk = (list: AccountTreeNode[]) => {
     for (const node of list) {
-      if (!node.isGroup && node.isActive && node.rootType === 'Liability') {
-        out.push({ id: node.id, label: `${node.code} — ${node.name}` })
+      if (!node.isGroup && node.isActive && (node.rootType === 'Liability' || node.rootType === 'Asset')) {
+        out.push({ id: node.id, label: `${node.code} — ${node.name}`, rootType: node.rootType })
       }
       if (node.children.length > 0) walk(node.children)
     }
@@ -64,6 +73,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
   const [discountPercentage, setDiscountPercentage] = useState(0)
   const [discountAmount, setDiscountAmount] = useState(0)
   const [taxes, setTaxes] = useState<TaxDraft[]>([])
+  const [templateId, setTemplateId] = useState('')
   const [isReturn, setIsReturn] = useState(false)
   const [returnAgainstId, setReturnAgainstId] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -73,7 +83,11 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
   const customersQuery = useCustomers(companyId, 1, 100)
   const itemsQuery = useItems(companyId, 1, 100)
   const accountsQuery = useAccountTree(companyId)
-  const taxAccounts = useMemo(() => liabilityLeaves(accountsQuery.nodes), [accountsQuery.nodes])
+  const taxAccounts = useMemo(() => taxEligibleLeaves(accountsQuery.nodes), [accountsQuery.nodes])
+  const taxAccountLabel = useMemo(() => {
+    const map = new Map(taxAccounts.map((a) => [a.id, a.label] as const))
+    return (id: string) => map.get(id) ?? id
+  }, [taxAccounts])
 
   useEffect(() => {
     if (isOpen) {
@@ -83,6 +97,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
       setDiscountPercentage(0)
       setDiscountAmount(0)
       setTaxes([])
+      setTemplateId('')
       setIsReturn(false)
       setReturnAgainstId('')
       setError(null)
@@ -98,15 +113,39 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
     [invoices, customerId],
   )
 
-  // Live totals preview mirrors the server equation: Grand = Net - Discount + Taxes.
+  // Live totals preview mirrors the server engine: Grand = Net - Discount + Σ signed
+  // (Add follows the base, Deduct opposes it; cascades compound on the running total).
   const preview = useMemo(() => {
     const net = lines.reduce((sum, l) => sum + (Number(l.quantity) || 0) * (Number(l.rate) || 0), 0)
     const discount = discountAmount > 0 ? discountAmount : round2((Math.abs(net) * discountPercentage) / 100)
     const base = net - discount
-    const taxRows = taxes.map((row) => round2((base * (Number(row.rate) || 0)) / 100))
-    const taxTotal = taxRows.reduce((sum, v) => sum + v, 0)
-    return { net, discount, base, taxRows, taxTotal, grand: base + taxTotal }
+    const calc = calculateTaxes(
+      base,
+      taxes.map((row) => ({
+        rate: Number(row.rate) || 0,
+        chargeType: row.chargeType,
+        basis: row.basis,
+        fixedAmount: Number(row.fixedAmount) || 0,
+      })),
+      2,
+    )
+    return { net, discount, base, calc, grand: calc.grandTotal }
   }, [lines, discountPercentage, discountAmount, taxes])
+
+  /** Expands a template into editable rows (server recomputes authoritatively on save). */
+  const applyTemplate = (template: TaxTemplate | null) => {
+    setTemplateId(template ? template.id : '')
+    if (!template) return
+    setTaxes(
+      template.lines.map((line) => ({
+        accountId: line.accountId,
+        rate: line.rate,
+        chargeType: line.chargeType,
+        basis: line.calculationBasis,
+        fixedAmount: line.amount,
+      })),
+    )
+  }
 
   const updateLine = (index: number, patch: Partial<LineDraft>) => {
     setLines((prev) => prev.map((l, i) => (i === index ? { ...l, ...patch } : l)))
@@ -173,10 +212,15 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
     }
     for (const row of taxes) {
       if (!row.accountId) {
-        fail(t('invoiceForm.errorTaxAccount', 'Every tax row must select a liability account.'))
+        fail(t('invoiceForm.errorTaxAccount', 'Every tax row must select a posting account (Liability for transfers, Liability/Asset for retentions).'))
         return
       }
-      if (!(row.rate >= 0 && row.rate <= 100)) {
+      if (row.basis === 'FixedAmount') {
+        if (!(Number(row.fixedAmount) >= 0)) {
+          fail(t('invoiceForm.errorTaxFixed', 'Fixed-amount rows need a non-negative amount.'))
+          return
+        }
+      } else if (!(row.rate >= 0 && row.rate <= 100)) {
         fail(t('invoiceForm.errorTaxRate', 'Tax rates must be between 0 and 100.'))
         return
       }
@@ -194,7 +238,13 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
         items: validLines,
         discountPercentage,
         discountAmount,
-        taxes,
+        taxes: taxes.map((row) => ({
+          accountId: row.accountId,
+          rate: Number(row.rate) || 0,
+          chargeType: row.chargeType,
+          calculationBasis: row.basis,
+          fixedAmount: Number(row.fixedAmount) || 0,
+        })),
         isReturn,
         returnAgainstId: isReturn ? returnAgainstId : null,
       })
@@ -381,8 +431,14 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
               </div>
             </div>
 
-            {/* Module 17: Taxes and Charges grid (liability leaves only) */}
+            {/* Tax-engine Fase 2: template shortcut + Taxes and Charges grid */}
             <div className="space-y-2">
+              <TaxTemplateSelector
+                companyId={companyId}
+                category="Sales"
+                value={templateId}
+                onSelect={applyTemplate}
+              />
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">
                   {t('invoiceForm.taxesTitle', 'Taxes and Charges')}
@@ -391,7 +447,12 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setTaxes((prev) => [...prev, { accountId: '', rate: 21 }])}
+                  onClick={() =>
+                    setTaxes((prev) => [
+                      ...prev,
+                      { accountId: '', rate: 21, chargeType: 'Add', basis: 'OnNetTotal', fixedAmount: 0 },
+                    ])
+                  }
                 >
                   {t('invoiceForm.addTax', 'Add tax')}
                 </Button>
@@ -406,10 +467,11 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                   <select
                     value={row.accountId}
                     onChange={(e) => updateTax(i, { accountId: e.target.value })}
-                    className="col-span-7 flex h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="col-span-4 flex h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                    aria-label={t('invoiceForm.taxAccountPlaceholder', '-- Posting account --')}
                   >
                     <option value="">
-                      {t('invoiceForm.taxAccountPlaceholder', '-- Liability account --')}
+                      {t('invoiceForm.taxAccountPlaceholder', '-- Posting account --')}
                     </option>
                     {taxAccounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -417,30 +479,71 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                       </option>
                     ))}
                   </select>
+                  <select
+                    value={row.chargeType}
+                    onChange={(e) => updateTax(i, { chargeType: e.target.value as TaxDraft['chargeType'] })}
+                    className="col-span-2 flex h-10 rounded-md border border-slate-200 bg-white px-2 py-2 text-sm"
+                    aria-label={t('invoiceForm.taxChargeLabel', 'Charge type')}
+                  >
+                    <option value="Add">{t('invoiceForm.chargeAdd', 'Traslado')}</option>
+                    <option value="Deduct">{t('invoiceForm.chargeDeduct', 'Retención')}</option>
+                  </select>
+                  <select
+                    value={row.basis}
+                    onChange={(e) => updateTax(i, { basis: e.target.value as TaxDraft['basis'] })}
+                    className="col-span-2 flex h-10 rounded-md border border-slate-200 bg-white px-2 py-2 text-sm"
+                    aria-label={t('invoiceForm.taxBasisLabel', 'Calculation basis')}
+                  >
+                    <option value="OnNetTotal">{t('invoiceForm.basisNet', 'On net')}</option>
+                    <option value="OnPreviousRow">{t('invoiceForm.basisPrevious', 'Cascade')}</option>
+                    <option value="FixedAmount">{t('invoiceForm.basisFixed', 'Fixed')}</option>
+                  </select>
                   <Input
                     type="number"
                     min={0}
-                    max={100}
+                    max={row.basis === 'FixedAmount' ? undefined : 100}
                     step="0.01"
-                    value={row.rate}
-                    onChange={(e) => updateTax(i, { rate: Number(e.target.value) })}
-                    placeholder="%"
+                    value={row.basis === 'FixedAmount' ? row.fixedAmount : row.rate}
+                    onChange={(e) =>
+                      row.basis === 'FixedAmount'
+                        ? updateTax(i, { fixedAmount: Number(e.target.value) })
+                        : updateTax(i, { rate: Number(e.target.value) })
+                    }
+                    placeholder={row.basis === 'FixedAmount' ? t('invoiceForm.fixedPlaceholder', 'Amount') : '%'}
                     className="col-span-3"
+                    aria-label={
+                      row.basis === 'FixedAmount'
+                        ? t('invoiceForm.fixedPlaceholder', 'Amount')
+                        : t('invoiceForm.ratePlaceholder', 'Rate %')
+                    }
                   />
-                  <div className="col-span-2 flex items-center justify-between">
+                  <div className="col-span-1 flex items-center justify-end gap-2">
                     <span className="font-mono text-xs text-slate-600">
-                      {preview.taxRows[i]?.toLocaleString() ?? '0'}
+                      {preview.calc.rows[i]?.amount.toLocaleString() ?? '0'}
                     </span>
                     <button
                       type="button"
                       className="text-xs text-red-600 hover:underline"
                       onClick={() => setTaxes((prev) => prev.filter((_, j) => j !== i))}
+                      aria-label={t('invoiceForm.removeTax', 'Remove tax row')}
                     >
                       ✕
                     </button>
                   </div>
                 </div>
               ))}
+              {taxes.length > 0 && (
+                <TaxBreakdownTable
+                  netBase={preview.base}
+                  rows={taxes.map((row) => ({
+                    rate: Number(row.rate) || 0,
+                    chargeType: row.chargeType,
+                    basis: row.basis,
+                    fixedAmount: Number(row.fixedAmount) || 0,
+                    accountLabel: taxAccountLabel(row.accountId),
+                  }))}
+                />
+              )}
             </div>
 
             {/* Totals preview (server recomputes authoritatively on save) */}
@@ -454,8 +557,12 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                 <span>−{preview.discount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>{t('invoiceForm.totalTax', 'Taxes')}</span>
-                <span>{preview.taxTotal.toLocaleString()}</span>
+                <span>{t('invoiceForm.totalAdd', 'Transferred taxes')}</span>
+                <span>+{preview.calc.addTotal.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-amber-700">
+                <span>{t('invoiceForm.totalDeduct', 'Retentions')}</span>
+                <span>−{preview.calc.deductTotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between border-t border-slate-100 pt-1 text-sm font-bold text-slate-900">
                 <span>{t('invoiceForm.totalGrand', 'Grand Total')}</span>

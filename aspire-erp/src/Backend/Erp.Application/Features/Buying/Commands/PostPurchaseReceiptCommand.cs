@@ -5,7 +5,16 @@ using Erp.Application.Services;
 namespace Erp.Application.Features.Buying.Commands;
 
 /// <summary>One line of a <see cref="PostPurchaseReceiptCommand"/>.</summary>
-public sealed record PostPurchaseReceiptLine(Guid ItemId, decimal Qty, decimal Rate);
+public sealed record PostPurchaseReceiptLine(
+    Guid ItemId,
+    decimal Qty,
+    decimal Rate,
+    // Batch-and-serial Fase 3: receipt batch number (+ master data when creating) and the
+    // exact serials received when the item is serial-tracked.
+    string? BatchNo = null,
+    DateOnly? ManufacturingDate = null,
+    DateOnly? ExpiryDate = null,
+    IReadOnlyList<string>? SerialNumbers = null);
 
 /// <summary>
 /// Creates AND posts one purchase receipt (Task 4.2) in a single transaction: Kardex rows,

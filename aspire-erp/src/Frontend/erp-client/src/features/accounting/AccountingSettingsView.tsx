@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Settings, Building } from 'lucide-react'
+import { Settings, Building, Workflow } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { CompanySettingsModal } from './components/CompanySettingsModal'
+import { PresetApplyModal } from './components/PresetApplyModal'
+import { useTerminology } from '../../lib/terminologyOverlay'
 
 export function AccountingSettingsView() {
   const { t } = useTranslation('accounting')
+  const { t: tCommon } = useTranslation('common')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isPresetOpen, setIsPresetOpen] = useState(false)
+  const { presetName } = useTerminology()
 
   return (
     <div className="space-y-6">
@@ -43,10 +48,42 @@ export function AccountingSettingsView() {
             </Button>
           </div>
         </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="p-6 flex-1 space-y-4">
+            <div className="h-12 w-12 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600">
+              <Workflow className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {tCommon('presets.cardTitle', 'Industry presets & workflows')}
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                {presetName
+                  ? tCommon('presets.cardActive', 'Active vertical: {{name}}. Re-applying never duplicates rows.', {
+                      name: presetName,
+                    })
+                  : tCommon(
+                      'presets.cardDescription',
+                      'Seed custom fields, approval flows, tax templates and screen vocabulary for a vertical in one click.',
+                    )}
+              </p>
+            </div>
+          </div>
+          <div className="bg-slate-50 px-6 py-4 border-t border-slate-100">
+            <Button onClick={() => setIsPresetOpen(true)} className="w-full justify-center">
+              <Workflow className="h-4 w-4 mr-2" />
+              {tCommon('presets.cardButton', 'Browse presets')}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {isModalOpen && (
         <CompanySettingsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      )}
+      {isPresetOpen && (
+        <PresetApplyModal isOpen={isPresetOpen} onClose={() => setIsPresetOpen(false)} />
       )}
     </div>
   )

@@ -1,0 +1,61 @@
+{
+  "key": "automotive",
+  "name": "Automotive / Taller",
+  "description": "Taller mecánico: órdenes de servicio, repuestos y equipos con VIN.",
+  "terminology": {
+    "en": {
+      "selling": {
+        "orderForm.titleNew": "New Service Order"
+      },
+      "stock": {
+        "itemForm.titleNew": "New Spare Part",
+        "itemForm.titleEdit": "Edit Spare Part"
+      },
+      "common": {
+        "nav.item.sellingOrders": "Service Orders"
+      }
+    },
+    "es": {
+      "selling": {
+        "orderForm.titleNew": "Nueva Orden de Servicio"
+      },
+      "stock": {
+        "itemForm.titleNew": "Nuevo Repuesto",
+        "itemForm.titleEdit": "Editar Repuesto"
+      },
+      "common": {
+        "nav.item.sellingOrders": "Órdenes de Servicio"
+      }
+    }
+  },
+  "customFields": [
+    { "entity": "Asset", "field": "vin", "type": "string", "required": true },
+    { "entity": "Asset", "field": "mileage", "type": "number", "required": false }
+  ],
+  "workflows": [
+    {
+      "documentType": "SalesOrder",
+      "name": "Taller",
+      "states": [
+        { "name": "Diagnóstico", "initial": true, "canSubmit": false },
+        { "name": "En Espera de Piezas", "initial": false, "canSubmit": false },
+        { "name": "Presupuesto Aprobado", "initial": false, "canSubmit": false },
+        { "name": "Listo para Facturar", "initial": false, "canSubmit": true }
+      ],
+      "transitions": [
+        { "from": "Diagnóstico", "to": "En Espera de Piezas", "label": "Solicitar piezas", "role": "Mecanico" },
+        { "from": "En Espera de Piezas", "to": "Presupuesto Aprobado", "label": "Aprobar presupuesto", "role": "Asesor" },
+        { "from": "Presupuesto Aprobado", "to": "Listo para Facturar", "label": "Liberar para facturar", "role": "Caja" }
+      ]
+    }
+  ],
+  "taxTemplates": [
+    {
+      "title": "Refacciones gravadas",
+      "category": "Sales",
+      "lines": [
+        { "accountCode": "2108", "description": "IVA 16%", "rate": 16, "chargeType": "Add", "basis": "OnNetTotal" }
+      ]
+    }
+  ]
+}

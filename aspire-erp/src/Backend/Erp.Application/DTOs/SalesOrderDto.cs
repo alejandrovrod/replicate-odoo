@@ -36,7 +36,9 @@ public sealed record SalesOrderDto(
     decimal DeliveredPercentage,
     decimal BilledPercentage,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<SalesOrderLineDto> Lines)
+    IReadOnlyList<SalesOrderLineDto> Lines,
+    // Workflow Fase 5: operational state (null until adopted by the first transition/guard).
+    string? WorkflowState = null)
 {
     /// <summary>
     /// Maps an order aggregate; <paramref name="itemsById"/> resolves line codes/names and
@@ -82,7 +84,8 @@ public sealed record SalesOrderDto(
             order.DeliveredPercentage,
             order.BilledPercentage,
             order.CreatedAt,
-            lines);
+            lines,
+            order.WorkflowState);
     }
 
     /// <summary>

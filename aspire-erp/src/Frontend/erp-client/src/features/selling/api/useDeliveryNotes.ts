@@ -8,6 +8,8 @@ export interface DeliveryNoteLine {
   itemCode: string
   itemName: string
   qty: number
+  /** Batch-and-serial Fase 3: shipped batch (null for untracked lines). */
+  batchId?: string | null
 }
 
 export interface DeliveryNote {
@@ -30,7 +32,14 @@ export async function postDeliveryNote(payload: {
   salesOrderId: string
   warehouseId: string
   postingDate: string
-  lines: { salesOrderItemId: string; itemId: string; qty: number }[]
+  lines: {
+    salesOrderItemId: string
+    itemId: string
+    qty: number
+    /** Batch-and-serial Fase 3: shipped batch + exact serials when tracked. */
+    batchId?: string | null
+    serialNumbers?: string[]
+  }[]
 }): Promise<unknown> {
   const response = await apiClient.post('/v1/delivery-notes', {
     companyId: payload.companyId,

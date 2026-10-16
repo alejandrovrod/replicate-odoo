@@ -1,5 +1,6 @@
 using Erp.Application.Common;
 using Erp.Application.DTOs;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -16,6 +17,7 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
     private readonly IExchangeRateRepository _exchangeRates;
     private readonly IStockRepository _stock;
     private readonly IWarehouseRepository _warehouses;
+    private readonly IEnumerable<IDocumentLifecycleHook<SalesInvoice>>? _hooks;
 
     public SubmitSalesInvoiceCommandHandler(
         ISalesInvoiceRepository salesInvoices,
@@ -24,7 +26,8 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
         IAccountRepository accounts,
         IExchangeRateRepository exchangeRates,
         IStockRepository stock,
-        IWarehouseRepository warehouses)
+        IWarehouseRepository warehouses,
+        IEnumerable<IDocumentLifecycleHook<SalesInvoice>>? hooks = null)
     {
         _salesInvoices = salesInvoices;
         _customers = customers;
@@ -33,6 +36,7 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
         _exchangeRates = exchangeRates;
         _stock = stock;
         _warehouses = warehouses;
+        _hooks = hooks;
     }
 
     public async Task<Result<SalesInvoiceDto>> HandleAsync(SubmitSalesInvoiceCommand request, CancellationToken cancellationToken = default)
@@ -56,6 +60,13 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                 company.EnsurePostingDateUnlocked(invoice.PostingDate);
                 // R-13 FC-04: closed fiscal year rejects the posting too (second half of plan.md §3).
                 await _companies.EnsurePostingDateInOpenYearAsync(company.Id, invoice.PostingDate, token);
+
+                // Extensibility Fase 1 (gap D3): vertical Before hooks run after the Core gates
+                // and BEFORE any write (customer balance, invoice status, GL). A rejection aborts
+                // inside the transaction, so zero ledger rows exist (EXT-G3). The hook's own
+                // stable code (e.g. "insurance_authorization_required") travels verbatim via
+                // LifecycleHookRejectedException, mapped by the catch below.
+                await DocumentLifecycleInvoker.RunBeforeSubmitAsync(_hooks, invoice, token);
 
                 var customer = await _customers.GetByIdAsync(invoice.CustomerId, token);
                 if (customer is null) return Result<SalesInvoiceDto>.Failure(SellingErrorCodes.CustomerNotFound, "Customer not found.");
@@ -90,35 +101,45 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                 Guid receivableAccountId = await ResolveReceivableAccountAsync(customer, company, request.CompanyId, token);
                 Guid incomeAccountId = await ResolveIncomeAccountAsync(company, request.CompanyId, token);
 
-                // Module 17: every tax row re-resolves its liability account at the money gate -
-                // creation-time checks do not survive chart edits between Draft and submit.
+                // Module 17 + tax-engine Fase 2: every tax row re-resolves its account at the
+                // money gate - creation-time checks do not survive chart edits between Draft
+                // and submit. Add rows require a Liability leaf; Deduct rows (suffered
+                // retentions, booked as debit) accept Liability or Asset leaves.
                 var taxAccounts = new Dictionary<Guid, Account>();
                 foreach (var tax in invoice.Taxes)
                 {
-                    taxAccounts[tax.Id] = await RequireTaxAccountAsync(tax.AccountId, company.Id, token);
+                    taxAccounts[tax.Id] = await RequireTaxAccountAsync(tax.AccountId, company.Id, tax.ChargeType, token);
                 }
 
                 if (!invoice.IsReturn)
                 {
-                    // Standard sale: Debit A/R (Grand) / Credit revenue (Net) / Credit taxes.
+                    // Standard sale: Debit A/R (Grand) / Credit revenue (Net) / per-row tax sides.
                     AddMoneyLine(glEntries, invoice, company, customer,
                         receivableAccountId, debit: invoice.GrandTotal, credit: 0m, "Sales Invoice Submission - A/R");
                     AddMoneyLine(glEntries, invoice, company, customer,
                         incomeAccountId, debit: 0m, credit: invoice.NetTotal, "Sales Invoice Submission - Revenue");
 
+                    // Tax-engine Fase 2: sides follow the SIGNED row amount (Add rows are
+                    // positive here → Credit; Deduct rows are negative → Debit, e.g. suffered
+                    // retentions booked as "retención a favor"). Add-only invoices behave
+                    // exactly as module 17 (Credit tax.TaxAmount).
                     foreach (var tax in invoice.Taxes)
                     {
+                        var side = tax.TaxAmount >= 0
+                            ? (debit: 0m, credit: tax.TaxAmount)
+                            : (debit: -tax.TaxAmount, credit: 0m);
                         AddMoneyLine(glEntries, invoice, company, customer,
-                            tax.AccountId, debit: 0m, credit: tax.TaxAmount,
-                            $"Sales Invoice Submission - Tax {tax.Rate:0.##}%");
+                            tax.AccountId, debit: side.debit, credit: side.credit,
+                            $"Sales Invoice Submission - Tax {tax.Rate:0.##}% ({tax.ChargeType})");
                     }
                 }
                 else
                 {
-                    // Module 18 (ERPNext reversal parity): explicit inverse sides with ABSOLUTE
-                    // magnitudes - GLEntry forbids negative Debit/Credit (Constitution IV.3,
-                    // CK_Debit/Credit_NonNegative), so the same engine can never just "multiply
-                    // by -1". Credit A/R / Debit revenue / Debit taxes.
+                    // Module 18 (ERPNext reversal parity) + tax-engine Fase 2: return rows
+                    // already carry MIRRORED signs (negative base flips Add to negative and
+                    // Deduct to positive), so the SAME sign rule books the exact inverse sides
+                    // automatically - GLEntry forbids negative Debit/Credit (Constitution IV.3).
+                    // Credit A/R / Debit revenue / sign-ruled tax sides.
                     var absGrand = Math.Abs(invoice.GrandTotal);
                     var absNet = Math.Abs(invoice.NetTotal);
 
@@ -129,9 +150,12 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
 
                     foreach (var tax in invoice.Taxes)
                     {
+                        var side = tax.TaxAmount >= 0
+                            ? (debit: 0m, credit: tax.TaxAmount)
+                            : (debit: -tax.TaxAmount, credit: 0m);
                         AddMoneyLine(glEntries, invoice, company, customer,
-                            tax.AccountId, debit: Math.Abs(tax.TaxAmount), credit: 0m,
-                            $"Credit Note - Tax reversal {tax.Rate:0.##}%");
+                            tax.AccountId, debit: side.debit, credit: side.credit,
+                            $"Credit Note - Tax reversal {tax.Rate:0.##}% ({tax.ChargeType})");
                     }
                 }
 
@@ -162,12 +186,29 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                 invoice.Customer = customer;
                 await _salesInvoices.AddGlEntriesAsync(glEntries, token);
 
+                // Extensibility Fase 1: After hooks run inside the same transaction, after the
+                // ledger rows are staged - a failure rolls everything back (no half-states).
+                await DocumentLifecycleInvoker.RunAfterSubmitAsync(_hooks, invoice, token);
+
                 return Result<SalesInvoiceDto>.Success(SalesInvoiceDto.Build(invoice));
 
             }, cancellationToken);
         }
         catch (CreditLimitExceededException ex)
         {
+            return Result<SalesInvoiceDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (LifecycleHookRejectedException ex)
+        {
+            // Extensibility Fase 1 (EXT-G3): the hook's own stable code travels verbatim
+            // (e.g. "insurance_authorization_required"); the generic fallback is
+            // "lifecycle_hook_rejected". The transaction rolled back: no GL was posted.
+            return Result<SalesInvoiceDto>.Failure(ex.Code, ex.Message);
+        }
+        catch (WorkflowValidationException ex)
+        {
+            // Workflow Fase 5: the guard's own stable code travels verbatim
+            // (workflow_submit_not_allowed); the invoice stays Draft with zero writes.
             return Result<SalesInvoiceDto>.Failure(ex.Code, ex.Message);
         }
         catch (SalesValidationException ex)
@@ -239,11 +280,12 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
     }
 
     /// <summary>
-    /// Submit-time tax account gate (module 17 task item): postable LIABILITY leaf of the
-    /// company. Mirrors the creation-time rule so chart edits cannot smuggle revenue postings
-    /// into the tax leg between Draft and submit.
+    /// Submit-time tax account gate (module 17 task item + tax-engine Fase 2): postable leaf
+    /// of the company. Mirrors the creation-time rule so chart edits cannot smuggle revenue
+    /// postings into the tax leg between Draft and submit: Add rows require Liability,
+    /// Deduct rows accept Liability or Asset.
     /// </summary>
-    private async Task<Account> RequireTaxAccountAsync(Guid accountId, Guid companyId, CancellationToken token)
+    private async Task<Account> RequireTaxAccountAsync(Guid accountId, Guid companyId, TaxChargeType chargeType, CancellationToken token)
     {
         var account = accountId == Guid.Empty
             ? null
@@ -263,11 +305,16 @@ public sealed class SubmitSalesInvoiceCommandHandler : ICommandHandler<SubmitSal
                 $"Tax account '{account.AccountCode}' must be an active leaf (posting) account.");
         }
 
-        if (account.RootType != AccountRootType.Liability)
+        var allowed = chargeType == TaxChargeType.Deduct
+            ? account.RootType is AccountRootType.Liability or AccountRootType.Asset
+            : account.RootType == AccountRootType.Liability;
+        if (!allowed)
         {
             throw new SalesValidationException(
                 SellingErrorCodes.InvalidTaxAccount,
-                $"Tax account '{account.AccountCode}' must be a Liability account, not '{account.RootType}'.");
+                chargeType == TaxChargeType.Deduct
+                    ? $"Retention account '{account.AccountCode}' must be a Liability or Asset account, not '{account.RootType}'."
+                    : $"Tax account '{account.AccountCode}' must be a Liability account, not '{account.RootType}'.");
         }
 
         return account;

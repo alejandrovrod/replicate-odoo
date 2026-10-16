@@ -29,7 +29,15 @@ public sealed class CreateStockEntryCommandHandler : ICommandHandler<CreateStock
         try
         {
             var lines = (command.Lines ?? (IReadOnlyList<CreateStockEntryLine>)Array.Empty<CreateStockEntryLine>())
-                .Select(line => new StockPostingLine(line.ItemId, line.Qty, line.Rate))
+                .Select(line => new StockPostingLine(
+                    line.ItemId,
+                    line.Qty,
+                    line.Rate,
+                    line.BatchId,
+                    line.BatchNo,
+                    line.ManufacturingDate,
+                    line.ExpiryDate,
+                    line.SerialNumbers))
                 .ToList();
 
             var request = new StockPostingRequest(

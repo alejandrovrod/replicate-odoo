@@ -39,6 +39,11 @@ interface MasterDataListProps<T> {
    */
   pagination?: ListPagination
   actions?: ReactNode
+  /**
+   * Optional filter controls rendered next to the search box. Kept as a slot so each feature
+   * keeps its own filter semantics (e.g. the supplier group picker) without forking the chrome.
+   */
+  filters?: ReactNode
 }
 
 export function MasterDataList<T>({
@@ -52,6 +57,7 @@ export function MasterDataList<T>({
   newButtonText = 'New',
   pagination,
   actions,
+  filters,
 }: MasterDataListProps<T>) {
   // Shared chrome lives in the `common` namespace so this generic list needs no ns prop.
   const { t } = useTranslation('common')
@@ -81,6 +87,7 @@ export function MasterDataList<T>({
 
       <div className="flex items-center space-x-2">
         <Input placeholder={searchPlaceholder} className="max-w-sm" />
+        {filters}
       </div>
 
       <div className="bg-white">

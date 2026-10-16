@@ -21,6 +21,9 @@ public sealed class GetSuppliersQueryHandler : IQueryHandler<GetSuppliersQuery, 
     {
         var page = await _suppliers.GetRecentAsync(
             new PagedRequest(query.PageNumber, query.PageSize),
+            query.GroupId,
+            query.OnHold,
+            query.CompanyId,
             cancellationToken);
         return page.Map(page.Items.Select(SupplierDto.From).ToList());
     }

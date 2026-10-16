@@ -32,7 +32,8 @@ public sealed record CustomerDto(
     string ContactPerson = "",
     string Website = "",
     string PaymentTerms = "",
-    string CustomerDetails = "")
+    string CustomerDetails = "",
+    string? CustomData = null)
 {
     public static CustomerDto From(Customer customer) =>
         new(
@@ -58,5 +59,6 @@ public sealed record CustomerDto(
             customer.ContactPerson,
             customer.Website,
             customer.PaymentTerms,
-            customer.CustomerDetails);
+            customer.CustomerDetails,
+            customer.CustomData);
 }

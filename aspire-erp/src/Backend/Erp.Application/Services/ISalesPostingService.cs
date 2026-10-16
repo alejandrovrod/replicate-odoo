@@ -4,7 +4,14 @@ using Erp.Domain.Exceptions;
 namespace Erp.Application.Services;
 
 /// <summary>One line of a delivery note posting request (qty in the item's Base UOM).</summary>
-public sealed record DeliveryNotePostingLine(Guid SalesOrderItemId, Guid ItemId, decimal Qty);
+public sealed record DeliveryNotePostingLine(
+    Guid SalesOrderItemId,
+    Guid ItemId,
+    decimal Qty,
+    // Batch-and-serial Fase 3: the batch shipped (FEFO-guided, required when tracked) and
+    // the exact serials shipped when the item is serial-tracked.
+    Guid? BatchId = null,
+    IReadOnlyList<string>? SerialNumbers = null);
 
 /// <summary>
 /// Everything the selling posting engine needs to atomically post one delivery note

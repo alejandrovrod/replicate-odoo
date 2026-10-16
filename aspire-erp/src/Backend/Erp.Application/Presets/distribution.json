@@ -1,0 +1,59 @@
+{
+  "key": "distribution",
+  "name": "Distribution / Distribuidora",
+  "description": "Distribuidora: productos con código de barras, surtido y facturación.",
+  "terminology": {
+    "en": {
+      "stock": {
+        "itemForm.titleNew": "New Product",
+        "itemForm.titleEdit": "Edit Product"
+      },
+      "selling": {
+        "invoiceForm.titleNew": "New Sales Invoice"
+      },
+      "common": {
+        "nav.item.sellingInvoices": "Invoices"
+      }
+    },
+    "es": {
+      "stock": {
+        "itemForm.titleNew": "Nuevo Producto",
+        "itemForm.titleEdit": "Editar Producto"
+      },
+      "selling": {
+        "invoiceForm.titleNew": "Nueva Factura de Venta"
+      },
+      "common": {
+        "nav.item.sellingInvoices": "Facturas"
+      }
+    }
+  },
+  "customFields": [
+    { "entity": "Item", "field": "barcode", "type": "string", "required": true },
+    { "entity": "Customer", "field": "creditDays", "type": "number", "required": false }
+  ],
+  "workflows": [
+    {
+      "documentType": "SalesOrder",
+      "name": "Surtido",
+      "states": [
+        { "name": "Recibido", "initial": true, "canSubmit": false },
+        { "name": "Surtido", "initial": false, "canSubmit": false },
+        { "name": "Listo para Facturar", "initial": false, "canSubmit": true }
+      ],
+      "transitions": [
+        { "from": "Recibido", "to": "Surtido", "label": "Surtir pedido", "role": "Almacen" },
+        { "from": "Surtido", "to": "Listo para Facturar", "label": "Liberar para facturar", "role": "Caja" }
+      ]
+    }
+  ],
+  "taxTemplates": [
+    {
+      "title": "IVA trasladado",
+      "category": "Sales",
+      "lines": [
+        { "accountCode": "2108", "description": "IVA 16%", "rate": 16, "chargeType": "Add", "basis": "OnNetTotal" }
+      ]
+    }
+  ]
+}

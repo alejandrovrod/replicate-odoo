@@ -9,10 +9,12 @@ namespace Erp.Application.Features.Selling.Commands;
 public sealed class UpdateCustomerCommandHandler : ICommandHandler<UpdateCustomerCommand, Result<CustomerDto>>
 {
     private readonly ICustomerRepository _repository;
+    private readonly ICustomFieldValidator? _customFields;
 
-    public UpdateCustomerCommandHandler(ICustomerRepository repository)
+    public UpdateCustomerCommandHandler(ICustomerRepository repository, ICustomFieldValidator? customFields = null)
     {
         _repository = repository;
+        _customFields = customFields;
     }
 
     public async Task<Result<CustomerDto>> HandleAsync(UpdateCustomerCommand request, CancellationToken cancellationToken = default)
@@ -61,6 +63,22 @@ public sealed class UpdateCustomerCommandHandler : ICommandHandler<UpdateCustome
         if (request.Website is not null) customer.Website = request.Website.Trim();
         if (request.PaymentTerms is not null) customer.PaymentTerms = request.PaymentTerms.Trim();
         if (request.CustomerDetails is not null) customer.CustomerDetails = request.CustomerDetails.Trim();
+
+        // Extensibility Fase 1: null means "not sent" (keep stored value), like the profile
+        // fields above; an explicit value (including empty, which clears) is validated first.
+        if (request.CustomData is not null)
+        {
+            if (_customFields is not null)
+            {
+                var customError = await _customFields.ValidateAsync("Customer", request.CustomData, cancellationToken);
+                if (customError is not null)
+                {
+                    return Result<CustomerDto>.Failure(customError.Code, customError.Message);
+                }
+            }
+
+            customer.CustomData = request.CustomData;
+        }
 
         customer.PaymentTermsDays = request.PaymentTermsDays;
         

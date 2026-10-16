@@ -32,7 +32,9 @@ public sealed record PurchaseOrderDto(
     decimal ReceivedPercentage,
     decimal BilledPercentage,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<PurchaseOrderItemDto> Items)
+    IReadOnlyList<PurchaseOrderItemDto> Items,
+    // Workflow Fase 5: operational state (null until adopted by the first transition/guard).
+    string? WorkflowState = null)
 {
     /// <summary>Maps an order aggregate; <paramref name="itemsById"/> resolves line codes/names.</summary>
     public static PurchaseOrderDto Build(
@@ -73,6 +75,7 @@ public sealed record PurchaseOrderDto(
             order.ReceivedPercentage,
             order.BilledPercentage,
             order.CreatedAt,
-            items);
+            items,
+            order.WorkflowState);
     }
 }

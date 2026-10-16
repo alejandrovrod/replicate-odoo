@@ -13,7 +13,7 @@ public enum SalesInvoiceStatus
     Cancelled = 5
 }
 
-public sealed class SalesInvoice : ITenantEntity
+public sealed class SalesInvoice : ITenantEntity, ICustomFieldsCarrier, IWorkflowCarrier
 {
     public Guid Id { get; set; }
     public Guid TenantId { get; set; }
@@ -70,6 +70,15 @@ public sealed class SalesInvoice : ITenantEntity
     
     public byte[] RowVersion { get; set; } = null!;
     public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>Tenant-configured dynamic attributes, see <see cref="ICustomFieldsCarrier"/>.</summary>
+    public string? CustomData { get; set; }
+
+    /// <summary>
+    /// Operational workflow state (workflow Fase 5, <see cref="IWorkflowCarrier"/>): see
+    /// <see cref="SalesOrder.WorkflowState"/> - same contract, SalesInvoice flow.
+    /// </summary>
+    public string? WorkflowState { get; set; }
 
     public ICollection<SalesInvoiceItem> Items { get; set; } = new List<SalesInvoiceItem>();
 

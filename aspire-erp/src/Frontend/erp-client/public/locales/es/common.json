@@ -106,6 +106,7 @@
       "assetsCategories": "Categorías de Activos",
       "banking": "Banco y concil.",
       "stock": "Stock y Kardex",
+      "stockLandedCost": "Costos de adquisición",
       "manufacturing": "Fabricación",
       "selling": "Ventas y PDV",
       "sellingOverview": "Estudio de ventas",
@@ -114,6 +115,7 @@
       "sellingInvoices": "Facturas de venta",
       "sellingDeliveries": "Remitos",
       "buying": "Compras y prov.",
+      "buyingSuppliers": "Proveedores",
       "hrPayroll": "RRHH y nómina",
       "crm": "CRM y pipeline",
       "accountingCurrencies": "Monedas",
@@ -204,6 +206,29 @@
     "tooLong": "El valor es demasiado largo",
     "min": "Debe ser al menos {{min}}",
     "max": "Debe ser como máximo {{max}}"
+  },
+  "customFields": {
+    "title": "Campos personalizados",
+    "selectNone": "-- Seleccionar --"
+  },
+  "workflow": {
+    "currentState": "Estado operativo",
+    "transitionError": "La transición falló.",
+    "requiresRole": "Requiere rol {{role}}",
+    "working": "…"
+  },
+  "presets": {
+    "title": "Presets de industria",
+    "subtitle": "Un clic siembra campos personalizados, flujos de aprobación, plantillas fiscales y vocabulario de pantalla para una vertical. Reaplicar nunca duplica renglones.",
+    "loading": "Cargando presets…",
+    "apply": "Aplicar",
+    "applying": "…",
+    "applied": "{{name}} aplicado: {{fields}} campos, {{flows}} flujos, {{taxes}} plantillas ({{skipped}} renglones ya existían).",
+    "applyError": "No se pudo aplicar el preset.",
+    "cardTitle": "Presets de industria y flujos",
+    "cardDescription": "Sembrá campos, flujos de aprobación, plantillas fiscales y vocabulario para una vertical en un clic.",
+    "cardActive": "Vertical activa: {{name}}. Reaplicar nunca duplica renglones.",
+    "cardButton": "Explorar presets"
   },
   "error": {
     "network": "No se pudo conectar con el servidor",

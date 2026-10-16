@@ -60,6 +60,35 @@ public sealed class StockRepository : IStockRepository, IStockLedgerReportReposi
             .ToListAsync(cancellationToken);
 
     /// <summary>
+    /// Batch-and-serial Fase 3: per-batch on-hand quantities from the same Kardex SUMs the
+    /// FIFO engine reads (batches with a zero balance are excluded - nothing to dispatch).
+    /// </summary>
+    public async Task<IReadOnlyList<BatchBalance>> GetBatchBalancesAsync(
+        Guid itemId,
+        Guid warehouseId,
+        DateOnly asOf,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _dbContext.StockLedgerEntries
+            .Where(e => e.ItemId == itemId
+                && e.WarehouseId == warehouseId
+                && e.PostingDate <= asOf
+                && e.BatchId.HasValue)
+            .GroupBy(e => e.BatchId!.Value)
+            .Select(g => new
+            {
+                BatchId = g.Key,
+                Qty = g.Sum(e => e.QtyChange),
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .Where(r => r.Qty != 0m)
+            .Select(r => new BatchBalance(r.BatchId, r.Qty))
+            .ToList();
+    }
+
+    /// <summary>
     /// Task 3.9: SELECT ... WITH (UPDLOCK, HOLDLOCK) over the Kardex rows of the given (item,
     /// warehouse) pairs inside the AMBIENT posting transaction. UPDLOCK makes competing consumers
     /// queue on this range instead of taking shared locks, and HOLDLOCK (serializable) keeps the

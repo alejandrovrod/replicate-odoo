@@ -60,6 +60,17 @@ public interface IStockRepository
     /// </summary>
     Task<IReadOnlyList<StockBalance>> GetStockBalancesByCompanyAsync(Guid companyId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Batch-and-serial Fase 3: on-hand quantity per batch of one (item, warehouse) pair with
+    /// <c>PostingDate &lt;= asOf</c> - the raw material of per-batch availability (FEFO) and of
+    /// the issue-side batch-sufficiency gate. Only batches with a non-zero balance are returned.
+    /// </summary>
+    Task<IReadOnlyList<BatchBalance>> GetBatchBalancesAsync(
+        Guid itemId,
+        Guid warehouseId,
+        DateOnly asOf,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Persists one stock voucher with its lines (inside the ambient posting transaction).</summary>
     Task AddStockEntryAsync(StockEntry stockEntry, CancellationToken cancellationToken = default);
 
@@ -100,6 +111,9 @@ public interface IStockRepository
 
 /// <summary>Read-model row for one (item, warehouse) pair inside a company.</summary>
 public sealed record StockBalance(Guid ItemId, Guid WarehouseId, decimal Qty, decimal Value);
+
+/// <summary>Batch-and-serial Fase 3: on-hand quantity of one batch in one warehouse.</summary>
+public sealed record BatchBalance(Guid BatchId, decimal Qty);
 
 /// <summary>Aggregate snapshot behind GET /api/v1/stock/summary (all scalars, no rows).</summary>
 public sealed record StockSummary(

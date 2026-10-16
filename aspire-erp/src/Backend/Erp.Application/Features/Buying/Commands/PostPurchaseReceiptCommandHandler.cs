@@ -33,7 +33,8 @@ public sealed class PostPurchaseReceiptCommandHandler
                 command.PurchaseOrderId,
                 command.PostingDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
                 (command.Lines ?? Array.Empty<PostPurchaseReceiptLine>())
-                    .Select(l => new PurchaseReceiptPostingLine(l.ItemId, l.Qty, l.Rate))
+                    .Select(l => new PurchaseReceiptPostingLine(
+                        l.ItemId, l.Qty, l.Rate, l.BatchNo, l.ManufacturingDate, l.ExpiryDate, l.SerialNumbers))
                     .ToList());
 
             var result = await _posting.PostReceiptAsync(request, cancellationToken);

@@ -21,6 +21,14 @@ public sealed class StockEntryItemConfiguration : IEntityTypeConfiguration<Stock
         builder.Property(l => l.Rate).HasColumnType("decimal(18,6)");
         builder.Property(l => l.LineNumber).IsRequired();
 
+        // Batch-and-serial Fase 3: optional batch provenance (Restrict: a referenced batch
+        // cannot be deleted out from under its movements - batches retire via IsDisabled).
+        builder.HasOne(l => l.Batch)
+            .WithMany()
+            .HasForeignKey(l => l.BatchId)
+            .HasConstraintName("FK_StockEntryItem_Batch")
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(l => l.Item)
             .WithMany()
             .HasForeignKey(l => l.ItemId)

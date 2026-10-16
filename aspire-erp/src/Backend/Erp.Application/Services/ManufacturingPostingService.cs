@@ -497,7 +497,7 @@ public sealed class ManufacturingPostingService : IManufacturingPostingService
             lines);
 
         var ledgerDtos = ledger
-            .Select(e => new StockLedgerEntryDto(e.Id, e.ItemId, e.WarehouseId, e.PostingDate, e.QtyChange, e.ValuationRate, e.Amount))
+            .Select(e => new StockLedgerEntryDto(e.Id, e.ItemId, e.WarehouseId, e.PostingDate, e.QtyChange, e.ValuationRate, e.Amount, e.BatchId))
             .ToList();
 
         var totalDebit = 0m;

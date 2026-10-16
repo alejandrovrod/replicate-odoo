@@ -68,6 +68,16 @@ public static class FifoValuation
 
             if (entry.QtyChange == 0)
             {
+                // Landed-cost revaluation (Fase 4): a zero-quantity row with a value delta
+                // spreads over the currently open layers proportionally to remaining qty
+                // (landed costs attach to all on-hand stock). Pure no-op rows (Amount == 0)
+                // keep the historical skip. Shares round to 4 decimals with the residual
+                // absorbed by the last layer, so value is exact; layer rates re-round to 6.
+                if (entry.Amount != 0m)
+                {
+                    ApplyRevaluation(layers, entry.Amount);
+                }
+
                 continue;
             }
 
@@ -104,6 +114,56 @@ public static class FifoValuation
         }
 
         return layers;
+    }
+
+    /// <summary>
+    /// Landed-cost revaluation (Fase 4): spreads a value delta over the open layers
+    /// proportionally to remaining quantity, re-rating each layer in place. The last open
+    /// layer absorbs the rounding residual, so the total value moves by exactly
+    /// <paramref name="amount"/>. Layers with no remaining units are untouched; with no
+    /// open layer at all the delta has nowhere to attach and the layers are returned
+    /// unchanged (callers gate this with a no-stock rejection before posting).
+    /// </summary>
+    public static void ApplyRevaluation(List<FifoLayer> layers, decimal amount)
+    {
+        ArgumentNullException.ThrowIfNull(layers);
+
+        var open = new List<int>(layers.Count);
+        var totalQty = 0m;
+        for (var i = 0; i < layers.Count; i++)
+        {
+            if (layers[i].RemainingQty > 0)
+            {
+                open.Add(i);
+                totalQty += layers[i].RemainingQty;
+            }
+        }
+
+        if (open.Count == 0 || totalQty <= 0)
+        {
+            return;
+        }
+
+        var distributed = 0m;
+        for (var k = 0; k < open.Count; k++)
+        {
+            var i = open[k];
+            var layer = layers[i];
+            decimal share;
+            if (k == open.Count - 1)
+            {
+                share = amount - distributed;
+            }
+            else
+            {
+                share = Math.Round(amount * layer.RemainingQty / totalQty, 4, MidpointRounding.AwayFromZero);
+                distributed += share;
+            }
+
+            var newRate = Math.Round(
+                (layer.RemainingQty * layer.Rate + share) / layer.RemainingQty, 6, MidpointRounding.AwayFromZero);
+            layers[i] = layer with { Rate = newRate };
+        }
     }
 
     /// <summary>

@@ -20,6 +20,20 @@ public static class PurchaseErrorCodes
     public const string InvalidCurrency = "invalid_currency";
     public const string InvalidPaymentTerms = "invalid_payment_terms";
 
+    // Supplier groups (module buying-suppliers, spec §1 gap D1)
+    public const string SupplierGroupNotFound = "supplier_group_not_found";
+    public const string DuplicateSupplierGroupCode = "duplicate_supplier_group_code";
+    public const string SupplierGroupCodeRequired = "supplier_group_code_required";
+    public const string SupplierGroupNameRequired = "supplier_group_name_required";
+
+    // Supplier governance / hold (spec §1 gap D4, scenarios SUP-G2/SUP-G3).
+    // On the wire these map to RFC 7807 422 Unprocessable Entity (the document is well-formed but
+    // the supplier's state forbids it), unlike the field-level codes above (400).
+    public const string SupplierOnHoldInvoices = "supplier_on_hold_invoices";
+    public const string SupplierOnHoldPayments = "supplier_on_hold_payments";
+    public const string SupplierOnHold = "supplier_on_hold";
+    public const string SupplierFrozen = "supplier_frozen";
+
     // Purchase order (Task 4.1)
     public const string PurchaseOrderNotFound = "purchase_order_not_found";
     public const string InvalidStatusTransition = "invalid_status_transition";

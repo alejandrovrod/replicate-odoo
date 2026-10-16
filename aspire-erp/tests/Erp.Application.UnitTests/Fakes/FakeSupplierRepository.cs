@@ -41,16 +41,39 @@ public sealed class FakeSupplierRepository : ISupplierRepository
         => Task.FromResult<IReadOnlyList<Supplier>>(
             _suppliers.Where(s => supplierIds.Contains(s.Id)).ToList());
 
-    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository).
-    public Task<PagedResult<Supplier>> GetRecentAsync(PagedRequest paging, CancellationToken cancellationToken = default)
-        => Task.FromResult(
-            new PagedResult<Supplier>(
-                _suppliers
-                    .OrderByDescending(s => s.CreatedAt)
-                    .ThenByDescending(s => s.Id)
-                    .ToList(),
-                _suppliers.Count,
-                paging.SafePageNumber,
-                paging.SafePageSize));
+    // In-memory fakes ignore paging and return the whole seeded set (see FakeCustomerRepository),
+    // but the module buying-suppliers filters are honored so the query handler can be exercised.
+    public Task<PagedResult<Supplier>> GetRecentAsync(
+        PagedRequest paging,
+        Guid? supplierGroupId = null,
+        bool? onHold = null,
+        Guid? companyId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var filtered = _suppliers.AsEnumerable();
+
+        if (supplierGroupId.HasValue)
+        {
+            filtered = filtered.Where(s => s.SupplierGroupId == supplierGroupId.Value);
+        }
+
+        if (onHold.HasValue)
+        {
+            filtered = filtered.Where(s => s.OnHold == onHold.Value);
+        }
+
+        if (companyId.HasValue)
+        {
+            filtered = filtered.Where(s => s.Accounts.Any(a => a.CompanyId == companyId.Value));
+        }
+
+        var items = filtered
+            .OrderByDescending(s => s.CreatedAt)
+            .ThenByDescending(s => s.Id)
+            .ToList();
+
+        return Task.FromResult(
+            new PagedResult<Supplier>(items, items.Count, paging.SafePageNumber, paging.SafePageSize));
+    }
 }
 

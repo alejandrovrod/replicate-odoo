@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/Dialog';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { createRevaluation, getRevaluationPreview, type RevaluationPreview } from '../api/useExchangeRateRevaluations';
 import { useTenantStore } from '../../../store/useTenantStore';
 import { useTranslation } from 'react-i18next';
+import { useAccountTree } from '../useAccountTree';
 
 interface Props {
     onClose: () => void;
@@ -18,6 +19,23 @@ export const ExchangeRateRevaluationModal: React.FC<Props> = ({ onClose }) => {
     const [allowance, setAllowance] = useState('0.01');
     const [fxAccountId, setFxAccountId] = useState('');
 
+    const { nodes, status: accountsStatus } = useAccountTree(companyId || '');
+
+    const expenseIncomeAccounts = useMemo(() => {
+        const list: { id: string; name: string; code: string; rootType: string }[] = [];
+        if (accountsStatus !== 'success') return list;
+        const walk = (treeNodes: any[]) => {
+            for (const node of treeNodes) {
+                if (!node.isGroup && node.isActive && (node.rootType === 'Expense' || node.rootType === 'Income')) {
+                    list.push({ id: node.id, name: node.name, code: node.code, rootType: node.rootType });
+                }
+                if (node.children) walk(node.children);
+            }
+        };
+        walk(nodes);
+        return list;
+    }, [nodes, accountsStatus]);
+
     const [preview, setPreview] = useState<RevaluationPreview | null>(null);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -29,7 +47,7 @@ export const ExchangeRateRevaluationModal: React.FC<Props> = ({ onClose }) => {
         setError('');
         setPreview(null);
         try {
-            const data = await getRevaluationPreview(companyId, new Date(postingDate).toISOString(), parseFloat(allowance) || 0, fxAccountId || undefined);
+            const data = await getRevaluationPreview(companyId, postingDate, parseFloat(allowance) || 0, fxAccountId || undefined);
             setPreview(data);
         } catch (e: any) {
             setError(e.message || 'Preview error');
@@ -45,7 +63,7 @@ export const ExchangeRateRevaluationModal: React.FC<Props> = ({ onClose }) => {
         try {
             await createRevaluation({
                 companyId,
-                postingDate: new Date(postingDate).toISOString(),
+                postingDate: postingDate,
                 roundingLossAllowance: parseFloat(allowance),
                 exchangeGainLossAccountId: fxAccountId || undefined
             });
@@ -77,7 +95,18 @@ export const ExchangeRateRevaluationModal: React.FC<Props> = ({ onClose }) => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1">{t('fxRevaluation.formAccount')}</label>
-                        <Input type="text" value={fxAccountId} onChange={e => setFxAccountId(e.target.value)} placeholder={t('fxRevaluation.formAccountPlaceholder')} />
+                        <select
+                            value={fxAccountId}
+                            onChange={e => setFxAccountId(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-200 disabled:opacity-50"
+                        >
+                            <option value="">{t('fxRevaluation.formAccountPlaceholder', 'Overrides company default')}</option>
+                            {expenseIncomeAccounts.map((acc) => (
+                                <option key={acc.id} value={acc.id}>
+                                    {acc.code} - {acc.name} ({acc.rootType})
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
                 

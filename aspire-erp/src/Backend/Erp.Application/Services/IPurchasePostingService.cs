@@ -5,7 +5,14 @@ using Erp.Domain.Exceptions;
 namespace Erp.Application.Services;
 
 /// <summary>One line of a purchase receipt posting request (qty in the item's Base UOM, rate values the stock).</summary>
-public sealed record PurchaseReceiptPostingLine(Guid ItemId, decimal Qty, decimal Rate);
+public sealed record PurchaseReceiptPostingLine(
+    Guid ItemId,
+    decimal Qty,
+    decimal Rate,
+    string? BatchNo = null,
+    DateOnly? ManufacturingDate = null,
+    DateOnly? ExpiryDate = null,
+    IReadOnlyList<string>? SerialNumbers = null);
 
 /// <summary>
 /// Everything the buying posting engine needs to atomically post one purchase receipt
@@ -30,8 +37,23 @@ public sealed record PurchaseInvoicePostingLine(
     decimal Rate);
 
 /// <summary>
+/// One "Taxes and Charges" input row (tax-engine Fase 2): the account and the computation
+/// shape travel on the wire - amounts are ALWAYS recomputed server-side by
+/// <c>ITaxEngineService</c>. Charge and basis default to Add on the payable net.
+/// </summary>
+public sealed record PurchaseInvoiceTaxInput(
+    Guid AccountId,
+    decimal Rate,
+    TaxChargeType ChargeType = TaxChargeType.Add,
+    TaxCalculationBasis CalculationBasis = TaxCalculationBasis.OnNetTotal,
+    decimal FixedAmount = 0m);
+
+/// <summary>
 /// Everything the buying posting engine needs to atomically post one purchase invoice
-/// (Task 4.3 / spec BY-01). There is no draft state: the request IS the posting.
+/// (Task 4.3 / spec BY-01 + tax-engine Fase 2). There is no draft state: the request IS the
+/// posting. <see cref="Taxes"/> carries explicit tax rows; when null AND
+/// <see cref="TaxTemplateId"/> is null, the legacy scalar <see cref="TaxAmount"/> posts
+/// exactly as before.
 /// </summary>
 public sealed record PurchaseInvoicePostingRequest(
     Guid CompanyId,
@@ -41,7 +63,9 @@ public sealed record PurchaseInvoicePostingRequest(
     DateOnly PostingDate,
     DateOnly DueDate,
     decimal TaxAmount,
-    IReadOnlyList<PurchaseInvoicePostingLine> Lines);
+    IReadOnlyList<PurchaseInvoicePostingLine> Lines,
+    IReadOnlyList<PurchaseInvoiceTaxInput>? Taxes = null,
+    Guid? TaxTemplateId = null);
 
 /// <summary>
 /// One line of a purchase return (module 19, T1): the ORIGINAL invoice line being returned plus the

@@ -9,10 +9,12 @@ namespace Erp.Application.Features.Items.Commands;
 public sealed class UpdateItemCommandHandler : ICommandHandler<UpdateItemCommand, Result<ItemDto>>
 {
     private readonly IItemRepository _repository;
+    private readonly ICustomFieldValidator? _customFields;
 
-    public UpdateItemCommandHandler(IItemRepository repository)
+    public UpdateItemCommandHandler(IItemRepository repository, ICustomFieldValidator? customFields = null)
     {
         _repository = repository;
+        _customFields = customFields;
     }
 
     public async Task<Result<ItemDto>> HandleAsync(UpdateItemCommand request, CancellationToken cancellationToken = default)
@@ -50,6 +52,26 @@ public sealed class UpdateItemCommandHandler : ICommandHandler<UpdateItemCommand
         item.IncomeAccountId = request.IncomeAccountId;
         item.ExpenseAccountId = request.ExpenseAccountId;
         item.IsActive = request.IsActive;
+
+        // Batch-and-serial Fase 3: traceability flags are master data (no movement impact
+        // on change; in-flight vouchers already validated against the previous flags).
+        item.HasBatchNo = request.HasBatchNo;
+        item.HasSerialNo = request.HasSerialNo;
+
+        // Extensibility Fase 1: null means "not sent" (keep); an explicit value is validated.
+        if (request.CustomData is not null)
+        {
+            if (_customFields is not null)
+            {
+                var customError = await _customFields.ValidateAsync("Item", request.CustomData, cancellationToken);
+                if (customError is not null)
+                {
+                    return Result<ItemDto>.Failure(customError.Code, customError.Message);
+                }
+            }
+
+            item.CustomData = request.CustomData;
+        }
 
         await _repository.UpdateAsync(item, cancellationToken);
 

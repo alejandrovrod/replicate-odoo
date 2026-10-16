@@ -63,6 +63,15 @@ public class StockLedgerEntry : ITenantEntity
     public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
+    /// Batch-and-serial Fase 3: the batch this movement belongs to (null for untracked
+    /// items). Per-batch balances are plain SUMs over these rows, so cancellations revert
+    /// batch quantities automatically through their compensating rows.
+    /// </summary>
+    public Guid? BatchId { get; set; }
+
+    public Batch? Batch { get; set; }
+
+    /// <summary>
     /// True when this row IS a compensating reversal of a cancelled voucher, or if it is the original
     /// row that was cancelled (Constitution III.3).
     /// </summary>

@@ -34,6 +34,10 @@ public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<Purcha
         builder.Property(o => o.TransactionDate).HasColumnType("date").IsRequired();
         builder.Property(o => o.ScheduleDate).HasColumnType("date").IsRequired();
         builder.Property(o => o.OrderNumber).HasMaxLength(50).IsRequired();
+
+        // Workflow Fase 5: free-text operational state (NULL until adopted). Never drives
+        // the ledger - only gates the Draft → Submitted move via CanSubmit states.
+        builder.Property(o => o.WorkflowState).HasMaxLength(50);
         
         builder.Property(o => o.NetTotal).HasColumnType("decimal(18,4)").HasDefaultValue(0.0000m);
         builder.Property(o => o.TaxTotal).HasColumnType("decimal(18,4)").HasDefaultValue(0.0000m);

@@ -106,6 +106,7 @@
       "assetsCategories": "Asset Categories",
       "banking": "Banking & Rec",
       "stock": "Stock & Kardex",
+      "stockLandedCost": "Landed Costs",
       "manufacturing": "Manufacturing",
       "selling": "Selling & POS",
       "sellingOverview": "Sales Studio",
@@ -114,6 +115,7 @@
       "sellingInvoices": "Sales Invoices",
       "sellingDeliveries": "Deliveries",
       "buying": "Buying & Vendors",
+      "buyingSuppliers": "Suppliers",
       "hrPayroll": "HR & Payroll",
       "crm": "CRM & Pipeline",
       "accountingCurrencies": "Currencies",
@@ -204,6 +206,29 @@
     "tooLong": "Value is too long",
     "min": "Must be at least {{min}}",
     "max": "Must be at most {{max}}"
+  },
+  "customFields": {
+    "title": "Custom Fields",
+    "selectNone": "-- Select --"
+  },
+  "workflow": {
+    "currentState": "Operational state",
+    "transitionError": "The transition failed.",
+    "requiresRole": "Requires role {{role}}",
+    "working": "…"
+  },
+  "presets": {
+    "title": "Industry presets",
+    "subtitle": "One click seeds custom fields, approval flows, tax templates and screen vocabulary for a vertical. Re-applying never duplicates rows.",
+    "loading": "Loading presets…",
+    "apply": "Apply",
+    "applying": "…",
+    "applied": "Applied {{name}}: {{fields}} custom fields, {{flows}} workflows, {{taxes}} tax templates ({{skipped}} rows already existed).",
+    "applyError": "Could not apply the preset.",
+    "cardTitle": "Industry presets & workflows",
+    "cardDescription": "Seed custom fields, approval flows, tax templates and screen vocabulary for a vertical in one click.",
+    "cardActive": "Active vertical: {{name}}. Re-applying never duplicates rows.",
+    "cardButton": "Browse presets"
   },
   "error": {
     "network": "Could not reach the server",

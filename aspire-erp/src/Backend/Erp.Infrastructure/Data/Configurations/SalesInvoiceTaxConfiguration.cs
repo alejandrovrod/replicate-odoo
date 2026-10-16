@@ -22,6 +22,20 @@ public sealed class SalesInvoiceTaxConfiguration : IEntityTypeConfiguration<Sale
         builder.Property(t => t.Rate).HasColumnType("decimal(5,2)").IsRequired().HasDefaultValue(0);
         builder.Property(t => t.TaxAmount).HasColumnType("decimal(18,4)").IsRequired().HasDefaultValue(0);
 
+        // Tax-engine Fase 2: direction/basis persist as NAMEs (the enum precedent), base at
+        // money precision. Defaults preserve the module-17 flat Add-on-net behavior.
+        builder.Property(t => t.ChargeType)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired()
+            .HasDefaultValue(TaxChargeType.Add);
+        builder.Property(t => t.CalculationBasis)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired()
+            .HasDefaultValue(TaxCalculationBasis.OnNetTotal);
+        builder.Property(t => t.BaseAmount).HasColumnType("decimal(18,4)").IsRequired().HasDefaultValue(0m);
+
         builder.HasOne(t => t.SalesInvoice)
             .WithMany(s => s.Taxes)
             .HasForeignKey(t => t.SalesInvoiceId)

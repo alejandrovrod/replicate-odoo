@@ -10,12 +10,15 @@ export interface SalesInvoiceItem {
   amount: number
 }
 
-/** Mirrors SalesInvoiceTaxDto (module 17): amounts always arrive server-computed. */
+/** Mirrors SalesInvoiceTaxDto (tax-engine Fase 2): amounts always arrive server-computed. */
 export interface SalesInvoiceTax {
   id: string
   accountId: string
   rate: number
   taxAmount: number
+  chargeType?: 'Add' | 'Deduct'
+  calculationBasis?: 'OnNetTotal' | 'OnPreviousRow' | 'FixedAmount'
+  baseAmount?: number
 }
 
 export interface SalesInvoice {
@@ -59,8 +62,14 @@ export interface CreateSalesInvoicePayload {
   /** Module 17: percentage wins when no explicit amount travels (both must agree). */
   discountPercentage?: number
   discountAmount?: number
-  /** Module 17: only account + rate travel - amounts are recomputed server-side. */
-  taxes?: { accountId: string; rate: number }[]
+  /** Module 17 + tax-engine Fase 2: computation shape travels, amounts recomputed server-side. */
+  taxes?: {
+    accountId: string
+    rate: number
+    chargeType?: 'Add' | 'Deduct'
+    calculationBasis?: 'OnNetTotal' | 'OnPreviousRow' | 'FixedAmount'
+    fixedAmount?: number
+  }[]
   /** Module 18: credit-note mode; lines must carry negative quantities. */
   isReturn?: boolean
   returnAgainstId?: string | null

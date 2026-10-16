@@ -9,11 +9,19 @@ public sealed class CancelStockEntryCommandHandler : ICommandHandler<CancelStock
 {
     private readonly IStockRepository _stock;
     private readonly ICompanyRepository _companies;
+    private readonly ISerialNoRepository? _serials;
 
-    public CancelStockEntryCommandHandler(IStockRepository stock, ICompanyRepository companies)
+    public CancelStockEntryCommandHandler(
+        IStockRepository stock,
+        ICompanyRepository companies,
+        ISerialNoRepository? serials = null)
     {
         _stock = stock;
         _companies = companies;
+        // Optional for legacy direct constructions (older tests post untracked items only):
+        // serial revert is skipped when unwired, batch quantities still revert through the
+        // compensating Kardex rows below.
+        _serials = serials;
     }
 
     public async Task<Result<bool>> HandleAsync(CancelStockEntryCommand request, CancellationToken cancellationToken)
@@ -77,6 +85,7 @@ public sealed class CancelStockEntryCommandHandler : ICommandHandler<CancelStock
                     TenantId = sle.TenantId,
                     ItemId = sle.ItemId,
                     WarehouseId = sle.WarehouseId,
+                    BatchId = sle.BatchId,
                     StockEntryId = sle.StockEntryId,
                     VoucherType = sle.VoucherType,
                     VoucherNo = sle.VoucherNo,
@@ -121,7 +130,63 @@ public sealed class CancelStockEntryCommandHandler : ICommandHandler<CancelStock
             await _stock.AddLedgerEntriesAsync(newSles, token);
             await _stock.AddGlEntriesAsync(newGls, token);
 
+            // Batch-and-serial Fase 3: batch quantities revert through the compensating rows
+            // above (derived balances); serials revert by movement direction - receipt rows
+            // (created-new by the global-uniqueness boundary) are deleted, delivered rows go
+            // back to Active with their dispatch refs cleared, transferred rows move back to
+            // the source warehouse.
+            if (_serials is not null)
+            {
+                await RevertSerialsAsync(entry, token);
+            }
+
             return Result<bool>.Success(true);
         }, cancellationToken);
+    }
+
+    private async Task RevertSerialsAsync(StockEntry entry, CancellationToken token)
+    {
+        var lineIds = entry.Items.Select(l => l.Id).ToList();
+        if (lineIds.Count == 0)
+        {
+            return;
+        }
+
+        var serials = await _serials!.GetByStockEntryItemIdsAsync(lineIds, token);
+        if (serials.Count == 0)
+        {
+            return;
+        }
+
+        switch (entry.EntryType)
+        {
+            case StockEntryType.MaterialReceipt:
+                // Only never-moved rows are still linked here (any onward move re-links to
+                // the moving line), so deletion is exact.
+                await _serials.DeleteRangeAsync(serials, token);
+                break;
+            case StockEntryType.MaterialIssue:
+                foreach (var serial in serials)
+                {
+                    serial.Status = SerialNoStatus.Active;
+                    serial.DeliveryDate = null;
+                    serial.DeliveryDocumentNo = null;
+                    serial.StockEntryItemId = null;
+                }
+
+                await _serials.UpdateRangeAsync(serials, token);
+                break;
+            case StockEntryType.MaterialTransfer:
+                foreach (var serial in serials)
+                {
+                    serial.CurrentWarehouseId = entry.WarehouseId;
+                    serial.StockEntryItemId = null;
+                }
+
+                await _serials.UpdateRangeAsync(serials, token);
+                break;
+            default:
+                break;
+        }
     }
 }

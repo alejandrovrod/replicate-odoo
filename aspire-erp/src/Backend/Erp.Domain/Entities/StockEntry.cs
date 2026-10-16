@@ -110,4 +110,12 @@ public class StockEntryItem
 
     /// <summary>1-based line number inside the voucher.</summary>
     public int LineNumber { get; set; }
+
+    /// <summary>
+    /// Batch-and-serial Fase 3: the batch this line moves. Required when the item tracks
+    /// batches; the Kardex rows built from this line carry it for per-batch balances.
+    /// </summary>
+    public Guid? BatchId { get; set; }
+
+    public Batch? Batch { get; set; }
 }

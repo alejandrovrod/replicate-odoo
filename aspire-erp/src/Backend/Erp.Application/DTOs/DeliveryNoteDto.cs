@@ -9,7 +9,9 @@ public sealed record DeliveryNoteLineDto(
     Guid ItemId,
     string ItemCode,
     string ItemName,
-    decimal Qty);
+    decimal Qty,
+    // Batch-and-serial Fase 3: shipped batch (null for untracked items).
+    Guid? BatchId = null);
 
 /// <summary>Delivery note payload returned by GET /api/v1/deliverynotes.</summary>
 public sealed record DeliveryNoteDto(
@@ -37,7 +39,8 @@ public sealed record DeliveryNoteDto(
                 line.ItemId,
                 item?.ItemCode ?? line.ItemId.ToString(),
                 item?.ItemName ?? string.Empty,
-                line.Qty));
+                line.Qty,
+                line.BatchId));
         }
 
         return new DeliveryNoteDto(

@@ -59,6 +59,9 @@ public sealed class AssetConfiguration : IEntityTypeConfiguration<Asset>
         builder.Property(a => a.FrequencyInMonths).IsRequired().HasDefaultValue(1);
         builder.Property(a => a.CreatedAt).HasDefaultValueSql("SYSDATETIMEOFFSET()");
 
+        // Extensibility Fase 1 (gap D1): free-form JSON object string, NULL when none.
+        builder.Property(a => a.CustomData).HasColumnType("NVARCHAR(MAX)");
+
         // Task 10.5 disposal stamp: NULL until the asset is Sold/Scrapped (the Block C migration
         // adds the physical column; code-first mapping stays additive so no existing row changes).
         builder.Property(a => a.DisposalDate).HasColumnType("date").IsRequired(false);

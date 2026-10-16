@@ -420,6 +420,30 @@
   <data name="invalid_payment_terms" xml:space="preserve">
     <value>Invalid payment terms.</value>
   </data>
+  <data name="supplier_group_not_found" xml:space="preserve">
+    <value>The supplier group was not found.</value>
+  </data>
+  <data name="duplicate_supplier_group_code" xml:space="preserve">
+    <value>A supplier group with this code already exists.</value>
+  </data>
+  <data name="supplier_group_code_required" xml:space="preserve">
+    <value>The supplier group code is required.</value>
+  </data>
+  <data name="supplier_group_name_required" xml:space="preserve">
+    <value>The supplier group name is required.</value>
+  </data>
+  <data name="supplier_on_hold" xml:space="preserve">
+    <value>The supplier is on hold for all documents.</value>
+  </data>
+  <data name="supplier_on_hold_invoices" xml:space="preserve">
+    <value>The supplier is on hold for invoices.</value>
+  </data>
+  <data name="supplier_on_hold_payments" xml:space="preserve">
+    <value>The supplier is on hold for payments.</value>
+  </data>
+  <data name="supplier_frozen" xml:space="preserve">
+    <value>The supplier record is frozen.</value>
+  </data>
   <data name="purchase_order_not_found" xml:space="preserve">
     <value>Purchase order not found.</value>
   </data>
@@ -945,5 +969,110 @@
   </data>
   <data name="return_amount_exceeded" xml:space="preserve">
     <value>The credit note total cannot exceed the original invoice total.</value>
+  </data>
+  <data name="custom_field_validation_failed" xml:space="preserve">
+    <value>Custom field data is invalid.</value>
+  </data>
+  <data name="lifecycle_hook_rejected" xml:space="preserve">
+    <value>A document lifecycle hook rejected the operation.</value>
+  </data>
+  <data name="custom_field_definition_not_found" xml:space="preserve">
+    <value>Custom field definition not found.</value>
+  </data>
+  <data name="duplicate_custom_field" xml:space="preserve">
+    <value>A custom field with this name already exists for this entity.</value>
+  </data>
+  <data name="invalid_field_type" xml:space="preserve">
+    <value>Invalid custom field type. Allowed: string, number, boolean, date, select.</value>
+  </data>
+  <data name="tax_account_required" xml:space="preserve">
+    <value>A tax row must reference a general ledger account.</value>
+  </data>
+  <data name="invalid_tax_calculation_basis" xml:space="preserve">
+    <value>Unknown tax calculation basis.</value>
+  </data>
+  <data name="invalid_tax_charge_type" xml:space="preserve">
+    <value>Unknown tax charge type. Allowed: Add, Deduct.</value>
+  </data>
+  <data name="tax_template_not_found" xml:space="preserve">
+    <value>Tax template not found.</value>
+  </data>
+  <data name="duplicate_tax_template" xml:space="preserve">
+    <value>A tax template with this title already exists for this company and category.</value>
+  </data>
+  <data name="invalid_tax_template_category" xml:space="preserve">
+    <value>Tax template category must be Sales or Purchase.</value>
+  </data>
+  <data name="batch_required" xml:space="preserve">
+    <value>A batch must be specified for this batch-tracked item.</value>
+  </data>
+  <data name="batch_not_found" xml:space="preserve">
+    <value>Batch not found.</value>
+  </data>
+  <data name="batch_has_expired" xml:space="preserve">
+    <value>The batch has expired and cannot be dispatched.</value>
+  </data>
+  <data name="batch_insufficient_stock" xml:space="preserve">
+    <value>The batch does not hold enough stock in this warehouse.</value>
+  </data>
+  <data name="batch_disabled" xml:space="preserve">
+    <value>The batch is disabled and accepts no movements.</value>
+  </data>
+  <data name="duplicate_batch" xml:space="preserve">
+    <value>A batch with this number already exists for this item.</value>
+  </data>
+  <data name="serial_required" xml:space="preserve">
+    <value>Serial numbers are required for this serial-tracked item.</value>
+  </data>
+  <data name="serial_count_mismatch" xml:space="preserve">
+    <value>The serial count must equal the moved quantity (one serial per unit).</value>
+  </data>
+  <data name="serial_not_in_warehouse" xml:space="preserve">
+    <value>The serial is not available in this warehouse.</value>
+  </data>
+  <data name="serial_already_exists" xml:space="preserve">
+    <value>The serial number already exists: serial numbers are never reused.</value>
+  </data>
+  <data name="serial_not_found" xml:space="preserve">
+    <value>Serial number not found.</value>
+  </data>
+  <data name="tracked_return_unsupported" xml:space="preserve">
+    <value>Stock-moving returns of batch/serial-tracked items are not supported yet.</value>
+  </data>
+  <data name="purchase_receipt_not_submitted" xml:space="preserve">
+    <value>Only submitted purchase receipts absorb landed costs.</value>
+  </data>
+  <data name="charges_required" xml:space="preserve">
+    <value>A landed cost voucher needs at least one charge greater than zero.</value>
+  </data>
+  <data name="expense_account_required" xml:space="preserve">
+    <value>A charge row must reference a general ledger account.</value>
+  </data>
+  <data name="landed_cost_voucher_not_found" xml:space="preserve">
+    <value>Landed cost voucher not found.</value>
+  </data>
+  <data name="invalid_distribute_by" xml:space="preserve">
+    <value>Unknown apportionment strategy.</value>
+  </data>
+  <data name="no_stock_to_revalue" xml:space="preserve">
+    <value>There is no open stock to attach the revaluation to.</value>
+  </data>
+  <data name="workflow_submit_not_allowed" xml:space="preserve">
+    <value>The document is not in a submit-authorized operational state.</value>
+  </data>
+  <data name="invalid_workflow_transition" xml:space="preserve">
+    <value>The workflow transition is invalid.</value>
+  </data>
+  <data name="workflow_role_unauthorized" xml:space="preserve">
+    <value>Your role may not execute this workflow transition.</value>
+  </data>
+  <data name="workflow_not_found" xml:space="preserve">
+    <value>Workflow not found.</value>
+  </data>
+  <data name="duplicate_workflow" xml:space="preserve">
+    <value>A workflow with this name already exists for this document type.</value>
+  </data>
+  <data name="preset_not_found" xml:space="preserve">
+    <value>Industry preset not found.</value>
   </data>
 </root>

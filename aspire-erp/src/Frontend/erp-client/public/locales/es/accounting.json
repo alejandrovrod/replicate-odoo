@@ -4,6 +4,25 @@
     "subtitle": "Plan de cuentas, asientos, períodos e informes."
   },
   "missingTenant": "Sin organización/empresa seleccionada. Definí VITE_TENANT_ID y VITE_COMPANY_ID en .env.development.",
+  "tax": {
+    "noRows": "Sin impuestos: el documento solo contabiliza su neto.",
+    "colAccount": "Cuenta",
+    "colBase": "Base gravable",
+    "colRate": "Tasa %",
+    "colType": "Tipo",
+    "colAmount": "Importe",
+    "fixed": "fijo",
+    "chargeAdd": "Traslado",
+    "chargeDeduct": "Retención",
+    "totalAdd": "Impuestos trasladados",
+    "totalDeduct": "Retenciones",
+    "grandTotal": "Neto a pagar",
+    "templateLabel": "Plantilla de impuestos",
+    "templateLoading": "Cargando plantillas…",
+    "templateNone": "-- Renglones manuales --",
+    "templateDefault": "predeterminada",
+    "templateLines": "{{count}} renglones"
+  },
   "page": {
     "title": "Plan de cuentas",
     "subtitle": "Taxonomía jerárquica del libro (Activo, Pasivo, Patrimonio, Ingresos, Gastos).",

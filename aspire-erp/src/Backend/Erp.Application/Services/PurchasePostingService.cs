@@ -1,5 +1,7 @@
+using Erp.Application.Common;
 using Erp.Application.DTOs;
 using Erp.Application.Features.Assets;
+using Erp.Domain.Common;
 using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
@@ -43,6 +45,10 @@ public sealed class PurchasePostingService : IPurchasePostingService
     private readonly IPurchaseRepository _purchases;
     private readonly IExchangeRateRepository _exchangeRates;
     private readonly IAssetsRepository _assets;
+    private readonly IEnumerable<IDocumentLifecycleHook<PurchaseInvoice>>? _invoiceHooks;
+    private readonly ITaxEngineService _taxEngine;
+    private readonly ITaxTemplateRepository? _taxTemplates;
+    private readonly IBatchSerialService? _tracking;
 
     public PurchasePostingService(
         ICompanyRepository companies,
@@ -52,7 +58,11 @@ public sealed class PurchasePostingService : IPurchasePostingService
         IStockRepository stock,
         IPurchaseRepository purchases,
         IExchangeRateRepository exchangeRates,
-        IAssetsRepository assets)
+        IAssetsRepository assets,
+        IEnumerable<IDocumentLifecycleHook<PurchaseInvoice>>? invoiceHooks = null,
+        ITaxEngineService? taxEngine = null,
+        ITaxTemplateRepository? taxTemplates = null,
+        IBatchSerialService? tracking = null)
     {
         _companies = companies;
         _accounts = accounts;
@@ -62,6 +72,10 @@ public sealed class PurchasePostingService : IPurchasePostingService
         _purchases = purchases;
         _exchangeRates = exchangeRates;
         _assets = assets;
+        _invoiceHooks = invoiceHooks;
+        _taxEngine = taxEngine ?? new TaxEngineService();
+        _taxTemplates = taxTemplates;
+        _tracking = tracking;
     }
 
     // ------------------------------------------------------------------------ receipt (4.2)
@@ -129,13 +143,22 @@ public sealed class PurchasePostingService : IPurchasePostingService
             var ledger = new List<StockLedgerEntry>(request.Lines.Count);
             var glLines = new List<GLEntry>(request.Lines.Count * 2);
 
-            foreach (var line in request.Lines)
+            // Batch-and-serial Fase 3: per-line batch resolution + staged receipt serials,
+            // persisted with the voucher after numbering.
+            var batchByLine = new Dictionary<int, Guid?>();
+            var serialsByLine = new Dictionary<int, List<SerialNo>>();
+
+            foreach (var (line, lineIndex) in request.Lines.Select((l, i) => (l, i)))
             {
                 PurchaseValidator.EnsureValidLine(line.Qty, line.Rate);
                 var item = items[line.ItemId];
                 var amount = Round4(line.Qty * line.Rate);
 
-                ledger.Add(NewLedgerEntry(line, warehouse.Id, request, +line.Qty, line.Rate, +amount));
+                var batchId = await PlanReceiptTrackingAsync(
+                    request, line, item, warehouse, lineIndex,
+                    batchByLine, serialsByLine, token);
+
+                ledger.Add(NewLedgerEntry(line, warehouse.Id, request, +line.Qty, line.Rate, +amount, batchId));
 
                 // tasks.md 4.2: Debit warehouse stock account / Credit 2120 Stock Received But Not Billed.
                 AddGlLine(
@@ -164,7 +187,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 Status = PurchaseReceiptStatus.Submitted,
                 TotalAmount = request.Lines.Sum(l => Round4(l.Qty * l.Rate)),
                 CreatedAt = DateTimeOffset.UtcNow,
-                Lines = BuildReceiptLines(request, items),
+                Lines = BuildReceiptLines(request, items, batchByLine),
             };
 
             // The Kardex rows and the GL lines share the voucher identity of this posting.
@@ -188,6 +211,19 @@ public sealed class PurchasePostingService : IPurchasePostingService
             await _stock.AddLedgerEntriesAsync(ledger, token);
             await _stock.AddGlEntriesAsync(glLines, token);
 
+            // Batch-and-serial Fase 3: stamp the purchase document refs on staged receipt
+            // serials and persist them with everything else, atomically.
+            if (serialsByLine.Count > 0 && _tracking is not null)
+            {
+                var toAdd = serialsByLine.Values.SelectMany(s => s).ToList();
+                foreach (var serial in toAdd)
+                {
+                    serial.PurchaseDocumentNo = receipt.VoucherNo;
+                }
+
+                await _tracking.PersistSerialsAsync(toAdd, Array.Empty<SerialNo>(), token);
+            }
+
             if (order is not null)
             {
                 // Task 4.5 progress columns (verify W5): the receipt advances the linked order's
@@ -202,6 +238,64 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
             return BuildReceiptResult(receipt, ledger, glLines, items, order?.Status);
         }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Batch-and-serial Fase 3 receipt planning: shape validation plus batch top-up-or-create
+    /// and serial staging. Returns the resolved batch id (null for untracked items).
+    /// </summary>
+    private async Task<Guid?> PlanReceiptTrackingAsync(
+        PurchaseReceiptPostingRequest request,
+        PurchaseReceiptPostingLine line,
+        Item item,
+        Warehouse warehouse,
+        int lineIndex,
+        Dictionary<int, Guid?> batchByLine,
+        Dictionary<int, List<SerialNo>> serialsByLine,
+        CancellationToken token)
+    {
+        var cleanedSerials = StockEntryValidator.EnsureTrackingShape(
+            item.ItemCode,
+            item.HasBatchNo,
+            batchId: null,
+            line.BatchNo,
+            isReceipt: true,
+            item.HasSerialNo,
+            line.SerialNumbers,
+            line.Qty);
+
+        if (!item.HasBatchNo && !item.HasSerialNo)
+        {
+            batchByLine[lineIndex] = null;
+            return null;
+        }
+
+        if (_tracking is null)
+        {
+            throw new StockValidationException(
+                StockErrorCodes.BatchRequired,
+                $"Item '{item.ItemCode}' is batch/serial-tracked but no tracking service is wired.");
+        }
+
+        Guid? batchId = null;
+        if (item.HasBatchNo)
+        {
+            var batch = await _tracking.EnsureBatchForReceiptAsync(
+                item.Id, item.ItemCode, line.BatchNo!, line.ManufacturingDate, line.ExpiryDate, token);
+            batchId = batch.Id;
+        }
+
+        batchByLine[lineIndex] = batchId;
+
+        if (item.HasSerialNo)
+        {
+            var staged = await _tracking.StageReceiptSerialsAsync(
+                item.Id, item.ItemCode, cleanedSerials, warehouse.Id, batchId,
+                request.PostingDate, token);
+            serialsByLine[lineIndex] = staged.ToList();
+        }
+
+        return batchId;
     }
 
     // ------------------------------------------------------------------------ invoice (4.3)
@@ -353,20 +447,48 @@ public sealed class PurchasePostingService : IPurchasePostingService
             }
 
             var taxAmount = Round4(request.TaxAmount);
-            if (taxAmount > 0)
-            {
-                var taxAccount = await RequireAccountByCodeAsync(
-                    company.Id,
-                    company.InputTaxRecoverableAccountCode,
-                    "Company.InputTaxRecoverableAccountCode",
-                    token);
+            // Tax-engine Fase 2: explicit rows (template + manual) or the legacy scalar.
+            // Legacy (no rows, no template): ONE FixedAmount Add row against the input-tax
+            // account - the engine reproduces the scalar verbatim, so the GL below is
+            // byte-identical to the pre-engine posting (spec BY-01 unchanged).
+            var taxPlan = await ResolvePurchaseTaxRowsAsync(request, company, token);
+            var taxCalc = _taxEngine.Calculate(payableTotal, taxPlan.Rows, decimals: 4);
+            taxAmount = Round4(taxCalc.TaxTotal);
+            var withholdingTotal = Round4(taxCalc.DeductTotal);
 
-                // spec BY-01: Debit Input Tax Recoverable.
-                AddGlLine(
-                    glLines, request.PostingDate, company.Id, InvoiceVoucherType, taxAccount,
-                    debit: taxAmount * exchangeRate, credit: 0m,
-                    debitInFC: taxAmount, creditInFC: 0m,
-                    remarks: "PurchaseInvoice: input tax recoverable");
+            for (var taxIndex = 0; taxIndex < taxCalc.Rows.Count; taxIndex++)
+            {
+                var computed = taxCalc.Rows[taxIndex];
+                var taxAccount = taxPlan.Accounts[taxIndex];
+                if (computed.TaxAmount == 0m)
+                {
+                    continue;
+                }
+
+                // Legacy scalar rows keep their historical remark verbatim so the pre-engine
+                // GL is byte-identical (spec BY-01 regression anchor).
+                var remarks = taxPlan.Remarks[taxIndex];
+                if (computed.TaxAmount > 0m)
+                {
+                    // Transferred input tax: Debit the row's account (recoverable asset,
+                    // non-recoverable expense pass-through, ...).
+                    AddGlLine(
+                        glLines, request.PostingDate, company.Id, InvoiceVoucherType, taxAccount,
+                        debit: computed.TaxAmount * exchangeRate, credit: 0m,
+                        debitInFC: computed.TaxAmount, creditInFC: 0m,
+                        remarks: remarks ?? $"PurchaseInvoice: input tax ({computed.ChargeType} {computed.Rate:0.##}%)");
+                }
+                else
+                {
+                    // Fiscal withholding suffered on the bill: Credit the row's account
+                    // (withholding payable to the tax authority).
+                    var magnitude = -computed.TaxAmount;
+                    AddGlLine(
+                        glLines, request.PostingDate, company.Id, InvoiceVoucherType, taxAccount,
+                        debit: 0m, credit: magnitude * exchangeRate,
+                        debitInFC: 0m, creditInFC: magnitude,
+                        remarks: remarks ?? $"PurchaseInvoice: withholding ({computed.ChargeType} {computed.Rate:0.##}%)");
+                }
             }
 
             var variance = Round4(payableTotal - interimTotal);
@@ -435,13 +557,28 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 ExchangeRate = exchangeRate,
                 NetTotal = payableTotal,
                 TaxTotal = taxAmount,
-                WithholdingTaxTotal = 0m,
+                WithholdingTaxTotal = withholdingTotal,
                 GrandTotal = grossTotal,
                 OutstandingAmount = grossTotal,
                 VoucherNo = await _purchases.NextInvoiceVoucherNumberAsync(
                     company.Id, InvoiceVoucherPrefix, request.PostingDate.Year, token),
                 CreatedAt = DateTimeOffset.UtcNow,
                 Lines = BuildInvoiceLines(request, items),
+                // Tax-engine Fase 2: explicit rows persist with their bases (the UI breakdown
+                // and audit read them back); the legacy scalar path persists zero rows.
+                Taxes = taxPlan.Persist
+                    ? taxCalc.Rows.Select((r, i) => new PurchaseInvoiceTax
+                    {
+                        Id = Guid.NewGuid(),
+                        AccountId = taxPlan.Accounts[i].Id,
+                        Rate = taxPlan.Rates[i],
+                        ChargeType = r.ChargeType,
+                        CalculationBasis = r.CalculationBasis,
+                        FixedAmount = taxPlan.FixedAmounts[i],
+                        BaseAmount = r.BaseAmount,
+                        TaxAmount = r.TaxAmount,
+                    }).ToList()
+                    : new List<PurchaseInvoiceTax>(),
             };
 
             // plan.md §2 voucher provenance: the invoice aggregate is the source document; the
@@ -453,6 +590,11 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 glLine.PartyType = SupplierPartyType;
                 glLine.PartyId = request.SupplierId;
             }
+
+            // Extensibility Fase 1 (gap D3): Before hooks run after the Core validation/GL and
+            // BEFORE the first write (AddInvoiceAsync). A rejection aborts inside the
+            // transaction: zero invoice, zero GL (same guarantee as the sales submit path).
+            await DocumentLifecycleInvoker.RunBeforeSubmitAsync(_invoiceHooks, invoice, token);
 
             await _purchases.AddInvoiceAsync(invoice, token);
             await _stock.AddGlEntriesAsync(glLines, token);
@@ -502,6 +644,9 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
                 await _purchases.UpdateOrderAsync(loaded, token);
             }
+
+            // Extensibility Fase 1: After hooks inside the same transaction (no half-states).
+            await DocumentLifecycleInvoker.RunAfterSubmitAsync(_invoiceHooks, invoice, token);
 
             return BuildInvoiceResult(invoice, glLines, items, ordersToUpdate.FirstOrDefault()?.Status);
         }, cancellationToken);
@@ -603,6 +748,24 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 company.Id, company.AccountsPayableAccountCode, "Company.AccountsPayableAccountCode", token);
 
             var items = await LoadItemsAsync(planned.Select(p => p.OriginalLine.ItemId), token);
+
+            // Batch-and-serial Fase 3 boundary: a stock-moving return of tracked items has no
+            // batch/serial return flow yet (which serials come back? to which batch?) - refuse
+            // explicitly rather than corrupting traceability. Amount-only returns stay legal.
+            if (request.UpdateStock)
+            {
+                foreach (var plan in planned)
+                {
+                    var plannedItem = items[plan.OriginalLine.ItemId];
+                    if (plannedItem.HasBatchNo || plannedItem.HasSerialNo)
+                    {
+                        throw new StockValidationException(
+                            StockErrorCodes.TrackedReturnUnsupported,
+                            $"Item '{plannedItem.ItemCode}' is batch/serial-tracked: stock-moving returns "
+                            + "of tracked items are not supported yet (post an amount-only return).");
+                    }
+                }
+            }
 
             var glLines = new List<GLEntry>(4);
             var ledger = new List<StockLedgerEntry>();
@@ -754,6 +917,10 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 glLine.PartyId = original.SupplierId;
             }
 
+            // Extensibility Fase 1 (gap D3): same Before/After contract as PostInvoiceAsync -
+            // a supplier debit note is a PurchaseInvoice submit as far as verticals care.
+            await DocumentLifecycleInvoker.RunBeforeSubmitAsync(_invoiceHooks, returnInvoice, token);
+
             await _purchases.AddInvoiceAsync(returnInvoice, token);
             await _stock.AddGlEntriesAsync(glLines, token);
             if (ledger.Count > 0)
@@ -766,8 +933,132 @@ public sealed class PurchasePostingService : IPurchasePostingService
             original.OutstandingAmount = Math.Max(0m, original.OutstandingAmount - grossFc);
             await _purchases.UpdateInvoiceAsync(original, token);
 
+            await DocumentLifecycleInvoker.RunAfterSubmitAsync(_invoiceHooks, returnInvoice, token);
+
             return BuildInvoiceResult(returnInvoice, glLines, items, null);
         }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Tax-engine Fase 2 row plan: ordered engine inputs with their validated accounts, wire
+    /// rates/fixed amounts for persistence, and per-row GL remarks. <c>Persist</c> is false
+    /// for the legacy scalar path (zero rows stored, historical remark kept verbatim).
+    /// </summary>
+    private sealed record PurchaseTaxPlan(
+        IReadOnlyList<TaxRowInput> Rows,
+        IReadOnlyList<Account> Accounts,
+        IReadOnlyList<decimal> Rates,
+        IReadOnlyList<decimal> FixedAmounts,
+        IReadOnlyList<string?> Remarks,
+        bool Persist);
+
+    /// <summary>
+    /// Resolves the purchase tax rows: template expansion (template lines first, then manual
+    /// rows) or the legacy scalar synthesized as ONE FixedAmount Add row against the
+    /// input-tax account. Purchase-side accounts need only be active leaves of the company -
+    /// input-tax assets, withholding liabilities and non-recoverable expense pass-throughs
+    /// are all legitimate, so (unlike sales) no RootType is enforced.
+    /// </summary>
+    private async Task<PurchaseTaxPlan> ResolvePurchaseTaxRowsAsync(
+        PurchaseInvoicePostingRequest request, Company company, CancellationToken token)
+    {
+        var companyId = company.Id;
+        var rows = new List<TaxRowInput>();
+        var accounts = new List<Account>();
+        var rates = new List<decimal>();
+        var fixedAmounts = new List<decimal>();
+        var remarks = new List<string?>();
+
+        if (request.TaxTemplateId is { } templateId && templateId != Guid.Empty)
+        {
+            if (_taxTemplates is null)
+            {
+                throw new TaxValidationException(
+                    TaxErrorCodes.TaxTemplateNotFound,
+                    $"Tax template '{templateId}' was not found in this tenant.");
+            }
+
+            var template = await _taxTemplates.GetByIdAsync(templateId, token)
+                ?? throw new TaxValidationException(
+                    TaxErrorCodes.TaxTemplateNotFound,
+                    $"Tax template '{templateId}' was not found in this tenant.");
+
+            if (template.CompanyId != companyId)
+            {
+                throw new TaxValidationException(
+                    TaxErrorCodes.TaxTemplateNotFound,
+                    $"Tax template '{template.Title}' does not belong to this company.");
+            }
+
+            if (!string.Equals(template.Category, "Purchase", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new TaxValidationException(
+                    TaxErrorCodes.InvalidTaxTemplateCategory,
+                    $"Tax template '{template.Title}' is a '{template.Category}' template and cannot be applied to a purchase invoice.");
+            }
+
+            foreach (var line in template.Taxes)
+            {
+                if (line.AccountId == Guid.Empty)
+                {
+                    throw new TaxValidationException(
+                        TaxErrorCodes.TaxAccountRequired,
+                        $"Template '{template.Title}' line '{line.Description}' has no GL account assigned.");
+                }
+
+                accounts.Add(await RequirePurchaseTaxLeafAsync(line.AccountId, companyId, token));
+                rates.Add(line.Rate);
+                fixedAmounts.Add(line.Amount);
+                remarks.Add(null);
+                rows.Add(new TaxRowInput(line.Rate, line.ChargeType, line.CalculationBasis, line.Amount));
+            }
+        }
+
+        foreach (var tax in request.Taxes ?? (IReadOnlyList<PurchaseInvoiceTaxInput>)Array.Empty<PurchaseInvoiceTaxInput>())
+        {
+            accounts.Add(await RequirePurchaseTaxLeafAsync(tax.AccountId, companyId, token));
+            rates.Add(tax.Rate);
+            fixedAmounts.Add(tax.FixedAmount);
+            remarks.Add(null);
+            rows.Add(new TaxRowInput(tax.Rate, tax.ChargeType, tax.CalculationBasis, tax.FixedAmount));
+        }
+
+        if (rows.Count == 0)
+        {
+            var legacyAmount = Round4(request.TaxAmount);
+            if (legacyAmount == 0m)
+            {
+                return new PurchaseTaxPlan(rows, accounts, rates, fixedAmounts, remarks, Persist: false);
+            }
+
+            var taxAccount = await RequireAccountByCodeAsync(
+                companyId,
+                company.InputTaxRecoverableAccountCode,
+                "Company.InputTaxRecoverableAccountCode",
+                token);
+            accounts.Add(taxAccount);
+            rates.Add(0m);
+            fixedAmounts.Add(legacyAmount);
+            remarks.Add("PurchaseInvoice: input tax recoverable");
+            rows.Add(new TaxRowInput(0m, TaxChargeType.Add, TaxCalculationBasis.FixedAmount, legacyAmount));
+            return new PurchaseTaxPlan(rows, accounts, rates, fixedAmounts, remarks, Persist: false);
+        }
+
+        return new PurchaseTaxPlan(rows, accounts, rates, fixedAmounts, remarks, Persist: true);
+    }
+
+    /// <summary>Active-leaf gate for purchase tax rows (no RootType enforcement, see above).</summary>
+    private async Task<Account> RequirePurchaseTaxLeafAsync(Guid accountId, Guid companyId, CancellationToken token)
+    {
+        var account = await _accounts.GetByIdAsync(accountId, token);
+        if (account is null || account.CompanyId != companyId || !account.IsActive || account.IsGroup)
+        {
+            throw new TaxValidationException(
+                TaxErrorCodes.TaxAccountRequired,
+                $"Tax row account '{accountId}' must be an active posting (leaf) account of this company.");
+        }
+
+        return account;
     }
 
     /// <summary>Resolved plan of one return line (see <see cref="PostReturnAsync"/>).</summary>
@@ -1145,12 +1436,14 @@ public sealed class PurchasePostingService : IPurchasePostingService
         PurchaseReceiptPostingRequest request,
         decimal qtyChange,
         decimal valuationRate,
-        decimal amount) =>
+        decimal amount,
+        Guid? batchId = null) =>
         new()
         {
             Id = Guid.NewGuid(),
             ItemId = line.ItemId,
             WarehouseId = warehouseId,
+            BatchId = batchId,
             PostingDate = request.PostingDate,
             QtyChange = qtyChange,
             ValuationRate = valuationRate,
@@ -1209,7 +1502,8 @@ public sealed class PurchasePostingService : IPurchasePostingService
 
     private static List<PurchaseReceiptLine> BuildReceiptLines(
         PurchaseReceiptPostingRequest request,
-        IReadOnlyDictionary<Guid, Item> items)
+        IReadOnlyDictionary<Guid, Item> items,
+        IReadOnlyDictionary<int, Guid?> batchByLine)
     {
         var lines = new List<PurchaseReceiptLine>(request.Lines.Count);
         for (var i = 0; i < request.Lines.Count; i++)
@@ -1224,6 +1518,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
                 Qty = line.Qty,
                 Rate = line.Rate,
                 LineNumber = i + 1,
+                BatchId = batchByLine.TryGetValue(i, out var batchId) ? batchId : null,
             });
         }
 
@@ -1267,7 +1562,7 @@ public sealed class PurchasePostingService : IPurchasePostingService
         var dto = PurchaseReceiptDto.Build(receipt, items);
 
         var ledgerDtos = ledger
-            .Select(e => new StockLedgerEntryDto(e.Id, e.ItemId, e.WarehouseId, e.PostingDate, e.QtyChange, e.ValuationRate, e.Amount))
+            .Select(e => new StockLedgerEntryDto(e.Id, e.ItemId, e.WarehouseId, e.PostingDate, e.QtyChange, e.ValuationRate, e.Amount, e.BatchId))
             .ToList();
 
         var (totalDebit, totalCredit, glDtos) = BuildGlDtos(glLines);

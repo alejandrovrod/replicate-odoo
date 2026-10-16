@@ -19,7 +19,7 @@ namespace Erp.Domain.Entities;
 /// the temporal period exactly as on <see cref="Account"/> - rowversion is a regular column, the
 /// period stays datetime2.</para>
 /// </remarks>
-public class Customer : ITenantEntity
+public class Customer : ITenantEntity, ICustomFieldsCarrier
 {
     public Guid Id { get; set; }
 
@@ -119,6 +119,13 @@ public class Customer : ITenantEntity
     /// Store-generated: never set from code.
     /// </summary>
     public byte[] RowVersion { get; set; } = null!;
+
+    /// <summary>
+    /// Tenant-configured dynamic attributes as a JSON object string (extensibility-engine Fase 1,
+    /// <see cref="ICustomFieldsCarrier"/>): validated against the tenant's CustomFieldDefinition
+    /// catalog before persistence, read back verbatim. NULL when the master carries none.
+    /// </summary>
+    public string? CustomData { get; set; }
 
     public Company? Company { get; set; }
 

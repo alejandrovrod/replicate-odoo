@@ -42,7 +42,7 @@ public enum SalesOrderStatus
 /// stays 0.0000 until Task 5.3) and the two percentage columns track fulfillment/billing progress
 /// as quantity-weighted ratios in decimal(5,2).
 /// </remarks>
-public class SalesOrder : ITenantEntity
+public class SalesOrder : ITenantEntity, IWorkflowCarrier
 {
     public Guid Id { get; set; }
 
@@ -57,6 +57,14 @@ public class SalesOrder : ITenantEntity
 
     /// <summary>Workflow state (Task 5.2 acceptance: partial/full deliveries drive this field).</summary>
     public SalesOrderStatus Status { get; set; } = SalesOrderStatus.Draft;
+
+    /// <summary>
+    /// Operational workflow state (workflow Fase 5, <see cref="IWorkflowCarrier"/>): the named
+    /// state in the tenant's active SalesOrder flow (e.g. "Autorizado"). NULL until the first
+    /// transition or guard evaluation adopts the flow's initial state. NEVER drives the
+    /// ledger - only gates the Draft → Submitted move via states with CanSubmit.
+    /// </summary>
+    public string? WorkflowState { get; set; }
 
     /// <summary>Order date (also the reference date for the sequence year of the order number).</summary>
     public DateOnly TransactionDate { get; set; }

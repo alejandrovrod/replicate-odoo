@@ -13,6 +13,13 @@ import type { Item } from '../types'
 import { useTranslation } from 'react-i18next'
 import type { AccountTreeNode } from '../../accounting/types'
 import { useAccountTree } from '../../accounting/useAccountTree'
+import { useCustomFields } from '../../extensibility/api/useCustomFields'
+import {
+  CustomFieldsRenderer,
+  parseCustomData,
+  serializeCustomData,
+  type CustomFieldValues,
+} from '../../../components/forms/CustomFieldsRenderer'
 
 interface ItemFormModalProps {
   isOpen: boolean
@@ -30,12 +37,16 @@ export function ItemFormModal({
   companyId,
 }: ItemFormModalProps) {
   const { t } = useTranslation('stock')
+  const { t: tCommon } = useTranslation('common')
   const [formData, setFormData] = useState<Partial<Item>>({
     isActive: true,
     valuationMethod: 'Fifo',
   })
+  const [customValues, setCustomValues] = useState<CustomFieldValues>({})
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const customFieldsQuery = useCustomFields(isOpen ? 'Item' : '')
 
   // Accounts lookup (for Income/Expense default accounts)
   const accountsQuery = useAccountTree(companyId)
@@ -54,8 +65,10 @@ export function ItemFormModal({
   useEffect(() => {
     if (initialData) {
       setFormData(initialData)
+      setCustomValues(parseCustomData(initialData.customData))
     } else {
       setFormData({ isActive: true, valuationMethod: 'Fifo' })
+      setCustomValues({})
     }
   }, [initialData, companyId, isOpen])
 
@@ -85,10 +98,13 @@ export function ItemFormModal({
     }
 
     try {
+      // CustomData travels as a JSON object string (extensibility Fase 1); null/empty
+      // means "no custom attributes".
       await onSave({
         ...formData,
         incomeAccountId: formData.incomeAccountId || undefined,
         expenseAccountId: formData.expenseAccountId || undefined,
+        customData: serializeCustomData(customValues),
       })
       onClose()
     } catch (err: unknown) {
@@ -215,6 +231,54 @@ export function ItemFormModal({
                 {t('itemForm.active', 'Active')}
               </label>
             </div>
+
+            {/* Batch-and-serial Fase 3 traceability flags (always sent, like isActive). */}
+            <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {t('itemForm.trackingTitle', 'Traceability')}
+              </span>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  name="hasBatchNo"
+                  checked={formData.hasBatchNo === true}
+                  onChange={handleChange}
+                  id="hasBatchNoItem"
+                  className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-950"
+                />
+                <label htmlFor="hasBatchNoItem" className="text-sm font-medium">
+                  {t('itemForm.hasBatchNo', 'Batch-tracked (lot + expiry, FEFO)')}
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  name="hasSerialNo"
+                  checked={formData.hasSerialNo === true}
+                  onChange={handleChange}
+                  id="hasSerialNoItem"
+                  className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-950"
+                />
+                <label htmlFor="hasSerialNoItem" className="text-sm font-medium">
+                  {t('itemForm.hasSerialNo', 'Serial-tracked (one serial per unit)')}
+                </label>
+              </div>
+            </div>
+
+            {customFieldsQuery.definitions.length > 0 && (
+              <>
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-2">
+                  {tCommon('customFields.title', 'Custom Fields')}
+                </h4>
+                <CustomFieldsRenderer
+                  definitions={customFieldsQuery.definitions}
+                  values={customValues}
+                  onChange={(fieldName, value) =>
+                    setCustomValues((prev) => ({ ...prev, [fieldName]: value }))
+                  }
+                />
+              </>
+            )}
           </div>
 
           <DialogFooter className="pt-4 border-t border-slate-100">

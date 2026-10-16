@@ -150,4 +150,71 @@ public sealed class PaymentErpNextParityTests
         Assert.True(result.IsSuccess);
         Assert.Equal(PaymentType.InternalTransfer, result.Value!.PaymentType);
     }
+
+    // ------------------------------------------- governance hold (module buying-suppliers, gap D4)
+
+    [Fact]
+    public async Task Create_SupplierOnHoldForPayments_FailsWithSupplierOnHoldPayments()
+    {
+        var supplier = new Supplier
+        {
+            Id = Guid.NewGuid(),
+            Code = "SUP-001",
+            Name = "Acme Supplier",
+            IsActive = true,
+            OnHold = true,
+            HoldType = SupplierHoldType.Payments,
+        };
+        _suppliers.Seed(supplier);
+
+        var result = await Handler().HandleAsync(
+            Draft(_companyId, _bankAccountId, supplier.Id, PaymentType.Pay, PaymentPartyType.Supplier));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(PurchaseErrorCodes.SupplierOnHoldPayments, result.Error!.Code);
+        Assert.Empty(_banks.AddedPayments);
+    }
+
+    [Fact]
+    public async Task Create_SupplierOnHoldForPaymentsButReleaseDateElapsed_Succeeds()
+    {
+        // SUP-G3: a hold whose release date is strictly before the payment date no longer blocks.
+        var supplier = new Supplier
+        {
+            Id = Guid.NewGuid(),
+            Code = "SUP-002",
+            Name = "Acme Supplier",
+            IsActive = true,
+            OnHold = true,
+            HoldType = SupplierHoldType.Payments,
+            ReleaseDate = new DateOnly(2026, 10, 1),
+        };
+        _suppliers.Seed(supplier);
+
+        var result = await Handler().HandleAsync(
+            Draft(_companyId, _bankAccountId, supplier.Id, PaymentType.Pay, PaymentPartyType.Supplier));
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task Create_SupplierOnHoldForInvoices_StillAllowsPayment()
+    {
+        // A hold scoped to invoices must not block payments.
+        var supplier = new Supplier
+        {
+            Id = Guid.NewGuid(),
+            Code = "SUP-003",
+            Name = "Acme Supplier",
+            IsActive = true,
+            OnHold = true,
+            HoldType = SupplierHoldType.Invoices,
+        };
+        _suppliers.Seed(supplier);
+
+        var result = await Handler().HandleAsync(
+            Draft(_companyId, _bankAccountId, supplier.Id, PaymentType.Pay, PaymentPartyType.Supplier));
+
+        Assert.True(result.IsSuccess);
+    }
 }

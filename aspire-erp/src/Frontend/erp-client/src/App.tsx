@@ -18,6 +18,7 @@ import { SellingOverview } from './features/selling/SellingOverview'
 import { StockOverview } from './features/stock/StockOverview'
 import { WarehouseView } from './features/stock/pages/WarehouseView'
 import { ItemView } from './features/stock/pages/ItemView'
+import { LandedCostVoucherView } from './features/stock/pages/LandedCostVoucherView'
 import { AssetCategoryView } from './features/assets/AssetCategoryView'
 import { AssetView } from './features/assets/AssetView'
 import { CustomerView } from './features/selling/pages/CustomerView'
@@ -34,6 +35,7 @@ import { ProfileScreen } from './features/profile/ProfileScreen'
 import { SecurityView } from './features/security/SecurityView'
 import { LoginScreen } from './components/auth/LoginScreen'
 import { RequirePermission } from './components/auth/RequirePermission'
+import { TerminologyOverlayProvider } from './lib/terminologyOverlay'
 import { useAuthStore } from './store/useAuthStore'
 
 /**
@@ -59,6 +61,7 @@ const ROUTE_PERMS: Partial<Record<NavRoute, [string, string?]>> = {
   stock: ['stock', 'read'],
   'stock-warehouses': ['warehouse', 'read'],
   'stock-items': ['item', 'read'],
+  'stock-landed-cost': ['landed_cost_voucher', 'read'],
   manufacturing: ['work_order', 'read'],
   selling: ['sales_invoice', 'read'],
   'selling-customers': ['customer', 'read'],
@@ -107,7 +110,8 @@ function App() {
   }
 
   return (
-    <AppShell>
+    <TerminologyOverlayProvider>
+      <AppShell>
       {guard('dashboard', <DashboardOverview />)}
       {/* Profile is intentionally ungated: every authenticated user owns their password + MFA. */}
       {currentRoute === 'profile' ? <ProfileScreen /> : null}
@@ -137,6 +141,7 @@ function App() {
       {guard('stock', <StockOverview />)}
       {guard('stock-warehouses', <WarehouseView />)}
       {guard('stock-items', <ItemView />)}
+      {guard('stock-landed-cost', <LandedCostVoucherView />)}
       {guard('manufacturing', <ManufacturingOverview />)}
       {guard('selling', <SellingOverview />)}
       {guard('selling-customers', <CustomerView />)}
@@ -150,6 +155,7 @@ function App() {
       {/* Security is UX-gated on System Manager (menu + here); the API enforces the real policy. */}
       {currentRoute === 'security-roles' ? (isSystemManager() ? <SecurityView /> : <Forbidden />) : null}
     </AppShell>
+    </TerminologyOverlayProvider>
   )
 }
 

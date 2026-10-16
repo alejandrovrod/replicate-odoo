@@ -1,0 +1,56 @@
+{
+  "key": "healthcare",
+  "name": "Healthcare / Clínica",
+  "description": "Clínica u hospital: pacientes, admisión clínica y honorarios médicos.",
+  "terminology": {
+    "en": {
+      "selling": {
+        "customerForm.titleNew": "New Patient",
+        "customerForm.titleEdit": "Edit Patient"
+      },
+      "common": {
+        "nav.item.sellingCustomers": "Patients",
+        "nav.item.sellingOrders": "Admission Orders"
+      }
+    },
+    "es": {
+      "selling": {
+        "customerForm.titleNew": "Nuevo Paciente",
+        "customerForm.titleEdit": "Editar Paciente"
+      },
+      "common": {
+        "nav.item.sellingCustomers": "Pacientes",
+        "nav.item.sellingOrders": "Órdenes de Admisión"
+      }
+    }
+  },
+  "customFields": [
+    { "entity": "Customer", "field": "bloodType", "type": "string", "required": true },
+    { "entity": "Customer", "field": "insurancePolicy", "type": "string", "required": false }
+  ],
+  "workflows": [
+    {
+      "documentType": "SalesOrder",
+      "name": "Atención clínica",
+      "states": [
+        { "name": "Admision", "initial": true, "canSubmit": false },
+        { "name": "Consulta", "initial": false, "canSubmit": false },
+        { "name": "Autorizado", "initial": false, "canSubmit": true }
+      ],
+      "transitions": [
+        { "from": "Admision", "to": "Consulta", "label": "Iniciar consulta", "role": "Recepcion" },
+        { "from": "Consulta", "to": "Autorizado", "label": "Autorizar", "role": "Medico" }
+      ]
+    }
+  ],
+  "taxTemplates": [
+    {
+      "title": "Honorarios médicos",
+      "category": "Sales",
+      "lines": [
+        { "accountCode": "2108", "description": "IVA 16%", "rate": 16, "chargeType": "Add", "basis": "OnNetTotal" },
+        { "accountCode": "2109", "description": "Retención ISR 10%", "rate": 10, "chargeType": "Deduct", "basis": "OnNetTotal" }
+      ]
+    }
+  ]
+}

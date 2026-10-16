@@ -5,7 +5,13 @@ using Erp.Application.Services;
 namespace Erp.Application.Features.Selling.Commands;
 
 /// <summary>One line of a <see cref="PostDeliveryNoteCommand"/>: ships <paramref name="Qty"/> against ONE order line.</summary>
-public sealed record PostDeliveryNoteLine(Guid SalesOrderItemId, Guid ItemId, decimal Qty);
+public sealed record PostDeliveryNoteLine(
+    Guid SalesOrderItemId,
+    Guid ItemId,
+    decimal Qty,
+    // Batch-and-serial Fase 3: batch + exact serials when the item is tracked.
+    Guid? BatchId = null,
+    IReadOnlyList<string>? SerialNumbers = null);
 
 /// <summary>
 /// Creates AND posts one delivery note (Task 5.2b / Amendment A1) in a single transaction:

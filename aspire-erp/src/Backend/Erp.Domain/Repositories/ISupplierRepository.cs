@@ -20,14 +20,26 @@ public interface ISupplierRepository
     /// <summary>True when the code already exists in this tenant (Task 4.1: unique SKU-style rule).</summary>
     Task<bool> ExistsCodeAsync(string code, CancellationToken cancellationToken = default);
 
-    /// <summary>The supplier with the given id, or null when it does not exist in this tenant.</summary>
+    /// <summary>
+    /// The supplier with the given id (with its <c>Accounts</c> and <c>SupplierGroup</c> loaded),
+    /// or null when it does not exist in this tenant.
+    /// </summary>
     Task<Supplier?> GetByIdAsync(Guid supplierId, CancellationToken cancellationToken = default);
 
     /// <summary>The requested suppliers (existing ones only) - resolves codes/names for order lists.</summary>
     Task<IReadOnlyList<Supplier>> GetByIdsAsync(IReadOnlyList<Guid> supplierIds, CancellationToken cancellationToken = default);
 
-    /// <summary>The most recent suppliers of the tenant (newest first) for the list view.</summary>
-    Task<PagedResult<Supplier>> GetRecentAsync(PagedRequest paging, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// The most recent suppliers of the tenant (newest first) for the list view, optionally
+    /// filtered by supplier group, hold status and the company that holds an account mapping
+    /// (spec §5: <c>GET /api/v1/suppliers?groupId=&amp;onHold=&amp;companyId=</c>).
+    /// </summary>
+    Task<PagedResult<Supplier>> GetRecentAsync(
+        PagedRequest paging,
+        Guid? supplierGroupId = null,
+        bool? onHold = null,
+        Guid? companyId = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Updates an existing supplier.</summary>
     Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken = default);

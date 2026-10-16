@@ -33,9 +33,16 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
 
         builder.Property(i => i.IsActive).HasDefaultValue(true);
 
+        // Extensibility Fase 1 (gap D1): free-form JSON object string, NULL when none.
+        builder.Property(i => i.CustomData).HasColumnType("NVARCHAR(MAX)");
+
         // Asset-capitalization module (gap D1/D2): fixed-asset flag + category template link.
         builder.Property(i => i.IsFixedAsset).HasDefaultValue(false);
         builder.Property(i => i.AssetCategoryId);
+
+        // Batch-and-serial Fase 3: traceability flags (both default untracked).
+        builder.Property(i => i.HasBatchNo).IsRequired().HasDefaultValue(false);
+        builder.Property(i => i.HasSerialNo).IsRequired().HasDefaultValue(false);
 
         builder.HasOne(i => i.AssetCategory)
             .WithMany()

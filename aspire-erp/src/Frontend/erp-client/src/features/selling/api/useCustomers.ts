@@ -30,6 +30,8 @@ export interface Customer {
   website?: string
   paymentTerms?: string
   customerDetails?: string
+  /** Tenant-configured dynamic attributes as a JSON object string (extensibility Fase 1). */
+  customData?: string | null
 }
 
 export function useCustomers(companyId: string, page = 1, pageSize = 50) {
@@ -59,6 +61,7 @@ export async function createCustomer(payload: Partial<Customer>): Promise<Custom
     website: payload.website ?? '',
     paymentTerms: payload.paymentTerms ?? '',
     customerDetails: payload.customerDetails ?? '',
+    customData: payload.customData ?? null,
   })
   return response.data
 }
@@ -89,6 +92,7 @@ export async function updateCustomer(id: string, payload: Partial<Customer>): Pr
     website: payload.website ?? null,
     paymentTerms: payload.paymentTerms ?? null,
     customerDetails: payload.customerDetails ?? null,
+    customData: payload.customData ?? null,
   })
   return response.data
 }

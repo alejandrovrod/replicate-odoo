@@ -28,7 +28,9 @@ public sealed record SalesInvoiceDto(
     decimal DiscountAmount = 0m,
     IReadOnlyList<SalesInvoiceTaxDto>? Taxes = null,
     bool IsReturn = false,
-    Guid? ReturnAgainstId = null)
+    Guid? ReturnAgainstId = null,
+    // Workflow Fase 5: operational state (null until adopted by the first transition/guard).
+    string? WorkflowState = null)
 {
     public static SalesInvoiceDto Build(SalesInvoice invoice)
     {
@@ -54,9 +56,10 @@ public sealed record SalesInvoiceDto(
             invoice.Items.Select(i => new SalesInvoiceItemDto(i.Id, i.ItemId, i.SalesOrderItemId, i.Quantity, i.Rate, i.Amount)).ToList(),
             invoice.DiscountPercentage,
             invoice.DiscountAmount,
-            invoice.Taxes.Select(t => new SalesInvoiceTaxDto(t.Id, t.AccountId, t.Rate, t.TaxAmount)).ToList(),
+            invoice.Taxes.Select(t => new SalesInvoiceTaxDto(t.Id, t.AccountId, t.Rate, t.TaxAmount, t.ChargeType, t.CalculationBasis, t.BaseAmount)).ToList(),
             invoice.IsReturn,
-            invoice.ReturnAgainstId);
+            invoice.ReturnAgainstId,
+            invoice.WorkflowState);
     }
 }
 
@@ -68,9 +71,12 @@ public sealed record SalesInvoiceItemDto(
     decimal Rate,
     decimal Amount);
 
-/// <summary>One "Taxes and Charges" row as stored (module 17).</summary>
+/// <summary>One "Taxes and Charges" row as stored (module 17 + tax-engine Fase 2).</summary>
 public sealed record SalesInvoiceTaxDto(
     Guid Id,
     Guid AccountId,
     decimal Rate,
-    decimal TaxAmount);
+    decimal TaxAmount,
+    TaxChargeType ChargeType = TaxChargeType.Add,
+    TaxCalculationBasis CalculationBasis = TaxCalculationBasis.OnNetTotal,
+    decimal BaseAmount = 0m);

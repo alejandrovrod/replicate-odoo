@@ -20,6 +20,7 @@ export type NavRoute =
   | 'security-roles'
   | 'stock-warehouses'
   | 'stock-items'
+  | 'stock-landed-cost'
   | 'selling-customers'
   | 'selling-orders'
   | 'selling-invoices'
@@ -61,6 +62,7 @@ const parseHash = (): NavRoute => {
     'security-roles',
     'stock-warehouses',
     'stock-items',
+    'stock-landed-cost',
     'selling-customers',
     'selling-orders',
     'selling-invoices',

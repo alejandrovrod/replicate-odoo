@@ -44,7 +44,7 @@ public enum AssetStatus
 /// number. <see cref="AccumulatedDepreciation"/> is persisted (default 0) so NBV survives
 /// reloads; <see cref="NetBookValue"/> itself is a pure computed getter (never mapped).
 /// </remarks>
-public class Asset : ITenantEntity
+public class Asset : ITenantEntity, ICustomFieldsCarrier
 {
     public Guid Id { get; set; }
 
@@ -139,6 +139,9 @@ public class Asset : ITenantEntity
     /// Store-generated: never set from code.
     /// </summary>
     public byte[] RowVersion { get; set; } = null!;
+
+    /// <summary>Tenant-configured dynamic attributes, see <see cref="ICustomFieldsCarrier"/>.</summary>
+    public string? CustomData { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 

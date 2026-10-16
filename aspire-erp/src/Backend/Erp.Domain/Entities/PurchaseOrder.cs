@@ -27,7 +27,7 @@ public enum PurchaseOrderStatus
 /// Supplier is tenant-scoped (like Item), so the FK crosses the two scopes - same as Account's
 /// Company FK on the other side.
 /// </remarks>
-public class PurchaseOrder : ITenantEntity
+public class PurchaseOrder : ITenantEntity, IWorkflowCarrier
 {
     public Guid Id { get; set; }
 
@@ -42,6 +42,12 @@ public class PurchaseOrder : ITenantEntity
 
     /// <summary>Workflow state (Task 4.1 acceptance: Draft -&gt; Submitted -&gt; PartiallyReceived -&gt; Completed).</summary>
     public PurchaseOrderStatus Status { get; set; } = PurchaseOrderStatus.Draft;
+
+    /// <summary>
+    /// Operational workflow state (workflow Fase 5, <see cref="IWorkflowCarrier"/>): see
+    /// <see cref="SalesOrder.WorkflowState"/> - same contract, PurchaseOrder flow.
+    /// </summary>
+    public string? WorkflowState { get; set; }
 
     public DateOnly TransactionDate { get; set; }
 

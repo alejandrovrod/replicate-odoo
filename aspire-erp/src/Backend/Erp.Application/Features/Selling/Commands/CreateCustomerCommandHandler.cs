@@ -16,15 +16,18 @@ public sealed class CreateCustomerCommandHandler : ICommandHandler<CreateCustome
     private readonly ICustomerRepository _customers;
     private readonly IAccountRepository _accounts;
     private readonly ICurrencyRepository _currencies;
+    private readonly ICustomFieldValidator? _customFields;
 
     public CreateCustomerCommandHandler(
         ICustomerRepository customers,
         IAccountRepository accounts,
-        ICurrencyRepository currencies)
+        ICurrencyRepository currencies,
+        ICustomFieldValidator? customFields = null)
     {
         _customers = customers;
         _accounts = accounts;
         _currencies = currencies;
+        _customFields = customFields;
     }
 
     public async Task<Result<CustomerDto>> HandleAsync(
@@ -90,6 +93,18 @@ public sealed class CreateCustomerCommandHandler : ICommandHandler<CreateCustome
                 }
             }
 
+            // Extensibility Fase 1 (gap D2): CustomData is validated against the tenant's active
+            // "Customer" definitions BEFORE the insert. Skipped only when no validator is wired
+            // (legacy direct construction in older tests) - DI always provides it.
+            if (_customFields is not null)
+            {
+                var customError = await _customFields.ValidateAsync("Customer", command.CustomData, cancellationToken);
+                if (customError is not null)
+                {
+                    throw new CustomerValidationException(customError.Code, customError.Message);
+                }
+            }
+
             var customer = new Customer
             {
                 // Id is generated here so tests can inspect the entity before it is persisted.
@@ -114,6 +129,7 @@ public sealed class CreateCustomerCommandHandler : ICommandHandler<CreateCustome
                 Website = (command.Website ?? string.Empty).Trim(),
                 PaymentTerms = (command.PaymentTerms ?? string.Empty).Trim(),
                 CustomerDetails = (command.CustomerDetails ?? string.Empty).Trim(),
+                CustomData = command.CustomData,
 
                 // TenantId is intentionally NOT set: AppDbContext stamps CurrentTenantId on insert
                 // and throws when no tenant context exists (Constitution Article II.4, fail closed).

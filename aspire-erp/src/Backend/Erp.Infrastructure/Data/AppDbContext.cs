@@ -71,6 +71,12 @@ public class AppDbContext : DbContext
 
     public DbSet<Supplier> Suppliers => Set<Supplier>();
 
+    /// <summary>Supplier classification catalog (module buying-suppliers, spec §1 gap D1).</summary>
+    public DbSet<SupplierGroup> SupplierGroups => Set<SupplierGroup>();
+
+    /// <summary>Multi-company account mapping for suppliers (spec §1 gap D2).</summary>
+    public DbSet<SupplierCompanyAccount> SupplierCompanyAccounts => Set<SupplierCompanyAccount>();
+
     public DbSet<MaterialRequest> MaterialRequests => Set<MaterialRequest>();
     public DbSet<MaterialRequestItem> MaterialRequestItems => Set<MaterialRequestItem>();
 
@@ -87,6 +93,9 @@ public class AppDbContext : DbContext
     public DbSet<PurchaseReceipt> PurchaseReceipts => Set<PurchaseReceipt>();
 
     public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
+
+    /// <summary>Tax-engine Fase 2 "Taxes and Charges" rows of purchase invoices.</summary>
+    public DbSet<PurchaseInvoiceTax> PurchaseInvoiceTaxes => Set<PurchaseInvoiceTax>();
 
     public DbSet<SalesOrder> SalesOrders => Set<SalesOrder>();
 
@@ -110,6 +119,18 @@ public class AppDbContext : DbContext
     public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();
 
     public DbSet<PaymentEntry> PaymentEntries => Set<PaymentEntry>();
+
+    /// <summary>Extensibility-engine Fase 1 catalog (tenant-scoped via the global query filter).</summary>
+    public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
+
+    /// <summary>Landed cost vouchers (Fase 4: Draft → Submitted → Cancelled).</summary>
+    public DbSet<LandedCostVoucher> LandedCostVouchers => Set<LandedCostVoucher>();
+
+    /// <summary>Operational workflow definitions (Fase 5: tenant-wide per document type).</summary>
+    public DbSet<WorkflowDefinition> WorkflowDefinitions => Set<WorkflowDefinition>();
+
+    /// <summary>Applied industry preset record (Fase 5: at most one row per tenant).</summary>
+    public DbSet<TenantPreset> TenantPresets => Set<TenantPreset>();
 
     public DbSet<PaymentAllocation> PaymentAllocations => Set<PaymentAllocation>();
 

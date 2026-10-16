@@ -79,4 +79,12 @@ public class DeliveryNoteLine
 
     /// <summary>Delivered quantity in the item's Base UOM (decimal(18,4), CK_DeliveryNoteLine_Qty &gt; 0).</summary>
     public decimal Qty { get; set; }
+
+    /// <summary>
+    /// Batch-and-serial Fase 3: the batch the units ship from (FEFO-guided). Required when
+    /// the item tracks batches; expiry and per-batch availability gate the shipment.
+    /// </summary>
+    public Guid? BatchId { get; set; }
+
+    public Batch? Batch { get; set; }
 }

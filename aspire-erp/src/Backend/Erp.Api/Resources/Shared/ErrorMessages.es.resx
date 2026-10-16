@@ -421,6 +421,30 @@
   <data name="invalid_payment_terms" xml:space="preserve">
     <value>Condiciones de pago inválidas.</value>
   </data>
+  <data name="supplier_group_not_found" xml:space="preserve">
+    <value>No se encontró el grupo de proveedor.</value>
+  </data>
+  <data name="duplicate_supplier_group_code" xml:space="preserve">
+    <value>Ya existe un grupo de proveedor con este código.</value>
+  </data>
+  <data name="supplier_group_code_required" xml:space="preserve">
+    <value>El código del grupo de proveedor es obligatorio.</value>
+  </data>
+  <data name="supplier_group_name_required" xml:space="preserve">
+    <value>El nombre del grupo de proveedor es obligatorio.</value>
+  </data>
+  <data name="supplier_on_hold" xml:space="preserve">
+    <value>El proveedor está en retención para todos los documentos.</value>
+  </data>
+  <data name="supplier_on_hold_invoices" xml:space="preserve">
+    <value>El proveedor está en retención para facturación.</value>
+  </data>
+  <data name="supplier_on_hold_payments" xml:space="preserve">
+    <value>El proveedor está en retención para pagos.</value>
+  </data>
+  <data name="supplier_frozen" xml:space="preserve">
+    <value>El registro del proveedor está congelado.</value>
+  </data>
   <data name="purchase_order_not_found" xml:space="preserve">
     <value>Orden de compra no encontrada.</value>
   </data>
@@ -946,5 +970,110 @@
   </data>
   <data name="return_amount_exceeded" xml:space="preserve">
     <value>El total de la nota de crédito no puede exceder el total de la factura original.</value>
+  </data>
+  <data name="custom_field_validation_failed" xml:space="preserve">
+    <value>Los datos de campos personalizados no son válidos.</value>
+  </data>
+  <data name="lifecycle_hook_rejected" xml:space="preserve">
+    <value>Un hook de ciclo de vida rechazó la operación.</value>
+  </data>
+  <data name="custom_field_definition_not_found" xml:space="preserve">
+    <value>Definición de campo personalizado no encontrada.</value>
+  </data>
+  <data name="duplicate_custom_field" xml:space="preserve">
+    <value>Ya existe un campo personalizado con este nombre para esta entidad.</value>
+  </data>
+  <data name="invalid_field_type" xml:space="preserve">
+    <value>Tipo de campo personalizado inválido. Permitidos: string, number, boolean, date, select.</value>
+  </data>
+  <data name="tax_account_required" xml:space="preserve">
+    <value>Un renglón de impuesto debe referenciar una cuenta contable.</value>
+  </data>
+  <data name="invalid_tax_calculation_basis" xml:space="preserve">
+    <value>Base de cálculo de impuesto desconocida.</value>
+  </data>
+  <data name="invalid_tax_charge_type" xml:space="preserve">
+    <value>Tipo de cargo de impuesto desconocido. Permitidos: Add, Deduct.</value>
+  </data>
+  <data name="tax_template_not_found" xml:space="preserve">
+    <value>Plantilla de impuestos no encontrada.</value>
+  </data>
+  <data name="duplicate_tax_template" xml:space="preserve">
+    <value>Ya existe una plantilla de impuestos con este título para esta empresa y categoría.</value>
+  </data>
+  <data name="invalid_tax_template_category" xml:space="preserve">
+    <value>La categoría de la plantilla debe ser Sales o Purchase.</value>
+  </data>
+  <data name="batch_required" xml:space="preserve">
+    <value>Debe especificar un lote para este artículo con trazabilidad de lote.</value>
+  </data>
+  <data name="batch_not_found" xml:space="preserve">
+    <value>Lote no encontrado.</value>
+  </data>
+  <data name="batch_has_expired" xml:space="preserve">
+    <value>El lote ha caducado y no puede despacharse.</value>
+  </data>
+  <data name="batch_insufficient_stock" xml:space="preserve">
+    <value>El lote no tiene existencias suficientes en este almacén.</value>
+  </data>
+  <data name="batch_disabled" xml:space="preserve">
+    <value>El lote está deshabilitado y no acepta movimientos.</value>
+  </data>
+  <data name="duplicate_batch" xml:space="preserve">
+    <value>Ya existe un lote con este número para este artículo.</value>
+  </data>
+  <data name="serial_required" xml:space="preserve">
+    <value>Se requieren números de serie para este artículo con trazabilidad de serie.</value>
+  </data>
+  <data name="serial_count_mismatch" xml:space="preserve">
+    <value>La cantidad de series debe igualar la cantidad movida (una serie por unidad).</value>
+  </data>
+  <data name="serial_not_in_warehouse" xml:space="preserve">
+    <value>La serie no está disponible en este almacén.</value>
+  </data>
+  <data name="serial_already_exists" xml:space="preserve">
+    <value>El número de serie ya existe: las series nunca se reutilizan.</value>
+  </data>
+  <data name="serial_not_found" xml:space="preserve">
+    <value>Número de serie no encontrado.</value>
+  </data>
+  <data name="tracked_return_unsupported" xml:space="preserve">
+    <value>Las devoluciones con movimiento de stock de artículos rastreados aún no están soportadas.</value>
+  </data>
+  <data name="purchase_receipt_not_submitted" xml:space="preserve">
+    <value>Solo las recepciones de compra confirmadas absorben costos de adquisición.</value>
+  </data>
+  <data name="charges_required" xml:space="preserve">
+    <value>El comprobante necesita al menos un cargo mayor que cero.</value>
+  </data>
+  <data name="expense_account_required" xml:space="preserve">
+    <value>Un renglón de cargo debe referenciar una cuenta contable.</value>
+  </data>
+  <data name="landed_cost_voucher_not_found" xml:space="preserve">
+    <value>Comprobante de costos de adquisición no encontrado.</value>
+  </data>
+  <data name="invalid_distribute_by" xml:space="preserve">
+    <value>Estrategia de prorrateo desconocida.</value>
+  </data>
+  <data name="no_stock_to_revalue" xml:space="preserve">
+    <value>No hay stock disponible al que aplicar la revaluación.</value>
+  </data>
+  <data name="workflow_submit_not_allowed" xml:space="preserve">
+    <value>El documento no está en un estado operativo autorizado para enviar.</value>
+  </data>
+  <data name="invalid_workflow_transition" xml:space="preserve">
+    <value>La transición de flujo es inválida.</value>
+  </data>
+  <data name="workflow_role_unauthorized" xml:space="preserve">
+    <value>Su rol no puede ejecutar esta transición de flujo.</value>
+  </data>
+  <data name="workflow_not_found" xml:space="preserve">
+    <value>Flujo no encontrado.</value>
+  </data>
+  <data name="duplicate_workflow" xml:space="preserve">
+    <value>Ya existe un flujo con este nombre para este tipo de documento.</value>
+  </data>
+  <data name="preset_not_found" xml:space="preserve">
+    <value>Preset de industria no encontrado.</value>
   </data>
 </root>

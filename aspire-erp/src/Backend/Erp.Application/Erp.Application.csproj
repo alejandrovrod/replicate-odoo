@@ -4,6 +4,12 @@
     <ProjectReference Include="..\Erp.Domain\Erp.Domain.csproj" />
   </ItemGroup>
 
+  <!-- Industry vertical seed packs (workflow Fase 5): embedded so ApplyPreset works without
+       file-system access in any host (API, tests, tooling). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Presets\*.json" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

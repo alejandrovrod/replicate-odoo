@@ -15,4 +15,8 @@ public sealed record CreateItemCommand(
     Guid BaseUOMId,
     Guid? IncomeAccountId = null,
     Guid? ExpenseAccountId = null,
-    bool IsActive = true) : ICommand<Result<ItemDto>>;
+    bool IsActive = true,
+    string? CustomData = null,
+    // Batch-and-serial Fase 3: traceability flags (additive, default untracked).
+    bool HasBatchNo = false,
+    bool HasSerialNo = false) : ICommand<Result<ItemDto>>;

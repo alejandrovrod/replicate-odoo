@@ -13,7 +13,9 @@ public sealed record PurchaseReceiptLineDto(
     string ItemName,
     decimal Qty,
     decimal Rate,
-    int LineNumber);
+    int LineNumber,
+    // Batch-and-serial Fase 3: received batch (null for untracked items).
+    Guid? BatchId = null);
 
 /// <summary>Purchase receipt payload returned by GET /api/v1/purchasereceipts.</summary>
 public sealed record PurchaseReceiptDto(
@@ -24,7 +26,9 @@ public sealed record PurchaseReceiptDto(
     DateOnly PostingDate,
     string VoucherNo,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<PurchaseReceiptLineDto> Lines)
+    IReadOnlyList<PurchaseReceiptLineDto> Lines,
+    // Fase 4: receipt status (defaulted so positional constructions compile).
+    PurchaseReceiptStatus Status = PurchaseReceiptStatus.Submitted)
 {
     /// <summary>Maps a receipt aggregate; <paramref name="itemsById"/> resolves line codes/names.</summary>
     public static PurchaseReceiptDto Build(
@@ -42,7 +46,8 @@ public sealed record PurchaseReceiptDto(
                 item?.ItemName ?? string.Empty,
                 line.Qty,
                 line.Rate,
-                line.LineNumber));
+                line.LineNumber,
+                line.BatchId));
         }
 
         return new PurchaseReceiptDto(
@@ -53,7 +58,8 @@ public sealed record PurchaseReceiptDto(
             receipt.PostingDate,
             receipt.VoucherNo,
             receipt.CreatedAt,
-            lines);
+            lines,
+            receipt.Status);
     }
 }
 

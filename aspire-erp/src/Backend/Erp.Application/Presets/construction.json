@@ -1,0 +1,57 @@
+{
+  "key": "construction",
+  "name": "Construction / Obra",
+  "description": "Constructora: contratistas, frentes de obra y compras autorizadas.",
+  "terminology": {
+    "en": {
+      "buying": {
+        "supplierForm.titleNew": "New Contractor"
+      },
+      "selling": {
+        "orderForm.titleNew": "New Work Order"
+      },
+      "common": {
+        "nav.item.sellingOrders": "Work Orders"
+      }
+    },
+    "es": {
+      "buying": {
+        "supplierForm.titleNew": "Nuevo Contratista"
+      },
+      "selling": {
+        "orderForm.titleNew": "Nueva Orden de Obra"
+      },
+      "common": {
+        "nav.item.sellingOrders": "Órdenes de Obra"
+      }
+    }
+  },
+  "customFields": [
+    { "entity": "Supplier", "field": "tradeLicense", "type": "string", "required": false },
+    { "entity": "Asset", "field": "siteLocation", "type": "string", "required": false }
+  ],
+  "workflows": [
+    {
+      "documentType": "PurchaseOrder",
+      "name": "Obra",
+      "states": [
+        { "name": "Cotización", "initial": true, "canSubmit": false },
+        { "name": "Aprobación Residente", "initial": false, "canSubmit": false },
+        { "name": "Autorizado", "initial": false, "canSubmit": true }
+      ],
+      "transitions": [
+        { "from": "Cotización", "to": "Aprobación Residente", "label": "Enviar a residente", "role": "Compras" },
+        { "from": "Aprobación Residente", "to": "Autorizado", "label": "Autorizar compra", "role": "Dirección" }
+      ]
+    }
+  ],
+  "taxTemplates": [
+    {
+      "title": "Retención obra",
+      "category": "Purchase",
+      "lines": [
+        { "accountCode": "2109", "description": "Retención ISR 10%", "rate": 10, "chargeType": "Deduct", "basis": "OnNetTotal" }
+      ]
+    }
+  ]
+}

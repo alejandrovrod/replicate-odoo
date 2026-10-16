@@ -32,6 +32,8 @@ export interface SalesOrder {
   billedPercentage: number
   createdAt: string
   lines: SalesOrderLine[]
+  /** Operational workflow state (Fase 5, null until adopted). */
+  workflowState?: string | null
 }
 
 export interface CreateSalesOrderLineInput {

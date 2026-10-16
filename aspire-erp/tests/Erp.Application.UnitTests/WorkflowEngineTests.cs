@@ -246,7 +246,8 @@ public sealed class WorkflowEngineTests
         var active = await service.GetActiveAsync();
         Assert.Equal("healthcare", active.PresetKey);
         Assert.True(active.Terminology.TryGetValue("es", out var es));
-        Assert.True(es.TryGetValue("selling:customerForm.titleNew", out var title));
+        Assert.True(es.TryGetValue("selling", out var selling));
+        Assert.True(selling.TryGetValue("customerForm.titleNew", out var title));
         Assert.Equal("Nuevo Paciente", title);
     }
 

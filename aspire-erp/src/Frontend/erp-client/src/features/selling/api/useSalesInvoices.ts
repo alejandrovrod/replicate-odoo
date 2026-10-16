@@ -1,5 +1,5 @@
 import { apiClient } from '../../../api/client'
-import { useApiList } from '../../../lib/useApiList'
+import { useApiList, useApiTreeList } from '../../../lib/useApiList'
 
 export interface SalesInvoiceItem {
   id: string
@@ -38,6 +38,10 @@ export interface SalesInvoice {
   grandTotal: number
   outstandingAmount: number
   paidAmount: number
+  /** ERPNext parity (advances allocation): total crossed at creation, settled at submit. */
+  totalAdvance: number
+  /** Per-payment cross slices (populated on detail reads). */
+  advances?: SalesInvoiceAdvance[]
   rowVersion?: string
   createdAt: string
   items: SalesInvoiceItem[]
@@ -48,6 +52,13 @@ export interface SalesInvoice {
   /** Module 18: credit-note mode + provenance. */
   isReturn?: boolean
   returnAgainstId?: string | null
+}
+
+/** One advance-cross slice (mirrors PaymentAllocationDto): which payment funds how much. */
+export interface SalesInvoiceAdvance {
+  id: string
+  paymentEntryId?: string | null
+  allocatedAmount: number
 }
 
 export function useSalesInvoices(companyId: string, page = 1, pageSize = 50) {
@@ -73,6 +84,11 @@ export interface CreateSalesInvoicePayload {
   /** Module 18: credit-note mode; lines must carry negative quantities. */
   isReturn?: boolean
   returnAgainstId?: string | null
+  /** ERPNext parity (Update Stock): immediate delivery from the source warehouse. */
+  updateStock?: boolean
+  sourceWarehouseId?: string | null
+  /** ERPNext parity (advances allocation): slices reserved at creation, settled at submit. */
+  advances?: { paymentEntryId: string; allocatedAmount: number }[]
 }
 
 export async function createSalesInvoice(payload: CreateSalesInvoicePayload): Promise<SalesInvoice> {
@@ -86,6 +102,9 @@ export async function createSalesInvoice(payload: CreateSalesInvoicePayload): Pr
     taxes: payload.taxes ?? [],
     isReturn: payload.isReturn ?? false,
     returnAgainstId: payload.returnAgainstId ?? null,
+    updateStock: payload.updateStock ?? false,
+    sourceWarehouseId: payload.sourceWarehouseId ?? null,
+    advances: payload.advances ?? [],
   })
   return response.data
 }
@@ -94,5 +113,37 @@ export async function submitSalesInvoice(id: string, companyId: string): Promise
   const response = await apiClient.post<SalesInvoice>(`/v1/sales-invoices/${id}/submit`, null, {
     params: { companyId },
   })
+  return response.data
+}
+
+/** One advance funding source (mirrors EligibleAdvanceDto): submitted receipt + remainder. */
+export interface EligibleAdvance {
+  paymentEntryId: string
+  voucherNo: string
+  paymentDate: string
+  paidAmount: number
+  unallocatedAmount: number
+}
+
+/**
+ * GET /v1/customers/{customerId}/eligible-advances - submitted customer receipts with a
+ * remaining unallocated balance, oldest first (T4.1: the advance grid's source).
+ */
+export function useEligibleAdvances(companyId: string, customerId: string) {
+  return useApiTreeList<EligibleAdvance>(
+    `/v1/customers/${customerId}/eligible-advances`,
+    { companyId },
+    Boolean(companyId) && Boolean(customerId),
+  )
+}
+
+export async function getEligibleAdvances(
+  customerId: string,
+  companyId: string,
+): Promise<EligibleAdvance[]> {
+  const response = await apiClient.get<EligibleAdvance[]>(
+    `/v1/customers/${customerId}/eligible-advances`,
+    { params: { companyId } },
+  )
   return response.data
 }

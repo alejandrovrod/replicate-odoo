@@ -39,7 +39,7 @@ public sealed class PaymentAllocationConfiguration : IEntityTypeConfiguration<Pa
         builder.Property(a => a.ExchangeRate).HasColumnType("decimal(18,6)").HasDefaultValue(1m).IsRequired();
 
         builder.HasOne(a => a.SalesInvoice)
-            .WithMany()
+            .WithMany(s => s.Advances)
             .HasForeignKey(a => a.SalesInvoiceId)
             .HasConstraintName("FK_PaymentAllocation_SalesInvoice")
             .OnDelete(DeleteBehavior.Restrict);

@@ -46,6 +46,13 @@ function Probe() {
   )
 }
 
+function NavProbe() {
+  const { t } = useTranslation('common')
+  const { ready } = useTerminology()
+  if (!ready) return <p>loading</p>
+  return <p>{t('nav.item.buyingSuppliers', 'Suppliers')} · ready</p>
+}
+
 describe('TerminologyOverlayProvider (workflow Fase 5, gap D4)', () => {
   beforeEach(async () => {
     await loadTestFixtures()
@@ -86,5 +93,57 @@ describe('TerminologyOverlayProvider (workflow Fase 5, gap D4)', () => {
     )
 
     await waitFor(() => expect(screen.getByText(/none/)).toBeInTheDocument())
+  })
+
+  it('preloads every preset-bearing namespace before injecting (no lazy-load race)', async () => {
+    get().mockResolvedValue({
+      data: {
+        presetKey: 'automotive',
+        name: 'Automotive',
+        terminology: {
+          en: { stock: { 'items.manageTitle': 'Spare Parts & Components' } },
+        },
+      },
+    })
+    const loadSpy = vi.spyOn(i18n, 'loadNamespaces')
+
+    try {
+      render(
+        <TerminologyOverlayProvider>
+          <Probe />
+        </TerminologyOverlayProvider>,
+      )
+
+      await waitFor(() => expect(loadSpy).toHaveBeenCalled())
+      const requested = loadSpy.mock.calls.flatMap((call) =>
+        Array.isArray(call[0]) ? call[0] : [call[0]],
+      )
+      for (const ns of ['common', 'selling', 'buying', 'stock', 'assets', 'error']) {
+        expect(requested).toContain(ns)
+      }
+    } finally {
+      loadSpy.mockRestore()
+    }
+  })
+
+  it('unnests dotted keys into the deep bundle structure (common nav items)', async () => {
+    get().mockResolvedValue({
+      data: {
+        presetKey: 'construction',
+        name: 'Construction',
+        terminology: {
+          en: { common: { 'nav.item.buyingSuppliers': 'Subcontractors' } },
+        },
+      },
+    })
+
+    render(
+      <TerminologyOverlayProvider>
+        <NavProbe />
+      </TerminologyOverlayProvider>,
+    )
+
+    // The flat preset key lands on the nested catalog path nav -> item -> buyingSuppliers.
+    expect(await screen.findByText('Subcontractors · ready')).toBeInTheDocument()
   })
 })

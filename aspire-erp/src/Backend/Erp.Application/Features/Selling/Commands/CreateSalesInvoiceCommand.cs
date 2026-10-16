@@ -24,6 +24,17 @@ public sealed record SalesInvoiceTaxCommandDto(
     decimal FixedAmount = 0m
 );
 
+/// <summary>
+/// One advance-cross input (sales-invoice ERPNext parity): <c>AllocatedAmount</c> of a
+/// submitted customer payment (<see cref="PaymentEntry.UnallocatedAmount"/>) to cross
+/// against the new invoice. Validated against the live payment at creation AND revalidated
+/// at submit (the balance can move between Draft and submit).
+/// </summary>
+public sealed record SalesInvoiceAdvanceCommandDto(
+    Guid PaymentEntryId,
+    decimal AllocatedAmount
+);
+
 public sealed record CreateSalesInvoiceCommand(
     Guid CompanyId,
     Guid CustomerId,
@@ -43,5 +54,9 @@ public sealed record CreateSalesInvoiceCommand(
     // Tax-engine Fase 2: optional template expansion (template lines first, then manual
     // Taxes rows). The server re-resolves and recomputes everything - the template is a
     // shortcut, never trusted money.
-    Guid? TaxTemplateId = null
+    Guid? TaxTemplateId = null,
+    // ERPNext parity (advances allocation): advance slices crossed against the Draft.
+    // Persisted immediately as PaymentAllocation rows; settled (payment balances moved)
+    // at submit. Rejected on credit notes.
+    IReadOnlyList<SalesInvoiceAdvanceCommandDto>? Advances = null
 ) : ICommand<Result<SalesInvoiceDto>>;

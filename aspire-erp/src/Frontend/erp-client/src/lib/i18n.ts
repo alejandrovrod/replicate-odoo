@@ -35,6 +35,7 @@ export const NAMESPACES = [
   'assets',
   'dashboard',
   'security',
+  'landing',
 ] as const
 
 /** Narrows any detected tag (`es-AR`, `en-US`, ...) to a language we actually ship. */

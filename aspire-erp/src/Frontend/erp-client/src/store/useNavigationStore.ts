@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 
 export type NavRoute =
+  | 'landing'
+  | 'login'
   | 'dashboard'
   | 'profile'
   | 'dashboard-reports'
@@ -42,6 +44,8 @@ interface NavigationState {
 const parseHash = (): NavRoute => {
   const hash = window.location.hash.replace(/^#\/?/, '')
   const validRoutes: NavRoute[] = [
+    'landing',
+    'login',
     'dashboard',
     'profile',
     'dashboard-reports',
@@ -73,7 +77,8 @@ const parseHash = (): NavRoute => {
     'accounting-exchange-rates',
     'accounting-fx-revaluations',
   ]
-  return validRoutes.includes(hash as NavRoute) ? (hash as NavRoute) : 'accounting-coa'
+  if (hash === '' || hash === 'landing') return 'landing'
+  return validRoutes.includes(hash as NavRoute) ? (hash as NavRoute) : 'landing'
 }
 
 export const useNavigationStore = create<NavigationState>((set) => {
@@ -85,7 +90,7 @@ export const useNavigationStore = create<NavigationState>((set) => {
   }
 
   return {
-    currentRoute: typeof window !== 'undefined' ? parseHash() : 'accounting-coa',
+    currentRoute: typeof window !== 'undefined' ? parseHash() : 'landing',
     isSidebarCollapsed: false,
     setCurrentRoute: (route: NavRoute) => {
       if (typeof window !== 'undefined') {

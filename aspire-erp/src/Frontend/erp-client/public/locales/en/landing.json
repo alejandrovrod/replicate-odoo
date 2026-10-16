@@ -1,0 +1,185 @@
+{
+  "nav": {
+    "modules": "Modules",
+    "chameleon": "Chameleon Architecture",
+    "architecture": "Engineering Stack",
+    "signIn": "Sign In",
+    "demo": "Try Demo"
+  },
+  "hero": {
+    "badge": "Clean Architecture .NET 10 + SQL Server 2025",
+    "titlePrefix": "The Next Generation",
+    "titleHighlight": "Enterprise ERP",
+    "titleSuffix": "built to scale",
+    "description": "Powered by .NET 10 Aspire, immutable accounting with DoubleEntryGuard, FIFO perpetual valuation, and Chameleon Architecture with complete ERPNext parity.",
+    "ctaExplore": "Explore Platform",
+    "ctaDemo": "Launch Live Demo",
+    "runtimeBadge": "ASPIRE ERP // ENTERPRISE RUNTIME",
+    "headlineMain": "The enterprise operating system",
+    "headlineSub": "for organizations that refuse to cut corners.",
+    "specDoubleEntry": "DoubleEntryGuard",
+    "specFifo": "FIFO Perpetual",
+    "specSql": "SQL Server 2025",
+    "feature1Title": "Chameleon Architecture",
+    "feature1Desc": "Dynamically morphs vocabulary and business flows for Healthcare, Automotive, Construction, or Distribution.",
+    "feature2Title": "ERPNext Parity Direct Stock",
+    "feature2Desc": "Direct invoicing with stock reduction, advance payment allocation, and strict tax retention compliance.",
+    "feature3Title": "Double-Entry Ledger Immutability",
+    "feature3Desc": "DoubleEntryGuard guarantees at the backend that no transaction leaves the balance sheet out of balance.",
+    "feature4Title": "High-Throughput CQRS < 15ms",
+    "feature4Desc": "Segregated command and query operations for instant response times under heavy concurrent loads.",
+    "cockpitTitle": "aspire-erp // core.ledger.overview",
+    "cockpitStatus": "ONLINE",
+    "metric1Sub": "0 discrepancies",
+    "metric2Sub": "P99 Query Time",
+    "metric3Sub": "Hot-Swappable",
+    "metric4Sub": "Landed Cost Sync",
+    "metric1Value": "100%",
+    "metric1Label": "Ledger Immutability",
+    "metric2Value": "< 15ms",
+    "metric2Label": "CQRS Query Latency",
+    "metric3Value": "4-in-1",
+    "metric3Label": "Chameleon Verticals",
+    "metric4Value": "FIFO",
+    "metric4Label": "Strict Perpetual Valuation"
+  },
+  "chameleon": {
+    "dividerLabel": "CHAMELEON ARCHITECTURE // LIVE ADAPTATION",
+    "badge": "Dynamic Adaptability",
+    "title": "Chameleon Architecture in Action",
+    "subtitle": "A single centralized core that dynamically transforms its vocabulary, entities, and business flows for your industry.",
+    "colClient": "Customer",
+    "colOrder": "Sales Order",
+    "colDelivery": "Delivery Note",
+    "colInvoice": "Sales Invoice",
+    "auditTrailTitle": "GENERAL LEDGER FEED // AUDIT TRAIL",
+    "presetActiveBadge": "PRESET ACTIVE",
+    "thDoc": "DOC",
+    "thEntity": "ENTITY",
+    "thType": "TYPE",
+    "thDebitCredit": "DEBIT / CREDIT",
+    "guaranteeTitle": "DoubleEntryGuard Active",
+    "guaranteeDesc": "Vocabulary changes synchronize with i18n definitions and tenant metadata without recompiling the backend or altering relational constraints.",
+    "tabs": {
+      "healthcare": "Healthcare / Clinic",
+      "automotive": "Automotive Workshop",
+      "construction": "Construction & Works",
+      "distribution": "Wholesale Distribution"
+    },
+    "healthcare": {
+      "name": "Clinical Healthcare",
+      "description": "The ERP adapts medical terminology, patient admission orders, attending physicians, and rigorous supply tracking.",
+      "customerTerm": "Patients",
+      "orderTerm": "Admission Orders",
+      "deliveryTerm": "Supply Dispensation",
+      "invoiceTerm": "Medical Billing",
+      "feature1": "Batch and expiration tracking for pharmaceuticals",
+      "feature2": "Ward and operating room allocation linked to billing",
+      "feature3": "Dual tax retention compliance for medical services"
+    },
+    "automotive": {
+      "name": "Automotive & Mechanical Service",
+      "description": "Tailored towards vehicles, VIN chassis numbers, assigned technicians, and spare parts quotations.",
+      "customerTerm": "Vehicle Owners",
+      "orderTerm": "Service Orders (RO)",
+      "deliveryTerm": "Parts Issue",
+      "invoiceTerm": "Labor & Parts Invoicing",
+      "feature1": "Unit identification by VIN chassis and odometer",
+      "feature2": "Labor hours and consumables apportionment per job",
+      "feature3": "Complete unit mechanical service history"
+    },
+    "construction": {
+      "name": "Construction & Civil Works",
+      "description": "Project-based management, job sites, quantity takeoff, subcontractors, and progress certificates.",
+      "customerTerm": "Contractors / Clients",
+      "orderTerm": "Daily Work Logs",
+      "deliveryTerm": "Material Waybills",
+      "invoiceTerm": "Progress Valuations",
+      "feature1": "Budgeted vs actual materials and labor monitoring",
+      "feature2": "Heavy equipment tracking as assets and cost centers",
+      "feature3": "Material stockpiling and retention bonds management"
+    },
+    "distribution": {
+      "name": "Distribution & Logistics",
+      "description": "Optimized for high-velocity inventory turnover, multi-warehouse routing, import duties, and volume billing.",
+      "customerTerm": "Points of Sale (POS)",
+      "orderTerm": "Fulfillment Orders",
+      "deliveryTerm": "Delivery Notes",
+      "invoiceTerm": "Tiered Discount Invoices",
+      "feature1": "Landed Cost Vouchers for freight and customs apportionment",
+      "feature2": "Barcode scanning and zone-based warehouse picking",
+      "feature3": "Perpetual FIFO cost recalculation"
+    }
+  },
+  "modules": {
+    "sectionHeader": "ENTERPRISE CAPABILITIES // PARITY CHECKED",
+    "badge": "Enterprise Capabilities",
+    "title": "Built with Complete ERPNext Parity",
+    "subtitle": "Every module is engineered to satisfy the most demanding accounting and operational standards.",
+    "viewDetail": "View details",
+    "accounting": {
+      "title": "Immutable General Ledger & Treasury",
+      "description": "Hierarchical multi-level chart of accounts, trial balance, bank reconciliation, and DoubleEntryGuard ensuring zero-discrepancy balance."
+    },
+    "selling": {
+      "title": "Sales & Billing (Direct Stock Update)",
+      "description": "Issue sales invoices with immediate stock reduction (Update Stock), credit notes, advance payments, and multi-currency support."
+    },
+    "stock": {
+      "title": "Perpetual Inventory & Landed Cost",
+      "description": "FIFO stock valuation, serial and batch tracking, tree warehouses, and import freight cost apportionment via Landed Cost Vouchers."
+    },
+    "manufacturing": {
+      "title": "Manufacturing & Multi-level BOM",
+      "description": "Multi-tier bills of materials, workstation scheduling, production orders, and labor/overhead cost absorption."
+    },
+    "assets": {
+      "title": "Fixed Assets & Automated Depreciation",
+      "description": "Automated straight-line monthly depreciation, asset custodianship, write-offs, and asset category capitalization."
+    },
+    "security": {
+      "title": "Granular Security & Multi-Tenancy",
+      "description": "Tenant isolation, granular DocType-level permission matrices, and Two-Factor Authentication (2FA / TOTP)."
+    }
+  },
+  "techStack": {
+    "sectionHeader": "ENGINEERING STACK // ARCHITECTURAL PURITY",
+    "badge": "Top-Tier Engineering",
+    "title": "Modern Architecture with Zero Shortcuts",
+    "subtitle": "Built on the most resilient architectural patterns of modern .NET and the Web ecosystem.",
+    "quoteText": "Building a world-class ERP demands discipline: avoiding bloated frameworks, isolating ledger invariants into immutable domain models, and mathematically verifying every entry.",
+    "quoteLabel": "DOMAIN ARCHITECTURE // ASPIRE ERP KERNEL",
+    "dotnet": {
+      "tag": "C# 13 // ASP.NET Core",
+      "title": ".NET 10 & Aspire Cloud-Native",
+      "desc": "Cloud-native orchestration, OpenTelemetry observability, and clean layered domain architecture."
+    },
+    "sql": {
+      "tag": "SQL Server 2025",
+      "title": "System-Versioned Temporal Tables",
+      "desc": "Immutable system-versioned temporal audit tables, composite index tuning, and optimistic RowVersion concurrency."
+    },
+    "cqrs": {
+      "tag": "MediatR // Domain Events",
+      "title": "Strict CQRS Segregation",
+      "desc": "Segregation of command and query operations for peak throughput and complete ledger event sourcing."
+    },
+    "frontend": {
+      "tag": "React 19 // Vite",
+      "title": "Strictly-Typed TypeScript Frontend",
+      "desc": "Lightweight Zustand state management, accessible Radix UI primitives, and modular Tailwind CSS."
+    }
+  },
+  "cta": {
+    "envBadge": "ASPIRE PRODUCTION ENVIRONMENT",
+    "title": "Ready to experience the power of Aspire ERP?",
+    "subtitle": "Access the live preview environment with all enterprise features enabled and test the speed for yourself.",
+    "button": "Launch Live Demo",
+    "login": "Sign In with Existing Account"
+  },
+  "footer": {
+    "tagline": "The world-class enterprise ERP built for the modern corporation.",
+    "rights": "All rights reserved. Built with .NET 10 and React 19.",
+    "backToTop": "Back to top"
+  }
+}

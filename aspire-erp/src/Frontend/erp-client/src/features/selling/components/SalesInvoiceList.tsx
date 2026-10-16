@@ -76,6 +76,16 @@ export function SalesInvoiceList({
                         {t('invoices.creditNote', 'CN')}
                       </span>
                     )}
+                    {inv.updateStock && (
+                      <span className="ml-1.5 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-800">
+                        {t('invoices.directDelivery', 'Direct delivery')}
+                      </span>
+                    )}
+                    {(inv.totalAdvance ?? 0) > 0 && (
+                      <span className="ml-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                        {t('invoices.advanceApplied', 'Advance')}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-slate-800">{inv.customerName ?? ''}</TableCell>
                   <TableCell className="font-mono text-slate-500">{inv.postingDate}</TableCell>

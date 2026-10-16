@@ -246,6 +246,48 @@ public sealed class CustomersController : ControllerBase
         return Ok(invoices);
     }
 
+    /// <summary>
+    /// Returns the customer's advance funding source for the invoice form (sales-invoice
+    /// ERPNext parity): submitted receipts with a remaining unallocated balance, oldest
+    /// payment first. Read-only: crossing happens at invoice submit, never here.
+    /// </summary>
+    /// <param name="id">Customer ID.</param>
+    /// <param name="companyId">Company that owns the customer.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("{id}/eligible-advances")]
+    [Authorize(Policy = "permission:customer:read")]
+    [ProducesResponseType(typeof(IReadOnlyList<EligibleAdvanceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetEligibleAdvances(
+        Guid id,
+        [FromQuery] Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidCustomer"),
+                _errors.Text(SellingErrorCodes.CustomerNotFound),
+                SellingErrorCodes.CustomerNotFound);
+        }
+
+        var customer = await _customers.GetByIdAsync(id, cancellationToken);
+        if (customer is null || customer.CompanyId != companyId)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("CustomerNotFound"),
+                _errors.Text(SellingErrorCodes.CustomerNotFound),
+                SellingErrorCodes.CustomerNotFound);
+        }
+
+        var advances = await _sender.SendAsync(
+            new GetCustomerEligibleAdvancesQuery(companyId, id), cancellationToken);
+        return Ok(advances);
+    }
+
     /// <summary>Disables a customer (sets IsActive = false).</summary>
     [HttpPut("{id}/disable")]
     [Authorize(Policy = "permission:customer:write")]

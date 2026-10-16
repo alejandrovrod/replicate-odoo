@@ -5,26 +5,92 @@
   "terminology": {
     "en": {
       "selling": {
-        "orderForm.titleNew": "New Service Order"
+        "overview.manageCustomers": "Vehicle Owners",
+        "overview.orders": "Service Orders",
+        "invoices.colCustomer": "Owner",
+        "orders.colCustomer": "Owner",
+        "orders.title": "Service Orders",
+        "orders.new": "New Service Order",
+        "form.customer": "Vehicle Owner *",
+        "orderForm.titleNew": "New Service Order",
+        "orderForm.errorCustomer": "The vehicle owner is required.",
+        "invoiceForm.errorCustomer": "The vehicle owner is required.",
+        "customerForm.titleNew": "New Vehicle Owner",
+        "customerForm.titleEdit": "Edit Vehicle Owner",
+        "customerForm.codeLabel": "Owner Code *",
+        "customerForm.nameLabel": "Owner Name *",
+        "customerForm.typeLabel": "Owner Type",
+        "customers.manageTitle": "Vehicle Owners",
+        "customers.manageSubtitle": "Manage vehicle owners and service credit limits.",
+        "customers.search": "Search owners...",
+        "customers.columns.name": "Owner Name",
+        "customers.columns.code": "Owner Code",
+        "customers.columns.type": "Owner Type"
       },
       "stock": {
+        "items.manageTitle": "Spare Parts & Components",
+        "items.manageSubtitle": "Manage spare parts, refactions and shop supplies.",
+        "items.search": "Search parts...",
         "itemForm.titleNew": "New Spare Part",
         "itemForm.titleEdit": "Edit Spare Part"
       },
+      "assets": {
+        "assets.manageTitle": "Vehicles & Equipment",
+        "assets.manageSubtitle": "Manage vehicles and shop equipment, depreciation and net book value.",
+        "assets.search": "Search vehicles...",
+        "assets.titleNew": "New Vehicle / Equipment",
+        "assets.columns.name": "Vehicle / Equipment"
+      },
       "common": {
-        "nav.item.sellingOrders": "Service Orders"
+        "nav.item.sellingCustomers": "Vehicle Owners",
+        "nav.item.sellingOrders": "Service Orders",
+        "nav.item.stock": "Spare Parts",
+        "nav.item.assets": "Vehicles"
       }
     },
     "es": {
       "selling": {
-        "orderForm.titleNew": "Nueva Orden de Servicio"
+        "overview.manageCustomers": "Propietarios",
+        "overview.orders": "Órdenes de Servicio",
+        "invoices.colCustomer": "Propietario",
+        "orders.colCustomer": "Propietario",
+        "orders.title": "Órdenes de Servicio",
+        "orders.new": "Nueva Orden de Servicio",
+        "form.customer": "Propietario *",
+        "orderForm.titleNew": "Nueva Orden de Servicio",
+        "orderForm.errorCustomer": "El propietario es obligatorio.",
+        "invoiceForm.errorCustomer": "El propietario es obligatorio.",
+        "customerForm.titleNew": "Nuevo Propietario",
+        "customerForm.titleEdit": "Editar Propietario",
+        "customerForm.codeLabel": "Código de Propietario *",
+        "customerForm.nameLabel": "Nombre del Propietario *",
+        "customerForm.typeLabel": "Tipo de Propietario",
+        "customers.manageTitle": "Propietarios",
+        "customers.manageSubtitle": "Gestionar propietarios y límites de crédito de servicio.",
+        "customers.search": "Buscar propietarios...",
+        "customers.columns.name": "Nombre del Propietario",
+        "customers.columns.code": "Código de Propietario",
+        "customers.columns.type": "Tipo de Propietario"
       },
       "stock": {
+        "items.manageTitle": "Repuestos y Refacciones",
+        "items.manageSubtitle": "Gestionar repuestos, refacciones e insumos del taller.",
+        "items.search": "Buscar repuestos...",
         "itemForm.titleNew": "Nuevo Repuesto",
         "itemForm.titleEdit": "Editar Repuesto"
       },
+      "assets": {
+        "assets.manageTitle": "Vehículos y Equipos",
+        "assets.manageSubtitle": "Gestionar vehículos y equipos del taller, depreciación y valor contable.",
+        "assets.search": "Buscar vehículos...",
+        "assets.titleNew": "Nuevo Vehículo / Equipo",
+        "assets.columns.name": "Vehículo / Equipo"
+      },
       "common": {
-        "nav.item.sellingOrders": "Órdenes de Servicio"
+        "nav.item.sellingCustomers": "Propietarios",
+        "nav.item.sellingOrders": "Órdenes de Servicio",
+        "nav.item.stock": "Repuestos",
+        "nav.item.assets": "Vehículos"
       }
     }
   },

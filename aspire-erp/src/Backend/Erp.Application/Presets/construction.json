@@ -5,24 +5,80 @@
   "terminology": {
     "en": {
       "buying": {
-        "supplierForm.titleNew": "New Contractor"
+        "suppliers.manageTitle": "Subcontractors",
+        "suppliers.manageSubtitle": "Manage subcontractors and payment terms.",
+        "suppliers.search": "Search subcontractors...",
+        "suppliers.columns.name": "Subcontractor Name",
+        "suppliers.columns.code": "Subcontractor Code",
+        "supplierForm.titleNew": "New Subcontractor",
+        "supplierForm.titleEdit": "Edit Subcontractor",
+        "supplierForm.codeLabel": "Subcontractor Code *",
+        "supplierForm.nameLabel": "Subcontractor Name *"
       },
       "selling": {
+        "overview.orders": "Work Orders",
+        "orders.title": "Work Orders",
+        "orders.new": "New Work Order",
         "orderForm.titleNew": "New Work Order"
       },
+      "stock": {
+        "items.manageTitle": "Jobsite Materials",
+        "items.manageSubtitle": "Manage jobsite materials and construction SKUs.",
+        "items.search": "Search materials...",
+        "itemForm.titleNew": "New Jobsite Material",
+        "itemForm.titleEdit": "Edit Jobsite Material"
+      },
+      "assets": {
+        "assets.manageTitle": "Machinery & Equipment",
+        "assets.manageSubtitle": "Manage heavy machinery and site equipment.",
+        "assets.search": "Search machinery...",
+        "assets.titleNew": "New Machine / Equipment",
+        "assets.columns.name": "Machine / Equipment"
+      },
       "common": {
-        "nav.item.sellingOrders": "Work Orders"
+        "nav.item.buyingSuppliers": "Subcontractors",
+        "nav.item.sellingOrders": "Work Orders",
+        "nav.item.stock": "Materials",
+        "nav.item.assets": "Machinery"
       }
     },
     "es": {
       "buying": {
-        "supplierForm.titleNew": "Nuevo Contratista"
+        "suppliers.manageTitle": "Subcontratistas",
+        "suppliers.manageSubtitle": "Gestionar subcontratistas y condiciones de pago.",
+        "suppliers.search": "Buscar subcontratistas...",
+        "suppliers.columns.name": "Nombre del Subcontratista",
+        "suppliers.columns.code": "Código de Subcontratista",
+        "supplierForm.titleNew": "Nuevo Subcontratista",
+        "supplierForm.titleEdit": "Editar Subcontratista",
+        "supplierForm.codeLabel": "Código de Subcontratista *",
+        "supplierForm.nameLabel": "Nombre del Subcontratista *"
       },
       "selling": {
+        "overview.orders": "Órdenes de Obra",
+        "orders.title": "Órdenes de Obra",
+        "orders.new": "Nueva Orden de Obra",
         "orderForm.titleNew": "Nueva Orden de Obra"
       },
+      "stock": {
+        "items.manageTitle": "Materiales de Obra",
+        "items.manageSubtitle": "Gestionar materiales de obra y SKUs de construcción.",
+        "items.search": "Buscar materiales...",
+        "itemForm.titleNew": "Nuevo Material de Obra",
+        "itemForm.titleEdit": "Editar Material de Obra"
+      },
+      "assets": {
+        "assets.manageTitle": "Maquinaria y Equipos",
+        "assets.manageSubtitle": "Gestionar maquinaria pesada y equipos de obra.",
+        "assets.search": "Buscar maquinaria...",
+        "assets.titleNew": "Nueva Máquina / Equipo",
+        "assets.columns.name": "Máquina / Equipo"
+      },
       "common": {
-        "nav.item.sellingOrders": "Órdenes de Obra"
+        "nav.item.buyingSuppliers": "Subcontratistas",
+        "nav.item.sellingOrders": "Órdenes de Obra",
+        "nav.item.stock": "Materiales",
+        "nav.item.assets": "Maquinaria"
       }
     }
   },

@@ -80,6 +80,7 @@ public sealed class SalesInvoiceRepository : ISalesInvoiceRepository, IReceivabl
         return await _context.SalesInvoices
             .Include(x => x.Items)
             .Include(x => x.Taxes)
+            .Include(x => x.Advances)
             .Include(x => x.Customer)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }

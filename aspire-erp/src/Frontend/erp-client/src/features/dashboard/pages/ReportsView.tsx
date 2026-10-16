@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useTenantStore } from '../../../store/useTenantStore'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Input } from '../../../components/ui/Input'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/Tabs'
 import {
   todayIso,
   useAgingReport,
@@ -82,39 +83,37 @@ export function ReportsView() {
         <p className="text-xs text-slate-500">{t('reports.subtitle', 'Read-only statements aggregated from the ledger')}</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {tabs.map((tb) => (
-          <button
-            key={tb.id}
-            type="button"
-            onClick={() => setTab(tb.id)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              tab === tb.id ? 'bg-sky-600 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            {tb.label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(val) => setTab(val as ReportTab)} className="w-full space-y-4">
+        <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-slate-100 rounded-lg justify-start w-fit">
+          {tabs.map((tb) => (
+            <TabsTrigger
+              key={tb.id}
+              value={tb.id}
+              className="rounded-md px-3 py-1.5 text-xs font-semibold data-[state=active]:bg-sky-600 data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+            >
+              {tb.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {(tab === 'balance' || tab === 'trial' || tab === 'aging') && (
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-slate-600">
-            {tab === 'aging' ? t('reports.reportDate', 'Report date') : t('reports.asOf', 'As of')}
-          </label>
-          <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className="max-w-45" />
-        </div>
-      )}
-      {(tab === 'pnl' || tab === 'kardex') && (
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="text-xs font-medium text-slate-600">{t('reports.from', 'From')}</label>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="max-w-45" />
-          <label className="text-xs font-medium text-slate-600">{t('reports.to', 'To')}</label>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="max-w-45" />
-        </div>
-      )}
+        {(tab === 'balance' || tab === 'trial' || tab === 'aging') && (
+          <div className="flex items-center gap-2 pt-1">
+            <label className="text-xs font-medium text-slate-600">
+              {tab === 'aging' ? t('reports.reportDate', 'Report date') : t('reports.asOf', 'As of')}
+            </label>
+            <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className="max-w-45" />
+          </div>
+        )}
+        {(tab === 'pnl' || tab === 'kardex') && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <label className="text-xs font-medium text-slate-600">{t('reports.from', 'From')}</label>
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="max-w-45" />
+            <label className="text-xs font-medium text-slate-600">{t('reports.to', 'To')}</label>
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="max-w-45" />
+          </div>
+        )}
 
-      {tab === 'balance' && (
+        <TabsContent value="balance">
         <div>
           {balance.status === 'loading' && <p className="text-xs text-slate-500">{t('reports.loading', 'Loading…')}</p>}
           {balance.status === 'error' && <p className="text-xs text-red-600">{balance.error?.message}</p>}
@@ -133,9 +132,9 @@ export function ReportsView() {
             </div>
           )}
         </div>
-      )}
+        </TabsContent>
 
-      {tab === 'pnl' && (
+        <TabsContent value="pnl">
         <div>
           {pnl.status === 'loading' && <p className="text-xs text-slate-500">{t('reports.loading', 'Loading…')}</p>}
           {pnl.status === 'error' && <p className="text-xs text-red-600">{pnl.error?.message}</p>}
@@ -155,9 +154,9 @@ export function ReportsView() {
             </div>
           )}
         </div>
-      )}
+        </TabsContent>
 
-      {tab === 'trial' && (
+        <TabsContent value="trial">
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
           {trial.status === 'loading' && <p className="p-4 text-xs text-slate-500">{t('reports.loading', 'Loading…')}</p>}
           {trial.status === 'error' && <p className="p-4 text-xs text-red-600">{trial.error?.message}</p>}
@@ -194,9 +193,9 @@ export function ReportsView() {
             </Table>
           )}
         </div>
-      )}
+        </TabsContent>
 
-      {tab === 'aging' && (
+        <TabsContent value="aging">
         <div className="space-y-4">
           {aging.status === 'loading' && <p className="text-xs text-slate-500">{t('reports.loading', 'Loading…')}</p>}
           {aging.status === 'error' && <p className="text-xs text-red-600">{aging.error?.message}</p>}
@@ -274,9 +273,9 @@ export function ReportsView() {
             </>
           )}
         </div>
-      )}
+        </TabsContent>
 
-      {tab === 'kardex' && (
+        <TabsContent value="kardex">
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
           {kardex.status === 'loading' && <p className="p-4 text-xs text-slate-500">{t('reports.loading', 'Loading…')}</p>}
           {kardex.status === 'error' && <p className="p-4 text-xs text-red-600">{kardex.error?.message}</p>}
@@ -319,7 +318,8 @@ export function ReportsView() {
             </Table>
           )}
         </div>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

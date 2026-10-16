@@ -971,6 +971,19 @@
   <data name="return_amount_exceeded" xml:space="preserve">
     <value>El total de la nota de crédito no puede exceder el total de la factura original.</value>
   </data>
+  <!-- Paridad ERPNext de facturas de venta: entrega directa de stock + cruce de anticipos. -->
+  <data name="update_stock_warehouse_required" xml:space="preserve">
+    <value>Las facturas con UpdateStock deben indicar el almacén de salida (SourceWarehouseId es obligatorio).</value>
+  </data>
+  <data name="insufficient_stock_for_invoice" xml:space="preserve">
+    <value>No hay stock suficiente en el almacén de salida para facturar esta factura.</value>
+  </data>
+  <data name="advance_exceeds_invoice_total" xml:space="preserve">
+    <value>El anticipo imputado no puede exceder el total de la factura.</value>
+  </data>
+  <data name="payment_entry_not_found_or_depleted" xml:space="preserve">
+    <value>El pago anticipado no existe o ya no tiene saldo sin imputar.</value>
+  </data>
   <data name="custom_field_validation_failed" xml:space="preserve">
     <value>Los datos de campos personalizados no son válidos.</value>
   </data>

@@ -254,6 +254,16 @@ export function LoginScreen() {
               </Button>
             </form>
           )}
+
+          <div className="mt-6 text-center border-t border-slate-100 pt-4">
+            <a
+              href="#landing"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              <span>{t('auth.backToLanding', 'Volver a la página principal')}</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>

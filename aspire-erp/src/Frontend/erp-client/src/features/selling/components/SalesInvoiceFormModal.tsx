@@ -6,7 +6,9 @@ import { Input } from '../../../components/ui/Input'
 import { ApiError } from '../../../api/client'
 import { translateErrorCode } from '../../../lib/translateErrorCode'
 import { useCustomers } from '../api/useCustomers'
-import { useItems } from '../../stock/useStockData'
+import { useItems, useFlatWarehouses } from '../../stock/useStockData'
+import type { EligibleAdvance } from '../api/useSalesInvoices'
+import { useEligibleAdvances } from '../api/useSalesInvoices'
 import { useAccountTree } from '../../accounting/useAccountTree'
 import type { AccountTreeNode } from '../../accounting/types'
 import type { CreateSalesInvoicePayload, SalesInvoice } from '../api/useSalesInvoices'
@@ -76,12 +78,18 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
   const [templateId, setTemplateId] = useState('')
   const [isReturn, setIsReturn] = useState(false)
   const [returnAgainstId, setReturnAgainstId] = useState('')
+  const [updateStock, setUpdateStock] = useState(false)
+  const [sourceWarehouseId, setSourceWarehouseId] = useState('')
+  const [advanceRows, setAdvanceRows] = useState<{ paymentEntryId: string; amount: number }[]>([])
   const [error, setError] = useState<string | null>(null)
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const customersQuery = useCustomers(companyId, 1, 100)
   const itemsQuery = useItems(companyId, 1, 100)
+  const warehousesQuery = useFlatWarehouses(companyId, 1, 100, true)
+  const eligibleQuery = useEligibleAdvances(companyId, customerId)
+  const eligibleAdvances: EligibleAdvance[] = eligibleQuery.data ?? []
   const accountsQuery = useAccountTree(companyId)
   const taxAccounts = useMemo(() => taxEligibleLeaves(accountsQuery.nodes), [accountsQuery.nodes])
   const taxAccountLabel = useMemo(() => {
@@ -100,10 +108,18 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
       setTemplateId('')
       setIsReturn(false)
       setReturnAgainstId('')
+      setUpdateStock(false)
+      setSourceWarehouseId('')
+      setAdvanceRows([])
       setError(null)
       setErrorCode(null)
     }
   }, [isOpen])
+
+  // A new customer means new money: drop reservations against the previous one.
+  useEffect(() => {
+    setAdvanceRows([])
+  }, [customerId])
 
   const eligibleReturns = useMemo(
     () =>
@@ -164,7 +180,28 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
       // Returns demand negative quantities (ERPNext validate_qty parity): flip on toggle so
       // the user never hand-types the first minus sign.
       setLines((prev) => prev.map((l) => ({ ...l, quantity: -(Math.abs(l.quantity) || 1) })))
+      // Credit notes never carry advances (the server rejects them): drop the grid.
+      setAdvanceRows([])
     }
+  }
+
+  /** Total reserved across the advance grid (client-side SI-G3 mirror of the server cap). */
+  const allocatedTotal = advanceRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
+
+  const toggleAdvance = (advance: EligibleAdvance) => {
+    setAdvanceRows((prev) => {
+      if (prev.some((row) => row.paymentEntryId === advance.paymentEntryId)) {
+        return prev.filter((row) => row.paymentEntryId !== advance.paymentEntryId)
+      }
+      // Default to the full remainder; the user trims down for partial crosses.
+      return [...prev, { paymentEntryId: advance.paymentEntryId, amount: advance.unallocatedAmount }]
+    })
+  }
+
+  const updateAdvanceAmount = (paymentEntryId: string, amount: number) => {
+    setAdvanceRows((prev) =>
+      prev.map((row) => (row.paymentEntryId === paymentEntryId ? { ...row, amount } : row)),
+    )
   }
 
   const copyOriginalLines = () => {
@@ -229,6 +266,29 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
       fail(t('invoiceForm.errorDiscount', 'Discount is invalid (0-100% and non-negative amount).'))
       return
     }
+    if (!isReturn && updateStock && !sourceWarehouseId) {
+      fail(t('invoiceForm.errorWarehouseRequired', 'Select the source warehouse for immediate delivery.'))
+      return
+    }
+    if (!isReturn && advanceRows.length > 0) {
+      for (const row of advanceRows) {
+        const source = eligibleAdvances.find((a) => a.paymentEntryId === row.paymentEntryId)
+        if (!source) {
+          fail(t('invoiceForm.errorAdvanceStale', 'An advance is no longer available for this customer.'))
+          return
+        }
+        if (!(row.amount > 0) || row.amount > source.unallocatedAmount) {
+          fail(
+            t('invoiceForm.errorAdvanceAmount', 'Advance amounts must be positive and within the payment remainder.'),
+          )
+          return
+        }
+      }
+      if (allocatedTotal > Math.abs(preview.grand)) {
+        fail(t('invoiceForm.errorAdvanceExceeds', 'Allocated advances cannot exceed the invoice total.'))
+        return
+      }
+    }
     setIsSubmitting(true)
     try {
       await onSave({
@@ -247,6 +307,15 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
         })),
         isReturn,
         returnAgainstId: isReturn ? returnAgainstId : null,
+        updateStock: !isReturn && updateStock,
+        sourceWarehouseId: !isReturn && updateStock ? sourceWarehouseId : null,
+        advances:
+          isReturn || advanceRows.length === 0
+            ? []
+            : advanceRows.map((row) => ({
+                paymentEntryId: row.paymentEntryId,
+                allocatedAmount: Number(row.amount) || 0,
+              })),
       })
       onClose()
     } catch (err: unknown) {
@@ -396,6 +465,110 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
                 </div>
               ))}
             </div>
+
+            {/* ERPNext parity (Update Stock): immediate delivery from a source warehouse */}
+            {!isReturn && (
+              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-sky-600"
+                    checked={updateStock}
+                    onChange={(e) => {
+                      setUpdateStock(e.target.checked)
+                      if (!e.target.checked) setSourceWarehouseId('')
+                    }}
+                  />
+                  {t('invoiceForm.updateStock', 'Update stock (immediate delivery)')}
+                </label>
+                {updateStock && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      {t('invoiceForm.sourceWarehouse', 'Source warehouse *')}
+                    </label>
+                    <select
+                      value={sourceWarehouseId}
+                      onChange={(e) => setSourceWarehouseId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">{t('form.selectNone', '-- Select --')}</option>
+                      {warehousesQuery.items.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.code} — {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ERPNext parity (advances allocation): cross unallocated customer receipts */}
+            {!isReturn && (
+              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-800">
+                    {t('invoiceForm.advancesTitle', 'Advance cross')}
+                  </label>
+                  {advanceRows.length > 0 && (
+                    <span className="font-mono text-xs text-slate-600">
+                      {allocatedTotal.toLocaleString()} / {Math.abs(preview.grand).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                {!customerId && (
+                  <p className="text-xs text-slate-500">
+                    {t('invoiceForm.advancesNeedCustomer', 'Select a customer to list their advances.')}
+                  </p>
+                )}
+                {customerId && eligibleQuery.status === 'loading' && (
+                  <p className="text-xs text-slate-500">
+                    {t('invoiceForm.advancesLoading', 'Loading advances…')}
+                  </p>
+                )}
+                {customerId && eligibleQuery.status !== 'loading' && eligibleAdvances.length === 0 && (
+                  <p className="text-xs text-slate-500">
+                    {t('invoiceForm.advancesEmpty', 'No unallocated advances for this customer.')}
+                  </p>
+                )}
+                {eligibleAdvances.map((advance) => {
+                  const selected = advanceRows.some(
+                    (row) => row.paymentEntryId === advance.paymentEntryId,
+                  )
+                  const row = advanceRows.find(
+                    (r) => r.paymentEntryId === advance.paymentEntryId,
+                  )
+                  return (
+                    <div key={advance.paymentEntryId} className="grid grid-cols-12 items-center gap-2">
+                      <label className="col-span-7 flex cursor-pointer items-center gap-2 text-sm text-slate-800">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-sky-600"
+                          checked={selected}
+                          onChange={() => toggleAdvance(advance)}
+                        />
+                        <span className="font-mono">{advance.voucherNo}</span>
+                        <span className="text-xs text-slate-500">
+                          {advance.paymentDate} · {advance.unallocatedAmount.toLocaleString()}
+                        </span>
+                      </label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={advance.unallocatedAmount}
+                        step="0.01"
+                        value={row ? row.amount : advance.unallocatedAmount}
+                        disabled={!selected}
+                        onChange={(e) => updateAdvanceAmount(advance.paymentEntryId, Number(e.target.value))}
+                        placeholder={t('invoiceForm.advancesAllocated', 'Allocated')}
+                        className="col-span-5"
+                        aria-label={t('invoiceForm.advancesAllocated', 'Allocated')}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Module 17: global discount (Net Total default) */}
             <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">

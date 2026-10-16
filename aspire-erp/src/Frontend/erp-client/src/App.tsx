@@ -34,6 +34,7 @@ import { AccountingSettingsView } from './features/accounting/AccountingSettings
 import { ProfileScreen } from './features/profile/ProfileScreen'
 import { SecurityView } from './features/security/SecurityView'
 import { LoginScreen } from './components/auth/LoginScreen'
+import { LandingPage } from './features/landing/LandingPage'
 import { RequirePermission } from './components/auth/RequirePermission'
 import { TerminologyOverlayProvider } from './lib/terminologyOverlay'
 import { useAuthStore } from './store/useAuthStore'
@@ -91,11 +92,20 @@ function App() {
   const { t } = useTranslation('accounting')
   const companyId = useTenantStore((state) => state.companyId)
   const currentRoute = useNavigationStore((state) => state.currentRoute)
+  const setCurrentRoute = useNavigationStore((state) => state.setCurrentRoute)
 
   const { token, isSystemManager } = useAuthStore()
 
   if (!token) {
-    return <LoginScreen />
+    if (currentRoute === 'login') {
+      return <LoginScreen />
+    }
+    return (
+      <LandingPage
+        onLoginClick={() => setCurrentRoute('login')}
+        onDirectDemoClick={() => setCurrentRoute('login')}
+      />
+    )
   }
 
   const guard = (route: NavRoute, view: ReactNode) => {

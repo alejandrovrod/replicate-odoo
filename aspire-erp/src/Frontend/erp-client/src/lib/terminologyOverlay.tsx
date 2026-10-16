@@ -26,6 +26,19 @@ const TerminologyContext = createContext<TerminologyContextValue>({
 });
 
 /**
+ * Namespaces a preset may override. Preloaded unconditionally (whenever any overlay
+ * applies) ahead of injection - see the race note on TerminologyOverlayProvider.
+ */
+const MANDATORY_OVERLAY_NAMESPACES = [
+  'common',
+  'selling',
+  'buying',
+  'stock',
+  'assets',
+  'error',
+] as const;
+
+/**
  * Tenant terminology overlay (workflow Fase 5, gap D4): applies the active industry
  * preset's vocabulary OVER the shipped catalogs at runtime via
  * `i18n.addResourceBundle(lng, ns, terms, deep, overwrite)` - e.g. a clinic reads
@@ -34,6 +47,10 @@ const TerminologyContext = createContext<TerminologyContextValue>({
  * Cero mutación del wire-contract: DTOs, endpoints and tables stay 100% canonical -
  * only rendered text changes, per language, per namespace. Applying a different preset
  * reloads the page (bundles merge additively; a reload guarantees no stale terms).
+ *
+ * Race-proofing: the six preset-bearing namespaces are ALWAYS preloaded via
+ * `loadNamespaces` BEFORE any bundle is injected, so a lazy HTTP fetch can never land
+ * AFTER the overlay and clobber it with base-catalog values.
  */
 export function TerminologyOverlayProvider({ children }: { children: ReactNode }) {
   const [value, setValue] = useState<TerminologyContextValue>({
@@ -48,14 +65,19 @@ export function TerminologyOverlayProvider({ children }: { children: ReactNode }
       const response = await apiClient.get<ActivePreset>('/v1/presets/active')
       if (signal.cancelled) return
       const { presetKey, name, terminology } = response.data
-      const namespacesToEnsure = new Set<string>()
+      const payloadNamespaces = new Set<string>()
       for (const namespaces of Object.values(terminology ?? {})) {
         for (const ns of Object.keys(namespaces ?? {})) {
-          namespacesToEnsure.add(ns)
+          payloadNamespaces.add(ns)
         }
       }
-      if (namespacesToEnsure.size > 0) {
-        await i18n.loadNamespaces(Array.from(namespacesToEnsure))
+      if (payloadNamespaces.size > 0) {
+        // Mandatory preload BEFORE injecting: guarantees the base catalogs are in the
+        // store first, so the overlay (overwrite=true below) always wins - a late HTTP
+        // lazy-load can never clobber preset terms back to base vocabulary.
+        await i18n.loadNamespaces([
+          ...new Set([...MANDATORY_OVERLAY_NAMESPACES, ...payloadNamespaces]),
+        ])
       }
 
       let hasUpdates = false

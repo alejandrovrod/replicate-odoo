@@ -117,3 +117,15 @@ public sealed record OutstandingInvoiceDto(
     decimal GrandTotal,
     decimal OutstandingAmount,
     string Status);
+
+/// <summary>
+/// One advance funding an invoice cross (sales-invoice ERPNext parity): a submitted customer
+/// receipt with a remaining unallocated balance. Served by
+/// <c>GET /api/v1/customers/{id}/eligible-advances</c> for the invoice form's advance grid.
+/// </summary>
+public sealed record EligibleAdvanceDto(
+    Guid PaymentEntryId,
+    string VoucherNo,
+    DateOnly PaymentDate,
+    decimal PaidAmount,
+    decimal UnallocatedAmount);

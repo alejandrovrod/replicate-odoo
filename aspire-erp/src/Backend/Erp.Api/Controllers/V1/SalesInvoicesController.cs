@@ -212,10 +212,19 @@ public sealed class SalesInvoicesController : ControllerBase
                     error.Code),
                 SellingErrorCodes.CompanyNotFound
                     or SellingErrorCodes.CustomerNotFound
-                    or SellingErrorCodes.ItemNotFound => Problem(
+                    or SellingErrorCodes.ItemNotFound
+                    or SellingErrorCodes.PaymentEntryNotFoundOrDepleted => Problem(
                     StatusCodes.Status404NotFound,
                     _common.Text("SalesInvoiceNotFound"),
                     _errors.Text(error.Code, error.Message),
+                    error.Code),
+                SellingErrorCodes.AdvanceExceedsInvoiceTotal
+                    or SellingErrorCodes.InsufficientStockForInvoice => Problem(
+                    StatusCodes.Status422UnprocessableEntity,
+                    _common.Text("SalesInvoiceRejected"),
+                    // Instance-valued detail (amounts, balances): passthrough (Phase 2
+                    // convention - the title still localizes, the figures do not).
+                    error.Message,
                     error.Code),
                 SellingErrorCodes.CreditLimitExceeded
                     or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
@@ -248,6 +257,7 @@ public sealed class SalesInvoicesController : ControllerBase
             {
                 StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc9110#section-15.5.5",
                 StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+                StatusCodes.Status422UnprocessableEntity => "https://tools.ietf.org/html/rfc9110#section-15.5.22",
                 _ => "https://tools.ietf.org/html/rfc9110#section-15.5.1",
             },
             Title = title,

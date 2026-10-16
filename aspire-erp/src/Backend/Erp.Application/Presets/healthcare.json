@@ -28,9 +28,17 @@
         "customers.columns.code": "Patient Code",
         "customers.columns.type": "Patient Type"
       },
+      "stock": {
+        "items.manageTitle": "Medicines & Supplies",
+        "items.manageSubtitle": "Manage medicines, supplies and clinical SKUs.",
+        "items.search": "Search medicines...",
+        "itemForm.titleNew": "New Medicine / Supply",
+        "itemForm.titleEdit": "Edit Medicine / Supply"
+      },
       "common": {
         "nav.item.sellingCustomers": "Patients",
-        "nav.item.sellingOrders": "Admission Orders"
+        "nav.item.sellingOrders": "Admission Orders",
+        "nav.item.stock": "Medicines & Supplies"
       }
     },
     "es": {
@@ -58,9 +66,17 @@
         "customers.columns.code": "Código de Paciente",
         "customers.columns.type": "Tipo de Paciente"
       },
+      "stock": {
+        "items.manageTitle": "Medicamentos e Insumos",
+        "items.manageSubtitle": "Gestionar medicamentos, insumos y SKUs clínicos.",
+        "items.search": "Buscar medicamentos...",
+        "itemForm.titleNew": "Nuevo Medicamento / Insumo",
+        "itemForm.titleEdit": "Editar Medicamento / Insumo"
+      },
       "common": {
         "nav.item.sellingCustomers": "Pacientes",
-        "nav.item.sellingOrders": "Órdenes de Admisión"
+        "nav.item.sellingOrders": "Órdenes de Admisión",
+        "nav.item.stock": "Medicamentos e Insumos"
       }
     }
   },

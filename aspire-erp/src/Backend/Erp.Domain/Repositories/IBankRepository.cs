@@ -41,6 +41,14 @@ public interface IBankRepository
     Task<PaymentEntry?> GetPaymentByIdAsync(Guid paymentId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Advance-cross source (sales-invoice ERPNext parity): submitted Receive vouchers of one
+    /// customer with a remaining unallocated balance, oldest payment first. Only vouchers in
+    /// this state can fund an invoice cross - Draft vouchers are not money yet.
+    /// </summary>
+    Task<IReadOnlyList<PaymentEntry>> GetEligibleAdvancesAsync(
+        Guid companyId, Guid customerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Saves status/amount transitions of an already-tracked payment. Translates EF's
     /// <c>DbUpdateConcurrencyException</c> into <see cref="Exceptions.ConcurrencyConflictException"/>.
     /// </summary>

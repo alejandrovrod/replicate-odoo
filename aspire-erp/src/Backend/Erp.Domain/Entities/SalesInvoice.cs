@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Erp.Domain.Common;
+using Erp.Domain.Exceptions;
 
 namespace Erp.Domain.Entities;
 
@@ -67,6 +68,21 @@ public sealed class SalesInvoice : ITenantEntity, ICustomFieldsCarrier, IWorkflo
         
     public decimal OutstandingAmount { get; set; }
     public decimal PaidAmount { get; set; }
+
+    /// <summary>
+    /// ERPNext parity (advances allocation): total of the <see cref="PaymentAllocation"/>
+    /// slices crossed against this invoice (decimal(18,4), never negative, never above
+    /// <see cref="GrandTotal"/>). Set at creation from the validated advance inputs and
+    /// settled at submit; <c>OutstandingAmount = GrandTotal - TotalAdvance</c>.
+    /// </summary>
+    public decimal TotalAdvance { get; set; }
+
+    /// <summary>
+    /// Advance-cross slices against this invoice (the invoice side of the
+    /// <c>PaymentAllocation</c> aggregate): created with the Draft, settled at submit by
+    /// consuming the referenced payment's <c>UnallocatedAmount</c>.
+    /// </summary>
+    public ICollection<PaymentAllocation> Advances { get; set; } = new List<PaymentAllocation>();
     
     public byte[] RowVersion { get; set; } = null!;
     public DateTimeOffset CreatedAt { get; set; }
@@ -84,4 +100,47 @@ public sealed class SalesInvoice : ITenantEntity, ICustomFieldsCarrier, IWorkflo
 
     /// <summary>"Taxes and Charges" breakdown rows (module 17). Empty for tax-free invoices.</summary>
     public ICollection<SalesInvoiceTax> Taxes { get; set; } = new List<SalesInvoiceTax>();
+
+    /// <summary>
+    /// Crosses one advance slice against this Draft invoice (ERPNext parity
+    /// <c>Sales Invoice Advance</c>): appends the slice and keeps
+    /// <c>TotalAdvance / OutstandingAmount</c> consistent.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The invoice is no longer a Draft.</exception>
+    /// <exception cref="SalesValidationException">
+    /// <c>advance_exceeds_invoice_total</c> when the running total would pass
+    /// <see cref="GrandTotal"/> (spec scenario SI-G3).
+    /// </exception>
+    public void AllocateAdvance(Guid paymentEntryId, decimal allocatedAmount)
+    {
+        if (Status != SalesInvoiceStatus.Draft)
+        {
+            throw new InvalidOperationException("Advances can only be allocated on draft invoices.");
+        }
+
+        if (TotalAdvance + allocatedAmount > GrandTotal)
+        {
+            throw new SalesValidationException(
+                SellingErrorCodes.AdvanceExceedsInvoiceTotal,
+                $"Allocated advance ({TotalAdvance + allocatedAmount:0.####}) cannot exceed "
+                + $"the invoice total ({GrandTotal:0.####}).");
+        }
+
+        Advances.Add(new PaymentAllocation
+        {
+            Id = Guid.NewGuid(),
+            TenantId = TenantId,
+            SalesInvoiceId = Id,
+            SalesInvoice = this,
+            PaymentEntryId = paymentEntryId,
+            AllocatedAmount = allocatedAmount,
+            ReferenceDocumentType = "SalesInvoice",
+            ReferenceDocumentId = Id,
+            TotalAmount = GrandTotal,
+            OutstandingAmount = GrandTotal,
+            ExchangeRate = ExchangeRate,
+        });
+        TotalAdvance += allocatedAmount;
+        OutstandingAmount = GrandTotal - TotalAdvance;
+    }
 }

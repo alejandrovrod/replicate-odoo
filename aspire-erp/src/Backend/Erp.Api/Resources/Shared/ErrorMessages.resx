@@ -970,6 +970,19 @@
   <data name="return_amount_exceeded" xml:space="preserve">
     <value>The credit note total cannot exceed the original invoice total.</value>
   </data>
+  <!-- Sales invoice ERPNext parity: direct stock issue + advance cross. -->
+  <data name="update_stock_warehouse_required" xml:space="preserve">
+    <value>Invoices with UpdateStock must carry the source warehouse (SourceWarehouseId is required).</value>
+  </data>
+  <data name="insufficient_stock_for_invoice" xml:space="preserve">
+    <value>There is not enough stock in the source warehouse to bill this invoice.</value>
+  </data>
+  <data name="advance_exceeds_invoice_total" xml:space="preserve">
+    <value>Allocated advance cannot exceed the invoice total.</value>
+  </data>
+  <data name="payment_entry_not_found_or_depleted" xml:space="preserve">
+    <value>The advance payment was not found or has no unallocated balance left.</value>
+  </data>
   <data name="custom_field_validation_failed" xml:space="preserve">
     <value>Custom field data is invalid.</value>
   </data>

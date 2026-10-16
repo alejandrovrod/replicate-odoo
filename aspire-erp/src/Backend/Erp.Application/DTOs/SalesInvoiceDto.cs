@@ -30,7 +30,10 @@ public sealed record SalesInvoiceDto(
     bool IsReturn = false,
     Guid? ReturnAgainstId = null,
     // Workflow Fase 5: operational state (null until adopted by the first transition/guard).
-    string? WorkflowState = null)
+    string? WorkflowState = null,
+    // ERPNext parity (advances allocation): crossed total + per-payment slices.
+    decimal TotalAdvance = 0m,
+    IReadOnlyList<PaymentAllocationDto>? Advances = null)
 {
     public static SalesInvoiceDto Build(SalesInvoice invoice)
     {
@@ -59,7 +62,9 @@ public sealed record SalesInvoiceDto(
             invoice.Taxes.Select(t => new SalesInvoiceTaxDto(t.Id, t.AccountId, t.Rate, t.TaxAmount, t.ChargeType, t.CalculationBasis, t.BaseAmount)).ToList(),
             invoice.IsReturn,
             invoice.ReturnAgainstId,
-            invoice.WorkflowState);
+            invoice.WorkflowState,
+            invoice.TotalAdvance,
+            invoice.Advances?.Select(PaymentAllocationDto.From).ToList());
     }
 }
 

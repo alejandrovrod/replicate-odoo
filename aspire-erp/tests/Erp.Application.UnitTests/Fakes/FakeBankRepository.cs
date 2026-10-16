@@ -143,6 +143,19 @@ public sealed class FakeBankRepository : IBankRepository
     public Task<PaymentEntry?> GetPaymentByIdAsync(Guid paymentId, CancellationToken cancellationToken = default)
         => Task.FromResult(_entries.FirstOrDefault(p => p.Id == paymentId));
 
+    public Task<IReadOnlyList<PaymentEntry>> GetEligibleAdvancesAsync(
+        Guid companyId, Guid customerId, CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<PaymentEntry>>(_entries
+            .Where(p => p.CompanyId == companyId
+                && p.PartyType == PaymentPartyType.Customer
+                && p.PartyId == customerId
+                && p.PaymentType == PaymentType.Receive
+                && p.DocumentStatus == PaymentDocumentStatus.Submitted
+                && p.UnallocatedAmount > 0m)
+            .OrderBy(p => p.PaymentDate)
+            .ThenBy(p => p.Id)
+            .ToList());
+
     public Task UpdatePaymentAsync(PaymentEntry payment, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
 

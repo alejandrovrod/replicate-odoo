@@ -206,6 +206,7 @@ builder.Services.AddScoped<ICommandHandler<CreateSalesInvoiceCommand, Result<Sal
 builder.Services.AddScoped<ICommandHandler<SubmitSalesInvoiceCommand, Result<SalesInvoiceDto>>, SubmitSalesInvoiceCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetSalesInvoicesQuery, PagedResult<SalesInvoiceDto>>, GetSalesInvoicesQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetSalesInvoiceByIdQuery, SalesInvoiceDto?>, GetSalesInvoiceByIdQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetCustomerEligibleAdvancesQuery, IReadOnlyList<EligibleAdvanceDto>>, GetCustomerEligibleAdvancesQueryHandler>();
 
 builder.Services.AddScoped<ICommandHandler<CreateSalesOrderCommand, Result<SalesOrderDto>>, CreateSalesOrderCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitSalesOrderCommand, Result<SalesOrderDto>>, SubmitSalesOrderCommandHandler>();

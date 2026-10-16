@@ -4444,6 +4444,11 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("TotalAdvance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<bool>("UpdateStock")
                         .HasColumnType("bit");
 
@@ -6791,7 +6796,7 @@ namespace Erp.Infrastructure.Migrations
                         .HasConstraintName("FK_PaymentAllocation_PurchaseInvoice");
 
                     b.HasOne("Erp.Domain.Entities.SalesInvoice", "SalesInvoice")
-                        .WithMany()
+                        .WithMany("Advances")
                         .HasForeignKey("SalesInvoiceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("FK_PaymentAllocation_SalesInvoice");
@@ -7843,6 +7848,8 @@ namespace Erp.Infrastructure.Migrations
 
             modelBuilder.Entity("Erp.Domain.Entities.SalesInvoice", b =>
                 {
+                    b.Navigation("Advances");
+
                     b.Navigation("Items");
 
                     b.Navigation("Taxes");

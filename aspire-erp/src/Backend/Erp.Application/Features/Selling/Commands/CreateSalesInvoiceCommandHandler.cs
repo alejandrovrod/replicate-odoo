@@ -17,6 +17,7 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
     private readonly IWarehouseRepository _warehouses;
     private readonly ITaxEngineService _taxEngine;
     private readonly ITaxTemplateRepository? _taxTemplates;
+    private readonly IBankRepository? _banks;
 
     public CreateSalesInvoiceCommandHandler(
         ISalesInvoiceRepository salesInvoices,
@@ -26,7 +27,8 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
         IAccountRepository accounts,
         IWarehouseRepository warehouses,
         ITaxEngineService? taxEngine = null,
-        ITaxTemplateRepository? taxTemplates = null)
+        ITaxTemplateRepository? taxTemplates = null,
+        IBankRepository? banks = null)
     {
         _salesInvoices = salesInvoices;
         _customers = customers;
@@ -36,6 +38,7 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
         _warehouses = warehouses;
         _taxEngine = taxEngine ?? new TaxEngineService();
         _taxTemplates = taxTemplates;
+        _banks = banks;
     }
 
     public async Task<Result<SalesInvoiceDto>> HandleAsync(CreateSalesInvoiceCommand request, CancellationToken cancellationToken = default)
@@ -166,7 +169,62 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
 
             SalesValidator.EnsureInvoiceTotalsSign(invoice.NetTotal, invoice.TaxTotal, invoice.GrandTotal, request.IsReturn);
 
-            invoice.OutstandingAmount = invoice.GrandTotal; // Drafts start with outstanding equal to total
+            // ERPNext parity (advances allocation): crossing is a Draft-time reservation.
+            // Credit notes never carry advances (their amortization path owns the balance).
+            if (request.Advances is not null && request.Advances.Count > 0)
+            {
+                if (request.IsReturn)
+                {
+                    return Result<SalesInvoiceDto>.Failure(
+                        SellingErrorCodes.ValidationFailed,
+                        "Advances cannot be allocated on credit notes.");
+                }
+
+                if (_banks is null)
+                {
+                    return Result<SalesInvoiceDto>.Failure(
+                        SellingErrorCodes.ValidationFailed,
+                        "Advance allocation is not wired for this caller.");
+                }
+
+                foreach (var advance in request.Advances)
+                {
+                    if (advance.AllocatedAmount <= 0m)
+                    {
+                        return Result<SalesInvoiceDto>.Failure(
+                            SellingErrorCodes.ValidationFailed,
+                            $"Advance allocation for payment '{advance.PaymentEntryId}' must be positive.");
+                    }
+
+                    var payment = await _banks.GetPaymentByIdAsync(advance.PaymentEntryId, cancellationToken);
+                    if (payment is null
+                        || payment.CompanyId != request.CompanyId
+                        || payment.PartyType != PaymentPartyType.Customer
+                        || payment.PartyId != request.CustomerId
+                        || payment.PaymentType != PaymentType.Receive
+                        || payment.DocumentStatus != PaymentDocumentStatus.Submitted)
+                    {
+                        return Result<SalesInvoiceDto>.Failure(
+                            SellingErrorCodes.PaymentEntryNotFoundOrDepleted,
+                            $"Advance payment '{advance.PaymentEntryId}' was not found for this customer "
+                            + "as a submitted receipt.");
+                    }
+
+                    if (advance.AllocatedAmount > payment.UnallocatedAmount)
+                    {
+                        return Result<SalesInvoiceDto>.Failure(
+                            SellingErrorCodes.PaymentEntryNotFoundOrDepleted,
+                            $"Advance payment '{payment.VoucherNo}' only has "
+                            + $"{payment.UnallocatedAmount:0.####} unallocated.");
+                    }
+
+                    // The aggregate owns the running-total cap (SI-G3): TotalAdvance can never
+                    // pass GrandTotal, and OutstandingAmount stays consistent by construction.
+                    invoice.AllocateAdvance(advance.PaymentEntryId, advance.AllocatedAmount);
+                }
+            }
+
+            invoice.OutstandingAmount = invoice.GrandTotal - invoice.TotalAdvance; // Drafts start owing the net of crossed advances
             invoice.PaidAmount = 0;
 
             await _salesInvoices.AddAsync(invoice, cancellationToken);
@@ -340,7 +398,7 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
         if (!request.SourceWarehouseId.HasValue || request.SourceWarehouseId.Value == Guid.Empty)
         {
             throw new SalesValidationException(
-                SellingErrorCodes.ValidationFailed,
+                SellingErrorCodes.UpdateStockWarehouseRequired,
                 "Invoices with UpdateStock must carry the source warehouse (SourceWarehouseId is required).");
         }
 
@@ -348,7 +406,7 @@ public sealed class CreateSalesInvoiceCommandHandler : ICommandHandler<CreateSal
         if (warehouse is null || warehouse.CompanyId != companyId)
         {
             throw new SalesValidationException(
-                SellingErrorCodes.ValidationFailed,
+                SellingErrorCodes.UpdateStockWarehouseRequired,
                 $"Warehouse '{request.SourceWarehouseId}' was not found in this company.");
         }
     }

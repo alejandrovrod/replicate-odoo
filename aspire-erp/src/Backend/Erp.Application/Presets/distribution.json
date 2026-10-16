@@ -4,27 +4,77 @@
   "description": "Distribuidora: productos con código de barras, surtido y facturación.",
   "terminology": {
     "en": {
-      "stock": {
-        "itemForm.titleNew": "New Product",
-        "itemForm.titleEdit": "Edit Product"
-      },
       "selling": {
-        "invoiceForm.titleNew": "New Sales Invoice"
+        "overview.manageCustomers": "Outlets / Customers",
+        "overview.orders": "Fulfillment Orders",
+        "invoices.colCustomer": "Outlet / Customer",
+        "orders.colCustomer": "Outlet / Customer",
+        "orders.title": "Fulfillment Orders",
+        "orders.new": "New Fulfillment Order",
+        "form.customer": "Outlet / Customer *",
+        "orderForm.titleNew": "New Fulfillment Order",
+        "orderForm.errorCustomer": "The outlet / customer is required.",
+        "invoiceForm.titleNew": "New Sales Invoice",
+        "invoiceForm.errorCustomer": "The outlet / customer is required.",
+        "customers.manageTitle": "Outlets / Customers",
+        "customers.manageSubtitle": "Manage points of sale and customer accounts.",
+        "customers.search": "Search outlets...",
+        "customers.columns.name": "Outlet / Customer",
+        "customers.columns.code": "Outlet Code",
+        "deliveries.title": "Dispatch Guides",
+        "deliveries.new": "New Dispatch",
+        "deliveryForm.titleNew": "New Dispatch Guide"
+      },
+      "stock": {
+        "items.manageTitle": "Products & SKUs",
+        "items.manageSubtitle": "Manage products, SKUs and barcoded goods.",
+        "items.search": "Search products...",
+        "itemForm.titleNew": "New Product / SKU",
+        "itemForm.titleEdit": "Edit Product / SKU"
       },
       "common": {
-        "nav.item.sellingInvoices": "Invoices"
+        "nav.item.sellingCustomers": "Outlets / Customers",
+        "nav.item.sellingOrders": "Fulfillment Orders",
+        "nav.item.sellingDeliveries": "Dispatch Guides",
+        "nav.item.sellingInvoices": "Invoices",
+        "nav.item.stock": "Products"
       }
     },
     "es": {
-      "stock": {
-        "itemForm.titleNew": "Nuevo Producto",
-        "itemForm.titleEdit": "Editar Producto"
-      },
       "selling": {
-        "invoiceForm.titleNew": "Nueva Factura de Venta"
+        "overview.manageCustomers": "Puntos de Venta / Clientes",
+        "overview.orders": "Pedidos de Surtido",
+        "invoices.colCustomer": "Punto de Venta / Cliente",
+        "orders.colCustomer": "Punto de Venta / Cliente",
+        "orders.title": "Pedidos de Surtido",
+        "orders.new": "Nuevo Pedido de Surtido",
+        "form.customer": "Punto de Venta / Cliente *",
+        "orderForm.titleNew": "Nuevo Pedido de Surtido",
+        "orderForm.errorCustomer": "El punto de venta / cliente es obligatorio.",
+        "invoiceForm.titleNew": "Nueva Factura de Venta",
+        "invoiceForm.errorCustomer": "El punto de venta / cliente es obligatorio.",
+        "customers.manageTitle": "Puntos de Venta / Clientes",
+        "customers.manageSubtitle": "Gestionar puntos de venta y cuentas de clientes.",
+        "customers.search": "Buscar puntos de venta...",
+        "customers.columns.name": "Punto de Venta / Cliente",
+        "customers.columns.code": "Código de Punto de Venta",
+        "deliveries.title": "Guías de Despacho",
+        "deliveries.new": "Nuevo Despacho",
+        "deliveryForm.titleNew": "Nueva Guía de Despacho"
+      },
+      "stock": {
+        "items.manageTitle": "Productos y SKUs",
+        "items.manageSubtitle": "Gestionar productos, SKUs y mercadería con código de barras.",
+        "items.search": "Buscar productos...",
+        "itemForm.titleNew": "Nuevo Producto / SKU",
+        "itemForm.titleEdit": "Editar Producto / SKU"
       },
       "common": {
-        "nav.item.sellingInvoices": "Facturas"
+        "nav.item.sellingCustomers": "Puntos de Venta / Clientes",
+        "nav.item.sellingOrders": "Pedidos de Surtido",
+        "nav.item.sellingDeliveries": "Guías de Despacho",
+        "nav.item.sellingInvoices": "Facturas",
+        "nav.item.stock": "Productos"
       }
     }
   },

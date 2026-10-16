@@ -76,4 +76,11 @@ public static class SellingErrorCodes
     public const string ReturnAgainstRequired = "return_against_required";
     public const string ReturnAgainstInvalid = "return_against_invalid";
     public const string ReturnAmountExceeded = "return_amount_exceeded";
+
+    // Sales invoice ERPNext parity: direct stock issue + advance cross
+    // (.specify/modules/sales-invoice-erpnext-parity).
+    public const string UpdateStockWarehouseRequired = "update_stock_warehouse_required";
+    public const string InsufficientStockForInvoice = "insufficient_stock_for_invoice";
+    public const string AdvanceExceedsInvoiceTotal = "advance_exceeds_invoice_total";
+    public const string PaymentEntryNotFoundOrDepleted = "payment_entry_not_found_or_depleted";
 }

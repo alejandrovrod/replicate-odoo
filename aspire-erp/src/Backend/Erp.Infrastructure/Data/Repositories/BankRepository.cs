@@ -121,6 +121,19 @@ public sealed class BankRepository : IBankRepository
             .Include(p => p.Allocations)
             .FirstOrDefaultAsync(p => p.Id == paymentId, cancellationToken);
 
+    public async Task<IReadOnlyList<PaymentEntry>> GetEligibleAdvancesAsync(
+        Guid companyId, Guid customerId, CancellationToken cancellationToken = default)
+        => await _dbContext.PaymentEntries
+            .Where(p => p.CompanyId == companyId
+                && p.PartyType == PaymentPartyType.Customer
+                && p.PartyId == customerId
+                && p.PaymentType == PaymentType.Receive
+                && p.DocumentStatus == PaymentDocumentStatus.Submitted
+                && p.UnallocatedAmount > 0m)
+            .OrderBy(p => p.PaymentDate)
+            .ThenBy(p => p.Id)
+            .ToListAsync(cancellationToken);
+
     public async Task UpdatePaymentAsync(PaymentEntry payment, CancellationToken cancellationToken = default)
     {
         try

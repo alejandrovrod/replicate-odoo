@@ -25,6 +25,11 @@ public sealed class SalesInvoiceConfiguration : IEntityTypeConfiguration<SalesIn
         builder.Property(s => s.OutstandingAmount).HasColumnType("decimal(18,4)").IsRequired().HasDefaultValue(0);
         builder.Property(s => s.PaidAmount).HasColumnType("decimal(18,4)").IsRequired().HasDefaultValue(0);
 
+        // ERPNext parity: crossed advances total (never negative, never above GrandTotal -
+        // enforced by SalesInvoice.AllocateAdvance). Non-nullable with default: existing
+        // rows read back as zero without a data migration.
+        builder.Property(s => s.TotalAdvance).HasColumnType("decimal(18,4)").IsRequired().HasDefaultValue(0m);
+
         // Module 17: global discount (ERPNext "apply on Net Total" default). Stored non-negative;
         // the equation GrandTotal = NetTotal - DiscountAmount + TaxTotal holds for both signs of Net.
         builder.Property(s => s.DiscountPercentage).HasColumnType("decimal(5,2)").IsRequired().HasDefaultValue(0);

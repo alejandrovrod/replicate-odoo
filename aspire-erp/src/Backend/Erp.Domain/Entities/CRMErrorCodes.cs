@@ -21,4 +21,12 @@ public static class CRMErrorCodes
     public const string InvalidOpportunityStage = "crm_invalid_opportunity_stage";
     public const string OpportunityNotWon = "crm_opportunity_not_won";
     public const string OpportunityNoCustomer = "crm_opportunity_no_customer";
+    public const string OpportunityNotOpen = "crm_opportunity_not_open";
+    public const string InvalidExchangeRate = "crm_invalid_exchange_rate";
+    public const string InvalidOpportunityItem = "crm_invalid_opportunity_item";
+    public const string QuotationRequiresItems = "crm_quotation_requires_items";
+    public const string QuotationNotFound = "crm_quotation_not_found";
+    public const string LossReasonNotFound = "crm_loss_reason_not_found";
+    public const string TerritoryNotFound = "crm_territory_not_found";
+    public const string IndustryNotFound = "crm_industry_not_found";
 }

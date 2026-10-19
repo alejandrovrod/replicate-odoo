@@ -1,65 +1,83 @@
 -- =============================================================================
--- Dev-only seed: CRM & Sales Pipeline (module 08-crm, task 11.7)
+-- Dev-only seed: CRM parity catalogs (loss reasons, territories, industries)
 --
--- DEVELOPMENT ONLY. Deterministic GUIDs so the frontend .env.development and
--- manual curl sessions can reference fixed ids:
---   Tenant      : 11111111-1111-4111-8111-111111111111 (scripts/seed-dev-coa.sql)
---   Company     : 22222222-2222-4222-8222-222222222222 (scripts/seed-dev-coa.sql)
---   Demo lead   : c0000000-0000-4000-8000-000000000001 (LEAD-DEMO-001, Alex Rivera)
---   Opportunity : c0000000-0000-4000-8000-000000000002 (OPP-2026-09901, Qualification)
---   Activity    : c0000000-0000-4000-8000-000000000003 (conversion note on the demo deal)
+-- DEVELOPMENT ONLY. Deterministic GUIDs so integration tests and manual sessions
+-- can reference fixed ids:
+--   Loss reasons : c1000000-0000-4000-8000-0000000000<nn>
+--   Territories  : c2000000-0000-4000-8000-0000000000<nn>
+--   Industries   : c3000000-0000-4000-8000-0000000000<nn>
 --
--- Lead/Opportunity are system-versioned (temporal): PeriodStart/PeriodEnd are
--- GENERATED ALWAYS columns and must NOT be listed on INSERT (banking seed precedent).
--- The demo opportunity number uses the 09901 sequence band so live webhook/convert
--- numbering (OPP-YYYY-00001 upward) never collides with it.
+-- The API self-seeds these per tenant on first read (CrmRepository catalog ensure),
+-- so this script only fast-forwards the dev tenant with the SAME code vocabulary
+-- (re-runs and the ensure path converge: identical codes, surrogate ids may differ).
 -- Idempotent: every statement is guarded, safe to re-run.
---
--- TEST HERMITICITY RULE: integration tests use their OWN unique rows
--- (CRM-IT- prefix) and never read or assert on these seed rows.
 -- =============================================================================
 USE [erp-db];
 GO
 
--- --- Demo lead ---------------------------------------------------------------
--- Alex Rivera at TechCorp, the spec CRM-01 inbound persona, still Open so the dev
--- Kanban/convert flow can be clicked through by hand.
-IF NOT EXISTS (SELECT 1 FROM dbo.Lead WHERE Id = 'c0000000-0000-4000-8000-000000000001')
-BEGIN
-    INSERT INTO dbo.Lead (Id, TenantId, CompanyId, LeadCode, LeadName, OrganizationName, Email, Phone, Source, Status, AssignedToUserId, ConvertedOpportunityId, ConvertedCustomerId, IsActive, ExternalReference)
-    VALUES ('c0000000-0000-4000-8000-000000000001',
-            '11111111-1111-4111-8111-111111111111',
-            '22222222-2222-4222-8222-222222222222',
-            'LEAD-DEMO-001', 'Alex Rivera', 'TechCorp',
-            'alex.rivera@techcorp.example', '+1-555-0100', 'Website', 'Open',
-            NULL, NULL, NULL, 1, 'demo-web-2026-001');
-END;
+-- --- Loss reasons -----------------------------------------------------------
+DECLARE @Loss TABLE (Id UNIQUEIDENTIFIER, Code NVARCHAR(50), Name NVARCHAR(150));
+INSERT INTO @Loss (Id, Code, Name) VALUES
+    ('c1000000-0000-4000-8000-000000000001', 'PRICE', 'Lost on Price'),
+    ('c1000000-0000-4000-8000-000000000002', 'COMPETITOR', 'Lost to Competitor'),
+    ('c1000000-0000-4000-8000-000000000003', 'TIMING', 'Bad Timing'),
+    ('c1000000-0000-4000-8000-000000000004', 'BUDGET', 'No Budget'),
+    ('c1000000-0000-4000-8000-000000000005', 'FEATURE', 'Missing Features'),
+    ('c1000000-0000-4000-8000-000000000006', 'RELATIONSHIP', 'Incumbent Relationship'),
+    ('c1000000-0000-4000-8000-000000000007', 'OTHER', 'Other');
+
+MERGE INTO dbo.OpportunityLossReason AS target
+USING (SELECT '11111111-1111-4111-8111-111111111111' AS TenantId, Id, Code, Name FROM @Loss) AS source
+    ON target.TenantId = source.TenantId AND target.Code = source.Code
+WHEN NOT MATCHED THEN
+    INSERT (Id, TenantId, Code, Name, IsActive)
+    VALUES (source.Id, source.TenantId, source.Code, source.Name, 1);
 GO
 
--- --- Demo opportunity ----------------------------------------------------------
--- Open deal from the demo lead at Qualification/25% ($15,000 -> $3,750 weighted,
--- the spec CRM-01 arithmetic) so the dev pipeline board is non-empty.
-IF NOT EXISTS (SELECT 1 FROM dbo.Opportunity WHERE Id = 'c0000000-0000-4000-8000-000000000002')
-BEGIN
-    INSERT INTO dbo.Opportunity (Id, TenantId, CompanyId, OpportunityNumber, OpportunityFrom, PartyId, PartyName, Stage, OpportunityAmount, Probability, ExpectedClosingDate, Status, LossReason, AssignedSalespersonId)
-    VALUES ('c0000000-0000-4000-8000-000000000002',
-            '11111111-1111-4111-8111-111111111111',
-            '22222222-2222-4222-8222-222222222222',
-            'OPP-2026-09901', 'Lead', 'c0000000-0000-4000-8000-000000000001', 'TechCorp',
-            'Qualification', 15000.00, 25.00, '2027-06-30', 'Open', NULL, NULL);
-END;
+-- --- Territories ------------------------------------------------------------
+DECLARE @Territory TABLE (Id UNIQUEIDENTIFIER, Code NVARCHAR(50), Name NVARCHAR(150));
+INSERT INTO @Territory (Id, Code, Name) VALUES
+    ('c2000000-0000-4000-8000-000000000001', 'NORTH', 'North'),
+    ('c2000000-0000-4000-8000-000000000002', 'SOUTH', 'South'),
+    ('c2000000-0000-4000-8000-000000000003', 'EAST', 'East'),
+    ('c2000000-0000-4000-8000-000000000004', 'WEST', 'West'),
+    ('c2000000-0000-4000-8000-000000000005', 'CENTRAL', 'Central'),
+    ('c2000000-0000-4000-8000-000000000006', 'INTL', 'International');
+
+MERGE INTO dbo.Territory AS target
+USING (SELECT '11111111-1111-4111-8111-111111111111' AS TenantId, Id, Code, Name FROM @Territory) AS source
+    ON target.TenantId = source.TenantId AND target.Code = source.Code
+WHEN NOT MATCHED THEN
+    INSERT (Id, TenantId, Code, Name, IsActive)
+    VALUES (source.Id, source.TenantId, source.Code, source.Name, 1);
 GO
 
--- --- Demo activity ---------------------------------------------------------------
--- Conversion-style note on the demo deal (spec CRM-03 audit trail shape).
-IF NOT EXISTS (SELECT 1 FROM dbo.CRMActivity WHERE Id = 'c0000000-0000-4000-8000-000000000003')
-BEGIN
-    INSERT INTO dbo.CRMActivity (Id, OpportunityId, Type, Subject, Content, ActivityDate, NextFollowUpDate, CreatedByUserId)
-    VALUES ('c0000000-0000-4000-8000-000000000003',
-            'c0000000-0000-4000-8000-000000000002', 'Note',
-            'Converted from lead LEAD-DEMO-001',
-            'Converted from lead LEAD-DEMO-001 (Alex Rivera) at TechCorp.',
-            SYSDATETIMEOFFSET(), NULL,
-            '33333333-3333-4333-8333-333333333333');
-END;
+-- --- Industries -------------------------------------------------------------
+DECLARE @Industry TABLE (Id UNIQUEIDENTIFIER, Code NVARCHAR(50), Name NVARCHAR(150));
+INSERT INTO @Industry (Id, Code, Name) VALUES
+    ('c3000000-0000-4000-8000-000000000001', 'MANUFACTURING', 'Manufacturing'),
+    ('c3000000-0000-4000-8000-000000000002', 'RETAIL', 'Retail'),
+    ('c3000000-0000-4000-8000-000000000003', 'HEALTHCARE', 'Healthcare'),
+    ('c3000000-0000-4000-8000-000000000004', 'TECHNOLOGY', 'Technology'),
+    ('c3000000-0000-4000-8000-000000000005', 'SERVICES', 'Services'),
+    ('c3000000-0000-4000-8000-000000000006', 'CONSTRUCTION', 'Construction'),
+    ('c3000000-0000-4000-8000-000000000007', 'OTHER', 'Other');
+
+MERGE INTO dbo.Industry AS target
+USING (SELECT '11111111-1111-4111-8111-111111111111' AS TenantId, Id, Code, Name FROM @Industry) AS source
+    ON target.TenantId = source.TenantId AND target.Code = source.Code
+WHEN NOT MATCHED THEN
+    INSERT (Id, TenantId, Code, Name, IsActive)
+    VALUES (source.Id, source.TenantId, source.Code, source.Name, 1);
+GO
+
+-- Verification
+SELECT 'LossReason' AS Catalog, COUNT(*) AS Rows FROM dbo.OpportunityLossReason
+WHERE TenantId = '11111111-1111-4111-8111-111111111111'
+UNION ALL
+SELECT 'Territory', COUNT(*) FROM dbo.Territory
+WHERE TenantId = '11111111-1111-4111-8111-111111111111'
+UNION ALL
+SELECT 'Industry', COUNT(*) FROM dbo.Industry
+WHERE TenantId = '11111111-1111-4111-8111-111111111111';
 GO

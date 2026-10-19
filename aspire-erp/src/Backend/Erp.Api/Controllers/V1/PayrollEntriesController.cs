@@ -34,10 +34,12 @@ public sealed record SubmitPayrollRunRequest(
 /// (Article VI.4); the reads write no GLEntry rows, so no filter applies to them.
 /// </summary>
 /// <remarks>
-/// SCOPE (documented): there are NO employee/component/structure master endpoints here.
-/// Masters enter via SQL seeds like BOMs (out of scope) - this controller owns the batch
-/// lifecycle only. There is no declining-balance support, no attendance/leave module and no
-/// banking PaymentEntry voucher on disbursement (GL pair + Paid status only).
+/// SCOPE (documented): there are NO master endpoints here. Employees have a writable lifecycle
+/// (<c>EmployeesController</c>, POST/PUT <c>api/v1/hr/employees</c>); salary components,
+/// structures and assignments still enter via SQL seeds like BOMs (out of scope) - this
+/// controller owns the batch lifecycle only. There is no declining-balance support, no
+/// attendance/leave module and no banking PaymentEntry voucher on disbursement (GL pair + Paid
+/// status only).
 /// </remarks>
 [ApiController]
 [Route("api/v1/payroll-runs")]
@@ -265,6 +267,52 @@ public sealed class PayrollEntriesController : ControllerBase
         }
 
         return Ok(detail);
+    }
+
+    /// <summary>
+    /// Reads one slip of a run as a printable pay stub (spec: formal receipt view): the
+    /// earnings/deductions breakdown, settlement date, employee details and the company fiscal
+    /// header. Read-only.
+    /// </summary>
+    /// <param name="id">Payroll entry id (the run).</param>
+    /// <param name="slipId">Salary slip id inside the run.</param>
+    /// <param name="companyId">Company that owns the entry.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("{id:guid}/slips/{slipId:guid}/printable")]
+    [Authorize(Policy = "permission:payroll_entry:read")]
+    [ProducesResponseType(typeof(SalarySlipPrintableDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PrintableSlip(
+        Guid id,
+        Guid slipId,
+        [FromQuery] Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || slipId == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidPayrollEntry"),
+                _errors.Text(HrPayrollErrorCodes.PayrollEntryNotFound),
+                HrPayrollErrorCodes.PayrollEntryNotFound);
+        }
+
+        var printable = await _sender.SendAsync(
+            new GetSalarySlipPrintQuery(companyId, id, slipId), cancellationToken);
+
+        if (printable is null)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("PayrollEntryNotFound"),
+                // Instance-valued detail (run + slip ids): passes through untranslated while the
+                // title still localizes (Phase 2 convention).
+                $"Salary slip '{slipId}' was not found in payroll entry '{id}' for company '{companyId}'.",
+                HrPayrollErrorCodes.PayrollEntryNotFound);
+        }
+
+        return Ok(printable);
     }
 
     /// <summary>

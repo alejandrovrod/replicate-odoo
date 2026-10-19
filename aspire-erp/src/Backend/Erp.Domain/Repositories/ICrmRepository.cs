@@ -32,6 +32,15 @@ public interface ICrmRepository
     Task AddOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default);
     Task UpdateOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Full replace of a deal's priced lines (CRM/ERPNext parity): deletes the stored rows
+    /// and inserts <paramref name="lines"/> with explicit states (RemoveRange/AddRange) -
+    /// never through navigation fixup, whose inferred states misfire on keyed newcomers.
+    /// Joins the ambient transaction (no SaveChanges here): the caller saves once.
+    /// </summary>
+    Task ReplaceOpportunityItemsAsync(
+        Guid opportunityId, IReadOnlyList<OpportunityItem> lines, CancellationToken cancellationToken = default);
+
     /// <summary>Generates the next sequential opportunity number (e.g., OPP-2026-00001).</summary>
     Task<string> NextOpportunityNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default);
 

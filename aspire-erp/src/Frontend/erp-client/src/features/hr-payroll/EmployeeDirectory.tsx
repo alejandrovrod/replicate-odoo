@@ -1,8 +1,11 @@
-import { Users } from 'lucide-react'
+import { Pencil, Plus, Users } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '../../components/ui/Button'
 import { Pagination } from '../../components/ui/Pagination'
 import { usePagination } from '../../lib/pagination'
-import { isEligibleForPeriod, type EmploymentStatus } from './types'
+import { EmployeeFormModal } from './EmployeeFormModal'
+import { isEligibleForPeriod, type EmploymentStatus, type HrEmployee } from './types'
 import { useEmployees } from './useHrPayrollData'
 
 const STATUS_BADGE: Record<EmploymentStatus, string> = {
@@ -14,8 +17,9 @@ const STATUS_BADGE: Record<EmploymentStatus, string> = {
 
 /**
  * Employee directory (Task 12.5): live rows from GET /api/v1/hr/employees with the
- * lifecycle status and the HR-03 eligibility badge for the workbench period. No mocks -
- * every row is a real master (SQL-seeded like BOMs); creates/updates stay out of scope.
+ * lifecycle status and the HR-03 eligibility badge for the workbench period. Employees are now
+ * registered and edited in place (spec: HR staff lifecycle) through EmployeeFormModal, so the
+ * directory no longer depends on SQL seeds.
  */
 export function EmployeeDirectory({
   companyId,
@@ -29,6 +33,8 @@ export function EmployeeDirectory({
   const paging = usePagination()
   const employeesQuery = useEmployees(companyId, paging.page, paging.pageSize)
   const { t } = useTranslation('hr-payroll')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<HrEmployee | null>(null)
 
   if (employeesQuery.status === 'error') {
     return (
@@ -68,6 +74,17 @@ export function EmployeeDirectory({
             {t('directory.summary', { total: employeesQuery.items.length, eligible, start: periodStart, end: periodEnd })}
           </p>
         </div>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => {
+            setEditing(null)
+            setFormOpen(true)
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          {t('directory.addEmployee')}
+        </Button>
       </div>
 
       {employeesQuery.items.length === 0 ? (
@@ -81,7 +98,8 @@ export function EmployeeDirectory({
                 <th className="py-2.5 font-semibold">{t('directory.colEmail')}</th>
                 <th className="py-2.5 font-semibold">{t('directory.colJoined')}</th>
                 <th className="py-2.5 font-semibold">{t('directory.colStatus')}</th>
-                <th className="py-2.5 text-right font-semibold">{t('directory.colEligibility')}</th>
+                <th className="py-2.5 font-semibold">{t('directory.colEligibility')}</th>
+                <th className="py-2.5 text-right font-semibold">{t('directory.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -104,7 +122,7 @@ export function EmployeeDirectory({
                         {employee.status}
                       </span>
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="py-2">
                       <span
                         className={`rounded px-2 py-0.5 text-[11px] font-medium ${
                           eligibleForPeriod
@@ -115,6 +133,21 @@ export function EmployeeDirectory({
                       >
                         {eligibleForPeriod ? t('directory.eligible') : t('directory.skipped')}
                       </span>
+                    </td>
+                    <td className="py-2 text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        title={t('directory.editTitle')}
+                        onClick={() => {
+                          setEditing(employee)
+                          setFormOpen(true)
+                        }}
+                      >
+                        <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                        {t('directory.edit')}
+                      </Button>
                     </td>
                   </tr>
                 )
@@ -132,6 +165,17 @@ export function EmployeeDirectory({
           onPageChange={paging.setPage}
         />
       </div>
+
+      <EmployeeFormModal
+        open={formOpen}
+        employee={editing}
+        companyId={companyId}
+        onClose={() => setFormOpen(false)}
+        onSaved={() => {
+          setFormOpen(false)
+          employeesQuery.reload()
+        }}
+      />
     </div>
   )
 }

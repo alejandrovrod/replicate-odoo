@@ -31,10 +31,14 @@ public sealed class AdvanceOpportunityStageCommandHandler
         };
 
     private readonly ICrmRepository _crmRepository;
+    private readonly ICrmCatalogRepository _catalogs;
 
-    public AdvanceOpportunityStageCommandHandler(ICrmRepository crmRepository)
+    public AdvanceOpportunityStageCommandHandler(
+        ICrmRepository crmRepository,
+        ICrmCatalogRepository? catalogs = null)
     {
         _crmRepository = crmRepository;
+        _catalogs = catalogs;
     }
 
     public async Task<Result<OpportunityDto>> HandleAsync(
@@ -83,10 +87,11 @@ public sealed class AdvanceOpportunityStageCommandHandler
             }
             else if (command.ToStage == OpportunityStage.ClosedLost)
             {
-                // MarkAsClosedLost is the single rule source: empty reason throws
-                // crm_loss_reason_required (spec CRM-02, OpportunityValidator shape mirrored
-                // inside the entity) and forces Probability=0.
-                opportunity.MarkAsClosedLost(command.LossReason!);
+                // MarkAsClosedLost is the single rule source: a missing catalog reason throws
+                // crm_loss_reason_required (spec CRM-02) and forces Probability=0. The legacy
+                // free-text LossReason travels as additional notes only.
+                var reasonId = await ResolveLossReasonIdAsync(opportunity, command, cancellationToken);
+                opportunity.MarkAsClosedLost(reasonId, command.LossReason);
             }
             else
             {
@@ -99,11 +104,12 @@ public sealed class AdvanceOpportunityStageCommandHandler
                 }
 
                 var sameStage = string.Equals(command.ToStage, opportunity.Stage, StringComparison.Ordinal);
-                opportunity.Stage = command.ToStage;
-                opportunity.Status = OpportunityStatus.Open;
-                opportunity.LossReason = null;
-                opportunity.Probability = command.Probability
-                    ?? (sameStage ? opportunity.Probability : StageProbabilities[command.ToStage]);
+                // Entity method owns the plain move (probability sync + loss clearing); the
+                // range gate above stays handler-side so the failure precedes any mutation.
+                opportunity.MoveToStage(
+                    command.ToStage,
+                    command.Probability ?? (sameStage ? opportunity.Probability : null),
+                    sameStage ? opportunity.Probability : StageProbabilities[command.ToStage]);
             }
 
             await _crmRepository.UpdateOpportunityAsync(opportunity, cancellationToken);
@@ -120,6 +126,56 @@ public sealed class AdvanceOpportunityStageCommandHandler
             // UpdateOpportunityAsync, translated by CrmRepository).
             return Result<OpportunityDto>.Failure(ex.Code, ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Normalized loss-reason resolution (CRM/ERPNext parity): an explicit catalog id wins
+    /// (unknown/inactive ids reject with <c>crm_loss_reason_not_found</c>); legacy free text
+    /// auto-matches a catalog code/name case-insensitively; anything else keeps the
+    /// <c>crm_loss_reason_required</c> invariant (the close dialog always sends the id).
+    /// </summary>
+    private async Task<Guid> ResolveLossReasonIdAsync(
+        Opportunity opportunity,
+        AdvanceOpportunityStageCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (command.LossReasonId.HasValue && command.LossReasonId.Value != Guid.Empty)
+        {
+            if (_catalogs is null)
+            {
+                throw new CRMValidationException(
+                    CRMErrorCodes.LossReasonRequired,
+                    "A loss reason is mandatory when marking an opportunity as Closed Lost.");
+            }
+
+            var reason = await _catalogs.GetLossReasonByIdAsync(
+                command.LossReasonId.Value, cancellationToken);
+            if (reason is null || !reason.IsActive)
+            {
+                throw new CRMValidationException(
+                    CRMErrorCodes.LossReasonNotFound,
+                    $"Loss reason '{command.LossReasonId.Value}' was not found.");
+            }
+
+            return reason.Id;
+        }
+
+        if (!string.IsNullOrWhiteSpace(command.LossReason) && _catalogs is not null)
+        {
+            var text = command.LossReason.Trim();
+            var reasons = await _catalogs.ListLossReasonsAsync(cancellationToken);
+            var match = reasons.FirstOrDefault(r =>
+                string.Equals(r.Code, text, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(r.Name, text, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+            {
+                return match.Id;
+            }
+        }
+
+        throw new CRMValidationException(
+            CRMErrorCodes.LossReasonRequired,
+            "A loss reason is mandatory when marking an opportunity as Closed Lost.");
     }
 
     private static void EnsureRowVersion(Opportunity opportunity, byte[]? expected)

@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Erp.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Erp.Infrastructure.Data.Configurations;
@@ -65,6 +67,59 @@ public sealed class OpportunityConfiguration : IEntityTypeConfiguration<Opportun
             .HasForeignKey(a => a.OpportunityId)
             .HasConstraintName("FK_CRMActivity_Opportunity")
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(o => o.Items)
+            .WithOne(i => i.Opportunity)
+            .HasForeignKey(i => i.OpportunityId)
+            .HasConstraintName("FK_OpportunityItem_Opportunity")
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(o => o.Quotations)
+            .WithOne(q => q.Opportunity)
+            .HasForeignKey(q => q.OpportunityId)
+            .HasConstraintName("FK_Quotation_Opportunity")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // CRM/ERPNext parity: segmentation + multi-currency + normalized loss reason.
+        // All nullable (legacy rows) with DB defaults matching the CLR defaults.
+        builder.Property(o => o.ExchangeRate).HasColumnType("decimal(18,6)").HasDefaultValue(1m).IsRequired();
+        builder.Property(o => o.BaseOpportunityAmount).HasColumnType("decimal(18,4)").HasDefaultValue(0m).IsRequired();
+        builder.Property(o => o.MarketSegment).HasMaxLength(100);
+        builder.Property(o => o.TerritoryId);
+        builder.Property(o => o.IndustryId);
+        builder.Property(o => o.LossReasonId);
+
+        // Competitors ride as a JSON string set (fixed small vocabulary, never queried by
+        // element): conversion + comparer keep change tracking honest for the collection.
+        var competitorsComparer = new ValueComparer<List<string>>(
+            (a, b) => (a ?? new List<string>()).SequenceEqual(b ?? new List<string>()),
+            list => (list ?? new List<string>()).Aggregate(0, HashCode.Combine),
+            list => (list ?? new List<string>()).ToList());
+        builder.Property(o => o.Competitors)
+            .HasConversion(
+                value => JsonSerializer.Serialize(value ?? new List<string>(), (JsonSerializerOptions?)null),
+                value => string.IsNullOrWhiteSpace(value)
+                    ? new List<string>()
+                    : JsonSerializer.Deserialize<List<string>>(value, (JsonSerializerOptions?)null) ?? new List<string>())
+            .Metadata.SetValueComparer(competitorsComparer);
+
+        builder.HasOne(o => o.Territory)
+            .WithMany()
+            .HasForeignKey(o => o.TerritoryId)
+            .HasConstraintName("FK_Opportunity_Territory")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(o => o.Industry)
+            .WithMany()
+            .HasForeignKey(o => o.IndustryId)
+            .HasConstraintName("FK_Opportunity_Industry")
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(o => o.LossReasonEntry)
+            .WithMany()
+            .HasForeignKey(o => o.LossReasonId)
+            .HasConstraintName("FK_Opportunity_LossReason")
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(o => new { o.TenantId, o.CompanyId, o.Stage, o.Status })
             .HasDatabaseName("IX_Opportunity_Tenant_Stage");

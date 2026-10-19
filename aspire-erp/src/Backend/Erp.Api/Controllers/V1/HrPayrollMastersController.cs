@@ -13,15 +13,15 @@ using Microsoft.Extensions.Localization;
 namespace Erp.Api.Controllers.V1;
 
 /// <summary>
-/// HR master reads (Task 12.5): employees, salary components, salary structures and structure
-/// assignments for one company. Read-only - all four write no GLEntry rows, so no
-/// <c>Idempotency-Key</c> filter applies.
+/// HR master reads (Task 12.5): salary components, salary structures and structure assignments
+/// for one company. Read-only - none of these write GLEntry rows, so no <c>Idempotency-Key</c>
+/// filter applies.
 /// </summary>
 /// <remarks>
-/// SCOPE (documented, the manufacturing-BOM precedent): masters enter via SQL seeds like
-/// BOMs (out of scope) - there are deliberately NO create/update endpoints here. These four
-/// GET routes exist only so the HR Directory &amp; Payroll Studio UI renders live masters
-/// instead of pasted GUIDs.
+/// SCOPE (documented, the manufacturing-BOM precedent): these masters enter via SQL seeds like
+/// BOMs (out of scope) - there are deliberately NO create/update endpoints here. The GET routes
+/// exist only so the HR Directory &amp; Payroll Studio UI renders live masters instead of pasted
+/// GUIDs. Employees moved to <c>EmployeesController</c> once they gained a writable lifecycle.
 /// </remarks>
 [ApiController]
 [Route("api/v1/hr")]
@@ -41,32 +41,6 @@ public sealed class HrPayrollMastersController : ControllerBase
         _sender = sender;
         _errors = errors;
         _common = common;
-    }
-
-    /// <summary>Lists the company's employees, ordered by employee number. Read-only.</summary>
-    /// <param name="companyId">Company that owns the employees.</param>
-    /// <param name="cancellationToken">Request cancellation token.</param>
-    [HttpGet("employees")]
-    [Authorize(Policy = "permission:employee:read")]
-    [ProducesResponseType(typeof(PagedResult<EmployeeDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Employees(
-        [FromQuery] Guid companyId,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50,
-        CancellationToken cancellationToken = default)
-    {
-        if (companyId == Guid.Empty)
-        {
-            return Problem(
-                StatusCodes.Status400BadRequest,
-                _common.Text("InvalidCompany"),
-                _errors.Text(HrPayrollErrorCodes.CompanyNotFound),
-                HrPayrollErrorCodes.CompanyNotFound);
-        }
-
-        var employees = await _sender.SendAsync(new GetEmployeesQuery(companyId, page, pageSize), cancellationToken);
-        return Ok(employees);
     }
 
     /// <summary>Lists the company's salary components, ordered by name. Read-only.</summary>

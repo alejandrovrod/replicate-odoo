@@ -159,6 +159,7 @@ public class ReopenOpportunityCommandHandlerTests
         public Task UpdateLeadAsync(Lead lead, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task AddOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task UpdateOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default) { UpdateOpportunityCalled = true; return Task.CompletedTask; }
+        public Task ReplaceOpportunityItemsAsync(Guid opportunityId, IReadOnlyList<OpportunityItem> lines, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<string> NextOpportunityNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default) => Task.FromResult("OPP-1");
         public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) => operation(cancellationToken);
         public Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default) => Task.FromResult<Lead?>(null);

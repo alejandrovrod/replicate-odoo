@@ -237,6 +237,30 @@
   <data name="crm_opportunity_no_customer" xml:space="preserve">
     <value>The opportunity has no customer assigned.</value>
   </data>
+  <data name="crm_opportunity_not_open" xml:space="preserve">
+    <value>Only open opportunities accept dossier edits.</value>
+  </data>
+  <data name="crm_invalid_exchange_rate" xml:space="preserve">
+    <value>Exchange rate must be positive.</value>
+  </data>
+  <data name="crm_invalid_opportunity_item" xml:space="preserve">
+    <value>Opportunity lines need an existing item with quantity greater than zero, rate greater than or equal to zero and discount between 0 and 100.</value>
+  </data>
+  <data name="crm_quotation_requires_items" xml:space="preserve">
+    <value>A quotation needs at least one priced line.</value>
+  </data>
+  <data name="crm_quotation_not_found" xml:space="preserve">
+    <value>Quotation not found.</value>
+  </data>
+  <data name="crm_loss_reason_not_found" xml:space="preserve">
+    <value>Loss reason not found.</value>
+  </data>
+  <data name="crm_territory_not_found" xml:space="preserve">
+    <value>Territory not found.</value>
+  </data>
+  <data name="crm_industry_not_found" xml:space="preserve">
+    <value>Industry not found.</value>
+  </data>
   <data name="crm_opportunity_not_found" xml:space="preserve">
     <value>Opportunity not found.</value>
   </data>

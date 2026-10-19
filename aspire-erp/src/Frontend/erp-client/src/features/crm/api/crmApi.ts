@@ -4,12 +4,17 @@ import { useTenantStore } from '../../../store/useTenantStore'
 import type {
   AdvanceStagePayload,
   ConvertLeadResult,
+  CreateQuotationPayload,
   CreateSalesOrderPayload,
+  CrmCatalogDto,
   IngestLeadResult,
   ItemOption,
   LeadDto,
+  OpportunityDetailDto,
   OpportunityDto,
+  QuotationDto,
   SalesOrderCreated,
+  UpdateOpportunityPayload,
 } from '../types/crm'
 
 /**
@@ -30,10 +35,11 @@ export const crmApi = {
 
   /**
    * POST /api/v1/opportunities/{id}/advance - the Kanban drag-drop write.
-   * ClosedWon forces 100%, ClosedLost forces 0% and requires `lossReason`; a stale
+   * ClosedWon forces 100%, ClosedLost forces 0% and requires `lossReasonId` (the
+   * normalized catalog reason; `lossReason` carries only the additional notes); a stale
    * `rowVersion` fails with 409 `concurrency_conflict` (spec CRM-06).
    */
-  advanceStage: async (payload: AdvanceStagePayload): Promise<OpportunityDto> => {
+  advanceStage: async (payload: AdvanceStagePayload, signal?: AbortSignal): Promise<OpportunityDto> => {
     const companyId = useTenantStore.getState().companyId
     const response = await apiClient.post<OpportunityDto>(
       `/v1/opportunities/${payload.id}/advance`,
@@ -41,12 +47,14 @@ export const crmApi = {
         toStage: payload.toStage,
         probability: payload.probability ?? null,
         lossReason: payload.lossReason ?? null,
+        lossReasonId: payload.lossReasonId ?? null,
       },
       {
         params: {
           companyId,
           ...(payload.rowVersion ? { rowVersion: payload.rowVersion } : {}),
         },
+        signal,
       },
     )
     return response.data
@@ -127,11 +135,92 @@ export const crmApi = {
   },
 
   /** GET /api/v1/items - catalog picker for the sales-order line (bounded single page, no pager). */
-  getItems: async (): Promise<ItemOption[]> => {
+  getItems: async (signal?: AbortSignal): Promise<ItemOption[]> => {
     const companyId = useTenantStore.getState().companyId
     const response = await apiClient.get<PagedResult<ItemOption>>('/v1/items', {
       params: { companyId, page: 1, pageSize: 500 },
+      signal,
     })
     return response.data.items
+  },
+
+  /** GET /api/v1/opportunities/{id} - the full commercial dossier (detail drawer source). */
+  getOpportunityDetail: async (id: string, signal?: AbortSignal): Promise<OpportunityDetailDto> => {
+    const companyId = useTenantStore.getState().companyId
+    const response = await apiClient.get<OpportunityDetailDto>(`/v1/opportunities/${id}`, {
+      params: { companyId },
+      signal,
+    })
+    return response.data
+  },
+
+  /** PUT /api/v1/opportunities/{id} - dossier edit (null leaves a field unchanged). */
+  updateOpportunity: async (payload: UpdateOpportunityPayload, signal?: AbortSignal): Promise<OpportunityDetailDto> => {
+    const companyId = useTenantStore.getState().companyId
+    const response = await apiClient.put<OpportunityDetailDto>(
+      `/v1/opportunities/${payload.id}`,
+      {
+        opportunityId: payload.id,
+        companyId,
+        rowVersion: payload.rowVersion,
+        ...(payload.partyName !== undefined ? { partyName: payload.partyName } : {}),
+        ...(payload.probability !== undefined ? { probability: payload.probability } : {}),
+        ...(payload.expectedClosingDate !== undefined ? { expectedClosingDate: payload.expectedClosingDate } : {}),
+        ...(payload.assignedSalespersonId !== undefined ? { assignedSalespersonId: payload.assignedSalespersonId } : {}),
+        ...(payload.currencyId !== undefined ? { currencyId: payload.currencyId } : {}),
+        ...(payload.clearCurrency ? { clearCurrency: true } : {}),
+        ...(payload.exchangeRate !== undefined ? { exchangeRate: payload.exchangeRate } : {}),
+        ...(payload.territoryId !== undefined ? { territoryId: payload.territoryId } : {}),
+        ...(payload.industryId !== undefined ? { industryId: payload.industryId } : {}),
+        ...(payload.marketSegment !== undefined ? { marketSegment: payload.marketSegment } : {}),
+        ...(payload.competitors !== undefined ? { competitors: payload.competitors } : {}),
+        ...(payload.items !== undefined ? { items: payload.items } : {}),
+      },
+      { params: { companyId }, signal },
+    )
+    return response.data
+  },
+
+  /** POST /api/v1/opportunities/{id}/create-quotation - Draft quotation from a ClosedWon deal. */
+  createQuotation: async (payload: CreateQuotationPayload, signal?: AbortSignal): Promise<QuotationDto> => {
+    const companyId = useTenantStore.getState().companyId
+    const response = await apiClient.post<QuotationDto>(
+      `/v1/opportunities/${payload.id}/create-quotation`,
+      {
+        validTill: payload.validTill ?? null,
+        termsAndConditions: payload.termsAndConditions ?? null,
+        lines: payload.lines ?? null,
+      },
+      { params: { companyId }, signal },
+    )
+    return response.data
+  },
+
+  /** GET /api/v1/quotations/{id} - one formal quotation with its priced lines. */
+  getQuotation: async (id: string, signal?: AbortSignal): Promise<QuotationDto> => {
+    const companyId = useTenantStore.getState().companyId
+    const response = await apiClient.get<QuotationDto>(`/v1/quotations/${id}`, {
+      params: { companyId },
+      signal,
+    })
+    return response.data
+  },
+
+  /** GET /api/v1/loss-reasons - normalized close reasons (ClosedLost dialog source). */
+  getLossReasons: async (signal?: AbortSignal): Promise<CrmCatalogDto[]> => {
+    const response = await apiClient.get<CrmCatalogDto[]>('/v1/loss-reasons', { signal })
+    return response.data
+  },
+
+  /** GET /api/v1/territories - segmentation dropdown source. */
+  getTerritories: async (signal?: AbortSignal): Promise<CrmCatalogDto[]> => {
+    const response = await apiClient.get<CrmCatalogDto[]>('/v1/territories', { signal })
+    return response.data
+  },
+
+  /** GET /api/v1/industries - segmentation dropdown source. */
+  getIndustries: async (signal?: AbortSignal): Promise<CrmCatalogDto[]> => {
+    const response = await apiClient.get<CrmCatalogDto[]>('/v1/industries', { signal })
+    return response.data
   },
 }

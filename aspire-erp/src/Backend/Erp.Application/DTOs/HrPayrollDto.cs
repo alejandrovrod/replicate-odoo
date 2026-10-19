@@ -2,7 +2,11 @@ using Erp.Domain.Entities;
 
 namespace Erp.Application.DTOs;
 
-/// <summary>Employee directory row (Task 12.5 read): identity, org links, dates and lifecycle.</summary>
+/// <summary>
+/// Employee directory row (Task 12.5 read): identity, org links, dates, lifecycle and the bank
+/// data the edit form round-trips, plus the <see cref="RowVersion"/> optimistic token (base64)
+/// echoed back on PUT. Guarded by <c>permission:employee:read</c>.
+/// </summary>
 public sealed record EmployeeDto(
     Guid Id,
     Guid CompanyId,
@@ -15,8 +19,11 @@ public sealed record EmployeeDto(
     DateOnly DateOfJoining,
     DateOnly? DateOfRelieving,
     SalaryMode SalaryMode,
+    string? BankName,
+    string? BankAccountNumber,
     EmploymentStatus Status,
-    bool IsActive)
+    bool IsActive,
+    string RowVersion)
 {
     public static EmployeeDto Build(Employee employee) =>
         new(
@@ -31,8 +38,13 @@ public sealed record EmployeeDto(
             employee.DateOfJoining,
             employee.DateOfRelieving,
             employee.SalaryMode,
+            employee.BankName,
+            employee.BankAccountNumber,
             employee.Status,
-            employee.IsActive);
+            employee.IsActive,
+            employee.RowVersion is null || employee.RowVersion.Length == 0
+                ? string.Empty
+                : Convert.ToBase64String(employee.RowVersion));
 }
 
 /// <summary>Salary component payload (Task 12.2): the pay element plus its GL posting account.</summary>
@@ -207,3 +219,91 @@ public sealed record PayrollSubmitResultDto(
 public sealed record PayrollEntryDetailDto(
     PayrollEntryDto Entry,
     IReadOnlyList<SalarySlipDto> Slips);
+
+/// <summary>Company fiscal header of a printable pay stub (name, tax id, country).</summary>
+public sealed record SalarySlipCompanyDto(
+    string Name,
+    string TaxId,
+    string? CountryCode);
+
+/// <summary>Employee identity block of a printable pay stub.</summary>
+public sealed record SalarySlipEmployeeDto(
+    string EmployeeNumber,
+    string FullName,
+    string WorkEmail);
+
+/// <summary>One priced line of a printable pay stub (component snapshot + amount).</summary>
+public sealed record SalarySlipPrintableLineDto(
+    string ComponentName,
+    SalaryComponentType ComponentType,
+    decimal Amount);
+
+/// <summary>
+/// Printable pay stub (spec: formal receipt view): split earnings/deductions, the settlement
+/// (posting) date and the company fiscal header. Employer contributions are intentionally NOT
+/// part of the domain model (SalaryComponentType is Earning|Deduction only), so they are absent
+/// by design rather than rendered empty.
+/// </summary>
+public sealed record SalarySlipPrintableDto(
+    Guid SlipId,
+    string SlipNumber,
+    Guid PayrollEntryId,
+    string PayrollNumber,
+    DateOnly PeriodStart,
+    DateOnly PeriodEnd,
+    DateOnly PostingDate,
+    SalarySlipStatus Status,
+    int PaymentDays,
+    int AbsentDays,
+    SalarySlipCompanyDto Company,
+    SalarySlipEmployeeDto Employee,
+    decimal GrossPay,
+    decimal TotalDeductions,
+    decimal NetPay,
+    IReadOnlyList<SalarySlipPrintableLineDto> Earnings,
+    IReadOnlyList<SalarySlipPrintableLineDto> Deductions)
+{
+    public static SalarySlipPrintableDto Build(
+        PayrollEntry entry,
+        SalarySlip slip,
+        Company company,
+        Employee? employee)
+    {
+        static SalarySlipPrintableLineDto Line(SalarySlipLine line) =>
+            new(line.ComponentName, line.ComponentType, line.Amount);
+
+        var earnings = slip.Lines
+            .Where(l => l.ComponentType == SalaryComponentType.Earning)
+            .OrderBy(l => l.ComponentName)
+            .Select(Line)
+            .ToList();
+
+        var deductions = slip.Lines
+            .Where(l => l.ComponentType == SalaryComponentType.Deduction)
+            .OrderBy(l => l.ComponentName)
+            .Select(Line)
+            .ToList();
+
+        return new SalarySlipPrintableDto(
+            slip.Id,
+            slip.SlipNumber,
+            entry.Id,
+            entry.PayrollNumber,
+            entry.StartDate,
+            entry.EndDate,
+            entry.PostingDate,
+            slip.Status,
+            slip.PaymentDays,
+            slip.AbsentDays,
+            new SalarySlipCompanyDto(company.Name, company.TaxId, company.CountryCode),
+            new SalarySlipEmployeeDto(
+                employee?.EmployeeNumber ?? string.Empty,
+                employee is null ? string.Empty : $"{employee.FirstName} {employee.LastName}".Trim(),
+                employee?.WorkEmail ?? string.Empty),
+            slip.GrossPay,
+            slip.TotalDeductions,
+            slip.NetPay,
+            earnings,
+            deductions);
+    }
+}

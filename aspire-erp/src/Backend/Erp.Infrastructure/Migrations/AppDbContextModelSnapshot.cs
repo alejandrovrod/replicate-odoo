@@ -2220,6 +2220,40 @@ namespace Erp.Infrastructure.Migrations
                     b.ToTable("IdempotencyRecord", (string)null);
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.Industry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_Industry_Tenant_Code");
+
+                    b.ToTable("Industry", (string)null);
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.Item", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2776,17 +2810,41 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid?>("AssignedSalespersonId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("BaseOpportunityAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Competitors")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("CurrencyId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("ExchangeRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,6)")
+                        .HasDefaultValue(1m);
+
                     b.Property<DateOnly>("ExpectedClosingDate")
                         .HasColumnType("date");
 
+                    b.Property<Guid?>("IndustryId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("LossReason")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("LossReasonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MarketSegment")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("OpportunityAmount")
                         .ValueGeneratedOnAdd()
@@ -2851,11 +2909,20 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("TerritoryId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("CurrencyId");
+
+                    b.HasIndex("IndustryId");
+
+                    b.HasIndex("LossReasonId");
+
+                    b.HasIndex("TerritoryId");
 
                     b.HasIndex("TenantId", "CompanyId", "Stage", "Status")
                         .HasDatabaseName("IX_Opportunity_Tenant_Stage");
@@ -2877,6 +2944,84 @@ namespace Erp.Infrastructure.Migrations
                                     .HasPeriodEnd("PeriodEnd")
                                     .HasColumnName("PeriodEnd");
                             }));
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.OpportunityItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("OpportunityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("TenantId", "OpportunityId")
+                        .HasDatabaseName("IX_OpportunityItem_Tenant_Opportunity");
+
+                    b.ToTable("OpportunityItem", (string)null);
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.OpportunityLossReason", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_OpportunityLossReason_Tenant_Code");
+
+                    b.ToTable("OpportunityLossReason", (string)null);
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.POSProfile", b =>
@@ -4024,6 +4169,9 @@ namespace Erp.Infrastructure.Migrations
                     b.Property<decimal>("ExchangeRate")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<Guid?>("OpportunityId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("QuotationNo")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -4049,6 +4197,8 @@ namespace Erp.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("OpportunityId");
 
                     b.ToTable("Quotations");
                 });
@@ -5561,6 +5711,40 @@ namespace Erp.Infrastructure.Migrations
                     b.ToTable("TenantPreset", (string)null);
                 });
 
+            modelBuilder.Entity("Erp.Domain.Entities.Territory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_Territory_Tenant_Code");
+
+                    b.ToTable("Territory", (string)null);
+                });
+
             modelBuilder.Entity("Erp.Domain.Entities.UOM", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6729,9 +6913,54 @@ namespace Erp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("FK_Opportunity_Currency");
 
+                    b.HasOne("Erp.Domain.Entities.Industry", "Industry")
+                        .WithMany()
+                        .HasForeignKey("IndustryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Opportunity_Industry");
+
+                    b.HasOne("Erp.Domain.Entities.OpportunityLossReason", "LossReasonEntry")
+                        .WithMany()
+                        .HasForeignKey("LossReasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Opportunity_LossReason");
+
+                    b.HasOne("Erp.Domain.Entities.Territory", "Territory")
+                        .WithMany()
+                        .HasForeignKey("TerritoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Opportunity_Territory");
+
                     b.Navigation("Company");
 
                     b.Navigation("Currency");
+
+                    b.Navigation("Industry");
+
+                    b.Navigation("LossReasonEntry");
+
+                    b.Navigation("Territory");
+                });
+
+            modelBuilder.Entity("Erp.Domain.Entities.OpportunityItem", b =>
+                {
+                    b.HasOne("Erp.Domain.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_OpportunityItem_Item");
+
+                    b.HasOne("Erp.Domain.Entities.Opportunity", "Opportunity")
+                        .WithMany("Items")
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_OpportunityItem_Opportunity");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("Opportunity");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.POSProfile", b =>
@@ -7123,7 +7352,15 @@ namespace Erp.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Erp.Domain.Entities.Opportunity", "Opportunity")
+                        .WithMany("Quotations")
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_Quotation_Opportunity");
+
                     b.Navigation("Customer");
+
+                    b.Navigation("Opportunity");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.QuotationItem", b =>
@@ -7797,6 +8034,10 @@ namespace Erp.Infrastructure.Migrations
             modelBuilder.Entity("Erp.Domain.Entities.Opportunity", b =>
                 {
                     b.Navigation("Activities");
+
+                    b.Navigation("Items");
+
+                    b.Navigation("Quotations");
                 });
 
             modelBuilder.Entity("Erp.Domain.Entities.PaymentEntry", b =>

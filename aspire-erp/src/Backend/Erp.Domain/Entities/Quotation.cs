@@ -26,6 +26,13 @@ public class Quotation : ITenantEntity
     public Guid CustomerId { get; set; }
     public Customer? Customer { get; set; }
 
+    /// <summary>
+    /// Source deal of the ERPNext pre-order flow (null for standalone quotations).
+    /// Restrict on delete: an issued quotation outlives its deal's deletion attempts.
+    /// </summary>
+    public Guid? OpportunityId { get; set; }
+    public Opportunity? Opportunity { get; set; }
+
     public QuotationStatus Status { get; set; } = QuotationStatus.Draft;
 
     public decimal TotalAmount { get; set; }

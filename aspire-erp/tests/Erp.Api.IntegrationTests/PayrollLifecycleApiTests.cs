@@ -29,10 +29,12 @@ namespace Erp.Api.IntegrationTests;
 /// <para><b>Provisioning stays neutral where asserted.</b> Every run nets its 2150 payable to
 /// zero (disbursed, or cancelled with the accrual mirror) before cleanup, so no test leaves a
 /// payable balance behind; additive balanced GL rows are fine.</para>
-/// <para><b>No HR-CRUD endpoints exist (out of scope).</b> Master rows are inserted via direct
-/// SQL setup with deterministic per-test GUIDs (the banking/manufacturing per-test-rows
-/// pattern); the payroll lifecycle itself (submit/disburse/cancel) always goes through the
-/// real API. The four master GET routes (Task 12.5) are exercised by the frontend, not here.</para>
+/// <para><b>Masters are seeded, not created here.</b> Employees do have a writable lifecycle
+/// (<c>EmployeesController</c>, POST/PUT <c>api/v1/hr/employees</c>), but this suite keeps using
+/// direct SQL setup with deterministic per-test GUIDs (the banking/manufacturing per-test-rows
+/// pattern) so the batch lifecycle is exercised in isolation; the payroll lifecycle itself
+/// (submit/disburse/cancel) always goes through the real API. The master GET routes (Task 12.5)
+/// are exercised by the frontend, and the employee write contract by the Application unit suite.</para>
 /// </remarks>
 [Collection(LedgerMutatingCollection.Name)]
 public class PayrollLifecycleApiTests : IClassFixture<ErpApiFactory>

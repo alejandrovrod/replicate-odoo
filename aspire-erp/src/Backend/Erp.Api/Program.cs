@@ -335,6 +335,8 @@ builder.Services.AddScoped<IHrPayrollRepository, HrPayrollRepository>();
 builder.Services.AddScoped<ICommandHandler<CreateSalaryComponentCommand, Result<SalaryComponentDto>>, CreateSalaryComponentCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateSalaryStructureCommand, Result<SalaryStructureDto>>, CreateSalaryStructureCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<AssignSalaryStructureCommand, Result<SalaryStructureAssignmentDto>>, AssignSalaryStructureCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateEmployeeCommand, Result<EmployeeDto>>, CreateEmployeeCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateEmployeeCommand, Result<EmployeeDto>>, UpdateEmployeeCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<SubmitPayrollRunCommand, Result<PayrollSubmitResultDto>>, SubmitPayrollRunCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<DisbursePayrollCommand, Result<PayrollEntryDto>>, DisbursePayrollCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<CancelPayrollCommand, Result<PayrollEntryDto>>, CancelPayrollCommandHandler>();
@@ -344,6 +346,7 @@ builder.Services.AddScoped<IQueryHandler<GetEmployeesQuery, PagedResult<Employee
 builder.Services.AddScoped<IQueryHandler<GetSalaryComponentsQuery, PagedResult<SalaryComponentDto>>, GetSalaryComponentsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetSalaryStructuresQuery, PagedResult<SalaryStructureDto>>, GetSalaryStructuresQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetStructureAssignmentsQuery, PagedResult<SalaryStructureAssignmentDto>>, GetStructureAssignmentsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetSalarySlipPrintQuery, SalarySlipPrintableDto?>, GetSalarySlipPrintQueryHandler>();
 
 // CRM & Sales Pipeline (Block A, tasks 11.1-11.7): lead/opportunity repository (EF
 // CrmRepository implements both the adopted ICrmRepository and the new
@@ -352,10 +355,15 @@ builder.Services.AddScoped<IQueryHandler<GetStructureAssignmentsQuery, PagedResu
 // precedent); stage-advance/audit controllers land in Block B.
 builder.Services.AddScoped<ICrmRepository, CrmRepository>();
 builder.Services.AddScoped<ICrmActivityRepository, CrmRepository>();
+builder.Services.AddScoped<IQuotationRepository, CrmRepository>();
+builder.Services.AddScoped<ICrmCatalogRepository, CrmRepository>();
 builder.Services.AddScoped<ICommandHandler<IngestLeadCommand, Result<IngestLeadResultDto>>, IngestLeadCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<ConvertLeadCommand, Result<ConvertLeadResultDto>>, ConvertLeadCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<ReopenOpportunityCommand, Result<Guid>>, ReopenOpportunityCommandHandler>();
 builder.Services.AddScoped<ICommandHandler<AdvanceOpportunityStageCommand, Result<OpportunityDto>>, AdvanceOpportunityStageCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateOpportunityCommand, Result<OpportunityDetailDto>>, UpdateOpportunityCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<CreateQuotationFromOpportunityCommand, Result<QuotationDto>>, CreateQuotationFromOpportunityCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetOpportunityDetailQuery, OpportunityDetailDto?>, GetOpportunityDetailQueryHandler>();
 builder.Services.AddScoped<ICommandHandler<CreateOpportunitySalesOrderCommand, Result<SalesOrderDto>>, CreateOpportunitySalesOrderCommandHandler>();
 builder.Services.AddScoped<IQueryHandler<GetLeadsQuery, PagedResult<LeadDto>>, GetLeadsQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<GetOpportunitiesQuery, PagedResult<OpportunityDto>>, GetOpportunitiesQueryHandler>();

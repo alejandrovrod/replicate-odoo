@@ -24,11 +24,19 @@ public sealed record CreateSalesOrderRequest(
     DateOnly? DeliveryDate = null,
     Guid? CreatedByUserId = null);
 
-/// <summary>Stage-advance body: target stage plus optional probability, loss reason.</summary>
+/// <summary>Stage-advance body: target stage plus optional probability, loss data.</summary>
 public sealed record AdvanceStageRequest(
     string ToStage,
     decimal? Probability = null,
-    string? LossReason = null);
+    string? LossReason = null,
+    Guid? LossReasonId = null);
+
+/// <summary>Quotation-issue body: validity, terms and optional explicit lines.</summary>
+public sealed record CreateQuotationRequest(
+    DateOnly? ValidTill = null,
+    string? TermsAndConditions = null,
+    IReadOnlyList<QuotationLineInput>? Lines = null,
+    Guid? CreatedByUserId = null);
 
 /// <summary>
 /// Opportunity endpoints (Block B, tasks 11.2/11.5/11.6): the pipeline board/list read, the
@@ -130,7 +138,8 @@ public sealed class OpportunitiesController : ControllerBase
                 request.ToStage,
                 request.Probability,
                 request.LossReason,
-                rowVersion),
+                rowVersion,
+                request.LossReasonId),
             cancellationToken);
 
         if (!result.IsSuccess)
@@ -182,6 +191,141 @@ public sealed class OpportunitiesController : ControllerBase
         }
 
         return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Returns the full commercial dossier of one deal (detail drawer source): header money
+    /// with base conversion, priced lines, segmentation, competitors, loss data, activities
+    /// and issued quotations.
+    /// </summary>
+    /// <param name="id">Opportunity id.</param>
+    /// <param name="companyId">Company that owns the opportunity.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("{id:guid}")]
+    [Authorize(Policy = "permission:opportunity:read")]
+    [ProducesResponseType(typeof(OpportunityDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(
+        Guid id,
+        [FromQuery] Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidOpportunity"),
+                _errors.Text("crm_opportunity_not_found"),
+                "crm_opportunity_not_found");
+        }
+
+        var detail = await _sender.SendAsync(
+            new GetOpportunityDetailQuery(companyId, id), cancellationToken);
+
+        return detail is null
+            ? Problem(
+                StatusCodes.Status404NotFound,
+                _common.Text("OpportunityNotFound"),
+                _errors.Text("crm_opportunity_not_found"),
+                "crm_opportunity_not_found")
+            : Ok(detail);
+    }
+
+    /// <summary>
+    /// Updates the commercial dossier of one Open deal (priced lines replace in full,
+    /// segmentation, competitors, currency/rate). Closed deals reject with
+    /// <c>crm_opportunity_not_open</c> (409); a stale <c>RowVersion</c> fails with
+    /// <c>concurrency_conflict</c> (409, spec CRM-06).
+    /// </summary>
+    /// <remarks>Requires the <c>Idempotency-Key</c> header (Constitution VI.4).</remarks>
+    /// <param name="id">Opportunity id.</param>
+    /// <param name="companyId">Company that owns the opportunity.</param>
+    /// <param name="command">Dossier patch (null leaves a field unchanged).</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "permission:opportunity:submit")]
+    [IdempotencyKeyRequired]
+    [ProducesResponseType(typeof(OpportunityDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromQuery] Guid companyId,
+        [FromBody] UpdateOpportunityCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty
+            || id != command.OpportunityId || companyId != command.CompanyId)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidOpportunity"),
+                _errors.Text("crm_opportunity_not_found"),
+                "crm_opportunity_not_found");
+        }
+
+        var result = await _sender.SendAsync(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return OpportunityProblem(result.Error!);
+        }
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Issues a formal Draft quotation from a ClosedWon deal (CRM/ERPNext parity, the
+    /// pre-order flow): lines drag from the deal's priced breakdown unless the body
+    /// carries explicit lines for amount-only deals.
+    /// </summary>
+    /// <remarks>Requires the <c>Idempotency-Key</c> header (Constitution VI.4) - the route
+    /// creates quotation rows.</remarks>
+    /// <param name="id">ClosedWon opportunity id.</param>
+    /// <param name="companyId">Company that owns the opportunity.</param>
+    /// <param name="request">Validity, terms and optional explicit lines.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:guid}/create-quotation")]
+    [Authorize(Policy = "permission:opportunity:submit")]
+    [IdempotencyKeyRequired]
+    [ProducesResponseType(typeof(QuotationDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateQuotation(
+        Guid id,
+        [FromQuery] Guid companyId,
+        [FromBody] CreateQuotationRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty || companyId == Guid.Empty)
+        {
+            return Problem(
+                StatusCodes.Status400BadRequest,
+                _common.Text("InvalidOpportunity"),
+                _errors.Text("crm_opportunity_not_found"),
+                "crm_opportunity_not_found");
+        }
+
+        var result = await _sender.SendAsync(
+            new CreateQuotationFromOpportunityCommand(
+                id,
+                companyId,
+                request.ValidTill,
+                request.TermsAndConditions,
+                request.Lines,
+                request.CreatedByUserId),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return OpportunityProblem(result.Error!);
+        }
+
+        var quotation = result.Value!;
+        return Created($"/api/v1/quotations/{quotation.Id}", quotation);
     }
 
     /// <summary>
@@ -274,6 +418,7 @@ public sealed class OpportunitiesController : ControllerBase
             CRMErrorCodes.InvalidStatusTransition
                 or CRMErrorCodes.OpportunityAlreadyClosed
                 or CRMErrorCodes.OpportunityNotWon
+                or CRMErrorCodes.OpportunityNotOpen
                 or ConcurrencyErrorCodes.ConcurrencyConflict => Problem(
                     StatusCodes.Status409Conflict,
                     _common.Text("OpportunityConflict"),

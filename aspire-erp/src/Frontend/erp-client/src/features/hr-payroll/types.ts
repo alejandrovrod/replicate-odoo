@@ -35,8 +35,32 @@ export interface HrEmployee {
   dateOfJoining: string
   dateOfRelieving: string | null
   salaryMode: SalaryMode
+  bankName: string | null
+  bankAccountNumber: string | null
   status: EmploymentStatus
   isActive: boolean
+  /** Base64 rowversion token echoed back on PUT for optimistic concurrency. */
+  rowVersion: string
+}
+
+/**
+ * Mirrors the `POST/PUT /api/v1/hr/employees` body (minus `companyId`/`rowVersion`, which the
+ * request helpers add). `salaryStructureId` is create-only (assignment windows are managed by
+ * the assignment flow).
+ */
+export interface EmployeeInput {
+  employeeNumber: string
+  firstName: string
+  lastName: string
+  workEmail: string
+  /** DateOnly serializes as "yyyy-MM-dd". */
+  dateOfJoining: string
+  dateOfRelieving: string | null
+  salaryMode: SalaryMode
+  bankName: string | null
+  bankAccountNumber: string | null
+  status: EmploymentStatus
+  salaryStructureId?: string | null
 }
 
 /** Mirrors `SalaryComponentDto` (GET /api/v1/hr/salary-components). */
@@ -156,4 +180,50 @@ export function isEligibleForPeriod(
   if (employee.dateOfJoining > periodEnd) return false
   if (employee.dateOfRelieving !== null && employee.dateOfRelieving < periodStart) return false
   return true
+}
+
+/** Mirrors `SalarySlipPrintableLineDto` (one priced earnings/deductions row). */
+export interface SalarySlipPrintableLine {
+  componentName: string
+  componentType: SalaryComponentType
+  amount: number
+}
+
+/** Mirrors `SalarySlipCompanyDto` (fiscal header of the printable stub). */
+export interface SalarySlipPrintableCompany {
+  name: string
+  taxId: string
+  countryCode: string | null
+}
+
+/** Mirrors `SalarySlipEmployeeDto` (identity block of the printable stub). */
+export interface SalarySlipPrintableEmployee {
+  employeeNumber: string
+  fullName: string
+  workEmail: string
+}
+
+/**
+ * Mirrors `SalarySlipPrintableDto` (GET /api/v1/payroll-runs/{runId}/slips/{slipId}/printable).
+ * Employer contributions are intentionally absent: the domain has no such concept.
+ */
+export interface SalarySlipPrintable {
+  slipId: string
+  slipNumber: string
+  payrollEntryId: string
+  payrollNumber: string
+  /** DateOnly serializes as "yyyy-MM-dd". */
+  periodStart: string
+  periodEnd: string
+  postingDate: string
+  status: SalarySlipStatus
+  paymentDays: number
+  absentDays: number
+  company: SalarySlipPrintableCompany
+  employee: SalarySlipPrintableEmployee
+  grossPay: number
+  totalDeductions: number
+  netPay: number
+  earnings: SalarySlipPrintableLine[]
+  deductions: SalarySlipPrintableLine[]
 }

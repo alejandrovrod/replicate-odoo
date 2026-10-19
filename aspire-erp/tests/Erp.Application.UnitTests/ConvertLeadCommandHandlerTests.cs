@@ -165,6 +165,7 @@ public class ConvertLeadCommandHandlerTests
         public Task UpdateLeadAsync(Lead lead, CancellationToken cancellationToken = default) { UpdateLeadCalled = true; return Task.CompletedTask; }
         public Task AddOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default) { AddOpportunityCalled = true; OpportunityCreated = opportunity; return Task.CompletedTask; }
         public Task UpdateOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task ReplaceOpportunityItemsAsync(Guid opportunityId, IReadOnlyList<OpportunityItem> lines, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<string> NextOpportunityNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default) => Task.FromResult("OPP-001");
         public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) => operation(cancellationToken);
         public Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default) => Task.FromResult<Lead?>(null);

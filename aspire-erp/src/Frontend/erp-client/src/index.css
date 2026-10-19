@@ -59,3 +59,35 @@ code, pre, .font-mono {
   mask-image: linear-gradient(180deg, transparent, black 25%, black 75%, transparent);
   -webkit-mask-image: linear-gradient(180deg, transparent, black 25%, black 75%, transparent);
 }
+
+/*
+ * Pay-stub printing (spec: receipt view). SalarySlipModal renders the receipt inside a Radix
+ * portal and its "Print / Save as PDF" action calls window.print(). These rules hide the entire
+ * page and reveal only the `.salary-slip-printable` subtree, so the browser emits a clean,
+ * single-sheet receipt with no extra PDF tooling.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .salary-slip-printable,
+  .salary-slip-printable * {
+    visibility: visible;
+  }
+
+  .salary-slip-printable {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .salary-slip-no-print {
+    display: none !important;
+  }
+}

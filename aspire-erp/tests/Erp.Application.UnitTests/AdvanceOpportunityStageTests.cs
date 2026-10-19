@@ -90,18 +90,71 @@ public class AdvanceOpportunityStageTests
     [Fact]
     public async Task HandleAsync_ShouldForceZeroProbability_OnClosedLostWithReason()
     {
-        var (handler, _, opp) = Arrange(OpenOpportunity(OpportunityStage.Negotiation, 80m));
+        var reasonId = Guid.NewGuid();
+        var (handler, _, opp) = Arrange(
+            OpenOpportunity(OpportunityStage.Negotiation, 80m),
+            new FakeCatalogs(
+                new OpportunityLossReason { Id = reasonId, Code = "COMPETITOR", Name = "Lost to Competitor" }));
 
         var result = await handler.HandleAsync(
             new AdvanceOpportunityStageCommand(
-                opp.Id, opp.CompanyId, OpportunityStage.ClosedLost, LossReason: "Competitor priced 15% lower"));
+                opp.Id, opp.CompanyId, OpportunityStage.ClosedLost,
+                LossReason: "Priced 15% lower", LossReasonId: reasonId));
 
         Assert.True(result.IsSuccess);
         Assert.Equal(OpportunityStage.ClosedLost, opp.Stage);
         Assert.Equal(OpportunityStatus.Lost, opp.Status);
         Assert.Equal(0m, opp.Probability);
         Assert.Equal(0m, result.Value!.WeightedAmount);
-        Assert.Equal("Competitor priced 15% lower", opp.LossReason);
+        Assert.Equal(reasonId, opp.LossReasonId);
+        Assert.Equal("Priced 15% lower", opp.LossReason);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldMatchFreeTextLossReason_ToCatalog()
+    {
+        var reasonId = Guid.NewGuid();
+        var (handler, _, opp) = Arrange(
+            OpenOpportunity(OpportunityStage.Negotiation, 80m),
+            new FakeCatalogs(
+                new OpportunityLossReason { Id = reasonId, Code = "COMPETITOR", Name = "Lost to Competitor" }));
+
+        var result = await handler.HandleAsync(
+            new AdvanceOpportunityStageCommand(
+                opp.Id, opp.CompanyId, OpportunityStage.ClosedLost, LossReason: "lost to competitor"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(reasonId, opp.LossReasonId);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldRejectClosedLost_WithUnknownReasonId()
+    {
+        var (handler, repo, opp) = Arrange(
+            OpenOpportunity(OpportunityStage.Negotiation, 80m), new FakeCatalogs());
+
+        var result = await handler.HandleAsync(
+            new AdvanceOpportunityStageCommand(
+                opp.Id, opp.CompanyId, OpportunityStage.ClosedLost, LossReasonId: Guid.NewGuid()));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(CRMErrorCodes.LossReasonNotFound, result.Error!.Code);
+        Assert.False(repo.UpdateCalled);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldRejectClosedLost_WithUnmatchedFreeText()
+    {
+        var (handler, repo, opp) = Arrange(
+            OpenOpportunity(OpportunityStage.Negotiation, 80m), new FakeCatalogs());
+
+        var result = await handler.HandleAsync(
+            new AdvanceOpportunityStageCommand(
+                opp.Id, opp.CompanyId, OpportunityStage.ClosedLost, LossReason: "No catalog row says this"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(CRMErrorCodes.LossReasonRequired, result.Error!.Code);
+        Assert.False(repo.UpdateCalled);
     }
 
     [Theory]
@@ -237,10 +290,30 @@ public class AdvanceOpportunityStageTests
             RowVersion = new byte[] { 1, 2, 3, 4 }
         };
 
-    private static (AdvanceOpportunityStageCommandHandler Handler, FakeCrmRepository Repo, Opportunity Opp) Arrange(Opportunity opp)
+    private static (AdvanceOpportunityStageCommandHandler Handler, FakeCrmRepository Repo, Opportunity Opp) Arrange(
+        Opportunity opp, ICrmCatalogRepository? catalogs = null)
     {
         var repo = new FakeCrmRepository { OpportunityToReturn = opp };
-        return (new AdvanceOpportunityStageCommandHandler(repo), repo, opp);
+        return (new AdvanceOpportunityStageCommandHandler(repo, catalogs), repo, opp);
+    }
+
+    private sealed class FakeCatalogs : ICrmCatalogRepository
+    {
+        private readonly List<OpportunityLossReason> _reasons;
+
+        public FakeCatalogs(params OpportunityLossReason[] reasons) => _reasons = reasons.ToList();
+
+        public Task<IReadOnlyList<OpportunityLossReason>> ListLossReasonsAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<OpportunityLossReason>>(_reasons);
+
+        public Task<OpportunityLossReason?> GetLossReasonByIdAsync(Guid lossReasonId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_reasons.FirstOrDefault(r => r.Id == lossReasonId));
+
+        public Task<IReadOnlyList<Territory>> ListTerritoriesAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Territory>>(Array.Empty<Territory>());
+
+        public Task<IReadOnlyList<Industry>> ListIndustriesAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Industry>>(Array.Empty<Industry>());
     }
 
     private sealed class FakeCrmRepository : ICrmRepository
@@ -264,6 +337,7 @@ public class AdvanceOpportunityStageTests
             return Task.CompletedTask;
         }
         public Task<string> NextOpportunityNumberAsync(Guid companyId, int year, CancellationToken cancellationToken = default) => Task.FromResult("OPP-1");
+        public Task ReplaceOpportunityItemsAsync(Guid opportunityId, IReadOnlyList<OpportunityItem> lines, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<T> ExecuteInTransactionAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) => operation(cancellationToken);
         public Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default) => Task.FromResult<Lead?>(null);
         public Task<PagedResult<Lead>> ListLeadsAsync(Guid companyId, PagedRequest paging, CancellationToken cancellationToken = default) => Task.FromResult(new PagedResult<Lead>(new List<Lead>(), 0, paging.SafePageNumber, paging.SafePageSize));

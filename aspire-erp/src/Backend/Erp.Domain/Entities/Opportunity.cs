@@ -41,7 +41,50 @@ public class Opportunity : ITenantEntity
 
     public DateOnly ExpectedClosingDate { get; set; }
     public string Status { get; set; } = OpportunityStatus.Open;
+
+    /// <summary>
+    /// Normalized loss reason (FK to the <see cref="OpportunityLossReason"/> catalog);
+    /// required when closing as Lost. The free-text <see cref="LossReason"/> below carries
+    /// the additional notes.
+    /// </summary>
+    public Guid? LossReasonId { get; set; }
+
+    public OpportunityLossReason? LossReasonEntry { get; set; }
+
+    /// <summary>Additional loss notes (the former free-text reason column, kept as notes).</summary>
     public string? LossReason { get; set; }
+
+    /// <summary>Segmentation: sales territory of the deal (nullable for legacy rows).</summary>
+    public Guid? TerritoryId { get; set; }
+
+    public Territory? Territory { get; set; }
+
+    /// <summary>Segmentation: industry of the deal (nullable for legacy rows).</summary>
+    public Guid? IndustryId { get; set; }
+
+    public Industry? Industry { get; set; }
+
+    /// <summary>Segmentation: free-text market segment (e.g. SMB, Enterprise).</summary>
+    public string? MarketSegment { get; set; }
+
+    /// <summary>
+    /// Named competitors on the deal (ERPNext Competitors child-table parity, stored as a
+    /// JSON value object - a fixed small string set, never queried by element).
+    /// </summary>
+    public List<string> Competitors { get; set; } = new();
+
+    /// <summary>
+    /// Deal-currency to company-currency rate at pricing time (1 when the deal currency IS
+    /// the company currency or no currency is set). Drives <see cref="BaseOpportunityAmount"/>.
+    /// </summary>
+    public decimal ExchangeRate { get; set; } = 1m;
+
+    /// <summary>
+    /// ERPNext <c>base_opportunity_amount</c>: header total converted to company currency
+    /// (kept by <see cref="RecalculateTotals"/>).
+    /// </summary>
+    public decimal BaseOpportunityAmount { get; set; }
+
     public Guid? AssignedSalespersonId { get; set; }
 
     public byte[] RowVersion { get; set; } = null!;
@@ -54,6 +97,59 @@ public class Opportunity : ITenantEntity
     /// relationship, which the EF mapping and Block B conversion wiring require.
     /// </summary>
     public ICollection<CRMActivity> Activities { get; set; } = new List<CRMActivity>();
+
+    /// <summary>
+    /// Priced product/service breakdown of the deal (CRM/ERPNext parity). Empty for
+    /// amount-only deals (e.g. converted leads): the header amount then stands alone.
+    /// </summary>
+    public ICollection<OpportunityItem> Items { get; set; } = new List<OpportunityItem>();
+
+    /// <summary>Quotations issued from this deal (the ERPNext pre-order flow).</summary>
+    public ICollection<Quotation> Quotations { get; set; } = new List<Quotation>();
+
+    /// <summary>
+    /// Recomputes the header money from the priced lines (ERPNext item-driven totals):
+    /// header amount = Σ line nets, base amount = header × exchange rate. A deal WITHOUT
+    /// lines keeps its scalar header amount (converted-lead parity) and only refreshes
+    /// the base conversion. Weighted stays a computed CLR property.
+    /// </summary>
+    public void RecalculateTotals()
+    {
+        if (Items.Count > 0)
+        {
+            OpportunityAmount = Math.Round(
+                Items.Sum(i => i.Quantity * i.Rate * (1m - i.DiscountPercentage / 100m)),
+                2,
+                MidpointRounding.AwayFromZero);
+        }
+
+        BaseOpportunityAmount = Math.Round(
+            OpportunityAmount * ExchangeRate, 2, MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary>
+    /// Non-terminal pipeline move (the single rule source for probability sync on plain
+    /// advances): sets the stage, keeps Open status, clears any loss data and syncs the
+    /// probability to the milestone default unless the caller pins one.
+    /// </summary>
+    /// <exception cref="CRMValidationException">
+    /// <c>invalid_status_transition</c> when the deal is already terminal.
+    /// </exception>
+    public void MoveToStage(string stage, decimal? probability, decimal milestoneProbability)
+    {
+        if (Status is OpportunityStatus.Won or OpportunityStatus.Lost or OpportunityStatus.Expired)
+        {
+            throw new CRMValidationException(
+                CRMErrorCodes.InvalidStatusTransition,
+                $"Opportunity '{OpportunityNumber}' is '{Status}' and cannot advance; re-open it first.");
+        }
+
+        Stage = stage;
+        Status = OpportunityStatus.Open;
+        LossReasonId = null;
+        LossReason = null;
+        Probability = probability ?? milestoneProbability;
+    }
 
     /// <summary>
     /// Transitions the opportunity to ClosedWon.
@@ -71,21 +167,22 @@ public class Opportunity : ITenantEntity
         Stage = OpportunityStage.ClosedWon;
         Status = OpportunityStatus.Won;
         Probability = 100.00m;
+        LossReasonId = null;
         LossReason = null;
     }
 
     /// <summary>
     /// Transitions the opportunity to ClosedLost.
-    /// Invariant CRM-02: LossReason is required.
+    /// Invariant CRM-02: a catalog loss reason is required (free-text notes optional).
     /// Invariant CRM-01: Probability = 0%.
     /// </summary>
-    public void MarkAsClosedLost(string lossReason)
+    public void MarkAsClosedLost(Guid? lossReasonId, string? lossNotes = null)
     {
-        if (string.IsNullOrWhiteSpace(lossReason))
+        if (!lossReasonId.HasValue || lossReasonId.Value == Guid.Empty)
         {
             throw new CRMValidationException(
                 CRMErrorCodes.LossReasonRequired,
-                "A Loss Reason is mandatory when marking an opportunity as Closed Lost.");
+                "A loss reason is mandatory when marking an opportunity as Closed Lost.");
         }
 
         if (Status == OpportunityStatus.Won || Status == OpportunityStatus.Lost)
@@ -98,7 +195,8 @@ public class Opportunity : ITenantEntity
         Stage = OpportunityStage.ClosedLost;
         Status = OpportunityStatus.Lost;
         Probability = 0.00m;
-        LossReason = lossReason;
+        LossReasonId = lossReasonId;
+        LossReason = string.IsNullOrWhiteSpace(lossNotes) ? null : lossNotes.Trim();
     }
 
     /// <summary>
@@ -110,6 +208,7 @@ public class Opportunity : ITenantEntity
         Stage = OpportunityStage.Negotiation;
         Status = OpportunityStatus.Open;
         Probability = newProbability;
+        LossReasonId = null;
         LossReason = null;
     }
 }

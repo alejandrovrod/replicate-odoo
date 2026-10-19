@@ -68,7 +68,10 @@ export interface AdvanceStagePayload {
   id: string
   toStage: OpportunityStage
   probability?: number
-  lossReason?: string
+  /** Free-text notes (the dialog always sends lossReasonId; raw callers may match by text). */
+  lossReason?: string | null
+  /** Normalized catalog reason, mandatory for ClosedLost. */
+  lossReasonId?: string | null
   rowVersion?: string
 }
 
@@ -94,4 +97,127 @@ export interface ItemOption {
   id: string
   code: string
   name: string
+}
+
+/** One priced deal line (mirrors OpportunityItemDto). */
+export interface OpportunityItemDto {
+  id: string
+  itemId: string
+  itemName: string
+  quantity: number
+  rate: number
+  discountPercentage: number
+  amount: number
+}
+
+/** One follow-up log row of the deal (mirrors OpportunityActivityDto). */
+export interface OpportunityActivityDto {
+  id: string
+  type: string
+  subject: string
+  content: string | null
+  activityDate: string
+  nextFollowUpDate: string | null
+  createdByUserId: string
+}
+
+/** One quotation issued from the deal (mirrors OpportunityQuotationDto). */
+export interface OpportunityQuotationDto {
+  id: string
+  quotationNo: string
+  status: string
+  totalAmount: number
+  transactionDate: string
+}
+
+/** Full commercial dossier (mirrors OpportunityDetailDto, the detail drawer source). */
+export interface OpportunityDetailDto {
+  id: string
+  companyId: string
+  opportunityNumber: string
+  opportunityFrom: string
+  partyId: string
+  partyName: string
+  stage: OpportunityStage
+  status: OpportunityStatus
+  opportunityAmount: number
+  probability: number
+  weightedAmount: number
+  currencyId?: string | null
+  currencyCode: string
+  exchangeRate: number
+  baseOpportunityAmount: number
+  expectedClosingDate: string
+  territoryId?: string | null
+  territoryName?: string | null
+  industryId?: string | null
+  industryName?: string | null
+  marketSegment?: string | null
+  competitors: string[]
+  lossReasonId?: string | null
+  lossReasonName?: string | null
+  lossReason: string | null
+  assignedSalespersonId?: string | null
+  rowVersion: string
+  items: OpportunityItemDto[]
+  activities: OpportunityActivityDto[]
+  quotations: OpportunityQuotationDto[]
+}
+
+/** Editable line input of the dossier edit (full-replace semantics). */
+export interface OpportunityItemInput {
+  itemId: string
+  quantity: number
+  rate: number
+  discountPercentage?: number
+}
+
+/** Body of PUT /api/v1/opportunities/{id} (null leaves a field unchanged). */
+export interface UpdateOpportunityPayload {
+  id: string
+  rowVersion: string
+  partyName?: string
+  probability?: number
+  expectedClosingDate?: string
+  assignedSalespersonId?: string | null
+  currencyId?: string | null
+  clearCurrency?: boolean
+  exchangeRate?: number
+  territoryId?: string | null
+  industryId?: string | null
+  marketSegment?: string | null
+  competitors?: string[]
+  items?: OpportunityItemInput[] | null
+}
+
+/** One row of the read-only segmentation catalogs. */
+export interface CrmCatalogDto {
+  id: string
+  code: string
+  name: string
+}
+
+/** Formal quotation as returned by the create-quotation route (header + lines). */
+export interface QuotationDto {
+  id: string
+  companyId: string
+  quotationNo: string
+  opportunityId?: string | null
+  customerId: string
+  transactionDate: string
+  validTill: string
+  status: string
+  totalAmount: number
+  currency: string
+  exchangeRate: number
+  createdAt: string
+  items: OpportunityItemDto[]
+}
+
+/** Body of POST /api/v1/opportunities/{id}/create-quotation. */
+export interface CreateQuotationPayload {
+  id: string
+  validTill?: string | null
+  termsAndConditions?: string | null
+  lines?: { itemId: string; quantity: number; rate: number }[] | null
 }

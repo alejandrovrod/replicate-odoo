@@ -25,7 +25,7 @@ namespace Erp.Infrastructure.Data.Repositories;
 /// SQL statement scopes TenantId explicitly because EF query filters do NOT apply to raw SQL
 /// (StockRepository.NextVoucherNumberAsync precedent).
 /// </remarks>
-public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
+public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository, IQuotationRepository, ICrmCatalogRepository
 {
     private readonly AppDbContext _dbContext;
 
@@ -54,7 +54,11 @@ public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
         => _dbContext.Leads.FirstOrDefaultAsync(l => l.Id == leadId, cancellationToken);
 
     public Task<Opportunity?> GetOpportunityByIdAsync(Guid opportunityId, CancellationToken cancellationToken = default)
-        => _dbContext.Opportunities.FirstOrDefaultAsync(o => o.Id == opportunityId, cancellationToken);
+        => _dbContext.Opportunities
+            .Include(o => o.Items)
+            .Include(o => o.Activities)
+            .Include(o => o.Quotations)
+            .FirstOrDefaultAsync(o => o.Id == opportunityId, cancellationToken);
 
     public Task<Lead?> GetLeadByDedupKeyAsync(Guid companyId, string source, string externalReference, CancellationToken cancellationToken = default)
         => _dbContext.Leads.FirstOrDefaultAsync(
@@ -118,7 +122,15 @@ public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
 
     public async Task UpdateOpportunityAsync(Opportunity opportunity, CancellationToken cancellationToken = default)
     {
-        _dbContext.Opportunities.Update(opportunity);
+        // Explicit root marking (NOT Update()): the header row must ALWAYS UPDATE with its
+        // RowVersion predicate - an undetected root turns a lost optimistic race into a
+        // phantom 200 (spec CRM-06). Unlike Update(), this touches ONLY the root: child
+        // collections keep their own states (explicit RemoveRange/AddRange in
+        // ReplaceOpportunityItemsAsync), so keyed newcomers can never degrade into 0-row
+        // UPDATEs. All callers load-then-mutate in scope; a detached graph still attaches
+        // correctly because Entry() attaches it first.
+        _dbContext.Entry(opportunity).State = EntityState.Modified;
+
         try
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -129,6 +141,18 @@ public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
             // RowVersion WHERE clause matched 0 rows (BankRepository.UpdateTransactionAsync precedent).
             throw new ConcurrencyConflictException(nameof(Opportunity), opportunity.Id, ex);
         }
+    }
+
+    public async Task ReplaceOpportunityItemsAsync(
+        Guid opportunityId,
+        IReadOnlyList<OpportunityItem> lines,
+        CancellationToken cancellationToken = default)
+    {
+        var stored = await _dbContext.OpportunityItems
+            .Where(i => i.OpportunityId == opportunityId)
+            .ToListAsync(cancellationToken);
+        _dbContext.OpportunityItems.RemoveRange(stored);
+        await _dbContext.OpportunityItems.AddRangeAsync(lines, cancellationToken);
     }
 
     /// <summary>
@@ -176,6 +200,255 @@ public sealed class CrmRepository : ICrmRepository, ICrmActivityRepository
             .OrderBy(a => a.ActivityDate)
             .ThenBy(a => a.Id)
             .ToListAsync(cancellationToken);
+
+    // ------------------------------------------------- quotations (ERPNext pre-order flow)
+
+    public Task<Quotation?> GetByIdAsync(Guid quotationId, CancellationToken cancellationToken = default)
+        => _dbContext.Quotations
+            .Include(q => q.Items)
+            .FirstOrDefaultAsync(q => q.Id == quotationId, cancellationToken);
+
+    public async Task AddAsync(Quotation quotation, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.Quotations.AddAsync(quotation, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Quotation>> ListQuotationsByOpportunityAsync(
+        Guid opportunityId,
+        CancellationToken cancellationToken = default)
+        => await _dbContext.Quotations
+            .Where(q => q.OpportunityId == opportunityId)
+            .OrderByDescending(q => q.CreatedAt)
+            .ThenByDescending(q => q.Id)
+            .ToListAsync(cancellationToken);
+
+    /// <summary>
+    /// Next gapless quotation number, e.g. 2026 -> "QTN-2026-00001" (Constitution III.4:
+    /// locked MAX read inside the ambient transaction - the NextOpportunityNumberAsync
+    /// precedent, same UPDLOCK/HOLDLOCK discipline).
+    /// </summary>
+    public async Task<string> NextQuotationNumberAsync(
+        Guid companyId,
+        int year,
+        CancellationToken cancellationToken = default)
+    {
+        if (_dbContext.Database.CurrentTransaction is not null)
+        {
+            return await ReadNextDocumentNumberAsync(
+                "Quotations", "QuotationNo", $"QTN-{year}-%", companyId, cancellationToken);
+        }
+
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var next = await ReadNextDocumentNumberAsync(
+            "Quotations", "QuotationNo", $"QTN-{year}-%", companyId, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return next;
+    }
+
+    // ------------------------------------------------- read-only catalogs (segmentation)
+
+    /// <summary>
+    /// Default rows seeded on first read per tenant (the catalogs are reference data: a
+    /// fresh tenant must close deals on day one without an admin seeding step). The unique
+    /// (TenantId, Code) index backstops the race: a concurrent ensure loses the insert and
+    /// re-reads (the AddLeadAsync duplicate-lead precedent).
+    /// </summary>
+    private static readonly (string Code, string Name)[] DefaultLossReasons =
+    [
+        ("PRICE", "Lost on Price"),
+        ("COMPETITOR", "Lost to Competitor"),
+        ("TIMING", "Bad Timing"),
+        ("BUDGET", "No Budget"),
+        ("FEATURE", "Missing Features"),
+        ("RELATIONSHIP", "Incumbent Relationship"),
+        ("OTHER", "Other"),
+    ];
+
+    private static readonly (string Code, string Name)[] DefaultTerritories =
+    [
+        ("NORTH", "North"),
+        ("SOUTH", "South"),
+        ("EAST", "East"),
+        ("WEST", "West"),
+        ("CENTRAL", "Central"),
+        ("INTL", "International"),
+    ];
+
+    private static readonly (string Code, string Name)[] DefaultIndustries =
+    [
+        ("MANUFACTURING", "Manufacturing"),
+        ("RETAIL", "Retail"),
+        ("HEALTHCARE", "Healthcare"),
+        ("TECHNOLOGY", "Technology"),
+        ("SERVICES", "Services"),
+        ("CONSTRUCTION", "Construction"),
+        ("OTHER", "Other"),
+    ];
+
+    public async Task<IReadOnlyList<OpportunityLossReason>> ListLossReasonsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureCatalogDefaultsAsync(
+            _dbContext.OpportunityLossReasons,
+            DefaultLossReasons,
+            (tenantId, code, name) => new OpportunityLossReason
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Code = code,
+                Name = name,
+                IsActive = true,
+            },
+            cancellationToken);
+
+        return await _dbContext.OpportunityLossReasons
+            .Where(r => r.IsActive)
+            .OrderBy(r => r.Name)
+            .ThenBy(r => r.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<OpportunityLossReason?> GetLossReasonByIdAsync(
+        Guid lossReasonId,
+        CancellationToken cancellationToken = default)
+        => _dbContext.OpportunityLossReasons
+            .FirstOrDefaultAsync(r => r.Id == lossReasonId, cancellationToken);
+
+    public async Task<IReadOnlyList<Territory>> ListTerritoriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureCatalogDefaultsAsync(
+            _dbContext.Territories,
+            DefaultTerritories,
+            (tenantId, code, name) => new Territory
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Code = code,
+                Name = name,
+                IsActive = true,
+            },
+            cancellationToken);
+
+        return await _dbContext.Territories
+            .Where(t => t.IsActive)
+            .OrderBy(t => t.Name)
+            .ThenBy(t => t.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Industry>> ListIndustriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureCatalogDefaultsAsync(
+            _dbContext.Industries,
+            DefaultIndustries,
+            (tenantId, code, name) => new Industry
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Code = code,
+                Name = name,
+                IsActive = true,
+            },
+            cancellationToken);
+
+        return await _dbContext.Industries
+            .Where(t => t.IsActive)
+            .OrderBy(t => t.Name)
+            .ThenBy(t => t.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task EnsureCatalogDefaultsAsync<T>(
+        DbSet<T> set,
+        (string Code, string Name)[] defaults,
+        Func<Guid, string, string, T> factory,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        if (await set.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var tenantId = _dbContext.CurrentTenantId;
+        foreach (var (code, name) in defaults)
+        {
+            await set.AddAsync(factory(tenantId, code, name), cancellationToken);
+        }
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // A concurrent ensure won the race: detach our copies and serve the winner.
+            foreach (var entry in _dbContext.ChangeTracker.Entries<T>().ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
+        }
+    }
+
+    private async Task<string> ReadNextDocumentNumberAsync(
+        string table,
+        string column,
+        string pattern,
+        Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        var transaction = _dbContext.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "Quotation numbering must run inside a transaction: outside one the "
+                + "UPDLOCK/HOLDLOCK range lock cannot protect the sequence.");
+
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        var tenantId = _dbContext.CurrentTenantId;
+        var prefix = pattern[..pattern.LastIndexOf('-')];
+
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            $"SELECT MAX({column}) FROM dbo.{table} WITH (UPDLOCK, HOLDLOCK) "
+            + "WHERE TenantId = @TenantId AND CompanyId = @CompanyId AND "
+            + $"{column} LIKE @Pattern;";
+        command.Transaction = transaction.GetDbTransaction();
+
+        AddParameter(command, "@TenantId", tenantId);
+        AddParameter(command, "@CompanyId", companyId);
+        AddParameter(command, "@Pattern", pattern);
+
+        var scalar = await command.ExecuteScalarAsync(cancellationToken);
+        var max = scalar as string;
+
+        var nextSequence = 1;
+        if (!string.IsNullOrEmpty(max))
+        {
+            var separator = max.LastIndexOf('-');
+            if (separator < 0 || !int.TryParse(max[(separator + 1)..], out var currentSequence))
+            {
+                throw new InvalidOperationException(
+                    $"Stored quotation number '{max}' does not follow the QTN-YYYY-NNNNN format.");
+            }
+
+            if (currentSequence >= 99999)
+            {
+                throw new InvalidOperationException(
+                    $"Quotation sequence for '{prefix}' is exhausted (max 99999).");
+            }
+
+            nextSequence = currentSequence + 1;
+        }
+
+        return $"{prefix}-{nextSequence:D5}";
+    }
 
     private async Task<string> ReadNextOpportunityNumberAsync(
         Guid companyId,

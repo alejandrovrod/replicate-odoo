@@ -207,13 +207,16 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         Assert.Equal("Open", deal.Status);
 
         // With reason: Lost at 0%, weighted 0 (CRM-01 terminal math).
-        using var lost = await PostAdvanceAsync(client, opportunityId, "ClosedLost", LossReason: "Competitor priced 15% lower");
+        using var lost = await PostAdvanceAsync(
+            client, opportunityId, "ClosedLost",
+            LossReason: "Priced 15% lower",
+            LossReasonId: LossReasonCompetitorId);
         Assert.Equal(HttpStatusCode.OK, lost.StatusCode);
         var lostBody = JsonNode.Parse(await lost.Content.ReadAsStringAsync())!;
         Assert.Equal("Lost", lostBody["status"]!.GetValue<string>());
         Assert.Equal(0m, lostBody["probability"]!.GetValue<decimal>());
         Assert.Equal(0m, lostBody["weightedAmount"]!.GetValue<decimal>());
-        Assert.Equal("Competitor priced 15% lower", lostBody["lossReason"]!.GetValue<string>());
+        Assert.Equal("Priced 15% lower", lostBody["lossReason"]!.GetValue<string>());
 
         // Double-close: 409, zero further writes.
         using var doubleClose = await PostAdvanceAsync(client, opportunityId, "ClosedWon");
@@ -264,7 +267,10 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         _opportunityIds.Add(opportunityId);
         _customerIds.Add(customerId);
 
-        using var lost = await PostAdvanceAsync(client, opportunityId, "ClosedLost", LossReason: "Budget frozen Q1");
+        using var lost = await PostAdvanceAsync(
+            client, opportunityId, "ClosedLost",
+            LossReason: "Budget frozen Q1",
+            LossReasonId: LossReasonCompetitorId);
         Assert.Equal(HttpStatusCode.OK, lost.StatusCode);
         var activitiesBefore = await CountActivitiesAsync(opportunityId);
         Assert.True(activitiesBefore >= 1);
@@ -471,7 +477,10 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         _opportunityIds.Add(opportunityId);
         _customerIds.Add(customerId);
 
-        using var lost = await PostAdvanceAsync(client, opportunityId, "ClosedLost", LossReason: "Budget frozen Q1");
+        using var lost = await PostAdvanceAsync(
+            client, opportunityId, "ClosedLost",
+            LossReason: "Budget frozen Q1",
+            LossReasonId: LossReasonCompetitorId);
         Assert.Equal(HttpStatusCode.OK, lost.StatusCode);
 
         using var rejected = await PostWithKeyAsync(
@@ -526,12 +535,16 @@ public class CrmLifecycleApiTests : IClassFixture<ErpApiFactory>, IDisposable
         PostWithKeyAsync(client, HttpMethod.Post, "/api/v1/leads/ingest", IngestPayload(leadCode, dedupKey, leadName));
 
     private static Task<HttpResponseMessage> PostAdvanceAsync(
-        HttpClient client, Guid opportunityId, string toStage, string? rowVersion = null, string? LossReason = null)
+        HttpClient client, Guid opportunityId, string toStage, string? rowVersion = null, string? LossReason = null, Guid? LossReasonId = null)
     {
         var url = $"/api/v1/opportunities/{opportunityId}/advance?companyId={ErpApiFactory.DevCompanyId}"
             + (rowVersion is null ? string.Empty : $"&rowVersion={rowVersion}");
-        return PostWithKeyAsync(client, HttpMethod.Post, url, new { toStage, lossReason = LossReason });
+        return PostWithKeyAsync(client, HttpMethod.Post, url, new { toStage, lossReason = LossReason, lossReasonId = LossReasonId });
     }
+
+    /// <summary>Seeded COMPETITOR loss reason (scripts/seed-dev-crm.sql).</summary>
+    private static readonly Guid LossReasonCompetitorId =
+        Guid.Parse("c1000000-0000-4000-8000-000000000002");
 
     /// <summary>
     /// Ingests one lead and converts it (tracks nothing - the caller owns the ids), so the

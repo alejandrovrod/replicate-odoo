@@ -126,6 +126,10 @@ public sealed class ConvertLeadCommandHandler : ICommandHandler<ConvertLeadComma
                     opportunity.OpportunityAmount,
                     opportunity.Probability);
 
+                // Converted deals start amount-only: refresh the base conversion so the
+                // dossier reads consistently before any priced line exists.
+                opportunity.RecalculateTotals();
+
                 await _crmRepository.AddOpportunityAsync(opportunity, token);
 
                 // 3. Mark Lead as Converted

@@ -6,6 +6,7 @@ import { useErpAction } from '../../lib/useErpAction'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { formatMoney } from '../../lib/format'
 import { usePagination } from '../../lib/pagination'
+import { SalarySlipModal } from './SalarySlipModal'
 import type { PayrollEntryStatus, PayrollRun } from './types'
 import {
   payrollPeriodDefaults,
@@ -48,6 +49,7 @@ export function PayrollWorkbench({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [postingDate, setPostingDate] = useState(todayIso())
   const [bankAccountId, setBankAccountId] = useState('')
+  const [slipTarget, setSlipTarget] = useState<{ entryId: string; slipId: string } | null>(null)
 
   const detailQuery = usePayrollRunDetail(companyId, selectedId)
 
@@ -332,17 +334,27 @@ export function PayrollWorkbench({
               <div key={slip.id} className="rounded-lg border border-slate-200 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-mono text-xs font-semibold text-slate-900">{slip.slipNumber}</p>
-                  <span
-                    className={`rounded px-2 py-0.5 text-[11px] font-medium ${
-                      slip.status === 'Submitted'
-                        ? 'bg-sky-100 text-sky-700'
-                        : slip.status === 'Cancelled'
-                          ? 'bg-rose-100 text-rose-700'
-                          : 'bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    {slip.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded px-2 py-0.5 text-[11px] font-medium ${
+                        slip.status === 'Submitted'
+                          ? 'bg-sky-100 text-sky-700'
+                          : slip.status === 'Cancelled'
+                            ? 'bg-rose-100 text-rose-700'
+                            : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {slip.status}
+                    </span>
+                    <ActionButton
+                      label={t('workbench.viewSlip')}
+                      title={t('workbench.viewSlipTitle')}
+                      pending={false}
+                      onClick={() =>
+                        setSlipTarget({ entryId: detailQuery.data!.entry.id, slipId: slip.id })
+                      }
+                    />
+                  </div>
                 </div>
                 <p className="mt-1 font-mono text-xs text-slate-600">
                   {t('workbench.slipLine', {
@@ -376,6 +388,12 @@ export function PayrollWorkbench({
           </div>
         ) : null}
       </div>
+
+      <SalarySlipModal
+        target={slipTarget}
+        companyId={companyId}
+        onClose={() => setSlipTarget(null)}
+      />
     </div>
   )
 }

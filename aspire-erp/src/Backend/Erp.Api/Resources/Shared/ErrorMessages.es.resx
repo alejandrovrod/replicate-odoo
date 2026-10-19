@@ -238,6 +238,30 @@
   <data name="crm_opportunity_no_customer" xml:space="preserve">
     <value>La oportunidad no tiene cliente asignado.</value>
   </data>
+  <data name="crm_opportunity_not_open" xml:space="preserve">
+    <value>Solo las oportunidades abiertas aceptan ediciones de ficha.</value>
+  </data>
+  <data name="crm_invalid_exchange_rate" xml:space="preserve">
+    <value>La tasa de cambio debe ser positiva.</value>
+  </data>
+  <data name="crm_invalid_opportunity_item" xml:space="preserve">
+    <value>Las líneas de la oportunidad requieren un artículo existente con cantidad mayor que cero, precio mayor o igual que cero y descuento entre 0 y 100.</value>
+  </data>
+  <data name="crm_quotation_requires_items" xml:space="preserve">
+    <value>La cotización necesita al menos una línea con precio.</value>
+  </data>
+  <data name="crm_quotation_not_found" xml:space="preserve">
+    <value>Cotización no encontrada.</value>
+  </data>
+  <data name="crm_loss_reason_not_found" xml:space="preserve">
+    <value>Motivo de pérdida no encontrado.</value>
+  </data>
+  <data name="crm_territory_not_found" xml:space="preserve">
+    <value>Territorio no encontrado.</value>
+  </data>
+  <data name="crm_industry_not_found" xml:space="preserve">
+    <value>Industria no encontrada.</value>
+  </data>
   <data name="crm_opportunity_not_found" xml:space="preserve">
     <value>Oportunidad no encontrada.</value>
   </data>

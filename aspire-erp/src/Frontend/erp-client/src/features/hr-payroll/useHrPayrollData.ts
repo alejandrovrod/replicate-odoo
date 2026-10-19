@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { ApiError, apiClient } from '../../api/client'
 import { useApiList, type QueryStatus } from '../../lib/useApiList'
 import type {
+  EmployeeInput,
   HrEmployee,
   PayrollRun,
   PayrollRunDetail,
   PayrollSubmitResult,
   SalaryComponent,
+  SalarySlipPrintable,
   SalaryStructure,
   StructureAssignment,
 } from './types'
@@ -155,5 +157,83 @@ export async function postCancelPayrollRun(
       headers: { 'Idempotency-Key': crypto.randomUUID() },
     },
   )
+  return response.data
+}
+
+/**
+ * GET /api/v1/payroll-runs/{runId}/slips/{slipId}/printable?companyId= - one slip as a formal
+ * pay stub (earnings/deductions, settlement date, company fiscal header). Single-read hook
+ * (mirrors the run-detail loader) so the printable modal can render, retry and clear cleanly.
+ */
+export function useSalarySlipPrintable(
+  companyId: string,
+  entryId: string | null,
+  slipId: string | null,
+) {
+  const key = `${companyId}/${entryId ?? ''}/${slipId ?? ''}`
+  const [attempt, setAttempt] = useState(0)
+  const [state, setState] = useState<{
+    key: string
+    status: 'success' | 'error'
+    data: SalarySlipPrintable | null
+    error: ApiError | null
+  } | null>(null)
+
+  useEffect(() => {
+    if (!companyId || !entryId || !slipId) return undefined
+
+    let cancelled = false
+    apiClient
+      .get<SalarySlipPrintable>(`/v1/payroll-runs/${entryId}/slips/${slipId}/printable`, {
+        params: { companyId },
+      })
+      .then(
+        (response) => {
+          if (!cancelled) setState({ key, status: 'success', data: response.data, error: null })
+        },
+        (cause: unknown) => {
+          if (!cancelled) setState({ key, status: 'error', data: null, error: toApiError(cause) })
+        },
+      )
+
+    return () => {
+      cancelled = true
+    }
+  }, [companyId, entryId, slipId, key, attempt])
+
+  const reload = useCallback(() => setAttempt((current) => current + 1), [])
+
+  if (!entryId || !slipId) return { data: null, status: 'idle' as const, error: null, reload }
+  if (state && state.key === key) {
+    return { data: state.data, status: state.status, error: state.error, reload }
+  }
+  return { data: null, status: 'loading' as const, error: null, reload }
+}
+
+/**
+ * POST /api/v1/hr/employees - registers one employee; when `salaryStructureId` is set the
+ * initial structure assignment is created atomically. `Idempotency-Key` is injected by the
+ * shared client interceptor (Article VI.4).
+ */
+export async function postEmployee(companyId: string, input: EmployeeInput): Promise<HrEmployee> {
+  const response = await apiClient.post<HrEmployee>('/v1/hr/employees', { companyId, ...input })
+  return response.data
+}
+
+/**
+ * PUT /api/v1/hr/employees/{id} - updates one employee, echoing the base64 `rowVersion` token so
+ * a stale write fails with a 409 `concurrency_conflict` instead of silently overwriting.
+ */
+export async function putEmployee(
+  employeeId: string,
+  companyId: string,
+  rowVersion: string,
+  input: EmployeeInput,
+): Promise<HrEmployee> {
+  const response = await apiClient.put<HrEmployee>(`/v1/hr/employees/${employeeId}`, {
+    companyId,
+    rowVersion,
+    ...input,
+  })
   return response.data
 }

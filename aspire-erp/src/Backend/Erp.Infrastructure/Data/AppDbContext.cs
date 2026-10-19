@@ -178,6 +178,14 @@ public class AppDbContext : DbContext
 
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
 
+    public DbSet<OpportunityItem> OpportunityItems => Set<OpportunityItem>();
+
+    public DbSet<OpportunityLossReason> OpportunityLossReasons => Set<OpportunityLossReason>();
+
+    public DbSet<Territory> Territories => Set<Territory>();
+
+    public DbSet<Industry> Industries => Set<Industry>();
+
     public DbSet<CRMActivity> CRMActivities => Set<CRMActivity>();
 
     public DbSet<Catalog> Catalogs => Set<Catalog>();

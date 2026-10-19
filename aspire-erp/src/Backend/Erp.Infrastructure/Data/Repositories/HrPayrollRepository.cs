@@ -3,6 +3,7 @@ using Erp.Domain.Entities;
 using Erp.Domain.Exceptions;
 using Erp.Domain.Repositories;
 using Erp.Infrastructure.Data.Pagination;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -109,13 +110,38 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
     public async Task AddEmployeeAsync(Employee employee, CancellationToken cancellationToken = default)
     {
         await _dbContext.Employees.AddAsync(employee, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // UQ_Employee_Tenant_Company_Code is the hard backstop of the duplicate-number rule:
+            // the handler's GetEmployeeByNumberAsync pre-check can be raced by a concurrent insert,
+            // so translate the race into the same domain failure the pre-check raises instead of
+            // leaking an EF/SQL exception to the API layer (mirrors CustomerRepository.AddAsync).
+            _dbContext.Entry(employee).State = EntityState.Detached;
+            throw new HrValidationException(
+                HrPayrollErrorCodes.DuplicateEmployeeNumber,
+                $"Employee number '{employee.EmployeeNumber}' already exists in this company.");
+        }
     }
 
     public async Task UpdateEmployeeAsync(Employee employee, CancellationToken cancellationToken = default)
     {
         _dbContext.Employees.Update(employee);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // The RowVersion token is the rowversion WHERE clause: a 0-row UPDATE means another
+            // operation changed the employee between this request's load and save.
+            throw new ConcurrencyConflictException(nameof(Employee), employee.Id, ex);
+        }
     }
 
     public Task<Employee?> GetEmployeeByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -381,6 +407,9 @@ public sealed class HrPayrollRepository : IHrPayrollRepository
             .ToListAsync(cancellationToken);
 
     private const string PayrollVoucherType = "Payroll";
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex) =>
+        ex.InnerException is SqlException { Number: 2601 or 2627 };
 
     private async Task<string> NextSequenceAsync(
         string table, string column, Guid companyId, string prefix, int year, CancellationToken cancellationToken)

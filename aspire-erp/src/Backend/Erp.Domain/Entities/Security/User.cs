@@ -11,6 +11,23 @@ public class User : ITenantEntity
     public string PasswordHash { get; set; } = string.Empty;
 
     /// <summary>
+    /// Account lifecycle flag (user-management spec D3). Inactive users keep their rows and
+    /// role assignments but can no longer authenticate; every deactivation runs through the
+    /// last-active-administrator guard (<c>CANNOT_REMOVE_LAST_ADMIN</c>).
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>UTC creation instant (audit column, <c>datetime2</c>).</summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Optimistic concurrency token (SQL Server <c>rowversion</c>). Store-generated: EF puts the
+    /// original value in the UPDATE predicate, so a stale client token is a 409
+    /// <c>STALE_ROW_VERSION</c> instead of a silent overwrite.
+    /// </summary>
+    public byte[] RowVersion { get; set; } = null!;
+
+    /// <summary>
     /// MFA (module 15-user-profile): TOTP is active only when this flag is set by a successful
     /// <c>VerifyMfaCommand</c>. <c>EnableMfaCommand</c> stages the secret without flipping it.
     /// </summary>

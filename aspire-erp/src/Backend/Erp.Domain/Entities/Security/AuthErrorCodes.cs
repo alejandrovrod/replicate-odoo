@@ -21,6 +21,7 @@ public static class AuthErrorCodes
     public const string InvalidPassword = "AUTH_INVALID_PASSWORD";
     public const string PasswordPolicyViolation = "AUTH_PASSWORD_POLICY_VIOLATION";
     public const string AccountLocked = "AUTH_ACCOUNT_LOCKED";
+    public const string AccountInactive = "AUTH_ACCOUNT_INACTIVE";
     public const string MfaInvalidCode = "MFA_INVALID_CODE";
     public const string MfaNotEnabled = "MFA_NOT_ENABLED";
 
@@ -46,4 +47,12 @@ public static class AuthErrorCodes
     public const string SystemManagerImmutable = "SYSTEM_MANAGER_IMMUTABLE";
     public const string UserRoleAlreadyAssigned = "USER_ROLE_ALREADY_ASSIGNED";
     public const string UserRoleNotFound = "USER_ROLE_NOT_FOUND";
+
+    // User Management (user-management spec D4): lifecycle, edition and uniqueness codes.
+    // Every constant resolves in ErrorMessages{,.es}.resx (ErrorCatalogCoverageTests) and
+    // mirrors to the frontend error.json via scripts/i18n-sync.mjs.
+    public const string UserNotFound = "USER_NOT_FOUND";
+    public const string UserEmailConflict = "USER_EMAIL_CONFLICT";
+    public const string InvalidUserData = "INVALID_USER_DATA";
+    public const string StaleRowVersion = "STALE_ROW_VERSION";
 }

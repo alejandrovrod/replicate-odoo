@@ -152,6 +152,7 @@
     "tenantPlaceholder": "Tenant GUID for this workspace",
     "signIn": "Sign In",
     "signingIn": "Signing in...",
+    "backToLanding": "Back to the landing page",
     "errorGeneric": "Sign-in failed. Check your credentials.",
     "forbiddenTitle": "No access",
     "forbiddenDetail": "Your role does not include this module. Contact an administrator.",

@@ -934,6 +934,9 @@
   <data name="AUTH_ACCOUNT_LOCKED" xml:space="preserve">
     <value>La cuenta está bloqueada temporalmente por demasiados intentos fallidos.</value>
   </data>
+  <data name="AUTH_ACCOUNT_INACTIVE" xml:space="preserve">
+    <value>La cuenta está inactiva. Contactá a tu administrador.</value>
+  </data>
   <data name="MFA_INVALID_CODE" xml:space="preserve">
     <value>El código de verificación es incorrecto o ha expirado.</value>
   </data>
@@ -976,6 +979,19 @@
   </data>
   <data name="USER_ROLE_NOT_FOUND" xml:space="preserve">
     <value>Usuario no encontrado en este tenant.</value>
+  </data>
+  <!-- Gestión de usuarios (user-management spec D4, orden alfabético). -->
+  <data name="INVALID_USER_DATA" xml:space="preserve">
+    <value>Los datos del usuario no son válidos. Revisá el nombre, el correo, los roles y el estado.</value>
+  </data>
+  <data name="STALE_ROW_VERSION" xml:space="preserve">
+    <value>El usuario fue modificado por otra sesión. Recargá e intentá de nuevo.</value>
+  </data>
+  <data name="USER_EMAIL_CONFLICT" xml:space="preserve">
+    <value>Ya existe un usuario con este correo en este tenant.</value>
+  </data>
+  <data name="USER_NOT_FOUND" xml:space="preserve">
+    <value>Usuario no encontrado.</value>
   </data>
   <data name="invalid_discount" xml:space="preserve">
     <value>El descuento global no es válido.</value>

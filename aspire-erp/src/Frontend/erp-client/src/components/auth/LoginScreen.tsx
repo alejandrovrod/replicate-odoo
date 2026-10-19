@@ -112,14 +112,14 @@ export function LoginScreen() {
   const mfaCodeValid = normalizedCode.length >= 6 && normalizedCode.length <= 8
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-stone-100/80 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg shadow-stone-200/50">
         <div className="flex flex-col space-y-1.5 p-6 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700">
             {step === 'mfa' ? (
-              <ShieldCheck className="h-6 w-6 text-blue-600" />
+              <ShieldCheck className="h-6 w-6 text-amber-600" />
             ) : (
-              <Building2 className="h-6 w-6 text-blue-600" />
+              <Building2 className="h-6 w-6 text-amber-600" />
             )}
           </div>
           <h3 className="text-2xl font-semibold leading-none tracking-tight">Aspire ERP</h3>
@@ -258,7 +258,7 @@ export function LoginScreen() {
           <div className="mt-6 text-center border-t border-slate-100 pt-4">
             <a
               href="#landing"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
+              className="text-xs font-semibold text-amber-700 hover:text-amber-800 transition-colors inline-flex items-center gap-1"
             >
               <ArrowLeft className="h-3 w-3" />
               <span>{t('auth.backToLanding', 'Volver a la página principal')}</span>

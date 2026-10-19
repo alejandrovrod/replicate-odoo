@@ -4,16 +4,16 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-sky-600 text-white hover:bg-sky-700 shadow-sm",
+        default: "bg-amber-500 text-amber-950 font-semibold hover:bg-amber-400 active:bg-amber-600 shadow-sm",
         destructive: "bg-red-500 text-white hover:bg-red-600 shadow-sm",
-        outline: "border border-slate-200 bg-white hover:bg-slate-50 hover:text-slate-900 shadow-sm",
-        secondary: "bg-sky-100 text-sky-900 hover:bg-sky-200",
-        ghost: "hover:bg-slate-100 hover:text-slate-900",
-        link: "text-sky-600 underline-offset-4 hover:underline",
+        outline: "border border-amber-200/80 bg-white hover:bg-amber-50/60 hover:text-amber-950 shadow-sm",
+        secondary: "bg-amber-100 text-amber-900 hover:bg-amber-200",
+        ghost: "hover:bg-amber-50 hover:text-amber-900",
+        link: "text-amber-700 underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",

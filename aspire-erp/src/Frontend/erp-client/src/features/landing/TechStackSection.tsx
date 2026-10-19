@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Terminal, Database, Server, Layout, ArrowRight } from 'lucide-react'
+import { Terminal, Database, Server, Layout } from 'lucide-react'
 
 export function TechStackSection() {
   const { t } = useTranslation('landing')

@@ -933,6 +933,9 @@
   <data name="AUTH_ACCOUNT_LOCKED" xml:space="preserve">
     <value>The account is temporarily locked due to too many failed attempts.</value>
   </data>
+  <data name="AUTH_ACCOUNT_INACTIVE" xml:space="preserve">
+    <value>The account is inactive. Contact your administrator.</value>
+  </data>
   <data name="MFA_INVALID_CODE" xml:space="preserve">
     <value>The verification code is incorrect or has expired.</value>
   </data>
@@ -975,6 +978,19 @@
   </data>
   <data name="USER_ROLE_NOT_FOUND" xml:space="preserve">
     <value>User not found in this tenant.</value>
+  </data>
+  <!-- User Management (user-management spec D4, alphabetical). -->
+  <data name="INVALID_USER_DATA" xml:space="preserve">
+    <value>The user data is invalid. Check the name, email, roles and status.</value>
+  </data>
+  <data name="STALE_ROW_VERSION" xml:space="preserve">
+    <value>The user was modified by another session. Reload and try again.</value>
+  </data>
+  <data name="USER_EMAIL_CONFLICT" xml:space="preserve">
+    <value>A user with this email already exists in this tenant.</value>
+  </data>
+  <data name="USER_NOT_FOUND" xml:space="preserve">
+    <value>User not found.</value>
   </data>
   <data name="invalid_discount" xml:space="preserve">
     <value>The global discount is invalid.</value>

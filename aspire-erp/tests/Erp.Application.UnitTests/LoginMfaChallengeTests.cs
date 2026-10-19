@@ -144,6 +144,21 @@ public sealed class LoginMfaChallengeTests
         Assert.Equal(AuthErrorCodes.AccountLocked, result.Error!.Code);
     }
 
+    [Fact]
+    public async Task Login_InactiveAccount_RejectsEvenCorrectPassword()
+    {
+        var user = SeedUser();
+        user.IsActive = false;
+
+        var result = await LoginHandler().HandleAsync(new LoginCommand(user.Email, Password, user.TenantId));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(AuthErrorCodes.AccountInactive, result.Error!.Code);
+        Assert.Null(result.Value);
+        // Rejected before password verification: the counter is untouched.
+        Assert.Equal(0, user.AccessFailedCount);
+    }
+
     // ------------------------------------------------------------------ step 2 (login-mfa)
 
     [Fact]

@@ -6,7 +6,6 @@ import {
   Wrench,
   HardHat,
   Truck,
-  ArrowRight,
   CheckCircle2,
   Users,
   FileText,

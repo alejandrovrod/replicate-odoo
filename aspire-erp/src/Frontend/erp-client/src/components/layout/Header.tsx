@@ -24,6 +24,8 @@ import { LanguageSelector } from './LanguageSelector'
  * `EnCommonKeys`, so a typo fails `tsc -b`.
  */
 const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys }> = {
+  landing: { title: 'nav.fallbackTitle', category: 'nav.fallbackCategory' },
+  login: { title: 'nav.fallbackTitle', category: 'nav.fallbackCategory' },
   dashboard: { title: 'nav.route.dashboard', category: 'nav.category.dashboard' },
   profile: { title: 'profile.title', category: 'nav.fallbackCategory' },
   'dashboard-reports': { title: 'nav.item.dashboardReports', category: 'nav.category.dashboard' },
@@ -115,7 +117,7 @@ export function Header() {
 
         {/* Tenant & Company Pill */}
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600">
-          <Building2 className="h-3.5 w-3.5 text-sky-600" />
+          <Building2 className="h-3.5 w-3.5 text-amber-600" />
           <span className="font-medium text-slate-800">{t('header.company')}:</span>
           <span className="font-mono text-[11px] text-slate-500" title={companyId}>
             {companyId ? `${companyId.substring(0, 8)}...` : 'Dev Co.'}
@@ -143,7 +145,7 @@ export function Header() {
           title={t('header.notifications')}
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-sky-600" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-amber-500" />
         </button>
 
         {/* User Profile */}

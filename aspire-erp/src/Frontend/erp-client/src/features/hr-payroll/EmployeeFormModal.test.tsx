@@ -49,10 +49,10 @@ const EMPLOYEE = {
   designationId: null,
   dateOfJoining: '2025-03-01',
   dateOfRelieving: null,
-  salaryMode: 'Bank',
+  salaryMode: 'Bank' as const,
   bankName: 'Acme Bank',
   bankAccountNumber: '000123456789',
-  status: 'Active',
+  status: 'Active' as const,
   isActive: true,
   rowVersion: 'AAAAAA==',
 }

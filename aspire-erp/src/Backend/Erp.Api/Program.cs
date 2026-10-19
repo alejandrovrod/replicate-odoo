@@ -487,6 +487,15 @@ builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Roles
 builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Roles.GetDocTypesCatalogQuery, IReadOnlyList<Erp.Application.Features.Security.Roles.DocTypeCatalogEntry>>, Erp.Application.Features.Security.Roles.GetDocTypesCatalogQueryHandler>();
 builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Roles.GetUsersWithRolesQuery, IReadOnlyList<Erp.Application.Features.Security.Roles.UserWithRolesDto>>, Erp.Application.Features.Security.Roles.GetUsersWithRolesQueryHandler>();
 
+// User Management (user-management spec D2/D4): tenant-scoped lifecycle, CQRS handlers.
+builder.Services.AddScoped<IUserAdminRepository, UserAdminRepository>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Users.CreateUserCommand, Result<Erp.Application.Features.Security.Users.CreateUserResult>>, Erp.Application.Features.Security.Users.CreateUserCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Users.UpdateUserCommand, Result<Erp.Application.Features.Security.Users.UserAdminDto>>, Erp.Application.Features.Security.Users.UpdateUserCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Users.ToggleUserStatusCommand, Result<Erp.Application.Features.Security.Users.UserAdminDto>>, Erp.Application.Features.Security.Users.ToggleUserStatusCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<Erp.Application.Features.Security.Users.ResetUserPasswordCommand, Result<Erp.Application.Features.Security.Users.ResetUserPasswordResult>>, Erp.Application.Features.Security.Users.ResetUserPasswordCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Users.GetUsersPagedQuery, PagedResult<Erp.Application.Features.Security.Users.UserAdminDto>>, Erp.Application.Features.Security.Users.GetUsersPagedQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<Erp.Application.Features.Security.Users.GetUserByIdQuery, Result<Erp.Application.Features.Security.Users.UserAdminDto>>, Erp.Application.Features.Security.Users.GetUserByIdQueryHandler>();
+
 // User Profile & Security (module 15-user-profile): password change with brute-force lockout
 // plus MFA (TOTP + single-use backup codes). BCL-only services (no new NuGet packages -
 // Constitution I.3); handlers dispatch through the hand-rolled ISender (decision C2, no MediatR).

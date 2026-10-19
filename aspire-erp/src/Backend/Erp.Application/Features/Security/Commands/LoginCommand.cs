@@ -62,6 +62,15 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
             return Result<LoginResponseDto>.Failure("Auth.Failed", "Invalid credentials.");
         }
 
+        // User Management (spec D2 USER-G4): a deactivated account is rejected before any
+        // password verification, so a valid password can never mint a token for it.
+        if (!user.IsActive)
+        {
+            return Result<LoginResponseDto>.Failure(
+                AuthErrorCodes.AccountInactive,
+                "This account is disabled. Contact an administrator.");
+        }
+
         if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow)
         {
             return Result<LoginResponseDto>.Failure(

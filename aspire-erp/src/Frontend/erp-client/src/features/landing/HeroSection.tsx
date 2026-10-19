@@ -9,7 +9,6 @@ import {
   Zap,
   Sparkles,
   Database,
-  Building2,
 } from 'lucide-react'
 
 interface HeroSectionProps {

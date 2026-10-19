@@ -43,6 +43,44 @@ export interface UserWithRolesDto {
   roleNames: string[]
 }
 
+/** User Management read model (`GET /api/v1/users`), spec D2/D4. */
+export interface UserAdminDto extends UserWithRolesDto {
+  isActive: boolean
+  createdAt: string
+  /** Base64 rowversion token; round-tripped on PUT for optimistic concurrency. */
+  rowVersion: string | null
+}
+
+export interface PagedUsers {
+  items: UserAdminDto[]
+  totalCount: number
+  pageNumber: number
+  pageSize: number
+  totalPages: number
+}
+
+export interface CreateUserInput {
+  fullName: string
+  email: string
+  temporaryPassword?: string | null
+  roleIds: string[]
+  isActive: boolean
+}
+
+export interface CreatedUser {
+  user: UserAdminDto
+  /** Password to hand over; generated server-side when the admin left the field empty. */
+  temporaryPassword: string
+}
+
+export interface UpdateUserInput {
+  fullName: string
+  roleIds: string[]
+  /** Null preserves the current lifecycle flag (edit dialog that does not manage status). */
+  isActive: boolean | null
+  rowVersion: string | null
+}
+
 export interface CreateRoleRequest {
   name: string
   description?: string
@@ -135,6 +173,34 @@ function normalizeUser(raw: unknown): UserWithRolesDto | null {
   return { id, email, fullName, roleIds, roleNames }
 }
 
+function normalizeUserAdmin(raw: unknown): UserAdminDto | null {
+  const base = normalizeUser(raw)
+  if (!base) return null
+  const r = raw as Record<string, unknown>
+  return {
+    ...base,
+    isActive: r.isActive !== false,
+    createdAt: toString(r.createdAt),
+    rowVersion: typeof r.rowVersion === 'string' ? r.rowVersion : null,
+  }
+}
+
+function normalizePage(raw: unknown): PagedUsers {
+  const source = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const items = asArray<unknown>(source.items ?? raw)
+    .map(normalizeUserAdmin)
+    .filter((u): u is UserAdminDto => u !== null)
+  const totalCount = typeof source.totalCount === 'number' ? source.totalCount : items.length
+  const pageNumber = typeof source.pageNumber === 'number' ? source.pageNumber : 1
+  const pageSize = typeof source.pageSize === 'number' ? source.pageSize : Math.max(1, items.length)
+  const totalPages =
+    typeof source.totalPages === 'number'
+      ? source.totalPages
+      : Math.ceil(totalCount / Math.max(1, pageSize))
+
+  return { items, totalCount, pageNumber, pageSize, totalPages }
+}
+
 export async function getRolesApi(): Promise<RoleDto[]> {
   const { data } = await apiClient.get<unknown>('/v1/roles')
   return asArray<unknown>(data)
@@ -168,18 +234,95 @@ export async function updateRolePermissionsApi(
 }
 
 /**
- * No triad endpoint lists users with their roles (the users catalog belongs to another
- * module). Tries the conventional `/v1/users` collection and tolerates a 404/empty
- * backend with `[]`; any other failure rethrows for the view to report.
+ * One page of the tenant's users (`GET /api/v1/users`), with server-side search over email and
+ * full name. The backend envelope is `PagedResult<UserAdminDto>`.
+ */
+export async function getUsersPageApi(params: {
+  page?: number
+  pageSize?: number
+  search?: string
+} = {}): Promise<PagedUsers> {
+  const { data } = await apiClient.get<unknown>('/v1/users', {
+    params: {
+      page: params.page ?? 1,
+      pageSize: params.pageSize ?? 20,
+      search: params.search?.trim() || undefined,
+    },
+  })
+  return normalizePage(data)
+}
+
+export async function getUserApi(userId: string): Promise<UserAdminDto> {
+  const { data } = await apiClient.get<unknown>(`/v1/users/${userId}`)
+  const user = normalizeUserAdmin(data)
+  if (!user) throw new ApiError(200, 'Unexpected Response', 'The server returned an unparsable user.')
+  return user
+}
+
+/** 201 `{ user, temporaryPassword }`; the plaintext is shown once to the administrator. */
+export async function createUserApi(input: CreateUserInput): Promise<CreatedUser> {
+  const { data } = await apiClient.post<unknown>('/v1/users', {
+    fullName: input.fullName,
+    email: input.email,
+    temporaryPassword: input.temporaryPassword?.trim() || null,
+    roleIds: input.roleIds,
+    isActive: input.isActive,
+  })
+
+  const source = data && typeof data === 'object' ? (data as Record<string, unknown>) : {}
+  const user = normalizeUserAdmin(source.user ?? data)
+  if (!user) throw new ApiError(201, 'Unexpected Response', 'The server returned an unparsable user.')
+
+  return {
+    user,
+    temporaryPassword: toString(source.temporaryPassword) || (input.temporaryPassword ?? ''),
+  }
+}
+
+/** 200 `UserAdminDto`; a stale token is 409 STALE_ROW_VERSION. */
+export async function updateUserApi(userId: string, input: UpdateUserInput): Promise<UserAdminDto> {
+  const { data } = await apiClient.put<unknown>(`/v1/users/${userId}`, {
+    fullName: input.fullName,
+    roleIds: input.roleIds,
+    isActive: input.isActive,
+    rowVersion: input.rowVersion,
+  })
+  const user = normalizeUserAdmin(data)
+  if (!user) throw new ApiError(200, 'Unexpected Response', 'The server returned an unparsable user.')
+  return user
+}
+
+/** 200 `UserAdminDto`; deactivating the last active System Manager is 409 CANNOT_REMOVE_LAST_ADMIN. */
+export async function setUserActiveApi(userId: string, isActive: boolean): Promise<UserAdminDto> {
+  const { data } = await apiClient.patch<unknown>(`/v1/users/${userId}/status`, { isActive })
+  const user = normalizeUserAdmin(data)
+  if (!user) throw new ApiError(200, 'Unexpected Response', 'The server returned an unparsable user.')
+  return user
+}
+
+/** 200 `{ temporaryPassword }`: generated server-side when no password is supplied. */
+export async function resetUserPasswordApi(
+  userId: string,
+  temporaryPassword?: string,
+): Promise<string> {
+  const { data } = await apiClient.post<unknown>(`/v1/users/${userId}/reset-password`, {
+    temporaryPassword: temporaryPassword?.trim() || null,
+  })
+  const source = data && typeof data === 'object' ? (data as Record<string, unknown>) : {}
+  const generated = toString(source.temporaryPassword)
+  if (!generated) {
+    throw new ApiError(200, 'Unexpected Response', 'The server returned no temporary password.')
+  }
+  return generated
+}
+
+/**
+ * Compatibility reader for the roles tab: full (500-row) list flattened from the paged envelope.
  */
 export async function getUsersWithRolesApi(): Promise<UserWithRolesDto[]> {
   try {
-    const { data } = await apiClient.get<unknown>('/v1/users', {
-      params: { page: 1, pageSize: 500 },
-    })
-    return asArray<unknown>(data)
-      .map(normalizeUser)
-      .filter((u): u is UserWithRolesDto => u !== null)
+    const page = await getUsersPageApi({ page: 1, pageSize: 500 })
+    return page.items
   } catch (cause) {
     if (cause instanceof ApiError && cause.status === 404) return []
     throw cause

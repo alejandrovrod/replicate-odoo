@@ -152,6 +152,7 @@
     "tenantPlaceholder": "GUID de la organización",
     "signIn": "Ingresar",
     "signingIn": "Ingresando...",
+    "backToLanding": "Volver a la página principal",
     "errorGeneric": "No se pudo ingresar. Verificá tus credenciales.",
     "forbiddenTitle": "Sin acceso",
     "forbiddenDetail": "Tu rol no incluye este módulo. Contactá a un administrador.",

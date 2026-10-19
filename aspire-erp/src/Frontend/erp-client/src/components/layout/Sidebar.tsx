@@ -206,15 +206,15 @@ export function Sidebar() {
           title={isSidebarCollapsed ? t(item.label as any) : undefined}
           className={`group flex w-full items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors ${paddingLeftClass} ${
             isActive
-              ? 'bg-sky-50 text-sky-700 shadow-xs'
+              ? 'bg-amber-100/70 text-amber-950 font-semibold shadow-xs'
               : hasChildren
-                ? 'text-slate-700 hover:bg-slate-100'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'text-stone-700 hover:bg-stone-100'
+                : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
           }`}
         >
           <Icon
             className={`h-5 w-5 shrink-0 transition-colors ${
-              isActive ? 'text-sky-600' : 'text-slate-400 group-hover:text-slate-600'
+              isActive ? 'text-amber-600' : 'text-stone-400 group-hover:text-stone-600'
             }`}
           />
           {!isSidebarCollapsed && (
@@ -222,7 +222,7 @@ export function Sidebar() {
               <span className="truncate">{t(item.label as any)}</span>
               <div className="flex items-center gap-2">
                 {item.badge && (
-                  <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                     {item.badge}
                   </span>
                 )}
@@ -255,13 +255,13 @@ export function Sidebar() {
       {/* Brand Header */}
       <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-600 text-white shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-amber-950 font-bold shadow-sm">
             <Layers className="h-6 w-6" />
           </div>
           {!isSidebarCollapsed && (
             <div className="flex flex-col">
               <span className="text-base font-bold tracking-tight text-slate-900">Aspire ERP</span>
-              <span className="text-xs font-medium text-sky-600">{t('sidebar.tagline', 'Enterprise Cloud')}</span>
+              <span className="text-xs font-semibold text-amber-700">{t('sidebar.tagline', 'Enterprise Cloud')}</span>
             </div>
           )}
         </div>

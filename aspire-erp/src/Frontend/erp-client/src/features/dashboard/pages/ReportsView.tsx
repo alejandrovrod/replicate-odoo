@@ -84,12 +84,12 @@ export function ReportsView() {
       </div>
 
       <Tabs value={tab} onValueChange={(val) => setTab(val as ReportTab)} className="w-full space-y-4">
-        <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-slate-100 rounded-lg justify-start w-fit">
+        <TabsList className="flex flex-wrap h-auto gap-1 p-1 bg-stone-200/70 rounded-lg justify-start w-fit">
           {tabs.map((tb) => (
             <TabsTrigger
               key={tb.id}
               value={tb.id}
-              className="rounded-md px-3 py-1.5 text-xs font-semibold data-[state=active]:bg-sky-600 data-[state=active]:text-white data-[state=active]:shadow-xs transition-colors"
+              className="rounded-md px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 data-[state=active]:bg-amber-500 data-[state=active]:text-amber-950 data-[state=active]:shadow-xs transition-colors"
             >
               {tb.label}
             </TabsTrigger>

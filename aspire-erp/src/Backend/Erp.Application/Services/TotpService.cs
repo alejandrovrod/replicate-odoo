@@ -1,23 +1,21 @@
 using System.Globalization;
-using System.Security.Cryptography;
-using System.Text;
+using OtpNet;
 
 namespace Erp.Application.Services;
 
 /// <summary>
-/// RFC 6238 TOTP (SHA-1, 30-second step, 6 digits) over a Base32 shared secret.
+/// RFC 6238 TOTP powered by industry-standard Otp.NET (as in AssetHub).
 /// </summary>
 public sealed class TotpService : ITotpService
 {
     private const int StepSeconds = 30;
     private const int Digits = 6;
     private const int SecretSizeBytes = 20;
-    private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
     public string GenerateSecret()
     {
-        byte[] bytes = RandomNumberGenerator.GetBytes(SecretSizeBytes);
-        return Base32Encode(bytes);
+        byte[] bytes = KeyGeneration.GenerateRandomKey(SecretSizeBytes);
+        return Base32Encoding.ToString(bytes);
     }
 
     public string BuildAuthenticatorUri(string secret, string accountName, string issuer)
@@ -46,114 +44,25 @@ public sealed class TotpService : ITotpService
         byte[] key;
         try
         {
-            key = Base32Decode(secret.Trim().ToUpperInvariant());
+            key = Base32Encoding.ToBytes(secret.Trim().ToUpperInvariant());
         }
-        catch (FormatException)
+        catch (Exception)
         {
             return false;
         }
 
-        long currentCounter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / StepSeconds;
-        for (long counter = currentCounter - allowedStepDrift; counter <= currentCounter + allowedStepDrift; counter++)
-        {
-            if (counter < 0)
-            {
-                continue;
-            }
-
-            if (CryptographicOperations.FixedTimeEquals(
-                Encoding.ASCII.GetBytes(ComputeCode(key, counter)),
-                Encoding.ASCII.GetBytes(normalized)))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        var totp = new Totp(key, step: StepSeconds, totpSize: Digits);
+        // Tolerate clock skew between phone and server (up to 3 steps = 90 seconds drift)
+        return totp.VerifyTotp(normalized, out _, new VerificationWindow(previous: 3, future: 3));
     }
 
     public string ComputeCode(string secret, long counter)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(secret);
-        return ComputeCode(Base32Decode(secret.Trim().ToUpperInvariant()), counter);
-    }
-
-    private static string ComputeCode(byte[] key, long counter)
-    {
-        byte[] counterBytes = BitConverter.GetBytes(counter);
-        if (BitConverter.IsLittleEndian)
-        {
-            Array.Reverse(counterBytes);
-        }
-
-        byte[] hash = HMACSHA1.HashData(key, counterBytes);
-        int offset = hash[^1] & 0x0F;
-        int binaryCode =
-            ((hash[offset] & 0x7F) << 24)
-            | (hash[offset + 1] << 16)
-            | (hash[offset + 2] << 8)
-            | hash[offset + 3];
-
-        int otp = binaryCode % (int)Math.Pow(10, Digits);
-        return otp.ToString("D" + Digits.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-    }
-
-    internal static string Base32Encode(byte[] data)
-    {
-        ArgumentNullException.ThrowIfNull(data);
-
-        var result = new StringBuilder();
-        int buffer = 0;
-        int bitsLeft = 0;
-
-        foreach (byte b in data)
-        {
-            buffer = (buffer << 8) | b;
-            bitsLeft += 8;
-
-            while (bitsLeft >= 5)
-            {
-                bitsLeft -= 5;
-                result.Append(Base32Alphabet[(buffer >> bitsLeft) & 31]);
-            }
-        }
-
-        if (bitsLeft > 0)
-        {
-            result.Append(Base32Alphabet[(buffer << (5 - bitsLeft)) & 31]);
-        }
-
-        return result.ToString();
-    }
-
-    internal static byte[] Base32Decode(string encoded)
-    {
-        ArgumentNullException.ThrowIfNull(encoded);
-
-        // Padding is never emitted by GenerateSecret but is tolerated on input.
-        string input = encoded.TrimEnd('=');
-        var output = new List<byte>(input.Length * 5 / 8);
-        int buffer = 0;
-        int bitsLeft = 0;
-
-        foreach (char c in input)
-        {
-            int value = Base32Alphabet.IndexOf(c);
-            if (value < 0)
-            {
-                throw new FormatException($"Invalid Base32 character '{c}'.");
-            }
-
-            buffer = (buffer << 5) | value;
-            bitsLeft += 5;
-
-            if (bitsLeft >= 8)
-            {
-                bitsLeft -= 8;
-                output.Add((byte)((buffer >> bitsLeft) & 0xFF));
-            }
-        }
-
-        return output.ToArray();
+        byte[] key = Base32Encoding.ToBytes(secret.Trim().ToUpperInvariant());
+        var totp = new Totp(key, step: StepSeconds, totpSize: Digits);
+        // OtpNet computes code based on step timestamp
+        var dt = DateTimeOffset.FromUnixTimeSeconds(counter * StepSeconds).UtcDateTime;
+        return totp.ComputeTotp(dt);
     }
 }

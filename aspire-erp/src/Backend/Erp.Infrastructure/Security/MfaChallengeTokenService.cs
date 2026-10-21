@@ -85,11 +85,16 @@ public sealed class MfaChallengeTokenService : IMfaChallengeTokenService
             return false;
         }
 
-        if (!string.Equals(
-                principal.FindFirst("purpose")?.Value, Purpose, StringComparison.Ordinal)
-            || !Guid.TryParse(principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out userId)
+        var purposeClaim = principal.FindFirst("purpose")?.Value;
+        var subClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                       ?? principal.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value
+                       ?? principal.FindFirst("sub")?.Value;
+        var tenantClaim = principal.FindFirst("tenant_id")?.Value;
+
+        if (!string.Equals(purposeClaim, Purpose, StringComparison.Ordinal)
+            || !Guid.TryParse(subClaim, out userId)
             || userId == Guid.Empty
-            || !Guid.TryParse(principal.FindFirst("tenant_id")?.Value, out tenantId)
+            || !Guid.TryParse(tenantClaim, out tenantId)
             || tenantId == Guid.Empty)
         {
             userId = Guid.Empty;

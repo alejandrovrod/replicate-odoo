@@ -1,5 +1,5 @@
 /**
- * ERPNext-style role × DocType permission matrix.
+ * Role × document-type permission matrix.
  *
  * Rows are DocTypes grouped by module (spec §5 catalog), columns are the six
  * actions. Includes per-row and per-column "select all" toggles, a reactive

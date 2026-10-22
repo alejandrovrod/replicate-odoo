@@ -10,6 +10,7 @@ import {
 } from '../ui/Table'
 import { Input } from '../ui/Input'
 import { Pagination } from '../ui/Pagination'
+import { FloatingActionButton } from '../ui/FloatingActionButton'
 
 export interface ColumnDef<T> {
   header: string
@@ -75,15 +76,7 @@ export function MasterDataList<T>({
         </div>
       </div>
 
-      {onNew && (
-        <button
-          onClick={onNew}
-          className="fixed bottom-8 right-8 z-50 flex items-center gap-2 rounded-full bg-sky-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-sky-600/20 transition-all hover:-translate-y-0.5 hover:bg-sky-700 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-          {newButtonText}
-        </button>
-      )}
+      {onNew && <FloatingActionButton label={newButtonText} onClick={onNew} />}
 
       <div className="flex items-center space-x-2">
         <Input placeholder={searchPlaceholder} className="max-w-sm" />

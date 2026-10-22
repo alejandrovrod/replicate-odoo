@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Pagination } from '../../../components/ui/Pagination'
 import { Button } from '../../../components/ui/Button'
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton'
 import { translateDocStatus } from '../../../lib/docStatus'
 import type { SalesInvoice } from '../api/useSalesInvoices'
 
@@ -36,15 +37,12 @@ export function SalesInvoiceList({
   const { t, i18n } = useTranslation('selling')
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">{t('invoices.title')}</h3>
-          <p className="text-xs text-slate-500">{t('invoices.listSubtitle', 'Draft invoices submit to Unpaid (A/R + revenue).')}</p>
-        </div>
-        <Button size="sm" onClick={onNew}>
-          {t('invoices.new', 'New Invoice')}
-        </Button>
+      <div>
+        <h3 className="text-base font-semibold text-slate-900">{t('invoices.title')}</h3>
+        <p className="text-xs text-slate-500">{t('invoices.listSubtitle', 'Draft invoices submit to Unpaid (A/R + revenue).')}</p>
       </div>
+
+      <FloatingActionButton label={t('invoices.new', 'New Invoice')} onClick={onNew} />
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs">
         <Table>

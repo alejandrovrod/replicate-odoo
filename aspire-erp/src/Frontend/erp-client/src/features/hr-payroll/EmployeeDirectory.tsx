@@ -1,7 +1,8 @@
-import { Pencil, Plus, Users } from 'lucide-react'
+import { Pencil, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
+import { FloatingActionButton } from '../../components/ui/FloatingActionButton'
 import { Pagination } from '../../components/ui/Pagination'
 import { usePagination } from '../../lib/pagination'
 import { EmployeeFormModal } from './EmployeeFormModal'
@@ -64,28 +65,23 @@ export function EmployeeDirectory({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
-            <Users className="h-4 w-4 text-indigo-600" />
-            {t('directory.title')}
-          </h3>
-          <p className="text-xs text-slate-500">
-            {t('directory.summary', { total: employeesQuery.items.length, eligible, start: periodStart, end: periodEnd })}
-          </p>
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => {
-            setEditing(null)
-            setFormOpen(true)
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {t('directory.addEmployee')}
-        </Button>
+      <div className="mb-4">
+        <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+          <Users className="h-4 w-4 text-indigo-600" />
+          {t('directory.title')}
+        </h3>
+        <p className="text-xs text-slate-500">
+          {t('directory.summary', { total: employeesQuery.items.length, eligible, start: periodStart, end: periodEnd })}
+        </p>
       </div>
+
+      <FloatingActionButton
+        label={t('directory.addEmployee')}
+        onClick={() => {
+          setEditing(null)
+          setFormOpen(true)
+        }}
+      />
 
       {employeesQuery.items.length === 0 ? (
         <p className="py-4 text-center text-sm text-slate-500">{t('directory.empty')}</p>

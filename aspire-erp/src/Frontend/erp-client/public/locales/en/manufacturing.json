@@ -4,7 +4,7 @@
     "subtitle": "Bills of materials, work orders, workstations and capacity."
   },
   "overview": {
-    "title": "Manufacturing & Shop Floor (ERPNext Parity)",
+    "title": "Manufacturing & Shop Floor",
     "subtitle": "Run work orders from submission through WIP transfer to completion, with BOM cost roll-ups.",
     "refresh": "Refresh boards",
     "loadingBoard": "Loading execution board…",

@@ -1,6 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import { Languages } from 'lucide-react'
-import { SUPPORTED_LANGUAGES, type SupportedLanguage, normalizeLanguage } from '../../lib/i18n'
+import {
+  markLanguageAsManuallySelected,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+  normalizeLanguage,
+} from '../../lib/i18n'
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   en: 'English',
@@ -20,6 +25,7 @@ export function LanguageSelector() {
   const current = normalizeLanguage(i18n.resolvedLanguage ?? i18n.language)
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    markLanguageAsManuallySelected()
     void i18n.changeLanguage(normalizeLanguage(event.target.value))
   }
 

@@ -177,7 +177,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
       setReturnAgainstId('')
       setLines((prev) => prev.map((l) => ({ ...l, quantity: Math.abs(l.quantity) || 1 })))
     } else {
-      // Returns demand negative quantities (ERPNext validate_qty parity): flip on toggle so
+      // Returns demand negative quantities (standard quantity validation): flip on toggle so
       // the user never hand-types the first minus sign.
       setLines((prev) => prev.map((l) => ({ ...l, quantity: -(Math.abs(l.quantity) || 1) })))
       // Credit notes never carry advances (the server rejects them): drop the grid.
@@ -466,7 +466,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
               ))}
             </div>
 
-            {/* ERPNext parity (Update Stock): immediate delivery from a source warehouse */}
+            {/* Immediate stock update: delivery from a source warehouse */}
             {!isReturn && (
               <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800">
@@ -503,7 +503,7 @@ export function SalesInvoiceFormModal({ isOpen, onClose, onSave, companyId, invo
               </div>
             )}
 
-            {/* ERPNext parity (advances allocation): cross unallocated customer receipts */}
+            {/* Advance allocation: cross unallocated customer receipts */}
             {!isReturn && (
               <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="flex items-center justify-between">

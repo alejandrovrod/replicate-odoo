@@ -4,7 +4,7 @@
     "subtitle": "Empleados, departamentos, estructuras salariales y nóminas."
   },
   "overview": {
-    "title": "RRHH y nómina (paridad con ERPNext)",
+    "title": "RRHH y Nómina",
     "subtitle": "Liquidaciones mensuales de nómina desde la presentación hasta el desembolso, con recibos por empleado.",
     "refresh": "Actualizar tableros",
     "loadingWorkbench": "Cargando la mesa de nómina…",

@@ -2,21 +2,20 @@ import { useTranslation } from 'react-i18next'
 import {
   ArrowRight,
   CircleDot,
-  Blend,
-  Diamond,
   ChartNoAxesColumn,
   ShieldCheck,
   Zap,
   Sparkles,
-  Database,
+  Boxes,
+  Workflow,
 } from 'lucide-react'
 
 interface HeroSectionProps {
-  onExploreClick: () => void
+  onGetStartedClick: () => void
   onDemoClick: () => void
 }
 
-export function HeroSection({ onExploreClick, onDemoClick }: HeroSectionProps) {
+export function HeroSection({ onGetStartedClick, onDemoClick }: HeroSectionProps) {
   const { t } = useTranslation('landing')
 
   return (
@@ -32,12 +31,10 @@ export function HeroSection({ onExploreClick, onDemoClick }: HeroSectionProps) {
             
             {/* Left Column: Hero Manifesto */}
             <div className="lg:col-span-7">
-              {/* Monospace Micro-Badge */}
+              {/* Commercial value badge */}
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-mono font-medium text-slate-700 shadow-2xs mb-6">
                 <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>{t('hero.runtimeBadge')}</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-slate-500">.NET 10 + REACT 19</span>
+                <span>{t('hero.badge')}</span>
               </div>
 
               <h1 className="font-heading text-3xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl leading-[1.1]">
@@ -64,27 +61,27 @@ export function HeroSection({ onExploreClick, onDemoClick }: HeroSectionProps) {
 
                 <button
                   type="button"
-                  onClick={onExploreClick}
+                  onClick={onGetStartedClick}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition"
                 >
                   <Sparkles className="h-4 w-4 text-amber-500" />
-                  <span>{t('hero.ctaExplore')}</span>
+                  <span>{t('hero.ctaStart')}</span>
                 </button>
               </div>
 
-              {/* Verified Specs Checklist */}
+              {/* Value Proofs */}
               <div className="mt-10 flex flex-wrap items-center gap-6 text-xs text-slate-500 font-mono">
                 <span className="flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  {t('hero.specDoubleEntry')}
+                  {t('hero.proofAccuracy')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Zap className="h-4 w-4 text-blue-600" />
-                  {t('hero.specFifo')}
+                  {t('hero.proofReporting')}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Database className="h-4 w-4 text-indigo-600" />
-                  {t('hero.specSql')}
+                  <Boxes className="h-4 w-4 text-indigo-600" />
+                  {t('hero.proofTraceability')}
                 </span>
               </div>
             </div>
@@ -110,7 +107,7 @@ export function HeroSection({ onExploreClick, onDemoClick }: HeroSectionProps) {
                 </div>
 
                 <div className="flex gap-4">
-                  <Blend className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
                   <div>
                     <h2 className="font-heading text-sm font-bold text-slate-900">
                       {t('hero.feature2Title')}
@@ -122,7 +119,7 @@ export function HeroSection({ onExploreClick, onDemoClick }: HeroSectionProps) {
                 </div>
 
                 <div className="flex gap-4">
-                  <Diamond className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                  <Workflow className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
                   <div>
                     <h2 className="font-heading text-sm font-bold text-slate-900">
                       {t('hero.feature3Title')}

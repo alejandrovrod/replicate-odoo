@@ -51,8 +51,8 @@ interface NavGroup {
 /**
  * App navigation (spec 00-i18n: the sidebar is daily-use chrome, so labels and group titles
  * are keys, not strings). Route ids stay the contract — only the rendered text translates.
- * Brand strings ("Aspire ERP", "ERPNext" badges, stack footers) are product identity and stay
- * literal, same as "Dev Co." in the header.
+ * Brand strings ("Aspire ERP", stack footers) are product identity and stay literal,
+ * same as "Dev Co." in the header.
  */
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -99,7 +99,7 @@ const NAV_GROUPS: NavGroup[] = [
         label: 'nav.folder.banking',
         icon: Landmark,
         children: [
-          { id: 'banking', route: 'banking', label: 'nav.item.banking', icon: Landmark, badge: 'ERPNext', perm: ['bank_transaction'] },
+          { id: 'banking', route: 'banking', label: 'nav.item.banking', icon: Landmark, perm: ['bank_transaction'] },
           { id: 'banking-accounts', route: 'banking-accounts', label: 'nav.item.bankingAccounts', icon: Landmark, perm: ['bank_account'] },
           { id: 'banking-payments', route: 'banking-payments', label: 'nav.item.bankingPayments', icon: Receipt, perm: ['payment_entry'] },
         ],
@@ -122,7 +122,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'stock', route: 'stock', label: 'nav.item.stock', icon: Boxes, perm: ['stock'] },
       { id: 'stock-landed-cost', route: 'stock-landed-cost', label: 'nav.item.stockLandedCost', icon: Receipt, perm: ['landed_cost_voucher'] },
-      { id: 'manufacturing', route: 'manufacturing', label: 'nav.item.manufacturing', icon: Factory, badge: 'ERPNext', perm: ['work_order'] },
+      { id: 'manufacturing', route: 'manufacturing', label: 'nav.item.manufacturing', icon: Factory, perm: ['work_order'] },
       {
         id: 'selling-folder',
         label: 'nav.item.selling',
@@ -137,8 +137,8 @@ const NAV_GROUPS: NavGroup[] = [
       },
       { id: 'buying', route: 'buying', label: 'nav.item.buying', icon: Truck, perm: ['purchase_order'] },
       { id: 'buying-suppliers', route: 'buying-suppliers', label: 'nav.item.buyingSuppliers', icon: Truck, perm: ['supplier'] },
-      { id: 'hr-payroll', route: 'hr-payroll', label: 'nav.item.hrPayroll', icon: Users, badge: 'ERPNext', perm: ['payroll_entry'] },
-      { id: 'crm', route: 'crm', label: 'nav.item.crm', icon: Handshake, badge: 'ERPNext', perm: ['lead'] },
+      { id: 'hr-payroll', route: 'hr-payroll', label: 'nav.item.hrPayroll', icon: Users, perm: ['payroll_entry'] },
+      { id: 'crm', route: 'crm', label: 'nav.item.crm', icon: Handshake, perm: ['lead'] },
     ],
   },
   {

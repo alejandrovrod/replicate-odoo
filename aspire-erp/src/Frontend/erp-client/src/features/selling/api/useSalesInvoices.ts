@@ -38,7 +38,7 @@ export interface SalesInvoice {
   grandTotal: number
   outstandingAmount: number
   paidAmount: number
-  /** ERPNext parity (advances allocation): total crossed at creation, settled at submit. */
+  /** Advance allocation: total crossed at creation, settled at submit. */
   totalAdvance: number
   /** Per-payment cross slices (populated on detail reads). */
   advances?: SalesInvoiceAdvance[]
@@ -84,10 +84,10 @@ export interface CreateSalesInvoicePayload {
   /** Module 18: credit-note mode; lines must carry negative quantities. */
   isReturn?: boolean
   returnAgainstId?: string | null
-  /** ERPNext parity (Update Stock): immediate delivery from the source warehouse. */
+  /** Immediate stock update: delivery from the source warehouse. */
   updateStock?: boolean
   sourceWarehouseId?: string | null
-  /** ERPNext parity (advances allocation): slices reserved at creation, settled at submit. */
+  /** Advance allocation: slices reserved at creation, settled at submit. */
   advances?: { paymentEntryId: string; allocatedAmount: number }[]
 }
 

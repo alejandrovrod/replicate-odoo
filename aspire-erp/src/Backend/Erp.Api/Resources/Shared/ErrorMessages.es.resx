@@ -107,6 +107,15 @@
   <data name="account_name_too_long" xml:space="preserve">
     <value>El nombre de cuenta supera la longitud máxima.</value>
   </data>
+  <data name="group_has_children" xml:space="preserve">
+    <value>Una cuenta de grupo con hijos no puede convertirse en cuenta de registro.</value>
+  </data>
+  <data name="account_has_transactions" xml:space="preserve">
+    <value>Una cuenta de registro con asientos contabilizados no puede convertirse en cuenta de grupo.</value>
+  </data>
+  <data name="balance_side_mismatch" xml:space="preserve">
+    <value>El saldo se registró en el lado incorrecto para el tipo de cuenta.</value>
+  </data>
   <data name="invalid_root_type" xml:space="preserve">
     <value>Tipo raíz inválido para esta cuenta.</value>
   </data>
@@ -898,6 +907,27 @@
   <data name="already_reversed" xml:space="preserve">
     <value>La baja ya fue revertida.</value>
   </data>
+  <data name="asset_category_required" xml:space="preserve">
+    <value>Se requiere una categoría de activo para esta operación.</value>
+  </data>
+  <data name="asset_category_missing_accounts" xml:space="preserve">
+    <value>A la categoría de activo le faltan una o más cuentas obligatorias.</value>
+  </data>
+  <data name="asset_line_rate_mismatch" xml:space="preserve">
+    <value>La tasa de depreciación de la línea no coincide con la categoría del activo.</value>
+  </data>
+  <data name="cannot_capitalize_unsubmitted_invoice" xml:space="preserve">
+    <value>Solo se pueden capitalizar facturas contabilizadas.</value>
+  </data>
+  <data name="asset_has_depreciation_entries" xml:space="preserve">
+    <value>El activo tiene asientos de depreciación y no puede cancelarse.</value>
+  </data>
+  <data name="asset_already_cancelled" xml:space="preserve">
+    <value>El activo ya está cancelado.</value>
+  </data>
+  <data name="asset_schedule_already_exists" xml:space="preserve">
+    <value>Ya existe un calendario de depreciación para este activo.</value>
+  </data>
   <data name="exchange_rate_invalid" xml:space="preserve">
     <value>El tipo de cambio debe ser mayor a cero.</value>
   </data>
@@ -1010,6 +1040,12 @@
   </data>
   <data name="return_amount_exceeded" xml:space="preserve">
     <value>El total de la nota de crédito no puede exceder el total de la factura original.</value>
+  </data>
+  <data name="return_line_invalid" xml:space="preserve">
+    <value>La cantidad de la línea de devolución debe ser mayor que cero.</value>
+  </data>
+  <data name="return_cancellation_unsupported" xml:space="preserve">
+    <value>No se admite la cancelación de una nota de débito de proveedor.</value>
   </data>
   <!-- Paridad ERPNext de facturas de venta: entrega directa de stock + cruce de anticipos. -->
   <data name="update_stock_warehouse_required" xml:space="preserve">
@@ -1128,5 +1164,20 @@
   </data>
   <data name="preset_not_found" xml:space="preserve">
     <value>Preset de industria no encontrado.</value>
+  </data>
+  <data name="SUBDOMAIN_INVALID" xml:space="preserve">
+    <value>El subdominio debe tener entre 3 y 32 letras minúsculas, dígitos o guiones, y comenzar y terminar con una letra o dígito.</value>
+  </data>
+  <data name="SUBDOMAIN_RESERVED" xml:space="preserve">
+    <value>Este subdominio está reservado por la plataforma.</value>
+  </data>
+  <data name="SUBDOMAIN_TAKEN" xml:space="preserve">
+    <value>Este subdominio ya está en uso por otro tenant.</value>
+  </data>
+  <data name="TENANT_NOT_FOUND" xml:space="preserve">
+    <value>No se encontró un tenant para este subdominio.</value>
+  </data>
+  <data name="INVALID_TENANT_DATA" xml:space="preserve">
+    <value>Los datos de registro del tenant no son válidos. Revisá los nombres, el correo y la contraseña.</value>
   </data>
 </root>

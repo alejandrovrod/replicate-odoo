@@ -1,65 +1,62 @@
 {
   "nav": {
     "modules": "Modules",
-    "chameleon": "Chameleon Architecture",
-    "architecture": "Engineering Stack",
+    "industries": "Industries",
+    "benefits": "Why Aspire",
     "signIn": "Sign In",
-    "demo": "Try Demo"
+    "register": "Create Workspace",
+    "demo": "Request Demo"
   },
   "hero": {
-    "badge": "Clean Architecture .NET 10 + SQL Server 2025",
-    "titlePrefix": "The Next Generation",
-    "titleHighlight": "Enterprise ERP",
-    "titleSuffix": "built to scale",
-    "description": "Powered by .NET 10 Aspire, immutable accounting with DoubleEntryGuard, FIFO perpetual valuation, and Chameleon Architecture with complete ERPNext parity.",
-    "ctaExplore": "Explore Platform",
-    "ctaDemo": "Launch Live Demo",
-    "runtimeBadge": "ASPIRE ERP // ENTERPRISE RUNTIME",
-    "headlineMain": "The enterprise operating system",
-    "headlineSub": "for organizations that refuse to cut corners.",
-    "specDoubleEntry": "DoubleEntryGuard",
-    "specFifo": "FIFO Perpetual",
-    "specSql": "SQL Server 2025",
-    "feature1Title": "Chameleon Architecture",
-    "feature1Desc": "Dynamically morphs vocabulary and business flows for Healthcare, Automotive, Construction, or Distribution.",
-    "feature2Title": "ERPNext Parity Direct Stock",
-    "feature2Desc": "Direct invoicing with stock reduction, advance payment allocation, and strict tax retention compliance.",
-    "feature3Title": "Double-Entry Ledger Immutability",
-    "feature3Desc": "DoubleEntryGuard guarantees at the backend that no transaction leaves the balance sheet out of balance.",
-    "feature4Title": "High-Throughput CQRS < 15ms",
-    "feature4Desc": "Segregated command and query operations for instant response times under heavy concurrent loads.",
-    "cockpitTitle": "aspire-erp // core.ledger.overview",
-    "cockpitStatus": "ONLINE",
-    "metric1Sub": "0 discrepancies",
-    "metric2Sub": "P99 Query Time",
-    "metric3Sub": "Hot-Swappable",
-    "metric4Sub": "Landed Cost Sync",
+    "badge": "Cloud Business Management · Total Control of Your Company",
+    "headlineMain": "The ERP that drives profitability",
+    "headlineSub": "and grows with your business.",
+    "description": "Unify accounting, inventory, purchasing, sales and payroll in one agile, secure platform built to evolve with your organization.",
+    "ctaStart": "Get Started",
+    "ctaDemo": "Request a Demo",
+    "proofAccuracy": "100% Financial & Tax Accuracy",
+    "proofReporting": "Instant Reports & Statements",
+    "proofTraceability": "End-to-End Inventory Traceability",
+    "feature1Title": "Profitability under control",
+    "feature1Desc": "Real margin by product, customer and channel, without parallel spreadsheets.",
+    "feature2Title": "Lower operational risk",
+    "feature2Desc": "Automated controls and a complete audit trail on every transaction.",
+    "feature3Title": "More productive teams",
+    "feature3Desc": "Connected processes from end to end, with no duplicate data entry.",
+    "feature4Title": "Growth without limits",
+    "feature4Desc": "A cloud platform that scales with your company, without disruptive migrations.",
+    "cockpitTitle": "Aspire ERP // Financial Control Panel",
+    "cockpitStatus": "LIVE",
     "metric1Value": "100%",
-    "metric1Label": "Ledger Immutability",
-    "metric2Value": "< 15ms",
-    "metric2Label": "CQRS Query Latency",
-    "metric3Value": "4-in-1",
-    "metric3Label": "Chameleon Verticals",
-    "metric4Value": "FIFO",
-    "metric4Label": "Strict Perpetual Valuation"
+    "metric1Label": "Financial & Tax Accuracy",
+    "metric1Sub": "Audit-ready close, zero discrepancies",
+    "metric2Value": "Real time",
+    "metric2Label": "Instant Reports & Statements",
+    "metric2Sub": "Always-current business data",
+    "metric3Value": "360°",
+    "metric3Label": "Total Inventory Traceability",
+    "metric3Sub": "Live costs and margins",
+    "metric4Value": "4",
+    "metric4Label": "Industry-Ready Workflows",
+    "metric4Sub": "Healthcare, Automotive, Construction & Distribution"
   },
   "chameleon": {
-    "dividerLabel": "CHAMELEON ARCHITECTURE // LIVE ADAPTATION",
-    "badge": "Dynamic Adaptability",
-    "title": "Chameleon Architecture in Action",
-    "subtitle": "A single centralized core that dynamically transforms its vocabulary, entities, and business flows for your industry.",
+    "dividerLabel": "BUILT AROUND YOUR INDUSTRY // REAL OPERATIONS",
+    "badge": "Designed for your sector",
+    "title": "Your operation, in your industry's language",
+    "subtitle": "Aspire ERP adapts to your processes, documents and roles, without custom development.",
     "colClient": "Customer",
     "colOrder": "Sales Order",
     "colDelivery": "Delivery Note",
     "colInvoice": "Sales Invoice",
-    "auditTrailTitle": "GENERAL LEDGER FEED // AUDIT TRAIL",
-    "presetActiveBadge": "PRESET ACTIVE",
+    "auditTrailTitle": "OPERATIONS PANEL // FULL TRACEABILITY",
+    "presetActiveBadge": "ACTIVE",
     "thDoc": "DOC",
     "thEntity": "ENTITY",
     "thType": "TYPE",
-    "thDebitCredit": "DEBIT / CREDIT",
-    "guaranteeTitle": "DoubleEntryGuard Active",
-    "guaranteeDesc": "Vocabulary changes synchronize with i18n definitions and tenant metadata without recompiling the backend or altering relational constraints.",
+    "thDebitCredit": "AMOUNT",
+    "guaranteeTitle": "Continuity and control",
+    "guaranteeDesc": "Industry adaptation preserves data integrity and the traceability of every transaction.",
     "tabs": {
       "healthcare": "Healthcare / Clinic",
       "automotive": "Automotive Workshop",
@@ -68,118 +65,188 @@
     },
     "healthcare": {
       "name": "Clinical Healthcare",
-      "description": "The ERP adapts medical terminology, patient admission orders, attending physicians, and rigorous supply tracking.",
+      "description": "Built for clinics and hospitals: patient admissions, medical billing and rigorous medication and supply tracking.",
       "customerTerm": "Patients",
       "orderTerm": "Admission Orders",
       "deliveryTerm": "Supply Dispensation",
       "invoiceTerm": "Medical Billing",
-      "feature1": "Batch and expiration tracking for pharmaceuticals",
-      "feature2": "Ward and operating room allocation linked to billing",
-      "feature3": "Dual tax retention compliance for medical services"
+      "feature1": "Batch and expiration tracking for medications",
+      "feature2": "Bed and operating room management connected to billing",
+      "feature3": "Tax compliance for medical services"
     },
     "automotive": {
       "name": "Automotive & Mechanical Service",
-      "description": "Tailored towards vehicles, VIN chassis numbers, assigned technicians, and spare parts quotations.",
+      "description": "Designed around vehicles, VIN numbers, assigned technicians and spare-parts quotes.",
       "customerTerm": "Vehicle Owners",
       "orderTerm": "Service Orders (RO)",
       "deliveryTerm": "Parts Issue",
       "invoiceTerm": "Labor & Parts Invoicing",
       "feature1": "Unit identification by VIN chassis and odometer",
       "feature2": "Labor hours and consumables apportionment per job",
-      "feature3": "Complete unit mechanical service history"
+      "feature3": "Complete service history for every vehicle"
     },
     "construction": {
       "name": "Construction & Civil Works",
-      "description": "Project-based management, job sites, quantity takeoff, subcontractors, and progress certificates.",
+      "description": "Project-based management, job sites, progress certificates, subcontractors and cost control.",
       "customerTerm": "Contractors / Clients",
       "orderTerm": "Daily Work Logs",
       "deliveryTerm": "Material Waybills",
       "invoiceTerm": "Progress Valuations",
-      "feature1": "Budgeted vs actual materials and labor monitoring",
-      "feature2": "Heavy equipment tracking as assets and cost centers",
-      "feature3": "Material stockpiling and retention bonds management"
+      "feature1": "Budget vs. actual materials and labor",
+      "feature2": "Heavy equipment tracked as assets and cost centers",
+      "feature3": "Material stockpiling and retention management"
     },
     "distribution": {
       "name": "Distribution & Logistics",
-      "description": "Optimized for high-velocity inventory turnover, multi-warehouse routing, import duties, and volume billing.",
+      "description": "Built for high-turnover inventory, multiple warehouses, import costs and volume billing.",
       "customerTerm": "Points of Sale (POS)",
       "orderTerm": "Fulfillment Orders",
       "deliveryTerm": "Delivery Notes",
       "invoiceTerm": "Tiered Discount Invoices",
-      "feature1": "Landed Cost Vouchers for freight and customs apportionment",
+      "feature1": "Freight and customs cost allocation",
       "feature2": "Barcode scanning and zone-based warehouse picking",
-      "feature3": "Perpetual FIFO cost recalculation"
+      "feature3": "Real-time inventory cost and margin visibility"
     }
   },
   "modules": {
-    "sectionHeader": "ENTERPRISE CAPABILITIES // PARITY CHECKED",
+    "sectionHeader": "CORE BUSINESS MODULES // ONE PLATFORM",
     "badge": "Enterprise Capabilities",
-    "title": "Built with Complete ERPNext Parity",
-    "subtitle": "Every module is engineered to satisfy the most demanding accounting and operational standards.",
-    "viewDetail": "View details",
+    "title": "Everything your operation needs, connected",
+    "subtitle": "Replace disconnected tools with one platform that gives every team the same source of truth.",
+    "viewDetail": "Explore module",
     "accounting": {
-      "title": "Immutable General Ledger & Treasury",
-      "description": "Hierarchical multi-level chart of accounts, trial balance, bank reconciliation, and DoubleEntryGuard ensuring zero-discrepancy balance."
+      "tag": "Finance",
+      "badge": "Always reconciled",
+      "title": "Accounting & Treasury",
+      "description": "General ledger, financial statements, bank reconciliation and cash control in a single real-time view."
     },
     "selling": {
-      "title": "Sales & Billing (Direct Stock Update)",
-      "description": "Issue sales invoices with immediate stock reduction (Update Stock), credit notes, advance payments, and multi-currency support."
+      "tag": "Commercial",
+      "badge": "Integrated collection",
+      "title": "Sales & Billing",
+      "description": "Quotes, invoices, credit notes and collections connected directly to inventory."
     },
     "stock": {
-      "title": "Perpetual Inventory & Landed Cost",
-      "description": "FIFO stock valuation, serial and batch tracking, tree warehouses, and import freight cost apportionment via Landed Cost Vouchers."
+      "tag": "Inventory",
+      "badge": "Total traceability",
+      "title": "Inventory & Costing",
+      "description": "Warehouse, batch and serial control with up-to-date costs and complete traceability."
     },
     "manufacturing": {
-      "title": "Manufacturing & Multi-level BOM",
-      "description": "Multi-tier bills of materials, workstation scheduling, production orders, and labor/overhead cost absorption."
+      "tag": "Production",
+      "badge": "Real costs",
+      "title": "Manufacturing & Production",
+      "description": "Production planning, bills of materials and actual cost per order."
     },
     "assets": {
-      "title": "Fixed Assets & Automated Depreciation",
-      "description": "Automated straight-line monthly depreciation, asset custodianship, write-offs, and asset category capitalization."
+      "tag": "Assets",
+      "badge": "Full lifecycle",
+      "title": "Fixed Assets",
+      "description": "Asset registration, automated depreciation and full lifecycle control."
     },
     "security": {
-      "title": "Granular Security & Multi-Tenancy",
-      "description": "Tenant isolation, granular DocType-level permission matrices, and Two-Factor Authentication (2FA / TOTP)."
+      "tag": "Governance",
+      "badge": "Role-based access",
+      "title": "Security & Control",
+      "description": "Roles, granular permissions, two-factor authentication and a traceable record of every action."
     }
   },
-  "techStack": {
-    "sectionHeader": "ENGINEERING STACK // ARCHITECTURAL PURITY",
-    "badge": "Top-Tier Engineering",
-    "title": "Modern Architecture with Zero Shortcuts",
-    "subtitle": "Built on the most resilient architectural patterns of modern .NET and the Web ecosystem.",
-    "quoteText": "Building a world-class ERP demands discipline: avoiding bloated frameworks, isolating ledger invariants into immutable domain models, and mathematically verifying every entry.",
-    "quoteLabel": "DOMAIN ARCHITECTURE // ASPIRE ERP KERNEL",
-    "dotnet": {
-      "tag": "C# 13 // ASP.NET Core",
-      "title": ".NET 10 & Aspire Cloud-Native",
-      "desc": "Cloud-native orchestration, OpenTelemetry observability, and clean layered domain architecture."
+  "enterpriseBenefits": {
+    "sectionHeader": "ENTERPRISE BENEFITS // MEASURABLE OUTCOMES",
+    "badge": "Why Aspire",
+    "title": "Outcomes you can see across your business",
+    "subtitle": "A platform built to reduce costs, accelerate decisions and give your team complete control.",
+    "quoteText": "Technology only matters when it translates into better decisions, lower risk and sustainable growth.",
+    "quoteLabel": "ASPIRE ERP // BUSINESS IMPACT",
+    "financial": {
+      "tag": "Financial confidence",
+      "title": "Financial Confidence",
+      "desc": "Automatically reconciled balances and rigorous control over receivables and payables."
     },
-    "sql": {
-      "tag": "SQL Server 2025",
-      "title": "System-Versioned Temporal Tables",
-      "desc": "Immutable system-versioned temporal audit tables, composite index tuning, and optimistic RowVersion concurrency."
+    "inventory": {
+      "tag": "Inventory efficiency",
+      "title": "Inventory Optimization",
+      "desc": "Lower storage costs, accurate import costing and zero losses."
     },
-    "cqrs": {
-      "tag": "MediatR // Domain Events",
-      "title": "Strict CQRS Segregation",
-      "desc": "Segregation of command and query operations for peak throughput and complete ledger event sourcing."
+    "automation": {
+      "tag": "Operational agility",
+      "title": "Operational Automation",
+      "desc": "Integrated workflows from quote to collection with no duplicated work."
     },
-    "frontend": {
-      "tag": "React 19 // Vite",
-      "title": "Strictly-Typed TypeScript Frontend",
-      "desc": "Lightweight Zustand state management, accessible Radix UI primitives, and modular Tailwind CSS."
+    "security": {
+      "tag": "Governance",
+      "title": "Security & Compliance",
+      "desc": "Role-based access, tamper-proof audit trails and protection of your business data."
     }
   },
   "cta": {
-    "envBadge": "ASPIRE PRODUCTION ENVIRONMENT",
-    "title": "Ready to experience the power of Aspire ERP?",
-    "subtitle": "Access the live preview environment with all enterprise features enabled and test the speed for yourself.",
-    "button": "Launch Live Demo",
-    "login": "Sign In with Existing Account"
+    "envBadge": "CLOUD PLATFORM FOR GROWING BUSINESSES",
+    "title": "Ready to take control of your operation?",
+    "subtitle": "See how Aspire ERP can streamline your processes, reduce costs and give you complete visibility.",
+    "button": "Request a Demo",
+    "register": "Create Workspace",
+    "login": "Sign In"
   },
   "footer": {
-    "tagline": "The world-class enterprise ERP built for the modern corporation.",
-    "rights": "All rights reserved. Built with .NET 10 and React 19.",
+    "tagline": "The ERP that turns operations into growth.",
+    "rights": "All rights reserved.",
     "backToTop": "Back to top"
+  },
+  "register": {
+    "back": "Back to home",
+    "badge": "Start your workspace",
+    "title": "Launch your company's workspace.",
+    "subtitle": "Choose your subdomain and we'll set up your company, chart of accounts, security roles and administrator account in one step.",
+    "formTitle": "Create your workspace",
+    "formSubtitle": "You can invite your team after signing in.",
+    "benefits": {
+      "workspace": "A dedicated workspace on your own subdomain.",
+      "coa": "A ready-to-use chart of accounts for sales, purchasing, inventory and payroll.",
+      "security": "Six role-based access profiles plus your initial administrator account."
+    },
+    "fields": {
+      "tenantName": "Workspace name",
+      "companyName": "Company name",
+      "defaultLanguage": "Workspace language",
+      "subdomain": "Workspace subdomain",
+      "adminName": "Your full name",
+      "taxId": "Company tax ID (optional)",
+      "adminEmail": "Work email",
+      "password": "Password"
+    },
+    "placeholders": {
+      "tenantName": "Acme Corporation",
+      "companyName": "Acme HQ",
+      "subdomain": "acme",
+      "adminName": "Ada Lovelace",
+      "taxId": "TAX-123456",
+      "adminEmail": "you@company.com",
+      "password": "At least 12 characters"
+    },
+    "subdomain": {
+      "hint": "3-32 lowercase letters, digits or hyphens. Must start and end with a letter or digit.",
+      "checking": "Checking availability...",
+      "available": "This subdomain is available.",
+      "taken": "This subdomain is already taken.",
+      "reserved": "This subdomain is reserved by the platform.",
+      "error": "We could not check availability. Try again in a moment."
+    },
+    "languageHint": "We'll seed your chart of accounts, roles and starter catalogs in this language, and your workspace will open in it.",
+    "passwordHint": "Use at least 12 characters with uppercase, lowercase and a digit.",
+    "submit": "Create workspace",
+    "submitting": "Setting up your workspace...",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "success": {
+      "title": "Your workspace is ready.",
+      "body": "{{tenant}} is ready with its company, chart of accounts, security roles and administrator.",
+      "workspace": "Workspace URL",
+      "signInAs": "Sign in as {{email}}",
+      "signIn": "Continue to sign in",
+      "back": "Back to home"
+    },
+    "errors": {
+      "generic": "We could not create your workspace. Check your connection and try again."
+    }
   }
 }

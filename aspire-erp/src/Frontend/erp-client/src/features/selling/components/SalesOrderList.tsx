@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Pagination } from '../../../components/ui/Pagination'
 import { Button } from '../../../components/ui/Button'
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton'
 import { WorkflowActionBar } from '../../../components/workflow/WorkflowActionBar'
 import { translateDocStatus } from '../../../lib/docStatus'
 import type { SalesOrder } from '../api/useSalesOrders'
@@ -34,15 +35,12 @@ export function SalesOrderList({
   const { t, i18n } = useTranslation('selling')
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">{t('orders.title', 'Sales Orders')}</h3>
-          <p className="text-xs text-slate-500">{t('orders.subtitle')}</p>
-        </div>
-        <Button size="sm" onClick={onNew}>
-          {t('orders.new', 'New Order')}
-        </Button>
+      <div>
+        <h3 className="text-base font-semibold text-slate-900">{t('orders.title', 'Sales Orders')}</h3>
+        <p className="text-xs text-slate-500">{t('orders.subtitle')}</p>
       </div>
+
+      <FloatingActionButton label={t('orders.new', 'New Order')} onClick={onNew} />
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs">
         <Table>

@@ -11,7 +11,7 @@ import {
   FileText,
   PackageCheck,
   Receipt,
-  Terminal,
+  ClipboardCheck,
 } from 'lucide-react'
 
 type VerticalTab = 'healthcare' | 'automotive' | 'construction' | 'distribution'
@@ -30,15 +30,15 @@ export function ChameleonShowcase() {
   const ActiveIcon = tabIcons[activeTab]
 
   return (
-    <section id="chameleon" className="relative scroll-mt-20 py-24 bg-white">
+    <section id="industries" className="relative scroll-mt-20 py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Mainline style dashed section divider with central label */}
         <div className="relative flex items-center justify-center mb-16">
-          <div className="relative h-px w-full text-slate-300">
+          <div className="relative h-px w-full text-amber-300/60">
             <div className="h-px w-full dashed-line-x" />
           </div>
-          <span className="absolute bg-white px-4 font-mono text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <span className="absolute bg-[#faf8f5] px-4 font-mono text-xs font-semibold uppercase tracking-wider text-slate-500">
             {t('chameleon.dividerLabel')}
           </span>
         </div>
@@ -82,7 +82,7 @@ export function ChameleonShowcase() {
         </div>
 
         {/* Mainline Card Layout with subtle borders and dashed lines */}
-        <div className="mt-12 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm">
+        <div className="mt-12 overflow-hidden rounded-3xl border border-amber-200/60 bg-white/85 shadow-sm backdrop-blur-md">
           <div className="grid grid-cols-1 lg:grid-cols-12">
             
             {/* Left: Terminology Mapping */}
@@ -154,12 +154,12 @@ export function ChameleonShowcase() {
               </div>
             </div>
 
-            {/* Right: Technical Ledger Feed & Terminal */}
+            {/* Right: Operations & Audit Panel */}
             <div className="relative border-t lg:border-t-0 lg:border-l border-slate-200 bg-slate-50/50 p-8 sm:p-12 lg:col-span-7 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                   <div className="flex items-center gap-2">
-                    <Terminal className="h-4 w-4 text-slate-700" />
+                    <ClipboardCheck className="h-4 w-4 text-slate-700" />
                     <span className="font-mono text-xs font-bold text-slate-900">
                       {t('chameleon.auditTrailTitle')}
                     </span>

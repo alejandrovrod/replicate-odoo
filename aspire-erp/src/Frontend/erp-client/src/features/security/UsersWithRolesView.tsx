@@ -1,6 +1,6 @@
 /**
  * User Management (user-management spec D2/D4): tenant-scoped user directory with server-side
- * search + pagination, a `+ Nuevo Usuario` toolbar action, and a per-row context menu
+ * search + pagination, a floating `+ Nuevo Usuario` action, and a per-row context menu
  * (Edit, Activate/Deactivate, Reset password).
  *
  * Authorization is enforced server-side (`permission:user:read|create|write`); this view only
@@ -9,10 +9,11 @@
  */
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MoreHorizontal, Plus } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import { ApiError } from '../../api/client'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { Button } from '../../components/ui/Button'
+import { FloatingActionButton } from '../../components/ui/FloatingActionButton'
 import {
   Dialog,
   DialogContent,
@@ -208,12 +209,14 @@ export function UsersWithRolesView() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-          <Button id="user-create-open" onClick={openCreate}>
-            <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
-            {t('users.newUser', 'Nuevo Usuario')}
-          </Button>
         </div>
       </div>
+
+      <FloatingActionButton
+        id="user-create-open"
+        label={t('users.newUser', 'Nuevo Usuario')}
+        onClick={openCreate}
+      />
 
       {loading ? (
         <div className="space-y-2" aria-hidden="true">

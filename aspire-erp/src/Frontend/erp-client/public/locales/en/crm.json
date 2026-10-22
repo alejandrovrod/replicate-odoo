@@ -1,6 +1,6 @@
 {
   "overview": {
-    "title": "CRM & Sales Pipeline (ERPNext Parity)",
+    "title": "CRM & Sales Pipeline",
     "subtitle": "Leads in, qualification, pipeline drag-drop, 1-click sales orders on ClosedWon deals.",
     "openLeads": "Open leads",
     "loadingBoard": "Loading pipeline board…",

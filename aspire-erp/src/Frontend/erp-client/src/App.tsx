@@ -35,6 +35,7 @@ import { ProfileScreen } from './features/profile/ProfileScreen'
 import { SecurityView } from './features/security/SecurityView'
 import { LoginScreen } from './components/auth/LoginScreen'
 import { LandingPage } from './features/landing/LandingPage'
+import { RegisterTenantScreen } from './features/tenants/RegisterTenantScreen'
 import { RequirePermission } from './components/auth/RequirePermission'
 import { TerminologyOverlayProvider } from './lib/terminologyOverlay'
 import { useAuthStore } from './store/useAuthStore'
@@ -100,9 +101,18 @@ function App() {
     if (currentRoute === 'login') {
       return <LoginScreen />
     }
+    if (currentRoute === 'register') {
+      return (
+        <RegisterTenantScreen
+          onBack={() => setCurrentRoute('landing')}
+          onSignIn={() => setCurrentRoute('login')}
+        />
+      )
+    }
     return (
       <LandingPage
         onLoginClick={() => setCurrentRoute('login')}
+        onRegisterClick={() => setCurrentRoute('register')}
         onDirectDemoClick={() => setCurrentRoute('login')}
       />
     )

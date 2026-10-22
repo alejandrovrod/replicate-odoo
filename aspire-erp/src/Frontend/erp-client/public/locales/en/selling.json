@@ -63,9 +63,9 @@
     "columns": {
       "code": "Code",
       "name": "Name",
-      "taxId": "Tax ID",
       "type": "Type",
       "phone": "Phone",
+      "taxId": "Tax ID",
       "creditLimit": "Credit Limit",
       "status": "Status"
     },

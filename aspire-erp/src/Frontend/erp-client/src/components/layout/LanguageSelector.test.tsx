@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { useTranslation } from 'react-i18next'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LanguageSelector } from './LanguageSelector'
-import { LANGUAGE_STORAGE_KEY } from '../../lib/i18n'
+import { LANGUAGE_STORAGE_KEY, MANUAL_LANGUAGE_STORAGE_KEY } from '../../lib/i18n'
 import { loadTestFixtures } from '../../test/i18n-fixtures'
 
 // The production backend loads namespaces over HTTP, which does not exist under Vitest.
@@ -56,5 +56,7 @@ describe('LanguageSelector (spec 00-i18n F-20, automated F-10)', () => {
     // …and the choice survives a reload: this is the key the detector reads on boot and
     // `apiClient` sends as `Accept-Language`.
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('es')
+    // Manual choice also suppresses tenant-default overrides on the next subdomain boot.
+    expect(localStorage.getItem(MANUAL_LANGUAGE_STORAGE_KEY)).toBe('true')
   })
 })

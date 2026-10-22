@@ -274,6 +274,13 @@ public class SupplierGovernanceApiTests : IClassFixture<ErpApiFactory>
             suppliers.ExecuteNonQuery();
         }
 
+        using (var accounts = connection.CreateCommand())
+        {
+            accounts.CommandText = "DELETE FROM dbo.Account WHERE CompanyId = @Id;";
+            accounts.Parameters.AddWithValue("@Id", SecondCompanyId);
+            accounts.ExecuteNonQuery();
+        }
+
         using (var company = connection.CreateCommand())
         {
             company.CommandText = "DELETE FROM dbo.Company WHERE Id = @Id;";

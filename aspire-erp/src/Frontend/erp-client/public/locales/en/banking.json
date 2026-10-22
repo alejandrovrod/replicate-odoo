@@ -4,7 +4,7 @@
     "subtitle": "Bank accounts, transactions, feeds and reconciliation."
   },
   "overview": {
-    "title": "Banking Subsystem (ERPNext Parity)",
+    "title": "Banking Subsystem",
     "subtitle": "Import bank statements, run automated heuristic matching rules, and reconcile transactions with GL vouchers.",
     "importStatement": "Import Statement (CSV/OFX)",
     "runRules": "Run Rules Engine",

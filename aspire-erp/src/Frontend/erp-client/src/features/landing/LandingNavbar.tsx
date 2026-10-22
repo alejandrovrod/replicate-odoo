@@ -1,17 +1,19 @@
 import { useTranslation } from 'react-i18next'
-import { Flame, Globe, ArrowRight, ShieldCheck } from 'lucide-react'
-import { type SupportedLanguage } from '../../lib/i18n'
+import { Flame, Globe, ArrowRight, ShieldCheck, Building2 } from 'lucide-react'
+import { markLanguageAsManuallySelected, type SupportedLanguage } from '../../lib/i18n'
 
 interface LandingNavbarProps {
   onLoginClick: () => void
+  onRegisterClick: () => void
 }
 
-export function LandingNavbar({ onLoginClick }: LandingNavbarProps) {
+export function LandingNavbar({ onLoginClick, onRegisterClick }: LandingNavbarProps) {
   const { t, i18n } = useTranslation('landing')
 
   const toggleLanguage = () => {
     const nextLang: SupportedLanguage = i18n.language.startsWith('es') ? 'en' : 'es'
-    i18n.changeLanguage(nextLang)
+    markLanguageAsManuallySelected()
+    void i18n.changeLanguage(nextLang)
   }
 
   return (
@@ -33,10 +35,10 @@ export function LandingNavbar({ onLoginClick }: LandingNavbarProps) {
         {/* Center Nav Links in Shadcn Style */}
         <nav className="hidden items-center gap-1 md:flex">
           <a
-            href="#chameleon"
+            href="#industries"
             className="rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
           >
-            {t('nav.chameleon')}
+            {t('nav.industries')}
           </a>
           <a
             href="#modules"
@@ -45,10 +47,10 @@ export function LandingNavbar({ onLoginClick }: LandingNavbarProps) {
             {t('nav.modules')}
           </a>
           <a
-            href="#architecture"
+            href="#benefits"
             className="rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
           >
-            {t('nav.architecture')}
+            {t('nav.benefits')}
           </a>
         </nav>
 
@@ -62,6 +64,15 @@ export function LandingNavbar({ onLoginClick }: LandingNavbarProps) {
           >
             <Globe className="h-3 w-3 text-slate-400" />
             <span>{i18n.language.startsWith('es') ? 'ES' : 'EN'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onRegisterClick}
+            className="hidden h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition sm:inline-flex"
+          >
+            <Building2 className="h-3.5 w-3.5 text-slate-500" />
+            <span>{t('nav.register')}</span>
           </button>
 
           <button

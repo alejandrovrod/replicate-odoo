@@ -1,6 +1,7 @@
 import { Suspense, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/Button'
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton'
 import { Input } from '../../../components/ui/Input'
 import { Pagination } from '../../../components/ui/Pagination'
 import { ApiError } from '../../../api/client'
@@ -139,17 +140,18 @@ export function PeriodClosingList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            {t('periodClosing.title')}
-          </h1>
-          <p className="text-sm text-slate-500">{t('periodClosing.subtitle')}</p>
-        </div>
-        <Button onClick={() => setIsModalOpen(true)} disabled={!companyId}>
-          {t('periodClosing.newBtn')}
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          {t('periodClosing.title')}
+        </h1>
+        <p className="text-sm text-slate-500">{t('periodClosing.subtitle')}</p>
       </div>
+
+      <FloatingActionButton
+        label={t('periodClosing.newBtn')}
+        onClick={() => setIsModalOpen(true)}
+        disabled={!companyId}
+      />
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">

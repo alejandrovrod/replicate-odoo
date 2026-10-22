@@ -51,6 +51,7 @@ using Erp.Application.Features.Extensibility.Commands;
 using Erp.Application.Features.Extensibility.Queries;
 using Erp.Application.Features.Tax.Commands;
 using Erp.Application.Features.Tax.Queries;
+using Erp.Application.Features.Tenants;
 using Erp.Application.Services;
 using Erp.Domain.Common;
 using Erp.Domain.Repositories;
@@ -96,6 +97,14 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserRoles, HttpCurrentUserRoles>();
+
+// Host-based tenant resolution cache (subdomain -> tenant id). Public registration invalidates
+// the entry so a new tenant becomes resolvable without waiting for the TTL.
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ITenantOnboardingRepository, TenantOnboardingRepository>();
+builder.Services.AddScoped<IQueryHandler<CheckSubdomainAvailabilityQuery, bool>, CheckSubdomainAvailabilityQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetTenantBySubdomainQuery, Result<TenantLookupDto>>, GetTenantBySubdomainQueryHandler>();
+builder.Services.AddScoped<ICommandHandler<RegisterTenantCommand, Result<TenantRegistrationResult>>, RegisterTenantCommandHandler>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("erp-db")
@@ -597,7 +606,41 @@ if (app.Environment.IsDevelopment())
                     RoleId = sysManagerRole.Id 
                 });
             }
-            await tenantContext.SaveChangesAsync();
+            // Parallel hosts may race the same demo user. The unique tenant+email index proves
+            // another boot won, so detach the losing rows instead of failing startup. Deadlocks
+            // are transient and get a bounded retry.
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    await tenantContext.SaveChangesAsync();
+                    break;
+                }
+                catch (DbUpdateException ex) when (
+                    ex.InnerException is Microsoft.Data.SqlClient.SqlException
+                    {
+                        Number: 2601 or 2627,
+                    })
+                {
+                    foreach (var entry in tenantContext.ChangeTracker.Entries()
+                        .Where(e => e.State == EntityState.Added)
+                        .ToList())
+                    {
+                        entry.State = EntityState.Detached;
+                    }
+
+                    break;
+                }
+                catch (DbUpdateException ex) when (
+                    ex.InnerException is Microsoft.Data.SqlClient.SqlException
+                    {
+                        Number: 1205,
+                    }
+                    && attempt < 3)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt));
+                }
+            }
         }
     }
 }

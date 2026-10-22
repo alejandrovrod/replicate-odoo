@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   KeyRound,
   LogOut,
-  Search,
   ShieldCheck,
   User,
   UserCog,
@@ -26,6 +25,7 @@ import { LanguageSelector } from './LanguageSelector'
 const ROUTE_NAV: Record<NavRoute, { title: EnCommonKeys; category: EnCommonKeys }> = {
   landing: { title: 'nav.fallbackTitle', category: 'nav.fallbackCategory' },
   login: { title: 'nav.fallbackTitle', category: 'nav.fallbackCategory' },
+  register: { title: 'nav.fallbackTitle', category: 'nav.fallbackCategory' },
   dashboard: { title: 'nav.route.dashboard', category: 'nav.category.dashboard' },
   profile: { title: 'profile.title', category: 'nav.fallbackCategory' },
   'dashboard-reports': { title: 'nav.item.dashboardReports', category: 'nav.category.dashboard' },
@@ -106,14 +106,7 @@ export function Header() {
 
       {/* Right Controls */}
       <div className="flex items-center gap-4">
-        {/* Search Input Visual */}
-        <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-400 md:flex">
-          <Search className="h-3.5 w-3.5 text-slate-400" />
-          <span>{t('header.searchPlaceholder')}</span>
-          <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
-            Ctrl+K
-          </kbd>
-        </div>
+
 
         {/* Tenant & Company Pill */}
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600">

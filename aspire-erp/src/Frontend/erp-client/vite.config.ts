@@ -14,6 +14,9 @@ export default defineConfig({
       '/api': {
         target: 'https://localhost:7244',
         changeOrigin: true,
+        // Keep the original host visible to the API as X-Forwarded-Host, so
+        // `acme.localhost:5173` resolves as a tenant subdomain in local development.
+        xfwd: true,
         secure: false,
       },
     },

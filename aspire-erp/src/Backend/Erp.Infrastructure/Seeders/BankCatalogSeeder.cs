@@ -66,18 +66,34 @@ public static class BankCatalogSeeder
         // Converge on concurrent boots (ReceivableAccountSeeder precedent): parallel hosts may
         // all pass the existence check above for the same tenant; a 2601/2627 proves another
         // boot won and is not fatal - anything else rethrows loudly.
-        try
+        const int maxAttempts = 3;
+
+        for (var attempt = 1; ; attempt++)
         {
-            await context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
-        {
-            foreach (var entry in context.ChangeTracker.Entries<Bank>())
+            try
             {
-                entry.State = EntityState.Detached;
+                await context.SaveChangesAsync(cancellationToken);
+                return;
+            }
+            catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+            {
+                foreach (var entry in context.ChangeTracker.Entries<Bank>())
+                {
+                    entry.State = EntityState.Detached;
+                }
+
+                return;
+            }
+            catch (DbUpdateException ex) when (IsDeadlock(ex) && attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt), cancellationToken);
             }
         }
     }
+
+    private static bool IsDeadlock(DbUpdateException ex) =>
+        ex.InnerException is Microsoft.Data.SqlClient.SqlException sql
+            && sql.Number == 1205;
 
     private static bool IsUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is Microsoft.Data.SqlClient.SqlException sql

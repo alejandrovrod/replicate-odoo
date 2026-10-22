@@ -4,7 +4,7 @@
     "subtitle": "Cuentas bancarias, movimientos, conexiones y conciliación."
   },
   "overview": {
-    "title": "Subsistema bancario (paridad con ERPNext)",
+    "title": "Subsistema Bancario",
     "subtitle": "Importá extractos bancarios, ejecutá reglas heurísticas automáticas y conciliá movimientos con comprobantes contables.",
     "importStatement": "Importar extracto (CSV/OFX)",
     "runRules": "Ejecutar motor de reglas",

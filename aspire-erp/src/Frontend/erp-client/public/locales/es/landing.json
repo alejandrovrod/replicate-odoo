@@ -1,65 +1,62 @@
 {
   "nav": {
     "modules": "Módulos",
-    "chameleon": "Arquitectura Camaleónica",
-    "architecture": "Stack de Ingeniería",
+    "industries": "Industrias",
+    "benefits": "Por qué Aspire",
     "signIn": "Iniciar Sesión",
-    "demo": "Probar Demo"
+    "register": "Crear Espacio de Trabajo",
+    "demo": "Solicitar Demostración"
   },
   "hero": {
-    "badge": "Arquitectura Limpia .NET 10 + SQL Server 2025",
-    "titlePrefix": "El ERP Empresarial de",
-    "titleHighlight": "Nueva Generación",
-    "titleSuffix": "diseñado para escalar",
-    "description": "Potenciado por .NET 10 Aspire, inmutabilidad contable con DoubleEntryGuard, valuación perpetua FIFO y Arquitectura Camaleónica con paridad total ERPNext.",
-    "ctaExplore": "Explorar Plataforma",
-    "ctaDemo": "Probar Demo Directa",
-    "runtimeBadge": "ASPIRE ERP // MOTOR EMPRESARIAL",
-    "headlineMain": "El sistema operativo empresarial",
-    "headlineSub": "para organizaciones que no aceptan atajos.",
-    "specDoubleEntry": "DoubleEntryGuard",
-    "specFifo": "FIFO Perpetuo",
-    "specSql": "SQL Server 2025",
-    "feature1Title": "Arquitectura Camaleónica",
-    "feature1Desc": "Muta dinámicamente el vocabulario y flujos contables para Salud, Automotriz, Construcción o Distribución.",
-    "feature2Title": "Paridad ERPNext Direct Stock",
-    "feature2Desc": "Facturación directa con rebaja de stock, anticipos cruzados y control estricto de retenciones fiscales.",
-    "feature3Title": "Inmutabilidad Ledger Doble Partida",
-    "feature3Desc": "El DoubleEntryGuard garantiza en el backend que ningún asiento descuadre el balance general.",
-    "feature4Title": "Alto Rendimiento CQRS < 15ms",
-    "feature4Desc": "Consultas desacopladas de comandos para responder instantáneamente en entornos de alta concurrencia.",
-    "cockpitTitle": "aspire-erp // vista.general.libro-mayor",
+    "badge": "Gestión Integral Cloud · Control Total de tu Empresa",
+    "headlineMain": "El ERP que impulsa la rentabilidad",
+    "headlineSub": "y el crecimiento de tu negocio.",
+    "description": "Unifica contabilidad, inventarios, compras, ventas y nómina en una sola plataforma ágil, segura y diseñada para evolucionar con tu organización.",
+    "ctaStart": "Empezar Ahora",
+    "ctaDemo": "Solicitar Demostración",
+    "proofAccuracy": "100% Precisión Fiscal y Financiera",
+    "proofReporting": "Informes y Balances al Instante",
+    "proofTraceability": "Trazabilidad Total de Inventarios",
+    "feature1Title": "Rentabilidad bajo control",
+    "feature1Desc": "Margen real por producto, cliente y canal, sin planillas paralelas.",
+    "feature2Title": "Menos riesgo operativo",
+    "feature2Desc": "Controles automáticos y auditoría completa en cada transacción.",
+    "feature3Title": "Equipos más productivos",
+    "feature3Desc": "Procesos conectados de punta a punta, sin doble carga de datos.",
+    "feature4Title": "Crecimiento sin límites",
+    "feature4Desc": "Una plataforma cloud que escala con tu empresa, sin migraciones disruptivas.",
+    "cockpitTitle": "Aspire ERP // Panel de Control Financiero",
     "cockpitStatus": "EN LÍNEA",
-    "metric1Sub": "0 discrepancias",
-    "metric2Sub": "Tiempo consulta P99",
-    "metric3Sub": "Intercambiable en caliente",
-    "metric4Sub": "Sincronizado con Landed Cost",
     "metric1Value": "100%",
-    "metric1Label": "Inmutabilidad Contable",
-    "metric2Value": "< 15ms",
-    "metric2Label": "Latencia en Consultas CQRS",
-    "metric3Value": "4 en 1",
-    "metric3Label": "Industrias Camaleónicas",
-    "metric4Value": "FIFO",
-    "metric4Label": "Valuación Perpetua Estricta"
+    "metric1Label": "Precisión Fiscal y Financiera",
+    "metric1Sub": "Cierre auditable, cero discrepancias",
+    "metric2Value": "Tiempo real",
+    "metric2Label": "Informes y Balances al Instante",
+    "metric2Sub": "Datos siempre actualizados",
+    "metric3Value": "360°",
+    "metric3Label": "Trazabilidad Total de Inventarios",
+    "metric3Sub": "Costos y márgenes en vivo",
+    "metric4Value": "4",
+    "metric4Label": "Flujos por Industria",
+    "metric4Sub": "Salud, Automotriz, Construcción y Distribución"
   },
   "chameleon": {
-    "dividerLabel": "ARQUITECTURA CAMALEÓNICA // ADAPTACIÓN EN VIVO",
-    "badge": "Adaptabilidad Dinámica",
-    "title": "Arquitectura Camaleónica",
-    "subtitle": "Un único motor central que muta su vocabulario, entidades y flujos según la industria de tu empresa.",
+    "dividerLabel": "ADAPTADO A TU INDUSTRIA // OPERACIÓN REAL",
+    "badge": "Diseñado para tu sector",
+    "title": "Tu operación, con el lenguaje de tu industria",
+    "subtitle": "Aspire ERP se adapta a tus procesos, documentos y roles, sin desarrollos a medida.",
     "colClient": "Cliente",
     "colOrder": "Pedido",
     "colDelivery": "Entrega",
     "colInvoice": "Facturación",
-    "auditTrailTitle": "FLUJO DE LIBRO MAYOR // PISTA DE AUDITORÍA",
-    "presetActiveBadge": "PRESET ACTIVO",
+    "auditTrailTitle": "PANEL DE OPERACIONES // TRAZABILIDAD COMPLETA",
+    "presetActiveBadge": "ACTIVO",
     "thDoc": "DOC",
     "thEntity": "ENTIDAD",
     "thType": "TIPO",
-    "thDebitCredit": "DEBE / HABER",
-    "guaranteeTitle": "DoubleEntryGuard Activo",
-    "guaranteeDesc": "Los cambios de vocabulario se sincronizan con las definiciones i18n y la metadata del tenant sin requerir recompilar el backend ni alterar las restricciones de clave foránea.",
+    "thDebitCredit": "IMPORTE",
+    "guaranteeTitle": "Continuidad y control",
+    "guaranteeDesc": "La adaptación por industria preserva la integridad de los datos y la trazabilidad de cada operación.",
     "tabs": {
       "healthcare": "Salud / Clínica",
       "automotive": "Taller Automotriz",
@@ -68,118 +65,188 @@
     },
     "healthcare": {
       "name": "Clínica & Salud",
-      "description": "El ERP adopta terminología médica, órdenes de internación, médicos tratantes y control riguroso de recetas e insumos.",
+      "description": "Pensado para clínicas y hospitales: admisión de pacientes, facturación médica y control riguroso de medicamentos e insumos.",
       "customerTerm": "Pacientes",
       "orderTerm": "Órdenes de Admisión",
       "deliveryTerm": "Dispensación de Insumos",
       "invoiceTerm": "Liquidación Médica",
       "feature1": "Trazabilidad por lote y vencimiento de medicamentos",
       "feature2": "Gestión de camas y quirófanos integrada a facturación",
-      "feature3": "Doble retención fiscal para servicios de salud"
+      "feature3": "Cumplimiento fiscal para servicios de salud"
     },
     "automotive": {
       "name": "Taller & Servicio Automotriz",
-      "description": "Transformación orientada a vehículos, números de chasis (VIN), mecánicos asignados y cotizaciones de repuestos.",
+      "description": "Diseñado para vehículos, números de chasis (VIN), técnicos asignados y cotizaciones de repuestos.",
       "customerTerm": "Propietarios",
       "orderTerm": "Órdenes de Servicio (OT)",
       "deliveryTerm": "Salida de Repuestos",
       "invoiceTerm": "Factura por Mano de Obra",
       "feature1": "Identificación de unidades por VIN y odómetro",
       "feature2": "Prorrateo de mano de obra y consumibles por orden",
-      "feature3": "Historial clínico-mecánico de la unidad"
+      "feature3": "Historial de servicio completo de cada unidad"
     },
     "construction": {
       "name": "Construcción & Obras",
-      "description": "Gestión basada en proyectos, frentes de obra, cubicaciones, subcontratistas y certificados de avance.",
+      "description": "Gestión por proyectos, frentes de obra, certificados de avance, subcontratistas y control de costos.",
       "customerTerm": "Contratistas / Clientes",
       "orderTerm": "Partes Diarios de Obra",
       "deliveryTerm": "Remisiones de Material",
       "invoiceTerm": "Certificados de Avance",
-      "feature1": "Control presupuestario de materiales vs ejecutado",
-      "feature2": "Maquinaria pesada como centro de costos y activo",
-      "feature3": "Acopios de materiales y pólizas de retención"
+      "feature1": "Control presupuestario de materiales y mano de obra",
+      "feature2": "Maquinaria pesada como activo y centro de costos",
+      "feature3": "Acopios de materiales y gestión de retenciones"
     },
     "distribution": {
       "name": "Distribución & Logística",
-      "description": "Enfocado en alta rotación de inventario, múltiples depósitos, costos de importación y facturación masiva.",
+      "description": "Preparado para alta rotación de inventario, múltiples depósitos, costos de importación y facturación por volumen.",
       "customerTerm": "Puntos de Venta (POS)",
       "orderTerm": "Pedidos de Surtido",
       "deliveryTerm": "Guías de Remisión",
       "invoiceTerm": "Facturas con Descuentos Escalonados",
-      "feature1": "Landed Cost Vouchers para prorrateo de fletes e impuestos",
+      "feature1": "Prorrateo de fletes y costos de importación",
       "feature2": "Códigos de barra y picking por zonas de almacén",
-      "feature3": "Costeo FIFO perpetuo con recálculo automático"
+      "feature3": "Visibilidad de costos y márgenes en tiempo real"
     }
   },
   "modules": {
-    "sectionHeader": "CAPACIDADES EMPRESARIALES // PARIDAD COMPROBADA",
-    "badge": "Capacidades Enterprise",
-    "title": "Módulos diseñados con Paridad ERPNext",
-    "subtitle": "Cada funcionalidad ha sido concebida para cumplir con las normas contables y operativas más rigurosas.",
-    "viewDetail": "Ver detalle",
+    "sectionHeader": "MÓDULOS DE NEGOCIO // UNA SOLA PLATAFORMA",
+    "badge": "Capacidades Empresariales",
+    "title": "Todo lo que tu operación necesita, conectado",
+    "subtitle": "Reemplazá herramientas desconectadas por una plataforma que da a cada equipo la misma fuente de verdad.",
+    "viewDetail": "Explorar módulo",
     "accounting": {
-      "title": "Contabilidad & Tesorería Inmutable",
-      "description": "Plan de cuentas jerárquico multinivel, balance de sumas y saldos, conciliación bancaria y DoubleEntryGuard que garantiza suma cero estricta."
+      "tag": "Finanzas",
+      "badge": "Siempre conciliado",
+      "title": "Contabilidad y Tesorería",
+      "description": "Libro mayor, estados financieros, conciliación bancaria y control de caja en una sola vista en tiempo real."
     },
     "selling": {
-      "title": "Ventas & Facturación (Direct Stock)",
-      "description": "Emisión de facturas con rebaja directa de inventario (Update Stock), notas de crédito, gestión de anticipos y soporte multidivisa."
+      "tag": "Comercial",
+      "badge": "Cobro integrado",
+      "title": "Ventas y Facturación",
+      "description": "Cotizaciones, facturas, notas de crédito y cobranzas conectadas directamente al inventario."
     },
     "stock": {
-      "title": "Inventario Perpetuo & Landed Cost",
-      "description": "Valuación FIFO de stock, números de serie y lotes, almacenes jerárquicos y prorrateo de costos de importación mediante vouchers dedicados."
+      "tag": "Inventario",
+      "badge": "Trazabilidad total",
+      "title": "Inventario y Costos",
+      "description": "Control por almacén, lote y serie, con costos actualizados y trazabilidad completa."
     },
     "manufacturing": {
-      "title": "Manufactura & Listas de Materiales",
-      "description": "Estructuras multinivel (BOM), estaciones de trabajo, órdenes de producción y costeo real de horas hombre y energía."
+      "tag": "Producción",
+      "badge": "Costos reales",
+      "title": "Manufactura y Producción",
+      "description": "Planificación de producción, listas de materiales y costo real por orden."
     },
     "assets": {
-      "title": "Activos Fijos & Depreciación",
-      "description": "Cálculo de depreciación lineal mensual automatizada, custodia de activos, bajas contables y revalúos técnicos."
+      "tag": "Activos",
+      "badge": "Ciclo completo",
+      "title": "Activos Fijos",
+      "description": "Alta de activos, depreciación automática y control de todo el ciclo de vida."
     },
     "security": {
-      "title": "Seguridad Granular & Multi-Tenant",
-      "description": "Aislamiento por esquema de base de datos o columna TenantID, roles granulares por DocType y doble factor de autenticación (2FA / TOTP)."
+      "tag": "Gobierno",
+      "badge": "Acceso por rol",
+      "title": "Seguridad y Control",
+      "description": "Roles, permisos granulares, doble factor de autenticación y registro trazable de cada acción."
     }
   },
-  "techStack": {
-    "sectionHeader": "STACK DE INGENIERÍA // PUREZA ARQUITECTÓNICA",
-    "badge": "Ingeniería de Primer Nivel",
-    "title": "Tecnología Moderna sin Atajos",
-    "subtitle": "Desarrollado bajo los patrones arquitectónicos más sólidos del ecosistema .NET y Web moderno.",
-    "quoteText": "Construir un ERP de clase mundial requiere disciplina: no usar frameworks inflados, aislar la lógica contable en entidades inmutables y validar matemáticamente cada transacción.",
-    "quoteLabel": "ARQUITECTURA DE DOMINIO // NÚCLEO ASPIRE ERP",
-    "dotnet": {
-      "tag": "C# 13 // ASP.NET Core",
-      "title": ".NET 10 & Aspire Cloud-Native",
-      "desc": "Orquestación de servicios en la nube con métricas OpenTelemetry y arquitectura limpia desacoplada."
+  "enterpriseBenefits": {
+    "sectionHeader": "BENEFICIOS EMPRESARIALES // RESULTADOS MEDIBLES",
+    "badge": "Por qué Aspire",
+    "title": "Resultados que se ven en tu operación",
+    "subtitle": "Una plataforma diseñada para reducir costos, acelerar decisiones y dar control total a tu equipo.",
+    "quoteText": "La tecnología solo importa cuando se traduce en mejores decisiones, menor riesgo y crecimiento sostenible.",
+    "quoteLabel": "ASPIRE ERP // IMPACTO EN EL NEGOCIO",
+    "financial": {
+      "tag": "Confianza financiera",
+      "title": "Confianza Financiera",
+      "desc": "Balances conciliados automáticamente y control riguroso de cuentas por cobrar y pagar."
     },
-    "sql": {
-      "tag": "SQL Server 2025",
-      "title": "Tablas Temporales Versionadas",
-      "desc": "Auditoría inmutable a nivel de motor relacional con SYSTEM_VERSIONING y concurrencia RowVersion."
+    "inventory": {
+      "tag": "Eficiencia de inventario",
+      "title": "Optimización de Inventario",
+      "desc": "Reducción de costos de almacenamiento, costeo exacto de importaciones y cero pérdidas."
     },
-    "cqrs": {
-      "tag": "MediatR // Eventos de Dominio",
-      "title": "Segregación CQRS Estricta",
-      "desc": "Comandos y consultas separados para garantizar respuesta instantánea y trazabilidad contable."
+    "automation": {
+      "tag": "Agilidad operativa",
+      "title": "Automatización Operativa",
+      "desc": "Flujos integrados desde la cotización hasta la cobranza, sin duplicación de tareas."
     },
-    "frontend": {
-      "tag": "React 19 // Vite",
-      "title": "Frontend Tipado con TypeScript",
-      "desc": "Zustand para gestión reactiva de estado, Radix UI para accesibilidad y Tailwind CSS modular."
+    "security": {
+      "tag": "Gobierno",
+      "title": "Seguridad y Cumplimiento",
+      "desc": "Control de accesos por rol, pistas de auditoría inviolables y protección de datos empresariales."
     }
   },
   "cta": {
-    "envBadge": "ENTORNO DE PRODUCCIÓN ASPIRE",
-    "title": "¿Listo para experimentar el poder de Aspire ERP?",
-    "subtitle": "Ingresa al entorno de demostración con todas las funciones habilitadas y experimenta la fluidez del sistema.",
-    "button": "Comenzar Demostración",
-    "login": "Acceso para Usuarios Registrados"
+    "envBadge": "PLATAFORMA CLOUD PARA EMPRESAS QUE CRECEN",
+    "title": "¿Listo para tomar el control de tu operación?",
+    "subtitle": "Descubrí cómo Aspire ERP puede ordenar tus procesos, reducir costos y darte visibilidad total.",
+    "button": "Solicitar Demostración",
+    "register": "Crear Espacio de Trabajo",
+    "login": "Iniciar Sesión"
   },
   "footer": {
-    "tagline": "El sistema ERP de clase mundial diseñado para la empresa moderna.",
-    "rights": "Todos los derechos reservados. Desarrollado con .NET 10 y React 19.",
+    "tagline": "El ERP que convierte tu operación en crecimiento.",
+    "rights": "Todos los derechos reservados.",
     "backToTop": "Volver arriba"
+  },
+  "register": {
+    "back": "Volver al inicio",
+    "badge": "Comenzá tu espacio de trabajo",
+    "title": "Lanzá el espacio de trabajo de tu empresa.",
+    "subtitle": "Elegí tu subdominio y configuramos tu empresa, plan de cuentas, roles de seguridad y cuenta de administrador en un solo paso.",
+    "formTitle": "Creá tu espacio de trabajo",
+    "formSubtitle": "Podés invitar a tu equipo después de ingresar.",
+    "benefits": {
+      "workspace": "Un espacio de trabajo dedicado en tu propio subdominio.",
+      "coa": "Un plan de cuentas listo para ventas, compras, inventario y nómina.",
+      "security": "Seis perfiles de acceso por rol más tu cuenta inicial de administrador."
+    },
+    "fields": {
+      "tenantName": "Nombre del espacio",
+      "companyName": "Nombre de la empresa",
+      "defaultLanguage": "Idioma del espacio de trabajo",
+      "subdomain": "Subdominio del espacio",
+      "adminName": "Tu nombre completo",
+      "taxId": "CUIT / Tax ID de la empresa (opcional)",
+      "adminEmail": "Correo laboral",
+      "password": "Contraseña"
+    },
+    "placeholders": {
+      "tenantName": "Acme Corporation",
+      "companyName": "Acme HQ",
+      "subdomain": "acme",
+      "adminName": "Ada Lovelace",
+      "taxId": "TAX-123456",
+      "adminEmail": "vos@empresa.com",
+      "password": "Al menos 12 caracteres"
+    },
+    "subdomain": {
+      "hint": "Entre 3 y 32 letras minúsculas, dígitos o guiones. Debe comenzar y terminar con una letra o dígito.",
+      "checking": "Verificando disponibilidad...",
+      "available": "Este subdominio está disponible.",
+      "taken": "Este subdominio ya está en uso.",
+      "reserved": "Este subdominio está reservado por la plataforma.",
+      "error": "No pudimos verificar la disponibilidad. Intentá de nuevo en un momento."
+    },
+    "languageHint": "Crearemos tu plan de cuentas, roles y catálogos iniciales en este idioma, y tu espacio se abrirá en él.",
+    "passwordHint": "Usá al menos 12 caracteres con mayúscula, minúscula y un dígito.",
+    "submit": "Crear espacio de trabajo",
+    "submitting": "Configurando tu espacio...",
+    "alreadyHaveAccount": "¿Ya tenés una cuenta?",
+    "signIn": "Ingresar",
+    "success": {
+      "title": "Tu espacio de trabajo está listo.",
+      "body": "{{tenant}} quedó listo con su empresa, plan de cuentas, roles de seguridad y administrador.",
+      "workspace": "URL del espacio",
+      "signInAs": "Ingresá como {{email}}",
+      "signIn": "Continuar al ingreso",
+      "back": "Volver al inicio"
+    },
+    "errors": {
+      "generic": "No pudimos crear tu espacio de trabajo. Revisá tu conexión e intentá de nuevo."
+    }
   }
 }

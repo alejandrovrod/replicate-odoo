@@ -11,6 +11,7 @@ import { flattenWarehouses, type StockEntryPosting, type StockEntryType } from '
 import { useItems, useStockEntries, useWarehouses, useFlatWarehouses } from './useStockData'
 import { useNavigationStore } from '../../store/useNavigationStore'
 import { Button } from '../../components/ui/Button'
+import { FloatingActionButton } from '../../components/ui/FloatingActionButton'
 
 const ENTRY_TYPE_BADGE: Record<StockEntryType, string> = {
   MaterialReceipt: 'bg-emerald-100 text-emerald-700',
@@ -133,21 +134,15 @@ export function StockOverview() {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900">{t('overview.title')}</h2>
-          <p className="text-xs text-slate-500">{t('overview.subtitle')}</p>
-        </div>
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => openModal(null)}
-          className="flex items-center gap-1.5"
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          {t('overview.newEntry')}
-        </Button>
+      <div>
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">{t('overview.title')}</h2>
+        <p className="text-xs text-slate-500">{t('overview.subtitle')}</p>
       </div>
+
+      <FloatingActionButton
+        label={t('overview.newEntry')}
+        onClick={() => openModal(null)}
+      />
 
       {/* Post confirmation: proves the double-entry balance and that the reload happened */}
       {lastPosted ? (

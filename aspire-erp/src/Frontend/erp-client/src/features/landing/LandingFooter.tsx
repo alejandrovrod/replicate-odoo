@@ -9,7 +9,7 @@ export function LandingFooter() {
   }
 
   return (
-    <footer className="border-t border-slate-200 bg-white py-12">
+    <footer className="border-t border-amber-200/50 py-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
           <div className="flex items-center gap-2.5">
@@ -25,7 +25,7 @@ export function LandingFooter() {
           </div>
 
           <p className="text-xs font-mono text-slate-500">
-            &copy; {new Date().getFullYear()} Aspire ERP. Built with .NET 10 &amp; React 19. All rights reserved.
+            &copy; {new Date().getFullYear()} Aspire ERP. {t('footer.rights')}
           </p>
 
           <button

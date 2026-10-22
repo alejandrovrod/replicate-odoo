@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useExchangeRates } from '../api/useExchangeRates';
 import { ExchangeRateFormModal } from './ExchangeRateFormModal';
-import { Button } from '../../../components/ui/Button';
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table';
 import { useTenantStore } from '../../../store/useTenantStore';
 import { useCurrencies } from '../api/useCurrencies';
@@ -19,10 +19,14 @@ export const ExchangeRateList: React.FC = () => {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div>
                 <h2 className="text-xl font-bold">{t('exchangeRate.title')}</h2>
-                <Button onClick={() => setIsModalOpen(true)}>{t('exchangeRate.addBtn')}</Button>
             </div>
+
+            <FloatingActionButton
+                label={t('exchangeRate.addBtn')}
+                onClick={() => setIsModalOpen(true)}
+            />
             
             <div className="bg-white rounded-lg shadow">
                 <Table>

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Pagination } from '../../../components/ui/Pagination'
-import { Button } from '../../../components/ui/Button'
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton'
 import type { DeliveryNote } from '../api/useDeliveryNotes'
 
 interface DeliveryNoteListProps {
@@ -17,15 +17,12 @@ export function DeliveryNoteList({ notes, totalCount, page, pageSize, onPageChan
   const { t } = useTranslation('selling')
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">{t('deliveries.title', 'Delivery Notes')}</h3>
-          <p className="text-xs text-slate-500">{t('deliveries.subtitle')}</p>
-        </div>
-        <Button size="sm" onClick={onNew}>
-          {t('deliveries.new', 'New Delivery')}
-        </Button>
+      <div>
+        <h3 className="text-base font-semibold text-slate-900">{t('deliveries.title', 'Delivery Notes')}</h3>
+        <p className="text-xs text-slate-500">{t('deliveries.subtitle')}</p>
       </div>
+
+      <FloatingActionButton label={t('deliveries.new', 'New Delivery')} onClick={onNew} />
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs">
         <Table>

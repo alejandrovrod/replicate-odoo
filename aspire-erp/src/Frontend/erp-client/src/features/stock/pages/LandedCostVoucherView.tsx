@@ -6,6 +6,7 @@ import { useTenantStore } from '../../../store/useTenantStore'
 import { usePagination } from '../../../lib/pagination'
 import { Pagination } from '../../../components/ui/Pagination'
 import { Button } from '../../../components/ui/Button'
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { translateDocStatus } from '../../../lib/docStatus'
 import { LandedCostVoucherModal } from '../components/LandedCostVoucherModal'
@@ -84,17 +85,17 @@ export function LandedCostVoucherView() {
     <div className="p-4 space-y-4">
       {actionError && <div className="text-sm text-red-600">{actionError}</div>}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">
-            {t('landedCost.title', 'Landed Cost Vouchers')}
-          </h3>
-          <p className="text-xs text-slate-500">{t('landedCost.subtitle')}</p>
-        </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
-          {t('landedCost.new', 'New Voucher')}
-        </Button>
+      <div>
+        <h3 className="text-base font-semibold text-slate-900">
+          {t('landedCost.title', 'Landed Cost Vouchers')}
+        </h3>
+        <p className="text-xs text-slate-500">{t('landedCost.subtitle')}</p>
       </div>
+
+      <FloatingActionButton
+        label={t('landedCost.new', 'New Voucher')}
+        onClick={() => setIsModalOpen(true)}
+      />
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-xs">
         <Table>

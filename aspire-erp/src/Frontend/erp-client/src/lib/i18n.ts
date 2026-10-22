@@ -15,6 +15,13 @@ import { initReactI18next } from 'react-i18next'
  */
 export const LANGUAGE_STORAGE_KEY = 'aspire-erp-lang'
 
+/**
+ * Marker written only when the user explicitly picks a language. Tenant subdomain boot applies
+ * the workspace default unless this marker exists, so the detector's automatic cache write does
+ * not count as a manual preference.
+ */
+export const MANUAL_LANGUAGE_STORAGE_KEY = 'aspire-erp-lang-manual'
+
 export const SUPPORTED_LANGUAGES = ['en', 'es'] as const
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
 
@@ -45,6 +52,18 @@ export function normalizeLanguage(lng: string | null | undefined): SupportedLang
   return (SUPPORTED_LANGUAGES as readonly string[]).includes(base)
     ? (base as SupportedLanguage)
     : DEFAULT_LANGUAGE
+}
+
+/** Records that the user explicitly chose a language, so tenant defaults never override it. */
+export function markLanguageAsManuallySelected(): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(MANUAL_LANGUAGE_STORAGE_KEY, 'true')
+}
+
+/** True when the user explicitly picked a language in this browser. */
+export function hasManualLanguagePreference(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.localStorage.getItem(MANUAL_LANGUAGE_STORAGE_KEY) === 'true'
 }
 
 void i18n

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useExchangeRateRevaluations, submitRevaluation, cancelRevaluation } from '../api/useExchangeRateRevaluations';
 import { ExchangeRateRevaluationModal } from './ExchangeRateRevaluationModal';
 import { Button } from '../../../components/ui/Button';
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table';
 import { useTenantStore } from '../../../store/useTenantStore';
 import { useTranslation } from 'react-i18next';
@@ -36,10 +37,14 @@ export const ExchangeRateRevaluationsView: React.FC = () => {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div>
                 <h2 className="text-xl font-bold">{t('fxRevaluation.title')}</h2>
-                <Button onClick={() => setIsModalOpen(true)}>{t('fxRevaluation.newBtn')}</Button>
             </div>
+
+            <FloatingActionButton
+                label={t('fxRevaluation.newBtn')}
+                onClick={() => setIsModalOpen(true)}
+            />
             
             {error && <div className="text-red-600 bg-red-50 p-2 rounded">{error}</div>}
 

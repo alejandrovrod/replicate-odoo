@@ -11,7 +11,7 @@ interface Props {
 }
 
 /**
- * 1-click quotation issue for a ClosedWon deal (CRM/ERPNext parity, the pre-order
+ * 1-click quotation issue for a ClosedWon deal (standard enterprise pre-order
  * flow): lines drag automatically from the deal's priced breakdown, validity defaults
  * to 30 days server-side. Amount-only deals reject with `crm_quotation_requires_items`
  * and the error tells the user to price lines in the detail drawer first.

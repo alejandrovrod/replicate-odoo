@@ -317,7 +317,8 @@ public sealed class OpportunityParityTests
         _crm.SeedOpportunity(deal);
 
         var result = await QuotationHandler().HandleAsync(
-            new CreateQuotationFromOpportunityCommand(deal.Id, _companyId));
+            new CreateQuotationFromOpportunityCommand(
+                deal.Id, _companyId, ValidTill: Today.AddDays(30)));
 
         Assert.True(result.IsSuccess);
         var quotation = result.Value!;

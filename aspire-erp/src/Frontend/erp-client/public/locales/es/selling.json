@@ -63,9 +63,9 @@
     "columns": {
       "code": "Código",
       "name": "Nombre",
-      "taxId": "CUIT/RUT",
       "type": "Tipo",
       "phone": "Teléfono",
+      "taxId": "CUIT/RUT",
       "creditLimit": "Límite Crédito",
       "status": "Estado"
     },

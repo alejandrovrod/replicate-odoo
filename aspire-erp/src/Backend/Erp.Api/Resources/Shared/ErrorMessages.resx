@@ -116,6 +116,15 @@
   <data name="account_name_too_long" xml:space="preserve">
     <value>Account name exceeds the maximum length.</value>
   </data>
+  <data name="group_has_children" xml:space="preserve">
+    <value>A group account with children cannot be converted into a posting account.</value>
+  </data>
+  <data name="account_has_transactions" xml:space="preserve">
+    <value>A leaf account with posted entries cannot become a group account.</value>
+  </data>
+  <data name="balance_side_mismatch" xml:space="preserve">
+    <value>The balance was posted on the wrong side for the account type.</value>
+  </data>
   <data name="invalid_root_type" xml:space="preserve">
     <value>Invalid root type for this account.</value>
   </data>
@@ -897,6 +906,27 @@
   <data name="already_reversed" xml:space="preserve">
     <value>The disposal has already been reversed.</value>
   </data>
+  <data name="asset_category_required" xml:space="preserve">
+    <value>An asset category is required for this operation.</value>
+  </data>
+  <data name="asset_category_missing_accounts" xml:space="preserve">
+    <value>The asset category is missing one or more required accounts.</value>
+  </data>
+  <data name="asset_line_rate_mismatch" xml:space="preserve">
+    <value>The line depreciation rate does not match the asset category.</value>
+  </data>
+  <data name="cannot_capitalize_unsubmitted_invoice" xml:space="preserve">
+    <value>Only submitted invoices can be capitalized.</value>
+  </data>
+  <data name="asset_has_depreciation_entries" xml:space="preserve">
+    <value>The asset has depreciation entries and cannot be cancelled.</value>
+  </data>
+  <data name="asset_already_cancelled" xml:space="preserve">
+    <value>The asset is already cancelled.</value>
+  </data>
+  <data name="asset_schedule_already_exists" xml:space="preserve">
+    <value>A depreciation schedule already exists for this asset.</value>
+  </data>
   <data name="exchange_rate_invalid" xml:space="preserve">
     <value>Exchange rate must be greater than zero.</value>
   </data>
@@ -1009,6 +1039,12 @@
   </data>
   <data name="return_amount_exceeded" xml:space="preserve">
     <value>The credit note total cannot exceed the original invoice total.</value>
+  </data>
+  <data name="return_line_invalid" xml:space="preserve">
+    <value>The return line quantity must be greater than zero.</value>
+  </data>
+  <data name="return_cancellation_unsupported" xml:space="preserve">
+    <value>Cancelling a supplier debit note is not supported.</value>
   </data>
   <!-- Sales invoice ERPNext parity: direct stock issue + advance cross. -->
   <data name="update_stock_warehouse_required" xml:space="preserve">
@@ -1127,5 +1163,20 @@
   </data>
   <data name="preset_not_found" xml:space="preserve">
     <value>Industry preset not found.</value>
+  </data>
+  <data name="SUBDOMAIN_INVALID" xml:space="preserve">
+    <value>The subdomain must be 3-32 lowercase letters, digits or hyphens, starting and ending with a letter or digit.</value>
+  </data>
+  <data name="SUBDOMAIN_RESERVED" xml:space="preserve">
+    <value>This subdomain is reserved by the platform.</value>
+  </data>
+  <data name="SUBDOMAIN_TAKEN" xml:space="preserve">
+    <value>This subdomain is already in use by another tenant.</value>
+  </data>
+  <data name="TENANT_NOT_FOUND" xml:space="preserve">
+    <value>Tenant not found for this subdomain.</value>
+  </data>
+  <data name="INVALID_TENANT_DATA" xml:space="preserve">
+    <value>The tenant registration data is invalid. Check the names, email and password.</value>
   </data>
 </root>

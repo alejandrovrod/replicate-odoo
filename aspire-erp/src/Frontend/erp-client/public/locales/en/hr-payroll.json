@@ -4,7 +4,7 @@
     "subtitle": "Employees, departments, salary structures and payroll runs."
   },
   "overview": {
-    "title": "HR & Payroll (ERPNext Parity)",
+    "title": "HR & Payroll",
     "subtitle": "Monthly payroll batches from submission through disbursement, with per-employee pay stubs.",
     "refresh": "Refresh boards",
     "loadingWorkbench": "Loading payroll workbench…",

@@ -46,6 +46,11 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
         {
             _worlds[tenantId] = await ProvisionTenantAsync(tenantId);
         }
+
+        // Warm the host once, sequentially. WebApplicationFactory startup seeds every known
+        // company; firing five CreateClient calls concurrently must not turn that into five
+        // racing seed passes. The isolation assertions below still run concurrently.
+        using var warmup = _factory.CreateClient();
     }
 
     /// <summary>
@@ -316,6 +321,7 @@ public class TenantIsolationAdversarialTests : IClassFixture<ErpApiFactory>, IAs
                 Id = tenantId,
                 Name = $"T8A Tenant {tenantId:N}"[..32],
                 Code = $"T8A-{tenantId:N}"[..16],
+                Subdomain = $"t8a-{tenantId:N}"[..20],
                 CreatedAt = DateTimeOffset.UtcNow,
             });
             context.Companies.Add(new Company

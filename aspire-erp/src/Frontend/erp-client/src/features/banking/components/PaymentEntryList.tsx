@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/Table'
 import { Pagination } from '../../../components/ui/Pagination'
 import { Button } from '../../../components/ui/Button'
+import { FloatingActionButton } from '../../../components/ui/FloatingActionButton'
 import { translateDocStatus } from '../../../lib/docStatus'
 import type { PaymentEntry } from '../api/usePaymentEntries'
 
@@ -56,15 +57,12 @@ export function PaymentEntryList({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">{t('payments.title', 'Payment Entries')}</h3>
-          <p className="text-xs text-slate-500">{t('payments.subtitle')}</p>
-        </div>
-        <Button size="sm" onClick={onNew}>
-          {t('payments.new', 'New Payment')}
-        </Button>
+      <div>
+        <h3 className="text-base font-semibold text-slate-900">{t('payments.title', 'Payment Entries')}</h3>
+        <p className="text-xs text-slate-500">{t('payments.subtitle')}</p>
       </div>
+
+      <FloatingActionButton label={t('payments.new', 'New Payment')} onClick={onNew} />
 
       {filters && onFilterChange ? (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">

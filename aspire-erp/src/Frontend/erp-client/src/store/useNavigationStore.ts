@@ -3,6 +3,7 @@ import { create } from 'zustand'
 export type NavRoute =
   | 'landing'
   | 'login'
+  | 'register'
   | 'dashboard'
   | 'profile'
   | 'dashboard-reports'
@@ -46,6 +47,7 @@ const parseHash = (): NavRoute => {
   const validRoutes: NavRoute[] = [
     'landing',
     'login',
+    'register',
     'dashboard',
     'profile',
     'dashboard-reports',

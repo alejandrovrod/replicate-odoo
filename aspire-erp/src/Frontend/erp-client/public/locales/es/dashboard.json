@@ -80,8 +80,8 @@
     "colValue": "Valor saldo"
   },
   "modules": {
-    "title": "Módulos del sistema y paridad",
-    "badge": "ERPNext Spec Kit Parity",
+    "title": "Módulos y Capacidades del Sistema",
+    "badge": "Enterprise Core",
     "reports": "Reportes financieros",
     "reportsDesc": "Balance general, PyG, comprobación, antigüedad y Kardex. Todo en vivo.",
     "reportsCta": "Abrir reportes →",

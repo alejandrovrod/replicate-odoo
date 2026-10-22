@@ -38,6 +38,7 @@ public class ReceivableAccountSeederTests : IAsyncLifetime
             Id = _tenantId,
             Name = "T8C Tenant",
             Code = $"T8C-{_tenantId:N}"[..16],
+            Subdomain = $"t8c-{_tenantId:N}"[..20],
             CreatedAt = DateTimeOffset.UtcNow,
         });
         context.Companies.Add(new Company

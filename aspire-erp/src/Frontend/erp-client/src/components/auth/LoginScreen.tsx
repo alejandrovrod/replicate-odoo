@@ -112,24 +112,48 @@ export function LoginScreen() {
   const mfaCodeValid = normalizedCode.length >= 6 && normalizedCode.length <= 8
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-100/80 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg shadow-stone-200/50">
-        <div className="flex flex-col space-y-1.5 p-6 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-            {step === 'mfa' ? (
-              <ShieldCheck className="h-6 w-6 text-amber-600" />
-            ) : (
-              <Building2 className="h-6 w-6 text-amber-600" />
-            )}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#faf8f5] px-4 py-12 sm:px-6 lg:px-8">
+      {/* Organic Warm Geometric Shapes (Radix UI Theme Playground Motif) */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Soft yellow-amber geometric backdrop patches */}
+        <div className="absolute -left-24 -top-24 h-[520px] w-[520px] rounded-[140px] bg-[#fbf3db] opacity-70 blur-3xl transform -rotate-12" />
+        <div className="absolute -right-28 top-12 h-[640px] w-[580px] rounded-[180px] bg-[#fbf3db] opacity-80 blur-2xl transform rotate-12" />
+        <div className="absolute bottom-[-100px] left-1/4 h-[420px] w-[620px] rounded-[160px] bg-[#fef9eb] opacity-90 blur-2xl transform rotate-6" />
+
+        {/* Crisp polygonal shapes echoing Radix playground art */}
+        <svg
+          className="absolute inset-0 h-full w-full opacity-40"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+          viewBox="0 0 1200 800"
+        >
+          <polygon points="0,0 280,0 160,520 0,380" fill="#f8eed1" opacity="0.6" />
+          <polygon points="780,0 1200,0 1200,600 920,440" fill="#f8eed1" opacity="0.55" />
+          <polygon points="1200,520 1200,800 840,800" fill="#f5e8be" opacity="0.4" />
+          <polygon points="0,620 320,800 0,800" fill="#f5e8be" opacity="0.45" />
+        </svg>
+      </div>
+
+      {/* Main Sign-In Card */}
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-amber-200/50 bg-white/95 p-8 shadow-xl shadow-amber-900/5 backdrop-blur-sm transition-all sm:p-10">
+        <div className="flex flex-col space-y-1.5 pb-6 text-left">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+              {step === 'mfa' ? t('auth.mfaTitle') : t('auth.signInTitle')}
+            </h2>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+              {step === 'mfa' ? (
+                <ShieldCheck className="h-5 w-5 text-amber-700" />
+              ) : (
+                <Building2 className="h-5 w-5 text-amber-700" />
+              )}
+            </div>
           </div>
-          <h3 className="text-2xl font-semibold leading-none tracking-tight">Aspire ERP</h3>
           <p className="text-sm text-slate-500">
-            {step === 'mfa'
-              ? t('auth.mfaSubtitle', 'Enter the code from your authenticator app')
-              : t('auth.subtitle', 'Sign in to your tenant workspace')}
+            {step === 'mfa' ? t('auth.mfaSubtitle') : t('auth.subtitle')}
           </p>
         </div>
-        <div className="p-6 pt-0">
+        <div>
           {step === 'password' ? (
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
@@ -195,16 +219,28 @@ export function LoginScreen() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('auth.signingIn', 'Signing in...')}
-                  </>
-                ) : (
-                  t('auth.signIn', 'Sign In')
-                )}
-              </Button>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <a
+                  href="#register"
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-100/60"
+                >
+                  {t('auth.createAccount', 'Create an account')}
+                </a>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex items-center justify-center rounded-lg bg-[#ffd600] px-5 py-2 text-sm font-semibold text-slate-900 shadow-sm transition-all hover:bg-[#ffcc00] hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd600] disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-slate-900" />
+                      {t('auth.signingIn', 'Signing in...')}
+                    </>
+                  ) : (
+                    t('auth.signIn', 'Sign in')
+                  )}
+                </button>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleMfaSubmit} className="space-y-4">

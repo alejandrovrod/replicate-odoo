@@ -1,3 +1,4 @@
+using Erp.Domain.Entities;
 using Erp.Domain.Entities.Security;
 using Erp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,11 @@ public static class SecurityRoleSeeder
     public static readonly Guid HrUserRoleId = Guid.Parse("f0000000-0000-4000-8000-000000000005");
     public static readonly Guid ManufacturingUserRoleId = Guid.Parse("f0000000-0000-4000-8000-000000000006");
 
-    private sealed record RoleSeed(Guid Id, string Name, string Description);
+    private sealed record RoleSeed(
+        Guid Id,
+        string Name,
+        string EnglishDescription,
+        string SpanishDescription);
     private sealed record PermSeed(string DocType, bool Read, bool Write, bool Submit, bool Cancel)
     {
         public bool Create => Write;
@@ -40,12 +45,24 @@ public static class SecurityRoleSeeder
 
     private static readonly RoleSeed[] Roles =
     [
-        new(SystemManagerRoleId, "System Manager", "Unrestricted access (authorization bypass)."),
-        new(SalesUserRoleId, "Sales User", "Selling cycle: orders, invoices, customers, items."),
-        new(PurchaseUserRoleId, "Purchase User", "Buying cycle: orders, bills, suppliers, items."),
-        new(AccountingUserRoleId, "Accounting User", "Ledger, payments, banking and reports."),
-        new(HrUserRoleId, "HR User", "People, attendance, payroll."),
-        new(ManufacturingUserRoleId, "Manufacturing User", "BOMs, work orders, stock."),
+        new(SystemManagerRoleId, "System Manager",
+            "Unrestricted access (authorization bypass).",
+            "Acceso total sin restricciones al sistema."),
+        new(SalesUserRoleId, "Sales User",
+            "Selling cycle: orders, invoices, customers, items.",
+            "Ciclo comercial: cotizaciones, pedidos, facturas de venta y clientes."),
+        new(PurchaseUserRoleId, "Purchase User",
+            "Buying cycle: orders, bills, suppliers, items.",
+            "Ciclo de compras: órdenes, facturas de proveedor y catálogo."),
+        new(AccountingUserRoleId, "Accounting User",
+            "Ledger, payments, banking and reports.",
+            "Ciclo contable: libro mayor, pólizas, conciliación y reportes."),
+        new(HrUserRoleId, "HR User",
+            "People, attendance, payroll.",
+            "Gestión de personal: empleados, asistencias y nómina."),
+        new(ManufacturingUserRoleId, "Manufacturing User",
+            "BOMs, work orders, stock.",
+            "Producción: listas de materiales, órdenes de trabajo e inventario."),
     ];
 
     private static readonly Dictionary<Guid, PermSeed[]> Matrix = new()
@@ -115,10 +132,43 @@ public static class SecurityRoleSeeder
         ],
     };
 
-    /// <summary>Ensures the six roles and their permission rows for one tenant.</summary>
-    public static async Task SeedAsync(AppDbContext context, Guid tenantId, CancellationToken cancellationToken = default)
+    /// <summary>Returns the localized description of a seeded system role.</summary>
+    public static string GetDescription(string roleName, string language)
     {
-        var roleIdMap = new Dictionary<Guid, Guid>();
+        var role = Roles.FirstOrDefault(candidate =>
+            string.Equals(candidate.Name, roleName, StringComparison.Ordinal));
+
+        if (role is null)
+        {
+            return string.Empty;
+        }
+
+        return TenantLanguage.Resolve(language) == TenantLanguage.English
+            ? role.EnglishDescription
+            : role.SpanishDescription;
+    }
+
+    /// <summary>
+    /// Ensures the six roles and their permission rows for one tenant, using Spanish descriptions
+    /// (the pre-language onboarding behavior).
+    /// </summary>
+    public static Task SeedAsync(
+        AppDbContext context,
+        Guid tenantId,
+        CancellationToken cancellationToken = default) =>
+        SeedAsync(context, tenantId, TenantLanguage.Default, cancellationToken);
+
+    /// <summary>
+    /// Ensures the six roles and their permission rows for one tenant, with descriptions in the
+    /// tenant's default language.
+    /// </summary>
+    public static async Task SeedAsync(
+        AppDbContext context,
+        Guid tenantId,
+        string language,
+        CancellationToken cancellationToken = default)
+    {
+        var resolvedLanguage = TenantLanguage.Resolve(language);
 
         foreach (var role in Roles)
         {
@@ -133,20 +183,28 @@ public static class SecurityRoleSeeder
                     Id = Guid.NewGuid(),
                     TenantId = tenantId,
                     Name = role.Name,
-                    Description = role.Description,
+                    Description = resolvedLanguage == TenantLanguage.English
+                        ? role.EnglishDescription
+                        : role.SpanishDescription,
                     IsSystemDefault = true,
                 };
                 context.Roles.Add(existingRole);
             }
-            
-            roleIdMap[role.Id] = existingRole.Id;
         }
 
         await SaveConvergingAsync(context, cancellationToken);
 
+        // A parallel boot may have won the role insert. Re-read after convergence so permissions
+        // reference the role IDs that actually committed, never the detached losing rows.
+        var roleIdMap = await LoadRoleIdsAsync(context, tenantId, cancellationToken);
+
         foreach (var (hardcodedRoleId, perms) in Matrix)
         {
-            var actualRoleId = roleIdMap[hardcodedRoleId];
+            if (!roleIdMap.TryGetValue(hardcodedRoleId, out var actualRoleId))
+            {
+                continue;
+            }
+
             foreach (var perm in perms)
             {
                 var exists = await context.DocTypePermissions
@@ -175,23 +233,68 @@ public static class SecurityRoleSeeder
         await SaveConvergingAsync(context, cancellationToken);
     }
 
+    private static async Task<Dictionary<Guid, Guid>> LoadRoleIdsAsync(
+        AppDbContext context,
+        Guid tenantId,
+        CancellationToken cancellationToken)
+    {
+        var persisted = await context.Roles
+            .IgnoreQueryFilters()
+            .Where(r => r.TenantId == tenantId)
+            .Select(r => new { r.Id, r.Name })
+            .ToListAsync(cancellationToken);
+
+        var byName = persisted.ToDictionary(
+            role => role.Name,
+            role => role.Id,
+            StringComparer.Ordinal);
+
+        var roleIdMap = new Dictionary<Guid, Guid>();
+        foreach (var role in Roles)
+        {
+            if (byName.TryGetValue(role.Name, out var id))
+            {
+                roleIdMap[role.Id] = id;
+            }
+        }
+
+        return roleIdMap;
+    }
+
     private static async Task SaveConvergingAsync(AppDbContext context, CancellationToken cancellationToken)
     {
-        try
+        const int maxAttempts = 3;
+
+        for (var attempt = 1; ; attempt++)
         {
-            await context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
-        {
-            // Parallel boots may insert the same deterministic rows: detach the losers and
-            // continue - the re-reads above already converge on the winners. Anything else
-            // rethrows loudly instead of hiding a real failure.
-            foreach (var entry in context.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
+            try
             {
-                entry.State = EntityState.Detached;
+                await context.SaveChangesAsync(cancellationToken);
+                return;
+            }
+            catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+            {
+                // Parallel boots may insert the same deterministic rows: detach the losers and
+                // continue - the re-reads above already converge on the winners. Anything else
+                // rethrows loudly instead of hiding a real failure.
+                foreach (var entry in context.ChangeTracker.Entries().Where(e => e.State == EntityState.Added).ToList())
+                {
+                    entry.State = EntityState.Detached;
+                }
+
+                return;
+            }
+            catch (DbUpdateException ex) when (IsDeadlock(ex) && attempt < maxAttempts)
+            {
+                // A concurrent boot holding overlapping locks is transient; retry the same batch.
+                await Task.Delay(TimeSpan.FromMilliseconds(100 * attempt), cancellationToken);
             }
         }
     }
+
+    private static bool IsDeadlock(DbUpdateException ex) =>
+        ex.InnerException is Microsoft.Data.SqlClient.SqlException sql
+            && sql.Number == 1205;
 
     private static bool IsUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is Microsoft.Data.SqlClient.SqlException sql

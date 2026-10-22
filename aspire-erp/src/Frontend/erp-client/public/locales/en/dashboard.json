@@ -80,8 +80,8 @@
     "colValue": "Balance Value"
   },
   "modules": {
-    "title": "System Modules & Parity",
-    "badge": "ERPNext Spec Kit Parity",
+    "title": "System Modules & Capabilities",
+    "badge": "Enterprise Core",
     "reports": "Financial Reports",
     "reportsDesc": "Balance sheet, P&L, trial balance, aging and Kardex. Fully live.",
     "reportsCta": "Open Reports →",

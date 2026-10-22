@@ -1,6 +1,6 @@
 {
   "overview": {
-    "title": "CRM y canal de ventas (paridad con ERPNext)",
+    "title": "CRM y Canal de Ventas",
     "subtitle": "Leads entrantes, calificación, arrastrar y soltar en el pipeline y órdenes de venta en un clic para ClosedWon.",
     "openLeads": "Leads abiertos",
     "loadingBoard": "Cargando el tablero del pipeline…",

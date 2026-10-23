@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppShell } from './components/layout/AppShell'
 import { AccountTreeTable } from './features/accounting/AccountTreeTable'
@@ -39,6 +39,7 @@ import { RegisterTenantScreen } from './features/tenants/RegisterTenantScreen'
 import { RequirePermission } from './components/auth/RequirePermission'
 import { TerminologyOverlayProvider } from './lib/terminologyOverlay'
 import { useAuthStore } from './store/useAuthStore'
+import { apiClient } from './api/client'
 
 /**
  * Route-level DocType gates mirroring the API `permission:doctype:read` policies and the
@@ -92,10 +93,26 @@ function Forbidden() {
 function App() {
   const { t } = useTranslation('accounting')
   const companyId = useTenantStore((state) => state.companyId)
+  const setCompanyId = useTenantStore((state) => state.setCompanyId)
   const currentRoute = useNavigationStore((state) => state.currentRoute)
   const setCurrentRoute = useNavigationStore((state) => state.setCurrentRoute)
 
   const { token, isSystemManager } = useAuthStore()
+
+  useEffect(() => {
+    if (token && !companyId) {
+      apiClient
+        .get<{ id: string; name: string }[]>('/v1/companies')
+        .then((res) => {
+          if (res.data && res.data.length > 0) {
+            setCompanyId(res.data[0].id)
+          }
+        })
+        .catch(() => {
+          // Si no tiene empresas o no tiene permisos, se mantendrá vacío
+        })
+    }
+  }, [token, companyId, setCompanyId])
 
   if (!token) {
     if (currentRoute === 'login') {

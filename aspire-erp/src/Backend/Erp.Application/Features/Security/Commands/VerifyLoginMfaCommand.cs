@@ -13,4 +13,4 @@ namespace Erp.Application.Features.Security.Commands;
 public sealed record VerifyLoginMfaCommand(
     string MfaTicket,
     string MfaCode,
-    Guid TenantId) : ICommand<Result<LoginResponseDto>>;
+    Guid? TenantId = null) : ICommand<Result<LoginResponseDto>>;

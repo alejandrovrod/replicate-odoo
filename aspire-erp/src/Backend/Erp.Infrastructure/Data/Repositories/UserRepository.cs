@@ -13,6 +13,15 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
+    public async Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+    }
+
     public async Task<User?> GetUserByEmailAsync(string email, Guid tenantId, CancellationToken cancellationToken = default)
     {
         return await _context.Users
@@ -25,11 +34,13 @@ public class UserRepository : IUserRepository
     public async Task<List<DocTypePermission>> GetUserPermissionsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var roleIds = await _context.UserRoles
+            .IgnoreQueryFilters()
             .Where(ur => ur.UserId == userId)
             .Select(ur => ur.RoleId)
             .ToListAsync(cancellationToken);
 
         return await _context.DocTypePermissions
+            .IgnoreQueryFilters()
             .Where(dp => roleIds.Contains(dp.RoleId))
             .ToListAsync(cancellationToken);
     }
@@ -42,6 +53,15 @@ public class UserRepository : IUserRepository
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+    }
+
+    public async Task<User?> GetUserByIdAsync(Guid userId, Guid tenantId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == userId && u.TenantId == tenantId, cancellationToken);
     }
 
     public async Task UpdateUserAsync(User user, CancellationToken cancellationToken = default)

@@ -156,6 +156,8 @@ public sealed class TenantResolutionMiddleware
         || path.StartsWithSegments("/alive")
         || path.StartsWithSegments("/openapi")
         || path.StartsWithSegments("/swagger")
+        || path.StartsWithSegments("/api/v1/auth/login")
+        || path.StartsWithSegments("/api/v1/auth/login-mfa")
         || path.StartsWithSegments("/api/v1/tenants/check-availability")
         || path.StartsWithSegments("/api/v1/tenants/by-subdomain")
         || path.StartsWithSegments("/api/v1/tenants/register");

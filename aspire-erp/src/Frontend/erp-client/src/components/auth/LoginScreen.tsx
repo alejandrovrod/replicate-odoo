@@ -5,12 +5,8 @@ import { ApiError } from '../../api/client'
 import { loginRequest, verifyLoginMfa } from '../../features/auth/api/useAuth'
 import { translateErrorCode } from '../../lib/translateErrorCode'
 import { useAuthStore } from '../../store/useAuthStore'
-import { useTenantStore } from '../../store/useTenantStore'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
-
-// Env-pinned tenants (dev .env) win over everything: no override field is shown then.
-const ENV_TENANT_PINNED = Boolean(import.meta.env.VITE_TENANT_ID)
 
 type Step = 'password' | 'mfa'
 
@@ -19,14 +15,12 @@ export function LoginScreen() {
   const [step, setStep] = useState<Step>('password')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [tenantOverride, setTenantOverride] = useState('')
   const [mfaTicket, setMfaTicket] = useState('')
   const [mfaCode, setMfaCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const login = useAuthStore((state) => state.login)
-  const setTenantId = useTenantStore((state) => state.setTenantId)
 
   const showError = (err: unknown) => {
     if (err instanceof ApiError) {
@@ -47,11 +41,6 @@ export function LoginScreen() {
     setError('')
 
     try {
-      // The tenant travels in the X-Tenant-ID header (injected by apiClient);
-      // the backend resolves it via middleware, not from this body.
-      if (!ENV_TENANT_PINNED && tenantOverride.trim() !== '') {
-        setTenantId(tenantOverride.trim())
-      }
       const response = await loginRequest(email, password)
 
       // Module 16: correct password but MFA on - no JWT yet. Park the ticket in
@@ -71,7 +60,7 @@ export function LoginScreen() {
         setError(t('auth.errorGeneric', 'Sign-in failed. Check your credentials.'))
         return
       }
-      login(response.token, response.fullName, response.email)
+      login(response.token, response.fullName, response.email, response.permissions)
     } catch (err: unknown) {
       showError(err)
     } finally {
@@ -91,7 +80,7 @@ export function LoginScreen() {
         setError(t('auth.errorGeneric', 'Sign-in failed. Check your credentials.'))
         return
       }
-      login(response.token, response.fullName, response.email)
+      login(response.token, response.fullName, response.email, response.permissions)
     } catch (err: unknown) {
       showError(err)
     } finally {
@@ -201,23 +190,6 @@ export function LoginScreen() {
                   />
                 </div>
               </div>
-
-              {!ENV_TENANT_PINNED && (
-                <div className="space-y-2">
-                  <label
-                    htmlFor="tenant"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {t('auth.tenant', 'Tenant ID')}
-                  </label>
-                  <Input
-                    id="tenant"
-                    value={tenantOverride}
-                    onChange={(e) => setTenantOverride(e.target.value)}
-                    placeholder={t('auth.tenantPlaceholder', 'Tenant GUID for this workspace')}
-                  />
-                </div>
-              )}
 
               <div className="flex items-center justify-end gap-3 pt-2">
                 <a

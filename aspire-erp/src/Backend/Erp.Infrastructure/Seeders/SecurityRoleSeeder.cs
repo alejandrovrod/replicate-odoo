@@ -78,6 +78,7 @@ public static class SecurityRoleSeeder
             new("company", true, false, false, false),
             new("currency", true, false, false, false),
             new("catalog", true, false, false, false),
+            new("preset", true, false, false, false),
         ],
         [PurchaseUserRoleId] = [
             new("purchase_order", true, true, true, false),
@@ -88,6 +89,7 @@ public static class SecurityRoleSeeder
             new("company", true, false, false, false),
             new("currency", true, false, false, false),
             new("catalog", true, false, false, false),
+            new("preset", true, false, false, false),
         ],
         [AccountingUserRoleId] = [
             new("account", true, true, false, false),
@@ -108,6 +110,7 @@ public static class SecurityRoleSeeder
             new("report", true, false, false, false),
             new("company", true, false, false, false),
             new("catalog", true, false, false, false),
+            new("preset", true, false, false, false),
         ],
         [HrUserRoleId] = [
             new("employee", true, true, true, false),
@@ -118,6 +121,7 @@ public static class SecurityRoleSeeder
             new("payroll_entry", true, true, true, true),
             new("company", true, false, false, false),
             new("catalog", true, false, false, false),
+            new("preset", true, false, false, false),
         ],
         [ManufacturingUserRoleId] = [
             new("bom", true, true, true, false),
@@ -129,6 +133,7 @@ public static class SecurityRoleSeeder
             new("item", true, true, true, false),
             new("company", true, false, false, false),
             new("catalog", true, false, false, false),
+            new("preset", true, false, false, false),
         ],
     };
 

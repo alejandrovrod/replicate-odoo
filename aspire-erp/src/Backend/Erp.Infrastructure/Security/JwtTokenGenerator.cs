@@ -30,36 +30,43 @@ public class JwtTokenGenerator : ITokenGenerator
             new Claim("tenant_id", user.TenantId.ToString())
         };
 
-        foreach (var userRole in user.UserRoles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
-            // Also inject the raw name for frontend
-            claims.Add(new Claim("roles", userRole.Role.Name));
-        }
+        // Deduplicate and collect roles
+        var distinctRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Role names (short "roles" claim): lets the SPA resolve the System Manager
-        // bypass and role badges without an extra round-trip. Authorization itself stays
-        // server-side (DocTypePermission handler reads DB-backed perms claims).
-        foreach (var role in roles ?? Enumerable.Empty<string>())
+        if (user.UserRoles != null)
         {
-            if (!string.IsNullOrWhiteSpace(role))
+            foreach (var ur in user.UserRoles)
             {
-                claims.Add(new Claim("roles", role.Trim()));
+                if (ur.Role?.Name != null)
+                {
+                    distinctRoles.Add(ur.Role.Name.Trim());
+                }
             }
         }
 
-        // Flatten permissions into "perms" claims
-        // Format: "doctype:action"
-        // e.g. "sales_invoice:read"
-        foreach (var p in permissions)
+        if (roles != null)
         {
-            var dt = p.DocType.ToLowerInvariant().Replace(" ", "_");
-            if (p.CanRead) claims.Add(new Claim("perms", $"{dt}:read"));
-            if (p.CanWrite) claims.Add(new Claim("perms", $"{dt}:write"));
-            if (p.CanCreate) claims.Add(new Claim("perms", $"{dt}:create"));
-            if (p.CanDelete) claims.Add(new Claim("perms", $"{dt}:delete"));
-            if (p.CanSubmit) claims.Add(new Claim("perms", $"{dt}:submit"));
-            if (p.CanCancel) claims.Add(new Claim("perms", $"{dt}:cancel"));
+            foreach (var r in roles)
+            {
+                if (!string.IsNullOrWhiteSpace(r))
+                {
+                    distinctRoles.Add(r.Trim());
+                }
+            }
+        }
+
+        foreach (var roleName in distinctRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, roleName));
+            claims.Add(new Claim("roles", roleName));
+        }
+
+        // Keep JWT payload lightweight to prevent HTTP 431 (Header Fields Too Large).
+        // Granular authorization is evaluated server-side via DocTypePermissionAuthorizationHandler with IMemoryCache.
+        var isSystemManager = distinctRoles.Contains("System Manager");
+        if (isSystemManager)
+        {
+            claims.Add(new Claim("perms", "all"));
         }
 
         // Token lifetime

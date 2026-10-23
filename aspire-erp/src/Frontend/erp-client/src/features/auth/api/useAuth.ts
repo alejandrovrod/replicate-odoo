@@ -18,6 +18,7 @@ export interface LoginResponse {
   email: string
   isMfaRequired: boolean
   mfaTicket: string | null
+  permissions?: string[]
 }
 
 export async function loginRequest(email: string, password: string): Promise<LoginResponse> {

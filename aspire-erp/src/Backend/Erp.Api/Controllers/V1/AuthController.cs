@@ -22,20 +22,12 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        if (!_tenantProvider.HasTenant())
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Type = "Auth.TenantRequired",
-                Title = "Tenant resolution failed",
-                Detail = "A valid X-Tenant-Id header is required to login."
-            });
-        }
+        Guid? tenantId = _tenantProvider.HasTenant() ? _tenantProvider.GetCurrentTenantId() : null;
 
         var command = new LoginCommand(
             Email: request.Email,
             Password: request.Password,
-            TenantId: _tenantProvider.GetCurrentTenantId()
+            TenantId: tenantId
         );
 
         var result = await _sender.SendAsync(command, cancellationToken);
@@ -64,21 +56,13 @@ public class AuthController : ControllerBase
     [HttpPost("login-mfa")]
     public async Task<IActionResult> LoginMfa([FromBody] LoginMfaRequest request, CancellationToken cancellationToken)
     {
-        if (!_tenantProvider.HasTenant())
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Type = "Auth.TenantRequired",
-                Title = "Tenant resolution failed",
-                Detail = "A valid X-Tenant-Id header is required to login."
-            });
-        }
+        Guid? tenantId = _tenantProvider.HasTenant() ? _tenantProvider.GetCurrentTenantId() : null;
 
         var result = await _sender.SendAsync(
             new VerifyLoginMfaCommand(
                 MfaTicket: request.MfaTicket ?? string.Empty,
                 MfaCode: request.MfaCode ?? string.Empty,
-                TenantId: _tenantProvider.GetCurrentTenantId()),
+                TenantId: tenantId),
             cancellationToken);
 
         if (result.IsSuccess)

@@ -27,6 +27,7 @@ public static class DocTypeCatalog
         new("currency", "Core"),
         new("catalog", "Core"),
         new("user", "Core"),
+        new("preset", "Core"),
         new("purchase_order", "Purchase"),
         new("purchase_invoice", "Purchase"),
         new("purchase_receipt", "Purchase"),

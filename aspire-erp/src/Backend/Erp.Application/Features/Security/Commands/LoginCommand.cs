@@ -5,7 +5,7 @@ using Erp.Domain.Repositories;
 
 namespace Erp.Application.Features.Security.Commands;
 
-public record LoginCommand(string Email, string Password, Guid TenantId) : ICommand<Result<LoginResponseDto>>;
+public record LoginCommand(string Email, string Password, Guid? TenantId = null) : ICommand<Result<LoginResponseDto>>;
 
 /// <summary>
 /// Login outcome (spec 16 §3.1, plan Phase 1.1). Exactly one shape is ever populated:
@@ -23,13 +23,14 @@ public sealed record LoginResponseDto(
     string FullName,
     string Email,
     bool IsMfaRequired,
-    string? MfaTicket)
+    string? MfaTicket,
+    IReadOnlyList<string>? Permissions = null)
 {
-    public static LoginResponseDto Authenticated(string token, string fullName, string email) =>
-        new(token, fullName, email, IsMfaRequired: false, MfaTicket: null);
+    public static LoginResponseDto Authenticated(string token, string fullName, string email, IReadOnlyList<string>? permissions = null) =>
+        new(token, fullName, email, IsMfaRequired: false, MfaTicket: null, Permissions: permissions);
 
     public static LoginResponseDto MfaChallenge(string fullName, string email, string ticket) =>
-        new(Token: null, fullName, email, IsMfaRequired: true, MfaTicket: ticket);
+        new(Token: null, fullName, email, IsMfaRequired: true, MfaTicket: ticket, Permissions: null);
 }
 
 public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginResponseDto>>
@@ -53,10 +54,12 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
 
     public async Task<Result<LoginResponseDto>> HandleAsync(LoginCommand request, CancellationToken cancellationToken = default)
     {
-        // Notice we explicitly pass TenantId to cross the DB filter if needed,
-        // though normally TenantResolutionMiddleware would set it.
-        // For a public login endpoint, it might be set via header.
-        var user = await _userRepository.GetUserByEmailAsync(request.Email, request.TenantId, cancellationToken);
+        // When TenantId is provided (e.g. from host subdomain or explicit header), query scoped to it.
+        // Otherwise, resolve the user and their tenant directly by email.
+        var user = request.TenantId.HasValue
+            ? await _userRepository.GetUserByEmailAsync(request.Email, request.TenantId.Value, cancellationToken)
+            : await _userRepository.GetUserByEmailAsync(request.Email, cancellationToken);
+
         if (user == null)
         {
             return Result<LoginResponseDto>.Failure("Auth.Failed", "Invalid credentials.");
@@ -121,7 +124,19 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
             .ToList();
         var token = _tokenGenerator.GenerateToken(user, permissions, roles);
 
+        var permList = new List<string>();
+        foreach (var p in permissions)
+        {
+            var dt = p.DocType.ToLowerInvariant().Replace(" ", "_");
+            if (p.CanRead) permList.Add($"{dt}:read");
+            if (p.CanWrite) permList.Add($"{dt}:write");
+            if (p.CanCreate) permList.Add($"{dt}:create");
+            if (p.CanDelete) permList.Add($"{dt}:delete");
+            if (p.CanSubmit) permList.Add($"{dt}:submit");
+            if (p.CanCancel) permList.Add($"{dt}:cancel");
+        }
+
         return Result<LoginResponseDto>.Success(
-            LoginResponseDto.Authenticated(token, user.FullName, user.Email));
+            LoginResponseDto.Authenticated(token, user.FullName, user.Email, permList));
     }
 }

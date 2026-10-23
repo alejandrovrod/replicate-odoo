@@ -10,34 +10,11 @@ const string SqlSaPassword = "Erp_Dev_P@ssw0rd!2026";
 // Aspire reports a resource's health as `null` when no health check is registered, and `null`
 // does not satisfy the Phase 0 DoD, so both containers get an explicit TCP-connect check.
 builder.Services.AddHealthChecks()
-    .AddCheck<SqlServerTcpHealthCheck>("sqlserver-tcp")
+    //.AddCheck<SqlServerTcpHealthCheck>("sqlserver-tcp")
     .AddCheck<RedisTcpHealthCheck>("redis-tcp");
 
-// Aspire 13.x models the sa password as a parameter resource (the literal string overloads are gone).
-var saPassword = builder.AddParameter("erp-sqlserver-sa-password", SqlSaPassword, secret: true);
-
-// IMPORTANT (Aspire semantics): WithImage/WithImageTag must run BEFORE WithDataVolume, because
-// the data directory is resolved from the configured image tag when WithDataVolume is called.
-var sql = builder
-    .AddSqlServer("erp-sqlserver", password: saPassword, port: HostPorts.SqlServer)
-    // NOTE: the SQL integration already carries the mcr.microsoft.com registry, so the image name
-    // must be registry-relative ("mssql/server"); passing a fully-qualified name here produced the
-    // invalid reference "mcr.microsoft.com/mcr.microsoft.com/mssql/server:2025-latest".
-    .WithImage("mssql/server")
-    .WithImageTag("2025-latest")
-    .WithImageRegistry("mcr.microsoft.com")
-    .WithDataVolume("erp-sqlserver-data")
-    .WithEnvironment("ACCEPT_EULA", "Y")
-    .WithEnvironment("MSSQL_PID", "Developer")
-    // The port: argument alone left the host port unpinned (Docker published a random one),
-    // so the fixed host port is pinned explicitly with WithHostPort as well.
-    .WithHostPort(HostPorts.SqlServer)
-    .WithHealthCheck("sqlserver-tcp");
-
-// Task 1.4: expose the erp-db catalog as ConnectionStrings:erp-db for Erp.Api (AddDbContext) and
-// for `dotnet ef database update`. NOTE: Aspire only builds the connection string - it does NOT
-// create the catalog, so the database must exist in the container (verified out-of-band).
-var sqlDb = sql.AddDatabase("erp-db");
+// Base de datos externa/remota configurada en appsettings o variables de entorno
+var sqlDb = builder.AddConnectionString("erp-db");
 
 var redis = builder
     .AddRedis("erp-redis", port: HostPorts.Redis)
@@ -47,10 +24,8 @@ var redis = builder
 // Composition root of the solution. Scope decision (Phase 0): the React frontend is intentionally
 // NOT registered here - Task 0.3's DoD is a standalone `npm run build` + dev server.
 builder.AddProject<Projects.Erp_Api>("erp-api")
-    .WithReference(sql)
     .WithReference(sqlDb)
     .WithReference(redis)
-    .WaitFor(sql)
     .WaitFor(redis);
 
 builder.Build().Run();

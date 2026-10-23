@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { useTenantStore } from './useTenantStore'
 
 interface User {
   fullName: string
@@ -11,7 +12,7 @@ interface User {
 interface AuthState {
   token: string | null
   user: User | null
-  login: (token: string, fullName: string, email: string) => void
+  login: (token: string, fullName: string, email: string, permissions?: string[]) => void
   logout: () => void
   hasPermission: (resource: string, action?: string) => boolean
   isSystemManager: () => boolean
@@ -54,18 +55,26 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
 
-      login: (token: string, fullName: string, email: string) => {
+      login: (token: string, fullName: string, email: string, permissions?: string[]) => {
         const payload = parseJwt(token)
+        const perms = permissions && permissions.length > 0 
+          ? permissions 
+          : parseStringArray(payload?.perms)
 
         set({
           token,
           user: {
             fullName,
             email,
-            perms: parseStringArray(payload?.perms),
+            perms,
             roles: parseStringArray(payload?.roles),
           },
         })
+
+        const tenantId = (payload?.tenant_id ?? payload?.tenantId) as string | undefined
+        if (tenantId) {
+          useTenantStore.getState().setTenantId(tenantId)
+        }
       },
 
       logout: () => set({ token: null, user: null }),

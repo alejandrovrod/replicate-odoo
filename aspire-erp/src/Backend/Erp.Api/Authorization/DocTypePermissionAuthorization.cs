@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace Erp.Api.Authorization;
@@ -59,24 +60,64 @@ public class DocTypePermissionRequirement : IAuthorizationRequirement
 
 public class DocTypePermissionAuthorizationHandler : AuthorizationHandler<DocTypePermissionRequirement>
 {
-    protected override Task HandleRequirementAsync(
+    private readonly Erp.Domain.Repositories.IUserRepository _userRepository;
+    private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
+
+    public DocTypePermissionAuthorizationHandler(
+        Erp.Domain.Repositories.IUserRepository userRepository,
+        Microsoft.Extensions.Caching.Memory.IMemoryCache cache)
+    {
+        _userRepository = userRepository;
+        _cache = cache;
+    }
+
+    protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         DocTypePermissionRequirement requirement)
     {
         if (context.User.Identity?.IsAuthenticated != true)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         // Bootstrap: System Manager (ERPNext equivalent to Admin) has all access
-        var isSystemManager = context.User.IsInRole("System Manager");
-        var perms = context.User.FindAll("perms").Select(c => c.Value).ToHashSet();
+        if (context.User.IsInRole("System Manager"))
+        {
+            context.Succeed(requirement);
+            return;
+        }
 
-        if (isSystemManager || perms.Contains(requirement.Permission))
+        var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? context.User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return;
+        }
+
+        var cacheKey = $"user_perms_{userId}";
+        if (!_cache.TryGetValue(cacheKey, out HashSet<string>? perms))
+        {
+            var dbPerms = await _userRepository.GetUserPermissionsAsync(userId);
+            perms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var p in dbPerms)
+            {
+                var dt = p.DocType.ToLowerInvariant().Replace(" ", "_");
+                if (p.CanRead) perms.Add($"{dt}:read");
+                if (p.CanWrite) perms.Add($"{dt}:write");
+                if (p.CanCreate) perms.Add($"{dt}:create");
+                if (p.CanDelete) perms.Add($"{dt}:delete");
+                if (p.CanSubmit) perms.Add($"{dt}:submit");
+                if (p.CanCancel) perms.Add($"{dt}:cancel");
+            }
+
+            _cache.Set(cacheKey, perms, TimeSpan.FromMinutes(5));
+        }
+
+        if (perms != null && perms.Contains(requirement.Permission))
         {
             context.Succeed(requirement);
         }
-
-        return Task.CompletedTask;
     }
 }

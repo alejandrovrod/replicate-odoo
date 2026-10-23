@@ -645,14 +645,16 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-// Tenant pipeline first: resolution must run before the logging scope opens, because the scope
-// reads the already-resolved tenant (plan.md §2.1 request lifecycle).
+app.UseHttpsRedirection();
+
+// Authentication runs BEFORE tenant resolution so context.User carries the JWT claims (tenant_id).
+app.UseAuthentication();
+
+// Tenant pipeline: resolution runs after authentication so it can read the tenant_id claim from JWT,
+// but before authorization and controller actions.
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseMiddleware<TenantLoggingScopeMiddleware>();
 
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

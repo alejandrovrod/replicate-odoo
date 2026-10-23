@@ -45,15 +45,20 @@ public sealed class VerifyLoginMfaCommandHandler
             VerifyLoginMfaValidator.EnsureValid(command);
 
             // The ticket is the ONLY identity source; it must additionally belong to the
-            // calling tenant (header) so tickets cannot hop across tenants.
-            if (!_tickets.TryValidateTicket(command.MfaTicket, out Guid userId, out Guid ticketTenantId)
-                || ticketTenantId != command.TenantId)
+            // calling tenant when specified (e.g. from host subdomain).
+            if (!_tickets.TryValidateTicket(command.MfaTicket, out Guid userId, out Guid ticketTenantId))
             {
                 return MfaRejected();
             }
 
-            var user = await _users.GetUserByIdAsync(userId, cancellationToken);
-            if (user is null || user.TenantId != command.TenantId)
+            if (command.TenantId.HasValue && ticketTenantId != command.TenantId.Value)
+            {
+                return MfaRejected();
+            }
+
+            var effectiveTenantId = command.TenantId ?? ticketTenantId;
+            var user = await _users.GetUserByIdAsync(userId, effectiveTenantId, cancellationToken);
+            if (user is null || user.TenantId != effectiveTenantId)
             {
                 // Unknown user or cross-tenant ticket: same code as a wrong code (no oracle).
                 return MfaRejected();
@@ -157,8 +162,20 @@ public sealed class VerifyLoginMfaCommandHandler
             .ToList();
         string token = _tokens.GenerateToken(user, permissions, roles);
 
+        var permList = new List<string>();
+        foreach (var p in permissions)
+        {
+            var dt = p.DocType.ToLowerInvariant().Replace(" ", "_");
+            if (p.CanRead) permList.Add($"{dt}:read");
+            if (p.CanWrite) permList.Add($"{dt}:write");
+            if (p.CanCreate) permList.Add($"{dt}:create");
+            if (p.CanDelete) permList.Add($"{dt}:delete");
+            if (p.CanSubmit) permList.Add($"{dt}:submit");
+            if (p.CanCancel) permList.Add($"{dt}:cancel");
+        }
+
         return Result<LoginResponseDto>.Success(
-            LoginResponseDto.Authenticated(token, user.FullName, user.Email));
+            LoginResponseDto.Authenticated(token, user.FullName, user.Email, permList));
     }
 
     private static Result<LoginResponseDto> MfaRejected() =>

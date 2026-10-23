@@ -4,6 +4,7 @@ namespace Erp.Domain.Repositories;
 
 public interface IUserRepository
 {
+    Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<User?> GetUserByEmailAsync(string email, Guid tenantId, CancellationToken cancellationToken = default);
     Task<List<DocTypePermission>> GetUserPermissionsAsync(Guid userId, CancellationToken cancellationToken = default);
 
@@ -13,6 +14,7 @@ public interface IUserRepository
     /// <see cref="GetActiveRecoveryCodesAsync"/> when they are needed.
     /// </summary>
     Task<User?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<User?> GetUserByIdAsync(Guid userId, Guid tenantId, CancellationToken cancellationToken = default);
 
     /// <summary>Persists mutations on a tracked user (password, lockout, MFA fields).</summary>
     Task UpdateUserAsync(User user, CancellationToken cancellationToken = default);
